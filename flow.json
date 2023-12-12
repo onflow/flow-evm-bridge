@@ -69,10 +69,6 @@
 		"emulator-ft": {
 			"address": "ee82856bf20e2aa6",
 			"key": "686779d775e5fcbf8d2f4a85cb4c53525d02b7ef53230d180fc16f35d9b7d025"
-		},
-		"test": {
-			"address": "01cf0e2f2f715450",
-			"key": "5f8e8f76c97b1c1f5ede6d7c4f66f2bc391939eaed38dc7ed0efbcfbbb2139b3"
 		}
 	},
 	"deployments": {
