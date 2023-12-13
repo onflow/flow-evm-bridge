@@ -1,6 +1,8 @@
-# Repository template
-A template enabled repository, including all necesary files to open source.
-(create an issue with the following content if you want to track the repo configuration)
+# [WIP] Flow EVM Bridge
+
+> :warning: This repo is a work in progress
+
+This repo contains the contracts enabling asset bridging between Flow and Flow EVM.
 
 ## Repository settings and configuration
 - [ ]  Repository info
