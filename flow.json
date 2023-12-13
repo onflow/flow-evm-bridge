@@ -74,12 +74,11 @@
 	"deployments": {
 		"emulator": {
 			"emulator-account": [
+				"EVM",
 				"NonFungibleToken",
 				"MetadataViews",
 				"ViewResolver",
-				"FungibleTokenMetadataViews",
-				"EVM",
-				"FlowEVMBridge"
+				"FungibleTokenMetadataViews"
 			],
 			"emulator-ft": [
 				"FungibleToken"
