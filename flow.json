@@ -6,6 +6,12 @@
 				"emulator": "f8d6e0586b0a20c7"
 			}
 		},
+		"StorageBenchmark": {
+			"source": "./contracts/bench/StorageBenchmark.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7"
+			}
+		},
 		"FlowToken": {
 			"source": "./contracts/standards/FlowToken.cdc",
 			"aliases": {
@@ -78,7 +84,7 @@
 	"deployments": {
 		"emulator": {
 			"emulator-account": [
-				"EVM",
+				"StorageBenchmark",
 				"NonFungibleToken",
 				"MetadataViews",
 				"ViewResolver",
