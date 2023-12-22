@@ -2,7 +2,7 @@ import "EVM"
 import "FungibleToken"
 import "FlowToken"
 
-transaction(bytecode: String) {
+transaction(bytecode: String, gasLimit: UInt64) {
     let sentVault: @FlowToken.Vault
 
     prepare(signer: AuthAccount) {
