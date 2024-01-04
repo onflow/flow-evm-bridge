@@ -1,6 +1,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import sys
+import os
 
 
 def plot_csv_data(csv_file):
@@ -10,7 +11,7 @@ def plot_csv_data(csv_file):
     # Sorting the DataFrame by 'Aggregate Count'
     df.sort_values(by="Aggregate Count", inplace=True)
 
-    # Calculating a short-term moving average (e.g., 10-point)
+    # Calculating a short-term moving average
     window_size = 50
     df["Moving Average"] = df["Computation"].rolling(window=window_size).mean()
 
@@ -43,12 +44,20 @@ def plot_csv_data(csv_file):
         label=f"Max Computation: {max_computation}",
     )
 
-    plt.title("Computation Used Per Batch (n=100) Insertion vs Aggregate Stored Instance Count")
+    plt.title(
+        "Computation Used Per Batch (n=100) Insertion vs Aggregate Stored Instance Count"
+    )
     plt.xlabel("Aggregate Stored Instance Count")
     plt.ylabel("Computation Used Per Batch (n=100)")
     plt.legend()
     plt.grid(True)
-    plt.show()
+
+    # Save the plot as a PNG file
+    output_filename = os.path.splitext(csv_file)[0] + ".png"
+    plt.savefig(output_filename)
+    print(f"Plot saved to {output_filename}")
+
+    # plt.show()
 
 
 # Check if the CSV file name is given as a command-line argument

@@ -1,6 +1,6 @@
 module github.com/onflow/flow-evm-bridge
 
-go 1.20
+go 1.21
 
 require github.com/bjartek/overflow v1.17.0
 
