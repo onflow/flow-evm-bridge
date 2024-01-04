@@ -2,14 +2,15 @@ import "EVM"
 import "FungibleToken"
 import "FlowToken"
 
-transaction(bytecode: String, gasLimit: UInt64) {
-    let sentVault: @FlowToken.Vault
+transaction(bytecode: String, gasLimit: UInt64, bridgeFlow: UFix64) {
+    let sentVault: @FlowToken.Vault?
 
-    prepare(signer: AuthAccount) {
-        let vaultRef = signer.borrow<&FlowToken.Vault>(from: /storage/flowTokenVault)
-            ?? panic("Could not borrow reference to the owner's Vault!")
+    prepare(signer: auth(BorrowValue) &Account) {
+        let vaultRef = signer.storage.borrow<auth(FungibleToken.Withdrawable) &FlowToken.Vault>(
+                from: /storage/flowTokenVault
+            ) ?? panic("Could not borrow reference to the owner's Vault!")
 
-        self.sentVault <- vaultRef.withdraw(amount: 1.0) as! @FlowToken.Vault
+        self.sentVault <- vaultRef.withdraw(amount: bridgeFlow) as! @FlowToken.Vault
     }
 
     execute {
