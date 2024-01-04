@@ -74,19 +74,5 @@
 			"address": "ee82856bf20e2aa6",
 			"key": "686779d775e5fcbf8d2f4a85cb4c53525d02b7ef53230d180fc16f35d9b7d025"
 		}
-	},
-	"deployments": {
-		"emulator": {
-			"emulator-account": [
-				"EVM",
-				"NonFungibleToken",
-				"MetadataViews",
-				"ViewResolver",
-				"FungibleTokenMetadataViews"
-			],
-			"emulator-ft": [
-				"FungibleToken"
-			]
-		}
 	}
 }
