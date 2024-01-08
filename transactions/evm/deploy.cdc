@@ -3,7 +3,7 @@ import "FungibleToken"
 import "FlowToken"
 
 transaction(bytecode: String, gasLimit: UInt64, bridgeFlow: UFix64) {
-    let sentVault: @FlowToken.Vault?
+    let sentVault: @FlowToken.Vault
 
     prepare(signer: auth(BorrowValue) &Account) {
         let vaultRef = signer.storage.borrow<auth(FungibleToken.Withdrawable) &FlowToken.Vault>(
@@ -22,7 +22,7 @@ transaction(bytecode: String, gasLimit: UInt64, bridgeFlow: UFix64) {
         let address = bridgedAccount.deploy(
            code: decodedCode,
            gasLimit: 300000,
-           value: EVM.Balance(flow: 0.5)
+           value: EVM.Balance(flow: 1.0)
         )
 
         destroy bridgedAccount
