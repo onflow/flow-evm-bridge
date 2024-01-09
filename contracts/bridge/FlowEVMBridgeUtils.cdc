@@ -55,24 +55,89 @@ access(all) contract FlowEVMBridgeUtils {
     access(all) fun isEVMNFT(evmContractAddress: EVM.EVMAddress): Bool
     /// Identifies if an asset is ERC20 and not ERC721
     access(all) fun isEVMToken(evmContractAddress: EVM.EVMAddress): Bool
+    /// Retrieves the number of decimals for a given ERC20 contract address
+    access(all) fun getTokenDecimals(evmContractAddress: EVM.EVMAddress): UInt8 {
+        let methodID: [UInt8] = self.getFunctionSelector(signature: "decimals()(uint8)")
+            ?? panic("Problem getting function selector for decimals()(uint8)")
+        let calldata: [UInt8] = methodID.concat(EVM.encodeABI([]))
+        let response = self.inspectorCOA.call(
+            to: evmContractAddress,
+            data: calldata,
+            gasLimit: 60000,
+            value: EVM.Balance(flow: 0.0)
+        )
+        let decodedResponse: [UInt8] = EVM.decodeABI(types: [Type<UInt8>()], data: response) as [UInt8]
+        return decodedResponse[0]
+    }
 
     /// Determines if the owner is in fact the owner of the NFT at the ERC721 contract address
     access(all) fun isOwnerOrApproved(ofNFT: UInt64, owner: EVM.EVMAddress, evmContractAddress: EVM.EVMAddress): Bool
+
     /// Determines if the owner has sufficient funds to bridge the given amount at the ERC20 contract address
-    access(all) fun hasSufficientBalance(amount: UFix64, owner: EVM.EVMAddress, evmContractAddress: EVM.EVMAddress): Bool
+    access(all) fun hasSufficientBalance(amount: UFix64, owner: EVM.EVMAddress, evmContractAddress: EVM.EVMAddress): Bool {
+        let methodID: [UInt8] = self.getFunctionSelector(signature: "balanceOf(address)(uint256)")
+            ?? panic("Problem getting function selector for balanceOf(address)(uint256)")
+        let calldata: [UInt8] = methodID.concat(EVM.encodeABI([owner]))
+        let response = self.inspectorCOA.call(
+            to: evmContractAddress,
+            data: calldata,
+            gasLimit: 60000,
+            value: EVM.Balance(flow: 0.0)
+        )
+        let decodedResponse: [UInt256] = EVM.decodeABI(types: [Type<UInt256>()], data: response) as [UInt256]
+        let tokenDecimals: UInt8 = self.getTokenDecimals(evmContractAddress: evmContractAddress)
+        return self.uint256ToUFix64(value: decodedResponse[0], decimals: tokenDecimals) >= amount
+    }
 
     /// Derives the Cadence contract name for a given Type
     access(all) fun deriveLockerContractName(fromType: Type): String?
     /// Derives the Cadence contract name for a given EVM asset
     access(all) fun deriveBridgedAssetContractName(fromEVMContract: EVM.EVMAddress): String?
 
+    /* --- Math Utils --- */
+
+    /// Raises the base to the power of the exponent
+    access(all) fun pow(base: UInt256, exponent: UInt8): UInt256 {
+        if exponent == 0 {
+            return 1
+        }
+
+        var r = base
+        var exp: UInt8 = 1
+        while exp < exponent {
+            r = r * base
+            exp = exp + 1
+        }
+
+        return r
+    }
     /// Converts a UInt256 to a UFix64
-    access(all) fun uInt256ToUFix64(_ uint256: UInt256): UFix64
+    access(all) fun uint256ToUFix64(value: UInt256, decimals: UInt8): UFix64 {
+        let scaleFactor: UInt256 = self.pow(base: 10, exponent: decimals)
+        let scaledValue: UInt256 = value / scaleFactor
+
+        assert(scaledValue > UInt256(0xFFFFFFFFFFFFFFFF), message: "Value too large to fit into UFix64")
+
+        return UFix64(scaledValue)
+    }
     /// Converts a UFix64 to a UInt256
-    access(all) fun uFix64ToUInt256(_ uFix64: UFix64): UInt256
+    access(all) fun ufix64ToUInt256(value: UFix64, decimals: UInt8): UInt256 {
+        let integerPart: UInt64 = UInt64(value)
+        var r = UInt256(integerPart)
+
+        var multiplier: UInt256 = self.pow(base:10, exponent: decimals)
+        return r * multiplier
+    }
+
+    /* --- Bridge-Access Only Utils --- */
 
     /// Deposits fees to the bridge account's FlowToken Vault - helps fund asset storage
-    access(account) fun depositTollFee(_ tollFee: @FlowToken.Vault)
+    access(account) fun depositTollFee(_ tollFee: @FlowToken.Vault) {
+        let vault = self.account.storage.borrow<&FlowToken.Vault>(from: /storage/flowTokenVault)
+            ?? panic("Could not borrow FlowToken.Vault reference")
+        vault.deposit(from: <-tollFee)
+    }
+
     /// Upserts the function selector of the given signature
     access(account) fun upsertFunctionSelector(signature: String) {
         let methodID = HashAlgorithm.KECCAK_256.hash(
@@ -85,6 +150,7 @@ access(all) contract FlowEVMBridgeUtils {
     init(bridgeFactoryEVMAddressBytes: [UInt8; 20]) {
         self.bridgeFactoryEVMAddress = EVM.EVMAddress(bytes: bridgeFactoryEVMAddressBytes)
         let signatures = [
+            "decimals()(uint8)",
             "balanceOf(address)(uint256)",
             "ownerOf(uint256)(address)",
             "getApproved(uint256)(address)",
@@ -97,9 +163,11 @@ access(all) contract FlowEVMBridgeUtils {
             "getName()(string)",
             "isFlowBridgeDeployed(address)(bool)",
             "getFlowAssetContractAddress()(string)",
-            "getFlowAssetIdentifier()(string)"
+            "getFlowAssetIdentifier()(string)",
+            "isEVMNFT(address)(bool)",
+            "isEVMToken(address)(bool)"
         ]
-
+        self.functionSelectors = {}
         for signature in signatures {
             self.upsertFunctionSelector(signature: signature)
         }
@@ -107,8 +175,6 @@ access(all) contract FlowEVMBridgeUtils {
             self.functionSelectors.length == signatures.length,
             message: "Function selector initialization failed"
         )
-
         self.inspectorCOA <- EVM.createBridgedAccount()
-
     }
 }
