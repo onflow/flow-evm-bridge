@@ -10,6 +10,10 @@ import "EVM"
 // - [ ] Validate bytes4 .sol type can receive [UInt8] from Cadence when encoded - affects supportsInterface calls
 // - [ ] Clarify gas limit values for robustness across various network conditions
 // - [ ] Implement inspector methods in Factory.sol contract
+// - [ ] Consider how calls from inspectorCOA will affect EVM Flow balance and need to rebalance. Maybe use one central account-stored COA.
+// - [ ] Remove getEVMAddressAsHexString once EVMAddress.toString() is available
+// - [ ] Implement view functions once available in EVM contract
+//      - [ ] getInspectorCOAAddress: EVMAddress.address()
 //
 access(all) contract FlowEVMBridgeUtils {
 
@@ -32,7 +36,7 @@ access(all) contract FlowEVMBridgeUtils {
         return self.functionSelectors[signature]
     }
     /// Returns the address of the contract inspector COA
-    access(all) view fun getInspectorCOAAddress(): @EVM.EVMAddress {
+    access(all) fun getInspectorCOAAddress(): @EVM.EVMAddress {
         return self.inspectorCOA.address()
     }
     /// Returns an EVMAddress as a hex string without a 0x prefix
@@ -325,7 +329,7 @@ access(all) contract FlowEVMBridgeUtils {
         let response = self.inspectorCOA.call(
             to: targetEVMAddress,
             data: calldata,
-            gasLimit: 60000,
+            gasLimit: gasLimit,
             value: EVM.Balance(flow: value)
         )
         return response
