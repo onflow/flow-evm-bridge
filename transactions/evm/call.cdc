@@ -1,6 +1,6 @@
 import "EVM"
 
-transaction(evmContractAddressHex: String, calldata: String) {
+transaction(evmContractAddressHex: String, calldata: String, value: UFix64) {
 
     prepare(signer: auth(BorrowValue) &Account) {
         let evmAddressBytes: [UInt8] = evmContractAddressHex.decodeHex()
@@ -22,7 +22,7 @@ transaction(evmContractAddressHex: String, calldata: String) {
             to: evmAddress,
             data: data,
             gasLimit: 100000,
-            value: EVM.Balance(flow: 0.0)
+            value: EVM.Balance(flow: value)
         )
     }
 }

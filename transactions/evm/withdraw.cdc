@@ -11,7 +11,7 @@ transaction(amount: UFix64) {
         let vaultRef = signer.borrow<&FlowToken.Vault>(from: /storage/flowTokenVault)
             ?? panic("Could not borrow reference to the owner's vault")
 
-        let bridgedVault <- bridgedAccount.withdraw(balance: EVM.Balance(flow: 10.0)) as! @FungibleToken.Vault
+        let bridgedVault <- bridgedAccount.withdraw(balance: EVM.Balance(flow: amount)) as! @FungibleToken.Vault
         vaultRef.deposit(from: <-bridgedVault)
     }
 }
