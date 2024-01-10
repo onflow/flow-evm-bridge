@@ -36,7 +36,7 @@ access(all) contract FlowEVMBridgeUtils {
         return self.functionSelectors[signature]
     }
     /// Returns the address of the contract inspector COA
-    access(all) fun getInspectorCOAAddress(): @EVM.EVMAddress {
+    access(all) fun getInspectorCOAAddress(): EVM.EVMAddress {
         return self.inspectorCOA.address()
     }
     /// Returns an EVMAddress as a hex string without a 0x prefix
@@ -66,7 +66,7 @@ access(all) contract FlowEVMBridgeUtils {
                 gasLimit: 60000,
                 value: 0.0
             )
-        let decodedResponse: [Bool] = EVM.decodeABI(types: [Type<Bool>()], data: response) as [Bool]
+        let decodedResponse: [Bool] = EVM.decodeABI(types: [Type<Bool>()], data: response) as! [Bool]
 
         // If it was not bridge-deployed, then assume asset is EVM-native
         return decodedResponse[0] == false
@@ -82,7 +82,7 @@ access(all) contract FlowEVMBridgeUtils {
             gasLimit: 60000,
             value: 0.0
         )
-        let decodedResponse: [Bool] = EVM.decodeABI(types: [Type<Bool>()], data: response) as [Bool]
+        let decodedResponse: [Bool] = EVM.decodeABI(types: [Type<Bool>()], data: response) as! [Bool]
         return decodedResponse[0]
     }
     /// Identifies if an asset is ERC20
@@ -107,7 +107,7 @@ access(all) contract FlowEVMBridgeUtils {
             gasLimit: 60000,
             value: 0.0
         )
-        let decodedResponse: [String] = EVM.decodeABI(types: [Type<String>()], data: response) as [String]
+        let decodedResponse: [String] = EVM.decodeABI(types: [Type<String>()], data: response) as! [String]
         return decodedResponse[0]
     }
 
@@ -120,7 +120,7 @@ access(all) contract FlowEVMBridgeUtils {
             gasLimit: 60000,
             value: 0.0
         )
-        let decodedResponse: [String] = EVM.decodeABI(types: [Type<String>()], data: response) as [String]
+        let decodedResponse: [String] = EVM.decodeABI(types: [Type<String>()], data: response) as! [String]
         return decodedResponse[0]
     }
 
@@ -133,7 +133,7 @@ access(all) contract FlowEVMBridgeUtils {
                 gasLimit: 60000,
                 value: 0.0
             )
-        let decodedResponse: [UInt8] = EVM.decodeABI(types: [Type<UInt8>()], data: response) as [UInt8]
+        let decodedResponse: [UInt8] = EVM.decodeABI(types: [Type<UInt8>()], data: response) as! [UInt8]
         return decodedResponse[0]
     }
 
@@ -149,8 +149,8 @@ access(all) contract FlowEVMBridgeUtils {
         let decodedOwnerResponse: [EVM.EVMAddress] = EVM.decodeABI(
                 types: [Type<EVM.EVMAddress>()],
                 data: ownerResponse
-            ) as [EVM.EVMAddress]
-        if decodedOwnerResponse.length == 1 && decodedOwnerResponse[0] == owner {
+            ) as! [EVM.EVMAddress]
+        if decodedOwnerResponse.length == 1 && decodedOwnerResponse[0].bytes == owner.bytes {
             return true
         }
 
@@ -164,8 +164,8 @@ access(all) contract FlowEVMBridgeUtils {
         let decodedApprovedResponse: [EVM.EVMAddress] = EVM.decodeABI(
                 types: [Type<EVM.EVMAddress>()],
                 data: approvedResponse
-            ) as [EVM.EVMAddress]
-        return decodedApprovedResponse.length == 1 && decodedApprovedResponse[0] == owner
+            ) as! [EVM.EVMAddress]
+        return decodedApprovedResponse.length == 1 && decodedApprovedResponse[0].bytes == owner.bytes
     }
 
     /// Determines if the owner has sufficient funds to bridge the given amount at the ERC20 contract address
@@ -177,7 +177,7 @@ access(all) contract FlowEVMBridgeUtils {
             gasLimit: 60000,
             value: 0.0
         )
-        let decodedResponse: [UInt256] = EVM.decodeABI(types: [Type<UInt256>()], data: response) as [UInt256]
+        let decodedResponse: [UInt256] = EVM.decodeABI(types: [Type<UInt256>()], data: response) as! [UInt256]
         let tokenDecimals: UInt8 = self.getTokenDecimals(evmContractAddress: evmContractAddress)
         return self.uint256ToUFix64(value: decodedResponse[0], decimals: tokenDecimals) >= amount
     }
@@ -335,7 +335,7 @@ access(all) contract FlowEVMBridgeUtils {
         return response
     }
 
-    init(bridgeFactoryEVMAddressBytes: [UInt8; 20]) {
+    init(bridgeFactoryEVMAddress: String) {
         self.contractNameDelimiter = "_"
         self.contractNamePrefixes = {
             Type<@{NonFungibleToken.NFT}>(): {
@@ -351,7 +351,14 @@ access(all) contract FlowEVMBridgeUtils {
             "IERC20": "80ac58cd".decodeHex(),
             "IERC721": "36372b07".decodeHex()
         }
-        self.bridgeFactoryEVMAddress = EVM.EVMAddress(bytes: bridgeFactoryEVMAddressBytes)
+        let bridgeFactoryEVMAddressBytes: [UInt8] = bridgeFactoryEVMAddress.decodeHex()
+        self.bridgeFactoryEVMAddress = EVM.EVMAddress(bytes: [
+            bridgeFactoryEVMAddressBytes[0], bridgeFactoryEVMAddressBytes[1], bridgeFactoryEVMAddressBytes[2], bridgeFactoryEVMAddressBytes[3],
+            bridgeFactoryEVMAddressBytes[4], bridgeFactoryEVMAddressBytes[5], bridgeFactoryEVMAddressBytes[6], bridgeFactoryEVMAddressBytes[7],
+            bridgeFactoryEVMAddressBytes[8], bridgeFactoryEVMAddressBytes[9], bridgeFactoryEVMAddressBytes[10], bridgeFactoryEVMAddressBytes[11],
+            bridgeFactoryEVMAddressBytes[12], bridgeFactoryEVMAddressBytes[13], bridgeFactoryEVMAddressBytes[14], bridgeFactoryEVMAddressBytes[15],
+            bridgeFactoryEVMAddressBytes[16], bridgeFactoryEVMAddressBytes[17], bridgeFactoryEVMAddressBytes[18], bridgeFactoryEVMAddressBytes[19]
+        ])
         let signatures = [
             "decimals()(uint8)",
             "balanceOf(address)(uint256)",
