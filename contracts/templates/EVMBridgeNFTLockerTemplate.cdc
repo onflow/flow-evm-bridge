@@ -22,11 +22,6 @@ access(all) contract CONTRACT_NAME : IEVMBridgeNFTLocker {
     /// Resource which holds locked NFTs
     access(contract) let locker: @{IEVMBridgeNFTLocker.Locker}
 
-    /// Asset bridged from Flow to EVM - satisfies both FT & NFT (always amount == 1.0)
-    access(all) event BridgedToEVM(type: Type, amount: UFix64, to: EVM.EVMAddress, evmContractAddress: EVM.EVMAddress, flowNative: Bool)
-    /// Asset bridged from EVM to Flow - satisfies both FT & NFT (always amount == 1.0)
-    access(all) event BridgedToFlow(type: Type, amount: UFix64, from: EVM.EVMAddress, to: EVM.EVMAddress, evmContractAddress: EVM.EVMAddress, flowNative: Bool)
-
     /* --- Auxiliary entrypoints --- */
 
     // TODO: Consider implementing ICrossEVMNFT.EVMBridgeableCollection in Locker and passing through to Locker
@@ -63,7 +58,7 @@ access(all) contract CONTRACT_NAME : IEVMBridgeNFTLocker {
     access(all) fun bridgeFromEVM(
         caller: &EVM.BridgedAccount,
         calldata: [UInt8],
-        id: UInt64,
+        id: UInt256,
         evmContractAddress: EVM.EVMAddress,
         tollFee: @FlowToken.Vault
     ): @{NonFungibleToken.NFT} {
@@ -95,7 +90,7 @@ access(all) contract CONTRACT_NAME : IEVMBridgeNFTLocker {
         self.call(
             signature: "safeTransferFrom(address,address,uint256)",
             targetEVMAddress: evmContractAddress,
-            args: [caller.address(), FlowEVMBridge.getBridgeCOAEVMAddress(), UInt256(id)],
+            args: [caller.address(), FlowEVMBridge.getBridgeCOAEVMAddress(), id],
             gasLimit: 60000,
             value: 0.0
         )
@@ -107,7 +102,8 @@ access(all) contract CONTRACT_NAME : IEVMBridgeNFTLocker {
         )
         assert(isBridgeOwned, message: "Bridge was not approved for requested NFT")
 
-        return <- self.locker.withdraw(withdrawID: id)
+        let convertedID: UInt64 = FlowEVMBridgeUtils.uint256ToUInt64(value: id)
+        return <- self.locker.withdraw(withdrawID: convertedID)
     }
 
     /* --- Getters --- */
