@@ -10,8 +10,9 @@ import "FlowEVMBridge"
 
 // TODO:
 // - [ ] Consider case where NFT IDs are not unique - is this worth supporting?
+// - [ ] Pull URI from NFT if display exists & pass on minting
 //
-access(all) contract EVMBridgeNFTLockerTemplate : IEVMBridgeNFTLocker {
+access(all) contract CONTRACT_NAME : IEVMBridgeNFTLocker {
     /// Type of NFT locked in the contract
     access(all) let lockedNFTType: Type
     /// Pointer to the defining Flow-native contract
@@ -22,7 +23,7 @@ access(all) contract EVMBridgeNFTLockerTemplate : IEVMBridgeNFTLocker {
     access(contract) let locker: @{IEVMBridgeNFTLocker.Locker}
 
     /// Asset bridged from Flow to EVM - satisfies both FT & NFT (always amount == 1.0)
-    access(all) event BridgedToEVM(type: Type, amount: UFix64, from: EVM.EVMAddress, to: EVM.EVMAddress, evmContractAddress: EVM.EVMAddress, flowNative: Bool)
+    access(all) event BridgedToEVM(type: Type, amount: UFix64, to: EVM.EVMAddress, evmContractAddress: EVM.EVMAddress, flowNative: Bool)
     /// Asset bridged from EVM to Flow - satisfies both FT & NFT (always amount == 1.0)
     access(all) event BridgedToFlow(type: Type, amount: UFix64, from: EVM.EVMAddress, to: EVM.EVMAddress, evmContractAddress: EVM.EVMAddress, flowNative: Bool)
 
@@ -35,6 +36,16 @@ access(all) contract EVMBridgeNFTLockerTemplate : IEVMBridgeNFTLocker {
         }
         FlowEVMBridgeUtils.depositTollFee(<-tollFee)
         let id: UInt256 = token.id as UInt256
+
+        let isFlowNative = FlowEVMBridgeUtils.isFlowNative(asset: &token)
+        emit BridgedToEVM(
+            type: token.getType(),
+            amount: 1.0,
+            to: to,
+            evmContractAddress: self.evmNFTContractAddress,
+            flowNative: true
+        )
+
         self.locker.deposit(token: <-token)
         // TODO - pull URI from NFT if display exists & pass on minting
         self.call(
@@ -44,6 +55,7 @@ access(all) contract EVMBridgeNFTLockerTemplate : IEVMBridgeNFTLocker {
             gasLimit: 60000,
             value: 0.0
         )
+
     }
 
     access(all) fun bridgeFromEVM(
@@ -96,7 +108,7 @@ access(all) contract EVMBridgeNFTLockerTemplate : IEVMBridgeNFTLocker {
         return <- self.locker.withdraw(withdrawID: id)
     }
 
-    /* Getters */
+    /* --- Getters --- */
 
     access(all) view fun getLockedNFTCount(): Int {
         return self.locker.getLength()
@@ -105,7 +117,7 @@ access(all) contract EVMBridgeNFTLockerTemplate : IEVMBridgeNFTLocker {
         return self.locker.borrowNFT(id)
     }
 
-    /* Locker interface */
+    /* --- Locker --- */
 
     access(all) resource Locker : IEVMBridgeNFTLocker.Locker {
         /// Count of locked NFTs as lockedNFTs.length may exceed computation limits
@@ -137,14 +149,14 @@ access(all) contract EVMBridgeNFTLockerTemplate : IEVMBridgeNFTLocker {
         ///
         access(all) view fun getSupportedNFTTypes(): {Type: Bool} {
             return {
-                EVMBridgeNFTLockerTemplate.lockedNFTType: self.isSupportedNFTType(type: EVMBridgeNFTLockerTemplate.lockedNFTType)
+                CONTRACT_NAME.lockedNFTType: self.isSupportedNFTType(type: CONTRACT_NAME.lockedNFTType)
             }
         }
 
         /// Returns true if the NFT type is supported
         ///
         access(all) view fun isSupportedNFTType(type: Type): Bool {
-            return type == EVMBridgeNFTLockerTemplate.lockedNFTType
+            return type == CONTRACT_NAME.lockedNFTType
         }
 
         /// Returns true if the NFT is locked
@@ -195,6 +207,8 @@ access(all) contract EVMBridgeNFTLockerTemplate : IEVMBridgeNFTLocker {
 
     }
 
+    /* --- Internal --- */
+
     access(self) fun call(
         signature: String,
         targetEVMAddress: EVM.EVMAddress,
@@ -215,6 +229,10 @@ access(all) contract EVMBridgeNFTLockerTemplate : IEVMBridgeNFTLocker {
     }
 
     init(lockedNFTType: Type, flowNFTContractAddress: Address, evmNFTContractAddress: EVM.EVMAddress) {
+        pre {
+            lockedNFTType.isSubtype(of: Type<@{NonFungibleToken.NFT}>()): "Locker must be initialized with a valid NFT type"
+        }
+
         self.lockedNFTType = lockedNFTType
         self.flowNFTContractAddress = flowNFTContractAddress
         self.evmNFTContractAddress = evmNFTContractAddress

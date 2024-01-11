@@ -7,6 +7,7 @@ import "FlowEVMBridgeUtils"
 //
 // TODO:
 // - [ ] Add support for:
+//      - [ ] Derive and provide nftLockerContractCodeChunks on init for proof of concept
 //      - [ ] Token locker contracts
 //      - [ ] Bridged NFT contracts
 //      - [ ] Bridged token contracts
@@ -19,7 +20,7 @@ access(all) contract FlowEVMBridgeTemplates {
 
     /// Serves Locker contract code for a given type, deriving the contract name from the type identifier
     access(all) fun getLockerContractCode(forType: Type): [UInt8]? {
-        if forType.isSubtype(of: Type<@{FungibleToken.Vault}>()) && !forType.isSubtype(of: Type<@{FungibleToken.Vault}>()) {
+        if forType.isSubtype(of: Type<@{NonFungibleToken.NFT}>()) && !forType.isSubtype(of: Type<@{FungibleToken.Vault}>()) {
             return self.getNFTLockerContractCode(forType: forType)
         } else if !forType.isSubtype(of: Type<@{FungibleToken.Vault}>()) && forType.isSubtype(of: Type<@{FungibleToken.Vault}>()) {
             // TODO

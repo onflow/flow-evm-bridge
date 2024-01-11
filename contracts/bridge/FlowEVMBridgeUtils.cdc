@@ -397,3 +397,4 @@ access(all) contract FlowEVMBridgeUtils {
         self.inspectorCOA <- EVM.createBridgedAccount()
     }
 }
+
