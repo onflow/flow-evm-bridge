@@ -10,6 +10,8 @@ import "FlowEVMBridgeTemplates"
 
 // TODO:
 // - [ ] Consider making an interface that is implemented by auxiliary contracts
+// - [ ] Decide on bridge-deployed ERC721 & ERC20 symbol conventions
+// - [ ] Trace stack and optimize internal interfaces to remove duplicate calls
 access(all) contract FlowEVMBridge {
 
     /// Amount of $FLOW paid to bridge
@@ -18,7 +20,8 @@ access(all) contract FlowEVMBridge {
     access(self) let coa: @EVM.BridgedAccount
 
     /// Denotes a contract was deployed to the bridge account, could be either FlowEVMBridgeLocker or FlowEVMBridgedAsset
-    access(all) event BridgeContractDeployed(type: Type, name: String, evmContractAddress: EVM.EVMAddress)
+    access(all) event BridgeLockerContractDeployed(type: Type, name: String, evmContractAddress: EVM.EVMAddress)
+    access(all) event BridgeDefiningContractDeployed(type: Type, name: String, evmContractAddress: EVM.EVMAddress)
 
     /* --- Public NFT Handling --- */
 
@@ -229,11 +232,45 @@ access(all) contract FlowEVMBridge {
         let name: String = FlowEVMBridgeUtils.deriveLockerContractName(fromType: forAsset.getType())
             ?? panic("Could not derive locker contract name for token type: ".concat(forAsset.getType().identifier))
 
-        self.account.contracts.add(name: name, code: code)
+        let assetType: Type = forAsset.getType()
+        let contractAddress: Address = FlowEVMBridgeUtils.getContractAddress(fromType: assetType)
+            ?? panic("Could not derive locker contract address for token type: ".concat(assetType.identifier))
+        let evmContractAddress: EVM.EVMAddress = self.deployEVMContract(forAssetType: assetType)
+
+        self.account.contracts.add(name: name, code: code, assetType, contractAddress, evmContractAddress)        
     }
     /// Helper for deploying templated defining contract supporting EVM-native asset bridging to Flow
     /// Deploys either NFT or FT contract depending on the provided type
-    // access(self) fun deployDefiningContract(type: Type)
+    // access(self) fun deployDefiningContract(type: Type) {
+    //     // TODO
+    // }
+
+    access(self) fun deployEVMContract(forAssetType: Type): EVM.EVMAddress {
+        if forAssetType.isSubtype(of: Type<@{NonFungibleToken.NFT}>()) {
+            return self.deployERC721(forAssetType)
+        } else if forAssetType.isSubtype(of: Type<@{FungibleToken.Vault}>()) {
+            // TODO
+            // return self.deployERC20(name: forAssetType.identifier)
+        }
+        panic("Unsupported asset type: ".concat(forAssetType.identifier))
+    }
+
+    access(self) fun deployERC721(_ forNFTType: Type): EVM.EVMAddress {
+        let name: String = FlowEVMBridgeUtils.deriveLockerContractName(fromType: forNFTType)
+            ?? panic("Could not derive locker contract name for token type: ".concat(forNFTType.identifier))
+        let identifier: String = forNFTType.identifier
+        let cadenceAddressStr: String = FlowEVMBridgeUtils.getContractAddress(fromType: forNFTType)?.toString()
+            ?? panic("Could not derive contract address for token type: ".concat(identifier))
+
+        let response = self.call(
+            signature: "deployERC721(string,string,string,string)(address)",
+            targetEVMAddress: self.coa.address(),
+            args: [name, "BRDG", cadenceAddressStr, identifier],
+            gasLimit: 60000,
+            value: 0.0
+        ) as! [EVM.EVMAddress]
+        return response[0]
+    }
 
     /// Enables other bridge contracts to orchestrate bridge operations from contract-owned COA
     access(account) fun borrowCOA(): &EVM.BridgedAccount {

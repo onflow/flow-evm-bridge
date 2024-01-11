@@ -385,7 +385,8 @@ access(all) contract FlowEVMBridgeUtils {
             "getFlowAssetContractAddress()(string)",
             "getFlowAssetIdentifier()(string)",
             "isEVMNFT(address)(bool)",
-            "isEVMToken(address)(bool)"
+            "isEVMToken(address)(bool)",
+            "deployERC721(string,string,string,string)(address)"
         ]
         self.functionSelectors = {}
         for signature in signatures {
