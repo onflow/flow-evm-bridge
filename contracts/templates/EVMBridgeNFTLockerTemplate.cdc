@@ -29,6 +29,8 @@ access(all) contract CONTRACT_NAME : IEVMBridgeNFTLocker {
 
     /* --- Auxiliary entrypoints --- */
 
+    // TODO: Consider implementing ICrossEVMNFT.EVMBridgeableCollection in Locker and passing through to Locker
+    //      as an example of a bridgeable collection
     access(all) fun bridgeToEVM(token: @{NonFungibleToken.NFT}, to: EVM.EVMAddress, tollFee: @FlowToken.Vault) {
         pre {
             token.getType() == self.lockedNFTType: "Invalid NFT type for this Locker"
@@ -117,8 +119,14 @@ access(all) contract CONTRACT_NAME : IEVMBridgeNFTLocker {
         return self.locker.borrowNFT(id)
     }
 
+    /// Retrieves the corresponding EVM contract address, assuming a 1:1 relationship between VM implementations
+    access(all) fun getEVMContractAddress(): EVM.EVMAddress {
+        return self.evmNFTContractAddress
+    }
+
     /* --- Locker --- */
 
+    // TODO: Consider implementing ICrossEVMNFT.EVMBridgeableCollection interface
     access(all) resource Locker : IEVMBridgeNFTLocker.Locker {
         /// Count of locked NFTs as lockedNFTs.length may exceed computation limits
         access(self) var lockedNFTCount: Int
