@@ -6,6 +6,12 @@
 				"emulator": "f8d6e0586b0a20c7"
 			}
 		},
+		"ExampleNFT": {
+			"source": "./contracts/example/ExampleNFT.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7"
+			}
+		},
 		"FlowEVMBridge": {
 			"source": "./contracts/bridge/FlowEVMBridge.cdc",
 			"aliases": {
