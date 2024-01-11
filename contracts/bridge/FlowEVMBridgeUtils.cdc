@@ -316,6 +316,8 @@ access(all) contract FlowEVMBridgeUtils {
         self.functionSelectors[signature] = methodID
     }
 
+    // TODO: Make account method retrieving reference to account stored COA. Determine if we need to limit util getters
+    // to prevent spam attacks draining EVM Flow funds
     access(self) fun call(
         signature: String,
         targetEVMAddress: EVM.EVMAddress,
@@ -368,6 +370,7 @@ access(all) contract FlowEVMBridgeUtils {
             "safeMintTo(address,uint256,string)",
             "burn(uint256)",
             "safeTransferFrom(contract IERC20,address,address,uint256)",
+            "safeTransferFrom(address,address,uint256)",
             // FLAG - May need to implement supportsInterface in the Factory contract as inspection method until we
             // have clarity on bytes4 type mapping
             "supportsInterface(bytes4)(bool)",
