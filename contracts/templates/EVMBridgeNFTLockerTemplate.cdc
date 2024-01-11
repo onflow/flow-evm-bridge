@@ -47,17 +47,59 @@ access(all) contract EVMBridgeNFTLockerTemplate : IEVMBridgeNFTLocker {
     }
 
     access(all) fun bridgeFromEVM(
-        caller: &BridgedAccount,
+        caller: &EVM.BridgedAccount,
         calldata: [UInt8],
         id: UInt64,
         evmContractAddress: EVM.EVMAddress,
         tollFee: @FlowToken.Vault
-    )
+    ): @{NonFungibleToken.NFT} {
+        pre {
+            tollFee >= FlowEVMBridge.fee: "Insufficient bridging fee provided"
+            evmContractAddress == self.evmNFTContractAddress: "EVM contract address is not associated with this Locker"
+        }
+        let isNFT: Bool = FlowEVMBridgeUtils.isEVMNFT(evmContractAddress: evmContractAddress)
+        let isToken: Bool = FlowEVMBridgeUtils.isEVMToken(evmContractAddress: evmContractAddress)
+        assert(isNFT && !isToken, message: "Unsupported asset type")
+
+        // Ensure caller is current NFT owner or approved
+        let isAuthorized: Bool = FlowEVMBridgeUtils.isOwnerOrApproved(
+            ofNFT: id,
+            owner: caller.address(),
+            evmContractAddress: evmContractAddress
+        )
+        assert(isAuthorized, message: "Caller is not the owner of or approved for requested NFT")
+
+        // Execute provided approve call
+        caller.call(
+            to: evmContractAddress,
+            data: calldata,
+            gasLimit: 60000,
+            value: EVM.Balance(flow: 0.0)
+        )
+
+        // Execute transfer of NFT to bridge COA address
+        self.call(
+            signature: "safeTransferFrom(address,address,uint256)",
+            targetEVMAddress: evmContractAddress,
+            args: [caller.address(), FlowEVMBridge.getBridgeCOAEVMAddress(), UInt256(id)],
+            gasLimit: 60000,
+            value: 0.0
+        )
+
+        let isBridgeOwned: Bool = FlowEVMBridgeUtils.isOwnerOrApproved(
+            ofNFT: id,
+            owner: FlowEVMBridge.getBridgeCOAEVMAddress(),
+            evmContractAddress: evmContractAddress
+        )
+        assert(isBridgeOwned, message: "Bridge was not approved for requested NFT")
+
+        return <- self.locker.withdraw(withdrawID: id)
+    }
 
     /* Getters */
 
-    access(all) view fun getLockedNFTCount(): UInt64 {
-        return self.locker.getLockedNFTCount()
+    access(all) view fun getLockedNFTCount(): Int {
+        return self.locker.getLength()
     }
     access(all) view fun borrowLockedNFT(id: UInt64): &{NonFungibleToken.NFT}? {
         return self.locker.borrowNFT(id)
@@ -115,7 +157,7 @@ access(all) contract EVMBridgeNFTLockerTemplate : IEVMBridgeNFTLocker {
         access(all) view fun borrowViewResolver(id: UInt64): &{ViewResolver.Resolver}? {
             return self.borrowNFT(id)
         }
-        
+
         /// Depending on the number of locked NFTs, this may fail. See isLocked() as fallback to check if as specific
         /// NFT is locked
         ///
@@ -150,7 +192,7 @@ access(all) contract EVMBridgeNFTLockerTemplate : IEVMBridgeNFTLocker {
 
             return <-self.lockedNFTs.remove(key: withdrawID)!
         }
-        
+
     }
 
     access(self) fun call(
@@ -177,5 +219,6 @@ access(all) contract EVMBridgeNFTLockerTemplate : IEVMBridgeNFTLocker {
         self.flowNFTContractAddress = flowNFTContractAddress
         self.evmNFTContractAddress = evmNFTContractAddress
 
+        self.locker <- create Locker()
     }
 }

@@ -2,6 +2,8 @@ import "FlowToken"
 import "NonFungibleToken"
 import "ViewResolver"
 
+import "EVM"
+
 /// Defines an NFT Locker interface used to lock bridge Flow-native NFTs. Included so the contract can be borrowed by
 /// the main bridge contract without statically declaring the contract due to dynamic deployments
 /// An implementation of this contract will be templated to be named dynamically based on the locked NFT Type
@@ -30,17 +32,16 @@ access(all) contract interface IEVMBridgeNFTLocker {
         id: UInt64,
         evmContractAddress: EVM.EVMAddress,
         tollFee: @FlowToken.Vault
-    )
+    ): @{NonFungibleToken.NFT}
 
     /* Getters */
 
-    access(all) view fun getLockedNFTCount(): UInt64
+    access(all) view fun getLockedNFTCount(): Int
     access(all) view fun borrowLockedNFT(id: UInt64): &{NonFungibleToken.NFT}
 
     /* Locker interface */
 
     access(all) resource interface Locker : NonFungibleToken.Collection {
-        access(all) fun getLockedNFTCount(): UInt64
         access(all) view fun isLocked(id: UInt64): Bool
     }
 }
