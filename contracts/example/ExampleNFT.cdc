@@ -11,7 +11,6 @@
 */
 
 import NonFungibleToken from "NonFungibleToken"
-import MultipleNFT from "MultipleNFT"
 import ViewResolver from "ViewResolver"
 import MetadataViews from "MetadataViews"
 
@@ -25,7 +24,9 @@ access(all) contract ExampleNFT: ViewResolver {
     /// because the interface does not require it to have a specific name any more
     access(all) resource NFT: NonFungibleToken.NFT, ViewResolver.Resolver {
 
-        access(all) let id: UInt64
+        access(all) view fun getID(): UInt64 {
+            return self.uuid
+        }
 
         /// From the Display metadata view
         access(all) let name: String
@@ -45,19 +46,11 @@ access(all) contract ExampleNFT: ViewResolver {
             royalties: [MetadataViews.Royalty],
             metadata: {String: AnyStruct},
         ) {
-            self.id = self.uuid
             self.name = name
             self.description = description
             self.thumbnail = thumbnail
             self.royalties = royalties
             self.metadata = metadata
-        }
-
-        /// createEmptyCollection creates an empty Collection
-        /// and returns it to the caller so that they can own NFTs
-        /// @{NonFungibleToken.Collection}
-        access(all) fun createEmptyCollection(): @ExampleNFT.Collection {
-            return <-ExampleNFT.createEmptyCollection()
         }
     
         access(all) view fun getViews(): [Type] {
@@ -86,21 +79,21 @@ access(all) contract ExampleNFT: ViewResolver {
                 case Type<MetadataViews.Editions>():
                     // There is no max number of NFTs that can be minted from this contract
                     // so the max edition field value is set to nil
-                    let editionInfo = MetadataViews.Edition(name: "Example NFT Edition", number: self.id, max: nil)
+                    let editionInfo = MetadataViews.Edition(name: "Example NFT Edition", number: self.getID(), max: nil)
                     let editionList: [MetadataViews.Edition] = [editionInfo]
                     return MetadataViews.Editions(
                         editionList
                     )
                 case Type<MetadataViews.Serial>():
                     return MetadataViews.Serial(
-                        self.id
+                        self.getID()
                     )
                 case Type<MetadataViews.Royalties>():
                     return MetadataViews.Royalties(
                         self.royalties
                     )
                 case Type<MetadataViews.ExternalURL>():
-                    return MetadataViews.ExternalURL("https://example-nft.onflow.org/".concat(self.id.toString()))
+                    return MetadataViews.ExternalURL("https://example-nft.onflow.org/".concat(self.getID().toString()))
                 case Type<MetadataViews.NFTCollectionData>():
                     return ExampleNFT.getCollectionData(nftType: Type<@ExampleNFT.NFT>())
                 case Type<MetadataViews.NFTCollectionDisplay>():
@@ -182,7 +175,7 @@ access(all) contract ExampleNFT: ViewResolver {
             let token <- token as! @ExampleNFT.NFT
 
             // add the new token to the dictionary which removes the old one
-            let oldToken <- self.ownedNFTs[token.id] <- token
+            let oldToken <- self.ownedNFTs[token.getID()] <- token
 
             destroy oldToken
         }
@@ -207,6 +200,11 @@ access(all) contract ExampleNFT: ViewResolver {
                 return nft as &{ViewResolver.Resolver}
             }
             return nil
+        }
+
+        /// public function that anyone can call to create a new empty collection
+        access(all) fun createEmptyCollection(): @{NonFungibleToken.Collection} {
+            return <- create ExampleNFT.Collection()
         }
     }
 
@@ -260,7 +258,7 @@ access(all) contract ExampleNFT: ViewResolver {
                     publicLinkedType: Type<&ExampleNFT.Collection>(),
                     providerLinkedType: Type<auth(NonFungibleToken.Withdrawable) &ExampleNFT.Collection>(),
                     createEmptyCollectionFunction: (fun(): @{NonFungibleToken.Collection} {
-                        return <-ExampleNFT.createEmptyCollection()
+                        return <-collectionRef.createEmptyCollection()
                     })
                 )
                 return collectionData
