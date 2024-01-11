@@ -6,6 +6,24 @@
 				"emulator": "f8d6e0586b0a20c7"
 			}
 		},
+		"FlowEVMBridge": {
+			"source": "./contracts/bridge/FlowEVMBridge.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7"
+			}
+		},
+		"FlowEVMBridgeTemplates": {
+			"source": "./contracts/bridge/FlowEVMBridgeTemplates.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7"
+			}
+		},
+		"FlowEVMBridgeUtils": {
+			"source": "./contracts/bridge/FlowEVMBridgeUtils.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7"
+			}
+		},
 		"FlowToken": {
 			"source": "./contracts/standards/FlowToken.cdc",
 			"aliases": {
@@ -28,6 +46,12 @@
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "f233dcee88fe0abe",
 				"testnet": "9a0766d93b6608b7"
+			}
+		},
+		"IEVMBridgeNFTLocker": {
+			"source": "./contracts/bridge/IEVMBridgeNFTLocker.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7"
 			}
 		},
 		"MetadataViews": {
@@ -73,6 +97,11 @@
 		"emulator-ft": {
 			"address": "ee82856bf20e2aa6",
 			"key": "686779d775e5fcbf8d2f4a85cb4c53525d02b7ef53230d180fc16f35d9b7d025"
+		}
+	},
+	"deployments": {
+		"emulator": {
+			"emulator-account": []
 		}
 	}
 }
