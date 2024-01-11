@@ -138,7 +138,7 @@ access(all) contract FlowEVMBridgeUtils {
     }
 
     /// Determines if the owner is in fact the owner of the NFT at the ERC721 contract address
-    access(all) fun isOwnerOrApproved(ofNFT: UInt64, owner: EVM.EVMAddress, evmContractAddress: EVM.EVMAddress): Bool {
+    access(all) fun isOwnerOrApproved(ofNFT: UInt256, owner: EVM.EVMAddress, evmContractAddress: EVM.EVMAddress): Bool {
         let ownerResponse: [UInt8] = self.call(
             signature: "ownerOf(uint256)(address)",
             targetEVMAddress: evmContractAddress,
@@ -273,6 +273,10 @@ access(all) contract FlowEVMBridgeUtils {
 
         var multiplier: UInt256 = self.pow(base:10, exponent: decimals)
         return r * multiplier
+    }
+    /// Returns the value as a UInt64 if it fits, otherwise panics
+    access(all) view fun uint256ToUInt64(value: UInt256): UInt64 {
+        return value <= UInt256(UInt64.max) ? UInt64(value) : panic("Value too large to fit into UInt64")
     }
 
     /* --- Type Identifier Utils --- */

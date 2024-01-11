@@ -8,6 +8,8 @@ import "FlowEVMBridgeUtils"
 import "IEVMBridgeNFTLocker"
 import "FlowEVMBridgeTemplates"
 
+// TODO:
+// - [ ] Consider making an interface that is implemented by auxiliary contracts
 access(all) contract FlowEVMBridge {
 
     /// Amount of $FLOW paid to bridge
@@ -52,7 +54,7 @@ access(all) contract FlowEVMBridge {
     access(all) fun bridgeNFTFromEVM(
         caller: &EVM.BridgedAccount,
         calldata: [UInt8],
-        id: UInt64,
+        id: UInt256,
         evmContractAddress: EVM.EVMAddress,
         tollFee: @FlowToken.Vault
     ): @{NonFungibleToken.NFT} {
@@ -137,7 +139,7 @@ access(all) contract FlowEVMBridge {
         let lockerContractName: String = FlowEVMBridgeUtils.deriveLockerContractName(fromType: token.getType()) ??
             panic("Could not derive locker contract name for token type: ".concat(token.getType().identifier))
         if self.account.contracts.borrow<&IEVMBridgeNFTLocker>(name: lockerContractName) == nil {
-            self.deployLockerContract(asset: &token)
+            self.deployLockerContract(forAsset: &token)
         }
         let lockerContract: &IEVMBridgeNFTLocker = self.account.contracts.borrow<&IEVMBridgeNFTLocker>(name: lockerContractName)
             ?? panic("Problem locating Locker contract for token type: ".concat(token.getType().identifier))
@@ -149,7 +151,7 @@ access(all) contract FlowEVMBridge {
     access(self) fun bridgeFlowNativeNFTFromEVM(
         caller: &EVM.BridgedAccount,
         calldata: [UInt8],
-        id: UInt64,
+        id: UInt256,
         evmContractAddress: EVM.EVMAddress,
         tollFee: @FlowToken.Vault
     ): @{NonFungibleToken.NFT} {
@@ -221,11 +223,11 @@ access(all) contract FlowEVMBridge {
     
     /// Helper for deploying templated Locker contract supporting Flow-native asset bridging to EVM
     /// Deploys either NFT or FT locker depending on the asset type
-    access(self) fun deployLockerContract(asset: &AnyResource) {
-        let code: [UInt8] = FlowEVMBridgeTemplates.getLockerContractCode(forType: asset.getType())
-            ?? panic("Could not retrieve code for given asset type: ".concat(asset.getType().identifier))
-        let name: String = FlowEVMBridgeUtils.deriveLockerContractName(fromType: asset.getType())
-            ?? panic("Could not derive locker contract name for token type: ".concat(asset.getType().identifier))
+    access(self) fun deployLockerContract(forAsset: &AnyResource) {
+        let code: [UInt8] = FlowEVMBridgeTemplates.getLockerContractCode(forType: forAsset.getType())
+            ?? panic("Could not retrieve code for given asset type: ".concat(forAsset.getType().identifier))
+        let name: String = FlowEVMBridgeUtils.deriveLockerContractName(fromType: forAsset.getType())
+            ?? panic("Could not derive locker contract name for token type: ".concat(forAsset.getType().identifier))
 
         self.account.contracts.add(name: name, code: code)
     }
