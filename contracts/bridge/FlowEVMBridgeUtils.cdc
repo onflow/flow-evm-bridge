@@ -26,7 +26,7 @@ access(all) contract FlowEVMBridgeUtils {
     /// Mapping of EVM contract interfaces to their 4 byte hash prefixes
     access(self) let interface4Bytes: {String: [UInt8]}
     /// Commonly used Solidity function selectors to call into EVM from bridge contracts to support call encoding
-    /// e.g. ownerOf(uint256)(address), getApproved(uint256)(address), mint(address, uint256), etc.
+    /// e.g. ownerOf(uint256), getApproved(uint256), mint(address, uint256), etc.
     access(self) let functionSelectors: {String: [UInt8]}
     /// Contract COA used for inspector calls to Flow EVM
     access(self) let inspectorCOA: @EVM.BridgedAccount
@@ -60,7 +60,7 @@ access(all) contract FlowEVMBridgeUtils {
     access(all) fun isEVMNative(evmContractAddress: EVM.EVMAddress): Bool {
         // Ask the bridge factory if the given contract address was deployed by the bridge
         let response: [UInt8] = self.call(
-                signature: "isFlowBridgeDeployed(address)(bool)",
+                signature: "isFlowBridgeDeployed(address)",
                 targetEVMAddress: self.bridgeFactoryEVMAddress,
                 args: [evmContractAddress],
                 gasLimit: 60000,
@@ -76,7 +76,7 @@ access(all) contract FlowEVMBridgeUtils {
     access(all) fun isEVMNFT(evmContractAddress: EVM.EVMAddress): Bool {
         // FLAG - may need to implement supportsInterface in Factory.sol
         let response: [UInt8] = self.call(
-            signature: "supportsInterface(bytes4)(bool)",
+            signature: "supportsInterface(bytes4)",
             targetEVMAddress: evmContractAddress,
             args: [self.interface4Bytes["IERC721"]!],
             gasLimit: 60000,
@@ -90,7 +90,7 @@ access(all) contract FlowEVMBridgeUtils {
         // TODO - Figure out how we can resolve whether a contract is erc20 without erc165
         // FLAG - may need to implement supportsInterface in Factory.sol
         let response: [UInt8] = self.call(
-            signature: "supportsInterface(bytes4)(bool)",
+            signature: "supportsInterface(bytes4)",
             targetEVMAddress: evmContractAddress,
             args: [self.interface4Bytes["IERC20"]!],
             gasLimit: 60000,
@@ -101,7 +101,7 @@ access(all) contract FlowEVMBridgeUtils {
     /// Retrieves the NFT/FT name from the given EVM contract address - applies for both ERC20 & ERC721
     access(all) fun getName(evmContractAddress: EVM.EVMAddress): String {
         let response: [UInt8] = self.call(
-            signature: "name()(string)",
+            signature: "name()",
             targetEVMAddress: evmContractAddress,
             args: [],
             gasLimit: 60000,
@@ -114,7 +114,7 @@ access(all) contract FlowEVMBridgeUtils {
     /// Retrieves the NFT/FT symbol from the given EVM contract address - applies for both ERC20 & ERC721
     access(all) fun getSymbol(evmContractAddress: EVM.EVMAddress): String {
         let response: [UInt8] = self.call(
-            signature: "symbol()(string)",
+            signature: "symbol()",
             targetEVMAddress: evmContractAddress,
             args: [],
             gasLimit: 60000,
@@ -127,7 +127,7 @@ access(all) contract FlowEVMBridgeUtils {
     /// Retrieves the number of decimals for a given ERC20 contract address
     access(all) fun getTokenDecimals(evmContractAddress: EVM.EVMAddress): UInt8 {
         let response: [UInt8] = self.call(
-                signature: "decimals()(uint8)",
+                signature: "decimals()",
                 targetEVMAddress: evmContractAddress,
                 args: [],
                 gasLimit: 60000,
@@ -140,7 +140,7 @@ access(all) contract FlowEVMBridgeUtils {
     /// Determines if the owner is in fact the owner of the NFT at the ERC721 contract address
     access(all) fun isOwnerOrApproved(ofNFT: UInt256, owner: EVM.EVMAddress, evmContractAddress: EVM.EVMAddress): Bool {
         let ownerResponse: [UInt8] = self.call(
-            signature: "ownerOf(uint256)(address)",
+            signature: "ownerOf(uint256)",
             targetEVMAddress: evmContractAddress,
             args: [ofNFT],
             gasLimit: 60000,
@@ -155,7 +155,7 @@ access(all) contract FlowEVMBridgeUtils {
         }
 
         let approvedResponse: [UInt8] = self.call(
-            signature: "getApproved(uint256)(address)",
+            signature: "getApproved(uint256)",
             targetEVMAddress: evmContractAddress,
             args: [ofNFT],
             gasLimit: 60000,
@@ -171,7 +171,7 @@ access(all) contract FlowEVMBridgeUtils {
     /// Determines if the owner has sufficient funds to bridge the given amount at the ERC20 contract address
     access(all) fun hasSufficientBalance(amount: UFix64, owner: EVM.EVMAddress, evmContractAddress: EVM.EVMAddress): Bool {
         let response: [UInt8] = self.call(
-            signature: "balanceOf(address)(uint256)",
+            signature: "balanceOf(address)",
             targetEVMAddress: evmContractAddress,
             args: [owner],
             gasLimit: 60000,
@@ -366,10 +366,10 @@ access(all) contract FlowEVMBridgeUtils {
             bridgeFactoryEVMAddressBytes[16], bridgeFactoryEVMAddressBytes[17], bridgeFactoryEVMAddressBytes[18], bridgeFactoryEVMAddressBytes[19]
         ])
         let signatures = [
-            "decimals()(uint8)",
-            "balanceOf(address)(uint256)",
-            "ownerOf(uint256)(address)",
-            "getApproved(uint256)(address)",
+            "decimals()", // (uint8)
+            "balanceOf(address)", // (uint256)
+            "ownerOf(uint256)", // (address)
+            "getApproved(uint256)", // (address)
             "approve(address,uint256)",
             "safeMintTo(address,uint256,string)",
             "burn(uint256)",
@@ -377,16 +377,16 @@ access(all) contract FlowEVMBridgeUtils {
             "safeTransferFrom(address,address,uint256)",
             // FLAG - May need to implement supportsInterface in the Factory contract as inspection method until we
             // have clarity on bytes4 type mapping
-            "supportsInterface(bytes4)(bool)",
-            "symbol()(string)",
-            "name()(string)",
-            "tokenURI(uint256)(string)",
-            "isFlowBridgeDeployed(address)(bool)",
-            "getFlowAssetContractAddress()(string)",
-            "getFlowAssetIdentifier()(string)",
-            "isEVMNFT(address)(bool)",
-            "isEVMToken(address)(bool)",
-            "deployERC721(string,string,string,string)(address)"
+            "supportsInterface(bytes4)", // (bool)
+            "symbol()", // (string)
+            "name()", // (string)
+            "tokenURI(uint256)", // (string)
+            "isFlowBridgeDeployed(addres)", //s) (bool
+            "getFlowAssetContractAddress()", // (string)
+            "getFlowAssetIdentifier()", // (string)
+            "isEVMNFT(address)", // (bool)
+            "isEVMToken(address)", // (bool)
+            "deployERC721(string,string,string,string)" // (address)
         ]
         self.functionSelectors = {}
         for signature in signatures {
