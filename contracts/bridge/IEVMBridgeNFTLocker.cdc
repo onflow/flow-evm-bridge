@@ -22,9 +22,13 @@ access(all) contract interface IEVMBridgeNFTLocker : ICrossVM {
     access(contract) let locker: @{Locker, NonFungibleToken.Collection}
 
     /// Asset bridged from Flow to EVM - satisfies both FT & NFT (always amount == 1.0)
-    access(all) event BridgedToEVM(type: Type, id: UInt64, to: EVM.EVMAddress, evmContractAddress: EVM.EVMAddress, flowNative: Bool)
+    // TODO: Add evmContractAddress back once COA.address() is view
+    // access(all) event BridgedToEVM(type: Type, id: UInt64, to: EVM.EVMAddress, evmContractAddress: EVM.EVMAddress, flowNative: Bool)
+    access(all) event BridgedToEVM(type: Type, id: UInt64, to: EVM.EVMAddress, flowNative: Bool)
     /// Asset bridged from EVM to Flow - satisfies both FT & NFT (always amount == 1.0)
-    access(all) event BridgedFromEVM(type: Type, id: UInt64, caller: EVM.EVMAddress, evmContractAddress: EVM.EVMAddress, flowNative: Bool)
+    // TODO: Add caller and evmContractAddress back once COA.address() is view
+    // access(all) event BridgedFromEVM(type: Type, id: UInt64, caller: EVM.EVMAddress, evmContractAddress: EVM.EVMAddress, flowNative: Bool)
+    access(all) event BridgedFromEVM(type: Type, id: UInt64, flowNative: Bool)
 
     /* --- Auxiliary entrypoints --- */
 
@@ -34,7 +38,7 @@ access(all) contract interface IEVMBridgeNFTLocker : ICrossVM {
                 type: token.getType(),
                 id: token.getID(),
                 to: to,
-                evmContractAddress: self.getEVMContractAddress(),
+                // evmContractAddress: self.getEVMContractAddress(),
                 flowNative: true
             )
         }
@@ -51,8 +55,8 @@ access(all) contract interface IEVMBridgeNFTLocker : ICrossVM {
             emit BridgedFromEVM(
                 type: result.getType(),
                 id: result.getID(),
-                caller: caller.address(),
-                evmContractAddress: self.getEVMContractAddress(),
+                // caller: caller.address(),
+                // evmContractAddress: self.getEVMContractAddress(),
                 flowNative: true
             )
         }
@@ -61,7 +65,7 @@ access(all) contract interface IEVMBridgeNFTLocker : ICrossVM {
     /* --- Getters --- */
 
     access(all) view fun getLockedNFTCount(): Int
-    access(all) view fun borrowLockedNFT(id: UInt64): &{NonFungibleToken.NFT}
+    access(all) view fun borrowLockedNFT(id: UInt64): &{NonFungibleToken.NFT}?
 
     /* --- Locker interface --- */
 

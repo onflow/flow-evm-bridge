@@ -1,12 +1,13 @@
-import "NonFungibleToken"
-import "MetadataViews"
-import "ViewResolver"
+import NonFungibleToken from 0xf8d6e0586b0a20c7
+import MetadataViews from 0xf8d6e0586b0a20c7
+import ViewResolver from 0xf8d6e0586b0a20c7
+import FlowToken from 0x0ae53cb6e3f42a79
 
-import "EVM"
+import EVM from 0xf8d6e0586b0a20c7
 
-import "IEVMBridgeNFTLocker"
-import "FlowEVMBridgeUtils"
-import "FlowEVMBridge"
+import IEVMBridgeNFTLocker from 0xf8d6e0586b0a20c7
+import FlowEVMBridgeUtils from 0xf8d6e0586b0a20c7
+import FlowEVMBridge from 0xf8d6e0586b0a20c7
 
 // TODO:
 // - [ ] Consider case where NFT IDs are not unique - is this worth supporting?
@@ -29,10 +30,10 @@ access(all) contract CONTRACT_NAME : IEVMBridgeNFTLocker {
     access(all) fun bridgeToEVM(token: @{NonFungibleToken.NFT}, to: EVM.EVMAddress, tollFee: @FlowToken.Vault) {
         pre {
             token.getType() == self.lockedNFTType: "Invalid NFT type for this Locker"
-            tollFee >= FlowEVMBridge.fee: "Insufficient bridging fee provided"
+            tollFee.getBalance() >= FlowEVMBridge.fee: "Insufficient bridging fee provided"
         }
         FlowEVMBridgeUtils.depositTollFee(<-tollFee)
-        let id: UInt256 = token.id as UInt256
+        let id: UInt256 = UInt256(token.getID())
 
         let isFlowNative = FlowEVMBridgeUtils.isFlowNative(asset: &token)
 
@@ -56,8 +57,8 @@ access(all) contract CONTRACT_NAME : IEVMBridgeNFTLocker {
         tollFee: @FlowToken.Vault
     ): @{NonFungibleToken.NFT} {
         pre {
-            tollFee >= FlowEVMBridge.fee: "Insufficient bridging fee provided"
-            evmContractAddress == self.evmNFTContractAddress: "EVM contract address is not associated with this Locker"
+            tollFee.getBalance() >= FlowEVMBridge.fee: "Insufficient bridging fee provided"
+            evmContractAddress.bytes == self.evmNFTContractAddress.bytes: "EVM contract address is not associated with this Locker"
         }
         let isNFT: Bool = FlowEVMBridgeUtils.isEVMNFT(evmContractAddress: evmContractAddress)
         let isToken: Bool = FlowEVMBridgeUtils.isEVMToken(evmContractAddress: evmContractAddress)
@@ -70,6 +71,9 @@ access(all) contract CONTRACT_NAME : IEVMBridgeNFTLocker {
             evmContractAddress: evmContractAddress
         )
         assert(isAuthorized, message: "Caller is not the owner of or approved for requested NFT")
+
+        // Deposit fee
+        FlowEVMBridgeUtils.depositTollFee(<-tollFee)
 
         // Execute provided approve call
         caller.call(
@@ -187,10 +191,17 @@ access(all) contract CONTRACT_NAME : IEVMBridgeNFTLocker {
         /// Deposits the NFT into this locker
         access(all) fun deposit(token: @{NonFungibleToken.NFT}) {
             pre {
-                self.borrowNFT(token.id) == nil: "NFT with this ID already exists in the Locker"
+                self.borrowNFT(token.getID()) == nil: "NFT with this ID already exists in the Locker"
             }
             self.lockedNFTCount = self.lockedNFTCount + 1
-            self.lockedNFTs[token.id] <-! token
+            self.lockedNFTs[token.getID()] <-! token
+        }
+
+        /// createEmptyCollection creates an empty Collection
+        /// and returns it to the caller so that they can own NFTs
+        // TODO: Remove on v2 updates
+        access(all) fun createEmptyCollection(): @{NonFungibleToken.Collection} {
+            return <- create Locker()
         }
 
         /// Withdraws the NFT from this locker
