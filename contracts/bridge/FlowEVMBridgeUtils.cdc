@@ -50,9 +50,9 @@ access(all) contract FlowEVMBridgeUtils {
     }
 
     /// Identifies if an asset is Flow- or EVM-native, defined by whether a bridge contract defines it or not
-    access(all) fun isFlowNative(asset: &AnyResource): Bool {
-        let definingAddress: Address = self.getContractAddress(fromType: asset.getType())
-            ?? panic("Could not construct address from type identifier: ".concat(asset.getType().identifier))
+    access(all) fun isFlowNative(type: Type): Bool {
+        let definingAddress: Address = self.getContractAddress(fromType: type)
+            ?? panic("Could not construct address from type identifier: ".concat(type.identifier))
         return definingAddress != self.account.address
     }
 

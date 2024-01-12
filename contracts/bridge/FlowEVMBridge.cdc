@@ -25,6 +25,19 @@ access(all) contract FlowEVMBridge {
 
     /* --- Public NFT Handling --- */
 
+    access(all) fun onboardNFT(type: Type, tollFee: @FlowToken.Vault) {
+        pre {
+            self.typeRequiresOnboarding(type: type) == true: "Onboarding is not needed for this type"
+        }
+        FlowEVMBridgeUtils.depositTollFee(<-tollFee)
+        if FlowEVMBridgeUtils.isFlowNative(type: type) {
+            self.deployLockerContract(forType: type)
+        } else {
+            // TODO: EVM-native NFT path - deploy defining contract
+            // self.deployLockerContract(forType: type)
+        }
+    }
+
     /// Public entrypoint to bridge NFTs from Flow to EVM - cross-account bridging supported
     ///
     /// @param token: The NFT to be bridged
@@ -37,7 +50,7 @@ access(all) contract FlowEVMBridge {
             token.isInstance(Type<@{FungibleToken.Vault}>()) == false: "Mixed asset types are not yet supported"
             self.typeRequiresOnboarding(type: token.getType()) == false: "NFT must first be onboarded"
         }
-        if FlowEVMBridgeUtils.isFlowNative(asset: &token) {
+        if FlowEVMBridgeUtils.isFlowNative(type: token.getType()) {
             self.bridgeFlowNativeNFTToEVM(token: <-token, to: to, tollFee: <-tollFee)
         } else {
             // TODO: EVM-native NFT path
@@ -165,7 +178,7 @@ access(all) contract FlowEVMBridge {
             panic("Could not derive locker contract name for token type: ".concat(token.getType().identifier))
         log(lockerContractName)
         if self.account.contracts.borrow<&IEVMBridgeNFTLocker>(name: lockerContractName) == nil {
-            self.deployLockerContract(forAsset: &token)
+            self.deployLockerContract(forType: token.getType())
         }
         
         let lockerContract: &IEVMBridgeNFTLocker = self.account.contracts.borrow<&IEVMBridgeNFTLocker>(name: lockerContractName)
@@ -250,21 +263,17 @@ access(all) contract FlowEVMBridge {
     
     /// Helper for deploying templated Locker contract supporting Flow-native asset bridging to EVM
     /// Deploys either NFT or FT locker depending on the asset type
-    access(self) fun deployLockerContract(forAsset: &AnyResource) {
-        let code: [UInt8] = FlowEVMBridgeTemplates.getLockerContractCode(forType: forAsset.getType())
-            ?? panic("Could not retrieve code for given asset type: ".concat(forAsset.getType().identifier))
-        let name: String = FlowEVMBridgeUtils.deriveLockerContractName(fromType: forAsset.getType())
-            ?? panic("Could not derive locker contract name for token type: ".concat(forAsset.getType().identifier))
+    access(self) fun deployLockerContract(forType: Type) {
+        let code: [UInt8] = FlowEVMBridgeTemplates.getLockerContractCode(forType: forType)
+            ?? panic("Could not retrieve code for given asset type: ".concat(forType.identifier))
+        let name: String = FlowEVMBridgeUtils.deriveLockerContractName(fromType: forType)
+            ?? panic("Could not derive locker contract name for token type: ".concat(forType.identifier))
 
-        let assetType: Type = forAsset.getType()
-        let contractAddress: Address = FlowEVMBridgeUtils.getContractAddress(fromType: assetType)
-            ?? panic("Could not derive locker contract address for token type: ".concat(assetType.identifier))
-        log("DEPLOYING TO EVM")
-        let evmContractAddress: EVM.EVMAddress = self.deployEVMContract(forAssetType: assetType)
-        log("DEPLOYED TO EVM")
-        log("DEPLOYING TO SELF")
-        self.account.contracts.add(name: name, code: code, assetType, contractAddress, evmContractAddress)        
-        log("DEPLOYED TO SELF")
+        let contractAddress: Address = FlowEVMBridgeUtils.getContractAddress(fromType: forType)
+            ?? panic("Could not derive locker contract address for token type: ".concat(forType.identifier))
+
+        let evmContractAddress: EVM.EVMAddress = self.deployEVMContract(forAssetType: forType)
+        self.account.contracts.add(name: name, code: code, forType, contractAddress, evmContractAddress)
     }
     /// Helper for deploying templated defining contract supporting EVM-native asset bridging to Flow
     /// Deploys either NFT or FT contract depending on the provided type
