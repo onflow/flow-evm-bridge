@@ -35,6 +35,7 @@ access(all) contract FlowEVMBridge {
         pre {
             tollFee.balance >= self.fee: "Insufficient fee paid"
             token.isInstance(Type<@{FungibleToken.Vault}>()) == false: "Mixed asset types are not yet supported"
+            self.typeRequiresOnboarding(type: token.getType()) == false: "NFT must first be onboarded"
         }
         if FlowEVMBridgeUtils.isFlowNative(asset: &token) {
             self.bridgeFlowNativeNFTToEVM(token: <-token, to: to, tollFee: <-tollFee)
@@ -132,6 +133,27 @@ access(all) contract FlowEVMBridge {
     /// in a bridge-deployed contract
     // access(all) fun getAssetFlowContractAddress(evmAddress: EVM.EVMAddress): Address?
 
+    /// Returns whether an asset needs to be onboarded to the bridge
+    ///
+    access(all) view fun typeRequiresOnboarding(type: Type): Bool? {
+        // If type is not an NFT or FT type, it's not supported - return nil
+        if !type.isSubtype(of: Type<@{NonFungibleToken.NFT}>()) && !type.isSubtype(of: Type<@{FungibleToken.Vault}>()) {
+            return nil
+        }
+
+        // If the type is defined by the bridge, it's EVM-native and has already been onboarded
+        if FlowEVMBridgeUtils.getContractAddress(fromType: type) == self.account.address {
+            return false
+        }
+        
+        // Otherwise, the type is Flow-native, so check if the locker contract is deployed
+        if let lockerContractName: String = FlowEVMBridgeUtils.deriveLockerContractName(fromType: type) {
+            return self.account.contracts.borrow<&IEVMBridgeNFTLocker>(name: lockerContractName) == nil
+        }
+
+        return nil
+    }
+
     /* --- Internal Helpers --- */
 
     // Flow-native NFTs - lock & unlock
@@ -141,9 +163,11 @@ access(all) contract FlowEVMBridge {
     access(self) fun bridgeFlowNativeNFTToEVM(token: @{NonFungibleToken.NFT}, to: EVM.EVMAddress, tollFee: @FlowToken.Vault) {
         let lockerContractName: String = FlowEVMBridgeUtils.deriveLockerContractName(fromType: token.getType()) ??
             panic("Could not derive locker contract name for token type: ".concat(token.getType().identifier))
+        log(lockerContractName)
         if self.account.contracts.borrow<&IEVMBridgeNFTLocker>(name: lockerContractName) == nil {
             self.deployLockerContract(forAsset: &token)
         }
+        
         let lockerContract: &IEVMBridgeNFTLocker = self.account.contracts.borrow<&IEVMBridgeNFTLocker>(name: lockerContractName)
             ?? panic("Problem locating Locker contract for token type: ".concat(token.getType().identifier))
         lockerContract.bridgeToEVM(token: <-token, to: to, tollFee: <-tollFee)
@@ -159,7 +183,7 @@ access(all) contract FlowEVMBridge {
         tollFee: @FlowToken.Vault
     ): @{NonFungibleToken.NFT} {
         let response: [String] = self.call(
-            signature: "getFlowAssetIdentifier()(string)",
+            signature: "getFlowAssetIdentifier()",
             targetEVMAddress: evmContractAddress,
             args: [],
             gasLimit: 60000,
@@ -235,9 +259,12 @@ access(all) contract FlowEVMBridge {
         let assetType: Type = forAsset.getType()
         let contractAddress: Address = FlowEVMBridgeUtils.getContractAddress(fromType: assetType)
             ?? panic("Could not derive locker contract address for token type: ".concat(assetType.identifier))
+        log("DEPLOYING TO EVM")
         let evmContractAddress: EVM.EVMAddress = self.deployEVMContract(forAssetType: assetType)
-
+        log("DEPLOYED TO EVM")
+        log("DEPLOYING TO SELF")
         self.account.contracts.add(name: name, code: code, assetType, contractAddress, evmContractAddress)        
+        log("DEPLOYED TO SELF")
     }
     /// Helper for deploying templated defining contract supporting EVM-native asset bridging to Flow
     /// Deploys either NFT or FT contract depending on the provided type
@@ -263,13 +290,14 @@ access(all) contract FlowEVMBridge {
             ?? panic("Could not derive contract address for token type: ".concat(identifier))
 
         let response = self.call(
-            signature: "deployERC721(string,string,string,string)(address)",
+            signature: "deployERC721(string,string,string,string)",
             targetEVMAddress: self.coa.address(),
             args: [name, "BRDG", cadenceAddressStr, identifier],
             gasLimit: 60000,
             value: 0.0
-        ) as! [EVM.EVMAddress]
-        return response[0]
+        )
+        let decodedResponse: [AnyStruct] = EVM.decodeABI(types: [Type<EVM.EVMAddress>()], data: response)
+        return decodedResponse[0] as! EVM.EVMAddress
     }
 
     /// Enables other bridge contracts to orchestrate bridge operations from contract-owned COA

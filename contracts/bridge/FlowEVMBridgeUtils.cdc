@@ -184,7 +184,7 @@ access(all) contract FlowEVMBridgeUtils {
 
     /// Derives the Cadence contract name for a given Type of the form
     /// (EVMVMNFTLocker|EVMVMTokenLocker)_<0xCONTRACT_ADDRESS><CONTRACT_NAME><RESOURCE_NAME>
-    access(all) fun deriveLockerContractName(fromType: Type): String? {
+    access(all) view fun deriveLockerContractName(fromType: Type): String? {
         // Bridge-defined assets are not locked
         if self.getContractAddress(fromType: fromType) == self.account.address {
             return nil
@@ -281,7 +281,7 @@ access(all) contract FlowEVMBridgeUtils {
 
     /* --- Type Identifier Utils --- */
 
-    access(all) fun getContractAddress(fromType: Type): Address? {
+    access(all) view fun getContractAddress(fromType: Type): Address? {
         // Split identifier of format A.<CONTRACT_ADDRESS>.<CONTRACT_NAME>.<RESOURCE_NAME>
         if let identifierSplit: [String] = self.splitObjectIdentifier(identifier: fromType.identifier) {
             return Address.fromString("0x".concat(identifierSplit[1]))
@@ -297,7 +297,7 @@ access(all) contract FlowEVMBridgeUtils {
         return nil
     }
 
-    access(all) fun splitObjectIdentifier(identifier: String): [String]? {
+    access(all) view fun splitObjectIdentifier(identifier: String): [String]? {
         let identifierSplit: [String] = identifier.split(separator: ".")
         return identifierSplit.length != 4 ? nil : identifierSplit
     }
