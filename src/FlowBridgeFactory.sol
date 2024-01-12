@@ -4,8 +4,10 @@ pragma solidity ^0.8.17;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./FlowBridgedERC721.sol";
 
+// PROTO: Address - 522b3294e6d06aa25ad0f1b8891242e335d3b459
 contract FlowBridgeFactory is Ownable {
-    mapping(string => address) public crossVMNFTContracts;
+    mapping(string => address) public flowIdentifierToContract;
+    mapping(address => string) public contractToflowIdentifier;
 
     constructor() Ownable(msg.sender) {}
 
@@ -20,12 +22,18 @@ contract FlowBridgeFactory is Ownable {
         string memory flowNFTAddress,
         string memory flowNFTIdentifier
     ) public onlyOwner returns (address) {
-        FlowBridgedERC721 newERC721 = new FlowBridgedERC721(name, symbol, flowNFTAddress, flowNFTIdentifier);
+        FlowBridgedERC721 newERC721 =
+            new FlowBridgedERC721(super.owner(), name, symbol, flowNFTAddress, flowNFTIdentifier);
 
-        crossVMNFTContracts[flowNFTIdentifier] = address(newERC721);
+        flowIdentifierToContract[flowNFTIdentifier] = address(newERC721);
+        contractToflowIdentifier[address(newERC721)] = flowNFTIdentifier;
 
         emit ERC721Deployed(address(newERC721), name, symbol, flowNFTAddress, flowNFTIdentifier);
 
         return address(newERC721);
+    }
+
+    function isFactoryDeployed(address contractAddr) public view returns (bool) {
+        return bytes(contractToflowIdentifier[contractAddr]).length != 0;
     }
 }

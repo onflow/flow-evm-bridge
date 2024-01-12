@@ -11,11 +11,12 @@ contract FlowBridgedERC721 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable 
     string public flowNFTIdentifier;
 
     constructor(
+        address owner,
         string memory name,
         string memory symbol,
         string memory _flowNFTAddress,
         string memory _flowNFTIdentifier
-    ) ERC721(name, symbol) Ownable(msg.sender) {
+    ) ERC721(name, symbol) Ownable(owner) {
         flowNFTAddress = _flowNFTAddress;
         flowNFTIdentifier = _flowNFTIdentifier;
     }
