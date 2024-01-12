@@ -3,13 +3,14 @@ import "FlowToken"
 
 transaction(recipient: Address, amount: UFix64) {
 
-    let providerVault: &FlowToken.Vault
+    let providerVault: auth(FungibleToken.Withdrawable) &FlowToken.Vault
     let receiver: &{FungibleToken.Receiver}
 
-    prepare(signer: AuthAccount) {
-        self.providerVault = signer.borrow<&FlowToken.Vault>(from: /storage/flowTokenVault)!
-        self.receiver = getAccount(recipient).getCapability<&{FungibleToken.Receiver}>(/public/flowTokenReceiver)
-            .borrow()
+    prepare(signer: auth(BorrowValue) &Account) {
+        self.providerVault = signer.storage.borrow<auth(FungibleToken.Withdrawable) &FlowToken.Vault>(
+                from: /storage/flowTokenVault
+            )!
+        self.receiver = getAccount(recipient).capabilities.borrow<&{FungibleToken.Receiver}>(/public/flowTokenReceiver)
             ?? panic("Could not borrow receiver reference")
     }
 
