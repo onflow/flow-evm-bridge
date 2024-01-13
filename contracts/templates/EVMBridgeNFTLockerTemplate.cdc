@@ -35,7 +35,7 @@ access(all) contract CONTRACT_NAME : IEVMBridgeNFTLocker {
         FlowEVMBridgeUtils.depositTollFee(<-tollFee)
         let id: UInt256 = UInt256(token.getID())
 
-        let isFlowNative = FlowEVMBridgeUtils.isFlowNative(asset: &token)
+        let isFlowNative = FlowEVMBridgeUtils.isFlowNative(type: token.getType())
 
         self.locker.deposit(token: <-token)
         // TODO - pull URI from NFT if display exists & pass on minting
