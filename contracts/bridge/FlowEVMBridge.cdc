@@ -12,6 +12,7 @@ import "FlowEVMBridgeTemplates"
 // - [ ] Consider making an interface that is implemented by auxiliary contracts
 // - [ ] Decide on bridge-deployed ERC721 & ERC20 symbol conventions
 // - [ ] Trace stack and optimize internal interfaces to remove duplicate calls
+// - [ ] Move COA to account to share among contracts
 access(all) contract FlowEVMBridge {
 
     /// Amount of $FLOW paid to bridge
@@ -164,6 +165,13 @@ access(all) contract FlowEVMBridge {
             return self.account.contracts.borrow<&IEVMBridgeNFTLocker>(name: lockerContractName) == nil
         }
 
+        return nil
+    }
+
+    access(all) view fun borrowLockerContract(forType: Type): &IEVMBridgeNFTLocker? {
+        if let lockerContractName: String = FlowEVMBridgeUtils.deriveLockerContractName(fromType: forType) {
+            return self.account.contracts.borrow<&IEVMBridgeNFTLocker>(name: lockerContractName)
+        }
         return nil
     }
 

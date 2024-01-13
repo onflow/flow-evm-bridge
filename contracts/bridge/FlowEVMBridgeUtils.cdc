@@ -48,6 +48,18 @@ access(all) contract FlowEVMBridgeUtils {
         }
         return String.encodeHex(addressBytes)
     }
+    /// Returns an EVMAddress as a hex string without a 0x prefix
+    // TODO: Remove once EVMAddress.toString() is available
+    access(all) fun getEVMAddressFromHexString(address: String): EVM.EVMAddress? {
+        let addressBytes: [UInt8] = address.decodeHex()
+        return EVM.EVMAddress(bytes: [
+            addressBytes[0], addressBytes[1], addressBytes[2], addressBytes[3],
+            addressBytes[4], addressBytes[5], addressBytes[6], addressBytes[7],
+            addressBytes[8], addressBytes[9], addressBytes[10], addressBytes[11],
+            addressBytes[12], addressBytes[13], addressBytes[14], addressBytes[15],
+            addressBytes[16], addressBytes[17], addressBytes[18], addressBytes[19]
+        ])
+    }
 
     /// Identifies if an asset is Flow- or EVM-native, defined by whether a bridge contract defines it or not
     access(all) fun isFlowNative(type: Type): Bool {
@@ -146,7 +158,8 @@ access(all) contract FlowEVMBridgeUtils {
             gasLimit: 60000,
             value: 0.0
         )
-        let decodedOwnerResponse: [EVM.EVMAddress] = EVM.decodeABI(
+        let decodedOwnerResponse: [EVM.EVMAddress] = self.decodeABIWithSignature(
+                "ownerOf(uint256)",
                 types: [Type<EVM.EVMAddress>()],
                 data: ownerResponse
             ) as! [EVM.EVMAddress]
@@ -161,7 +174,8 @@ access(all) contract FlowEVMBridgeUtils {
             gasLimit: 60000,
             value: 0.0
         )
-        let decodedApprovedResponse: [EVM.EVMAddress] = EVM.decodeABI(
+        let decodedApprovedResponse: [EVM.EVMAddress] = self.decodeABIWithSignature(
+                "getApproved(uint256)",
                 types: [Type<EVM.EVMAddress>()],
                 data: approvedResponse
             ) as! [EVM.EVMAddress]
@@ -300,6 +314,38 @@ access(all) contract FlowEVMBridgeUtils {
     access(all) view fun splitObjectIdentifier(identifier: String): [String]? {
         let identifierSplit: [String] = identifier.split(separator: ".")
         return identifierSplit.length != 4 ? nil : identifierSplit
+    }
+
+    /* --- ABI Utils --- */
+    // TODO: Remove once available in EVM contract
+    access(all) fun encodeABIWithSignature(
+        _ signature: String,
+        _ values: [AnyStruct]
+    ): [UInt8] {
+        let methodID = HashAlgorithm.KECCAK_256.hash(
+            signature.utf8
+        ).slice(from: 0, upTo: 4)
+        let arguments = EVM.encodeABI(values)
+
+        return methodID.concat(arguments)
+    }
+
+    access(all) fun decodeABIWithSignature(
+        _ signature: String,
+        types: [Type],
+        data: [UInt8]
+    ): [AnyStruct] {
+        let methodID = HashAlgorithm.KECCAK_256.hash(
+            signature.utf8
+        ).slice(from: 0, upTo: 4)
+
+        for byte in methodID {
+            if byte != data.removeFirst() {
+                panic("signature mismatch")
+            }
+        }
+
+        return EVM.decodeABI(types: types, data: data)
     }
 
     /* --- Bridge-Access Only Utils --- */
