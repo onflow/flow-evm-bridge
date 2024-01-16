@@ -159,7 +159,7 @@ access(all) contract FlowEVMBridge {
         if FlowEVMBridgeUtils.getContractAddress(fromType: type) == self.account.address {
             return false
         }
-        
+
         // Otherwise, the type is Flow-native, so check if the locker contract is deployed
         if let lockerContractName: String = FlowEVMBridgeUtils.deriveLockerContractName(fromType: type) {
             return self.account.contracts.borrow<&IEVMBridgeNFTLocker>(name: lockerContractName) == nil
@@ -188,7 +188,7 @@ access(all) contract FlowEVMBridge {
         if self.account.contracts.borrow<&IEVMBridgeNFTLocker>(name: lockerContractName) == nil {
             self.deployLockerContract(forType: token.getType())
         }
-        
+
         let lockerContract: &IEVMBridgeNFTLocker = self.account.contracts.borrow<&IEVMBridgeNFTLocker>(name: lockerContractName)
             ?? panic("Problem locating Locker contract for token type: ".concat(token.getType().identifier))
         lockerContract.bridgeToEVM(token: <-token, to: to, tollFee: <-tollFee)
@@ -207,7 +207,7 @@ access(all) contract FlowEVMBridge {
             signature: "getFlowAssetIdentifier()",
             targetEVMAddress: evmContractAddress,
             args: [],
-            gasLimit: 60000,
+            gasLimit: 15000000,
             value: 0.0
         ) as! [String]
         let lockedType = CompositeType(response[0]) ?? panic("Invalid identifier returned from EVM contract")
@@ -268,19 +268,18 @@ access(all) contract FlowEVMBridge {
     //     evmContractAddress: EVM.EVMAddress,
     //     tollFee: @FlowToken.Vault
     // ): @{FungibleToken.Vault}
-    
+
     /// Helper for deploying templated Locker contract supporting Flow-native asset bridging to EVM
     /// Deploys either NFT or FT locker depending on the asset type
     access(self) fun deployLockerContract(forType: Type) {
+        let evmContractAddress: EVM.EVMAddress = self.deployEVMContract(forAssetType: forType)
+
         let code: [UInt8] = FlowEVMBridgeTemplates.getLockerContractCode(forType: forType)
             ?? panic("Could not retrieve code for given asset type: ".concat(forType.identifier))
         let name: String = FlowEVMBridgeUtils.deriveLockerContractName(fromType: forType)
             ?? panic("Could not derive locker contract name for token type: ".concat(forType.identifier))
-
         let contractAddress: Address = FlowEVMBridgeUtils.getContractAddress(fromType: forType)
             ?? panic("Could not derive locker contract address for token type: ".concat(forType.identifier))
-
-        let evmContractAddress: EVM.EVMAddress = self.deployEVMContract(forAssetType: forType)
         self.account.contracts.add(name: name, code: code, forType, contractAddress, evmContractAddress)
     }
     /// Helper for deploying templated defining contract supporting EVM-native asset bridging to Flow
@@ -306,15 +305,16 @@ access(all) contract FlowEVMBridge {
         let cadenceAddressStr: String = FlowEVMBridgeUtils.getContractAddress(fromType: forNFTType)?.toString()
             ?? panic("Could not derive contract address for token type: ".concat(identifier))
 
-        let response = self.call(
+        let response: [UInt8] = self.call(
             signature: "deployERC721(string,string,string,string)",
-            targetEVMAddress: self.coa.address(),
+            targetEVMAddress: FlowEVMBridgeUtils.bridgeFactoryEVMAddress,
             args: [name, "BRDG", cadenceAddressStr, identifier],
-            gasLimit: 60000,
+            gasLimit: 15000000,
             value: 0.0
         )
         let decodedResponse: [AnyStruct] = EVM.decodeABI(types: [Type<EVM.EVMAddress>()], data: response)
-        return decodedResponse[0] as! EVM.EVMAddress
+        let erc721Address: EVM.EVMAddress = decodedResponse[0] as! EVM.EVMAddress
+        return erc721Address
     }
 
     /// Enables other bridge contracts to orchestrate bridge operations from contract-owned COA
@@ -332,13 +332,12 @@ access(all) contract FlowEVMBridge {
         let methodID: [UInt8] = FlowEVMBridgeUtils.getFunctionSelector(signature: signature)
             ?? panic("Problem getting function selector for ".concat(signature))
         let calldata: [UInt8] = methodID.concat(EVM.encodeABI(args))
-        let response = self.coa.call(
+        return self.coa.call(
             to: targetEVMAddress,
             data: calldata,
             gasLimit: gasLimit,
             value: EVM.Balance(flow: value)
         )
-        return response
     }
 
     init() {
