@@ -417,7 +417,7 @@ access(all) contract FlowEVMBridgeUtils {
             "ownerOf(uint256)", // (address)
             "getApproved(uint256)", // (address)
             "approve(address,uint256)",
-            "safeMintTo(address,uint256,string)",
+            "safeMint(address,uint256,string)",
             "burn(uint256)",
             "safeTransferFrom(contract IERC20,address,address,uint256)",
             "safeTransferFrom(address,address,uint256)",
