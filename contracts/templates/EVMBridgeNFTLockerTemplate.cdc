@@ -40,10 +40,10 @@ access(all) contract CONTRACT_NAME : IEVMBridgeNFTLocker {
         self.locker.deposit(token: <-token)
         // TODO - pull URI from NFT if display exists & pass on minting
         self.call(
-            signature: "safeMintTo(address,uint256,string)",
+            signature: "safeMint(address,uint256,string)",
             targetEVMAddress: self.evmNFTContractAddress,
             args: [id, to, "MOCK_URI"],
-            gasLimit: 60000,
+            gasLimit: 15000000,
             value: 0.0
         )
 
@@ -79,7 +79,7 @@ access(all) contract CONTRACT_NAME : IEVMBridgeNFTLocker {
         caller.call(
             to: evmContractAddress,
             data: calldata,
-            gasLimit: 60000,
+            gasLimit: 15000000,
             value: EVM.Balance(flow: 0.0)
         )
 
@@ -88,7 +88,7 @@ access(all) contract CONTRACT_NAME : IEVMBridgeNFTLocker {
             signature: "safeTransferFrom(address,address,uint256)",
             targetEVMAddress: evmContractAddress,
             args: [caller.address(), FlowEVMBridge.getBridgeCOAEVMAddress(), id],
-            gasLimit: 60000,
+            gasLimit: 15000000,
             value: 0.0
         )
 
@@ -230,7 +230,7 @@ access(all) contract CONTRACT_NAME : IEVMBridgeNFTLocker {
         let response = FlowEVMBridge.borrowCOA().call(
             to: targetEVMAddress,
             data: calldata,
-            gasLimit: 60000,
+            gasLimit: gasLimit,
             value: EVM.Balance(flow: value)
         )
         return response
