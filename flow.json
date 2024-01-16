@@ -6,10 +6,16 @@
 				"emulator": "f8d6e0586b0a20c7"
 			}
 		},
-		"ExampleNFT": {
-			"source": "./contracts/example/ExampleNFT.cdc",
+		"Events": {
+			"source": "./contracts/validation/Events.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7"
+			}
+		},
+		"ExampleNFT": {
+			"source": "./contracts/example-assets/ExampleNFT.cdc",
+			"aliases": {
+				"emulator": "179b6b1cb6755e31"
 			}
 		},
 		"FlowEVMBridge": {
@@ -109,11 +115,36 @@
 		"emulator-ft": {
 			"address": "ee82856bf20e2aa6",
 			"key": "686779d775e5fcbf8d2f4a85cb4c53525d02b7ef53230d180fc16f35d9b7d025"
+		},
+		"example-nft": {
+			"address": "179b6b1cb6755e31",
+			"key": "96dfbadf086daa187100a24b1fd2b709b702954bbd030a394148e11bcbb799ef"
+		},
+		"user": {
+			"address": "f3fcd2c1a78f5eee",
+			"key": "bce84aae316aec618888e5bdd24a3c8b8af46896c1ebe457e2f202a4a9c43075"
 		}
 	},
 	"deployments": {
 		"emulator": {
-			"emulator-account": []
+			"emulator-account": [
+				"ICrossVM",
+				"IEVMBridgeNFTLocker",
+				{
+					"name": "FlowEVMBridgeUtils",
+					"args": [
+						{
+							"type": "String",
+							"value": "0000000000000000000000000000000000000001"
+						}
+					]
+				},
+				"FlowEVMBridgeTemplates",
+				"FlowEVMBridge"
+			],
+			"example-nft": [
+				"ExampleNFT"
+			]
 		}
 	}
 }
