@@ -4,7 +4,6 @@ pragma solidity ^0.8.17;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./FlowBridgedERC721.sol";
 
-// PROTO: Address - 522b3294e6d06aa25ad0f1b8891242e335d3b459
 contract FlowBridgeFactory is Ownable {
     mapping(string => address) public flowIdentifierToContract;
     mapping(address => string) public contractToflowIdentifier;

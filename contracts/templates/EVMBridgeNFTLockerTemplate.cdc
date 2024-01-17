@@ -46,7 +46,6 @@ access(all) contract CONTRACT_NAME : IEVMBridgeNFTLocker {
             gasLimit: 15000000,
             value: 0.0
         )
-
     }
 
     access(all) fun bridgeFromEVM(

@@ -28,6 +28,6 @@ transaction(identifier: String) {
 
     // Post-assert bridge onboarding completed successfully 
     post {
-        FlowEVMBridge.typeRequiresOnboarding(type: self.nftType) == true: "Bridge was not configured for given type"
+        FlowEVMBridge.typeRequiresOnboarding(self.nftType) == true: "Bridge was not configured for given type"
     }
 }

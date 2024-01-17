@@ -4,6 +4,7 @@ import "FlowToken"
 
 import "EVM"
 
+import "ICrossVM"
 import "FlowEVMBridgeUtils"
 import "IEVMBridgeNFTLocker"
 import "FlowEVMBridgeTemplates"
@@ -28,7 +29,7 @@ access(all) contract FlowEVMBridge {
 
     access(all) fun onboardNFT(type: Type, tollFee: @FlowToken.Vault) {
         pre {
-            self.typeRequiresOnboarding(type: type) == true: "Onboarding is not needed for this type"
+            self.typeRequiresOnboarding(type) == true: "Onboarding is not needed for this type"
         }
         FlowEVMBridgeUtils.depositTollFee(<-tollFee)
         if FlowEVMBridgeUtils.isFlowNative(type: type) {
@@ -49,7 +50,7 @@ access(all) contract FlowEVMBridge {
         pre {
             tollFee.balance >= self.fee: "Insufficient fee paid"
             token.isInstance(Type<@{FungibleToken.Vault}>()) == false: "Mixed asset types are not yet supported"
-            self.typeRequiresOnboarding(type: token.getType()) == false: "NFT must first be onboarded"
+            self.typeRequiresOnboarding(token.getType()) == false: "NFT must first be onboarded"
         }
         if FlowEVMBridgeUtils.isFlowNative(type: token.getType()) {
             self.bridgeFlowNativeNFTToEVM(token: <-token, to: to, tollFee: <-tollFee)
@@ -140,16 +141,29 @@ access(all) contract FlowEVMBridge {
     }
     /// Retrieves the EVM address of the contract related to the bridge contract-defined asset
     /// Useful for bridging flow-native assets back from EVM
-    // access(all) fun getAssetEVMContractAddress(type: Type): EVM.EVMAddress? {
-
-    // }
+    // TODO: Can be made `view` when BridgedAccount.address() is `view`
+    access(all) fun getAssetEVMContractAddress(type: Type): EVM.EVMAddress? {
+        if self.typeRequiresOnboarding(type) != false {
+            return nil
+        }
+        if FlowEVMBridgeUtils.isFlowNative(type: type) {
+            if let lockerContractName: String = FlowEVMBridgeUtils.deriveLockerContractName(fromType: type) {
+                return self.account.contracts.borrow<&ICrossVM>(name: lockerContractName)?.getEVMContractAddress() ?? nil
+            }
+        } else {
+            if let assetContractName: String = FlowEVMBridgeUtils.getContractName(fromType: type) {
+                return self.account.contracts.borrow<&ICrossVM>(name: assetContractName)?.getEVMContractAddress() ?? nil
+            }
+        }
+        return nil
+    }
     /// Retrieves the Flow address associated with the asset defined at the provided EVM address if it's defined
     /// in a bridge-deployed contract
     // access(all) fun getAssetFlowContractAddress(evmAddress: EVM.EVMAddress): Address?
 
     /// Returns whether an asset needs to be onboarded to the bridge
     ///
-    access(all) view fun typeRequiresOnboarding(type: Type): Bool? {
+    access(all) view fun typeRequiresOnboarding(_ type: Type): Bool? {
         // If type is not an NFT or FT type, it's not supported - return nil
         if !type.isSubtype(of: Type<@{NonFungibleToken.NFT}>()) && !type.isSubtype(of: Type<@{FungibleToken.Vault}>()) {
             return nil
@@ -203,14 +217,16 @@ access(all) contract FlowEVMBridge {
         evmContractAddress: EVM.EVMAddress,
         tollFee: @FlowToken.Vault
     ): @{NonFungibleToken.NFT} {
-        let response: [String] = self.call(
-            signature: "getFlowAssetIdentifier()",
-            targetEVMAddress: evmContractAddress,
-            args: [],
+        let response: [UInt8] = self.call(
+            signature: "getFlowAssetIdentifier(address)",
+            targetEVMAddress: FlowEVMBridgeUtils.bridgeFactoryEVMAddress,
+            args: [evmContractAddress],
             gasLimit: 15000000,
             value: 0.0
-        ) as! [String]
-        let lockedType = CompositeType(response[0]) ?? panic("Invalid identifier returned from EVM contract")
+        )
+        let decodedResponse: [AnyStruct] = EVM.decodeABI(types: [Type<String>()], data: response)
+        let identifier: String = decodedResponse[0] as! String
+        let lockedType = CompositeType(identifier) ?? panic("Invalid identifier returned from EVM contract")
         let lockerContractName: String = FlowEVMBridgeUtils.deriveLockerContractName(fromType: lockedType) ??
             panic("Could not derive locker contract name for token type: ".concat(lockedType.identifier))
         let lockerContract: &IEVMBridgeNFTLocker = self.account.contracts.borrow<&IEVMBridgeNFTLocker>(name: lockerContractName)
