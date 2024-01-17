@@ -1,5 +1,7 @@
 #!/bin/bash
 
+sh pass_precompiles.sh
+
 # Deploy initial bridge contracts
 flow accounts add-contract ./contracts/bridge/ICrossVM.cdc
 flow accounts add-contract ./contracts/bridge/IEVMBridgeNFTLocker.cdc
@@ -11,8 +13,11 @@ flow evm create-account 100.0
 flow transactions send ./transactions/evm/deploy.cdc --args-json "$(cat deploy-factory-args.json)"
 
 # Provided address is the address of the Factory contract deployed in the previous txn
-flow accounts add-contract ./contracts/bridge/FlowEVMBridgeUtils.cdc 522b3294e6d06aa25ad0f1b8891242e335d3b459
+flow accounts add-contract ./contracts/bridge/FlowEVMBridgeUtils.cdc 9ca416871ee388c7a41e0b7886dfcc47e08bbdef
 flow accounts add-contract ./contracts/bridge/FlowEVMBridgeTemplates.cdc
+
+# Fund the Utils contract COA
+flow evm fund 000000000000000000000000000000000000001b 100.0
 
 # Deploy main bridge contract
 flow accounts add-contract ./contracts/bridge/FlowEVMBridge.cdc
