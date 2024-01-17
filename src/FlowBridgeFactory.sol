@@ -36,4 +36,8 @@ contract FlowBridgeFactory is Ownable {
     function isFactoryDeployed(address contractAddr) public view returns (bool) {
         return bytes(contractToflowIdentifier[contractAddr]).length != 0;
     }
+
+    function getFlowAssetIdentifier(address contractAddr) public view returns (string memory) {
+        return contractToflowIdentifier[contractAddr];
+    }
 }
