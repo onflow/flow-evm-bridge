@@ -18,6 +18,12 @@
 				"emulator": "f8d6e0586b0a20c7"
 			}
 		},
+		"FlowEVMBridgeConfig": {
+			"source": "./cadence/contracts/bridge/FlowEVMBridgeConfig.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7"
+			}
+		},
 		"FlowEVMBridgeTemplates": {
 			"source": "./cadence/contracts/bridge/FlowEVMBridgeTemplates.cdc",
 			"aliases": {

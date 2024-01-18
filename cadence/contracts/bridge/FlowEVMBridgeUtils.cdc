@@ -3,6 +3,7 @@ import "FungibleToken"
 import "FlowToken"
 
 import "EVM"
+import "FlowEVMBridgeConfig"
 
 /// Util contract serving all bridge contracts
 //
@@ -10,11 +11,8 @@ import "EVM"
 // - [ ] Validate bytes4 .sol type can receive [UInt8] from Cadence when encoded - affects supportsInterface calls
 // - [ ] Clarify gas limit values for robustness across various network conditions
 // - [ ] Implement inspector methods in Factory.sol contract
-// - [ ] Consider how calls from inspectorCOA will affect EVM Flow balance and need to rebalance. Maybe use one central account-stored COA.
 // - [ ] Remove getEVMAddressAsHexString once EVMAddress.toString() is available
 // - [ ] Implement view functions once available in EVM contract
-//      - [ ] getInspectorCOAAddress: EVMAddress.address()
-//
 access(all) contract FlowEVMBridgeUtils {
 
     /// Address of the bridge factory Solidity contract
@@ -26,18 +24,12 @@ access(all) contract FlowEVMBridgeUtils {
     /// Mapping of EVM contract interfaces to their 4 byte hash prefixes
     access(self) let interface4Bytes: {String: [UInt8; 4]}
     /// Commonly used Solidity function selectors to call into EVM from bridge contracts to support call encoding
-    /// e.g. ownerOf(uint256), getApproved(uint256), mint(address, uint256), etc.
+    // TODO: Get rid of this value in favor of encodeAbiWithSignature once available in EVM contract
     access(self) let functionSelectors: {String: [UInt8]}
-    /// Contract COA used for inspector calls to Flow EVM
-    access(self) let inspectorCOA: @EVM.BridgedAccount
 
     /// Returns the requested function selector
     access(all) view fun getFunctionSelector(signature: String): [UInt8]? {
         return self.functionSelectors[signature]
-    }
-    /// Returns the address of the contract inspector COA
-    access(all) fun getInspectorCOAAddress(): EVM.EVMAddress {
-        return self.inspectorCOA.address()
     }
     /// Returns an EVMAddress as a hex string without a 0x prefix
     // TODO: Remove once EVMAddress.toString() is available
@@ -162,7 +154,7 @@ access(all) contract FlowEVMBridgeUtils {
 
     access(all) fun isOwner(ofNFT: UInt256, owner: EVM.EVMAddress, evmContractAddress: EVM.EVMAddress): Bool {
         let calldata: [UInt8] = FlowEVMBridgeUtils.encodeABIWithSignature("ownerOf(uint256)", [ofNFT])
-        let ownerResponse: [UInt8] = self.inspectorCOA.call(
+        let ownerResponse: [UInt8] = self.borrowCOA().call(
                 to: evmContractAddress,
                 data: calldata,
                 gasLimit: 12000000,
@@ -380,6 +372,12 @@ access(all) contract FlowEVMBridgeUtils {
         self.functionSelectors[signature] = methodID
     }
 
+    /// Enables other bridge contracts to orchestrate bridge operations from contract-owned COA
+    access(account) fun borrowCOA(): &EVM.BridgedAccount {
+        return self.account.storage.borrow<&EVM.BridgedAccount>(from: FlowEVMBridgeConfig.coaStoragePath)
+            ?? panic("Could not borrow COA reference")
+    }
+
     // TODO: Make account method retrieving reference to account stored COA. Determine if we need to limit util getters
     // to prevent spam attacks draining EVM Flow funds
     access(self) fun call(
@@ -392,7 +390,7 @@ access(all) contract FlowEVMBridgeUtils {
         let methodID: [UInt8] = self.getFunctionSelector(signature: signature)
             ?? panic("Problem getting function selector for ".concat(signature))
         let calldata: [UInt8] = methodID.concat(EVM.encodeABI(args))
-        let response: [UInt8] = self.inspectorCOA.call(
+        let response: [UInt8] = self.borrowCOA().call(
             to: targetEVMAddress,
             data: calldata,
             gasLimit: gasLimit,
@@ -461,7 +459,5 @@ access(all) contract FlowEVMBridgeUtils {
             self.functionSelectors.length == signatures.length,
             message: "Function selector initialization failed"
         )
-        self.inspectorCOA <- EVM.createBridgedAccount()
     }
 }
-

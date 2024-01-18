@@ -5,6 +5,7 @@ import "FlowToken"
 import "EVM"
 
 import "FlowEVMBridge"
+import "FlowEVMBridgeConfig"
 
 transaction(identifier: String) {
 
@@ -18,7 +19,7 @@ transaction(identifier: String) {
         let vault = signer.storage.borrow<auth(FungibleToken.Withdrawable) &FlowToken.Vault>(
                 from: /storage/flowTokenVault
             ) ?? panic("Could not access signer's FlowToken Vault")
-        self.tollFee <- vault.withdraw(amount: FlowEVMBridge.fee) as! @FlowToken.Vault
+        self.tollFee <- vault.withdraw(amount: FlowEVMBridgeConfig.fee) as! @FlowToken.Vault
     }
 
     execute {

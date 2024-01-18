@@ -6,6 +6,7 @@ import FlowToken from 0x0ae53cb6e3f42a79
 import EVM from 0xf8d6e0586b0a20c7
 
 import IEVMBridgeNFTLocker from 0xf8d6e0586b0a20c7
+import FlowEVMBridgeConfig from 0xf8d6e0586b0a20c7
 import FlowEVMBridgeUtils from 0xf8d6e0586b0a20c7
 import FlowEVMBridge from 0xf8d6e0586b0a20c7
 
@@ -30,7 +31,7 @@ access(all) contract CONTRACT_NAME : IEVMBridgeNFTLocker {
     access(all) fun bridgeToEVM(token: @{NonFungibleToken.NFT}, to: EVM.EVMAddress, tollFee: @FlowToken.Vault) {
         pre {
             token.getType() == self.lockedNFTType: "Invalid NFT type for this Locker"
-            tollFee.getBalance() >= FlowEVMBridge.fee: "Insufficient bridging fee provided"
+            tollFee.getBalance() >= FlowEVMBridgeConfig.fee: "Insufficient bridging fee provided"
         }
         FlowEVMBridgeUtils.depositTollFee(<-tollFee)
         let id: UInt256 = UInt256(token.getID())
@@ -56,7 +57,7 @@ access(all) contract CONTRACT_NAME : IEVMBridgeNFTLocker {
         tollFee: @FlowToken.Vault
     ): @{NonFungibleToken.NFT} {
         pre {
-            tollFee.getBalance() >= FlowEVMBridge.fee: "Insufficient bridging fee provided"
+            tollFee.getBalance() >= FlowEVMBridgeConfig.fee: "Insufficient bridging fee provided"
             evmContractAddress.bytes == self.evmNFTContractAddress.bytes: "EVM contract address is not associated with this Locker"
         }
         let isNFT: Bool = FlowEVMBridgeUtils.isEVMNFT(evmContractAddress: evmContractAddress)
@@ -91,7 +92,7 @@ access(all) contract CONTRACT_NAME : IEVMBridgeNFTLocker {
             value: 0.0
         )
 
-        let response: [UInt8] = FlowEVMBridge.borrowCOA().call(
+        let response: [UInt8] = FlowEVMBridgeUtils.borrowCOA().call(
                 to: evmContractAddress,
                 data: FlowEVMBridgeUtils.encodeABIWithSignature("exists(uint256)", [id]),
                 gasLimit: 15000000,
@@ -229,7 +230,7 @@ access(all) contract CONTRACT_NAME : IEVMBridgeNFTLocker {
         let methodID: [UInt8] = FlowEVMBridgeUtils.getFunctionSelector(signature: signature)
             ?? panic("Problem getting function selector for ".concat(signature))
         let calldata: [UInt8] = methodID.concat(EVM.encodeABI(args))
-        let response = FlowEVMBridge.borrowCOA().call(
+        let response = FlowEVMBridgeUtils.borrowCOA().call(
             to: targetEVMAddress,
             data: calldata,
             gasLimit: gasLimit,

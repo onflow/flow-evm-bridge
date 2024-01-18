@@ -4,6 +4,7 @@ sh pass_precompiles.sh
 
 # Deploy initial bridge contracts
 flow accounts add-contract ./cadence/contracts/bridge/ICrossVM.cdc
+flow accounts add-contract ./cadence/contracts/bridge/FlowEVMBridgeConfig.cdc
 flow accounts add-contract ./cadence/contracts/bridge/IEVMBridgeNFTLocker.cdc
 
 # Create COA in emulator-account
@@ -41,6 +42,3 @@ flow transactions send ./cadence/transactions/evm/deposit.cdc 10.0 --signer user
 flow accounts add-contract ./cadence/contracts/example-assets/ExampleNFT.cdc --signer example-nft
 flow transactions send ./cadence/transactions/example-assets/setup_collection.cdc --signer user
 flow transactions send ./cadence/transactions/example-assets/mint_nft.cdc f3fcd2c1a78f5eee example description thumbnail '[]' '[]' '[]' --signer example-nft
-
-# Replace the COA in the emulator-account that was loaded into the bridge contract storage for RPC purposes
-flow evm create-account 100.0

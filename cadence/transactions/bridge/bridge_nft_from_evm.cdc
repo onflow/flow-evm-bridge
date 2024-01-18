@@ -8,6 +8,7 @@ import "ExampleNFT"
 import "EVM"
 
 import "FlowEVMBridge"
+import "FlowEVMBridgeConfig"
 import "FlowEVMBridgeUtils"
 
 transaction(nftTypeIdentifier: String, id: UInt256, collectionStoragePathIdentifier: String) {
@@ -30,7 +31,7 @@ transaction(nftTypeIdentifier: String, id: UInt256, collectionStoragePathIdentif
         let vault = signer.storage.borrow<auth(FungibleToken.Withdrawable) &FlowToken.Vault>(
                 from: /storage/flowTokenVault
             ) ?? panic("Could not access signer's FlowToken Vault")
-        self.tollFee <- vault.withdraw(amount: FlowEVMBridge.fee) as! @FlowToken.Vault
+        self.tollFee <- vault.withdraw(amount: FlowEVMBridgeConfig.fee) as! @FlowToken.Vault
 
         self.coa = signer.storage.borrow<&EVM.BridgedAccount>(from: /storage/evm)
             ?? panic("Could not borrow COA from provided gateway address")

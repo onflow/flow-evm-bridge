@@ -5,6 +5,7 @@ import "FlowToken"
 import "EVM"
 
 import "ICrossVM"
+import "FlowEVMBridgeConfig"
 import "FlowEVMBridgeUtils"
 import "IEVMBridgeNFTLocker"
 import "FlowEVMBridgeTemplates"
@@ -13,13 +14,7 @@ import "FlowEVMBridgeTemplates"
 // - [ ] Consider making an interface that is implemented by auxiliary contracts
 // - [ ] Decide on bridge-deployed ERC721 & ERC20 symbol conventions
 // - [ ] Trace stack and optimize internal interfaces to remove duplicate calls
-// - [ ] Move COA to account to share among contracts
 access(all) contract FlowEVMBridge {
-
-    /// Amount of $FLOW paid to bridge
-    access(all) var fee: UFix64
-    /// The COA which orchestrates bridge operations in EVM
-    access(self) let coa: @EVM.BridgedAccount
 
     /// Denotes a contract was deployed to the bridge account, could be either FlowEVMBridgeLocker or FlowEVMBridgedAsset
     access(all) event BridgeLockerContractDeployed(type: Type, name: String, evmContractAddress: EVM.EVMAddress)
@@ -27,6 +22,8 @@ access(all) contract FlowEVMBridge {
 
     /* --- Public NFT Handling --- */
 
+    // Onboards a given type of NFT to the bridge
+    // TODO: Add method for onboarding EVM-native NFTs
     access(all) fun onboardNFT(type: Type, tollFee: @FlowToken.Vault) {
         pre {
             self.typeRequiresOnboarding(type) == true: "Onboarding is not needed for this type"
@@ -48,7 +45,7 @@ access(all) contract FlowEVMBridge {
     ///
     access(all) fun bridgeNFTToEVM(token: @{NonFungibleToken.NFT}, to: EVM.EVMAddress, tollFee: @FlowToken.Vault) {
         pre {
-            tollFee.balance >= self.fee: "Insufficient fee paid"
+            tollFee.balance >= FlowEVMBridgeConfig.fee: "Insufficient fee paid"
             token.isInstance(Type<@{FungibleToken.Vault}>()) == false: "Mixed asset types are not yet supported"
             self.typeRequiresOnboarding(token.getType()) == false: "NFT must first be onboarded"
         }
@@ -78,7 +75,7 @@ access(all) contract FlowEVMBridge {
         tollFee: @FlowToken.Vault
     ): @{NonFungibleToken.NFT} {
         pre {
-            tollFee.balance >= self.fee: "Insufficient fee paid"
+            tollFee.balance >= FlowEVMBridgeConfig.fee: "Insufficient fee paid"
         }
         if FlowEVMBridgeUtils.isEVMNative(evmContractAddress: evmContractAddress) {
             // TODO: EVM-native NFT path
@@ -104,7 +101,7 @@ access(all) contract FlowEVMBridge {
     ///
     // access(all) fun bridgeTokensToEVM(vault: @{FungibleToken.Vault}, to: EVM.EVMAddress, tollFee: @FlowToken.Vault) {
     //     pre {
-    //         tollFee.balance >= self.fee: "Insufficient fee paid"
+    //         tollFee.balance >= FlowEVMBridgeConfig.fee: "Insufficient fee paid"
     //         vault.isInstance(of: Type<&{NonFungibleToken.NFT}>) == false: "Mixed asset types are not yet supported"
     //     }
     //     // Handle based on whether Flow- or EVM-native & passthrough to internal method
@@ -126,7 +123,7 @@ access(all) contract FlowEVMBridge {
     //     tollFee: @FlowToken.Vault
     // ): @{FungibleToken.Vault} {
     //     pre {
-    //         tollFee.balance >= self.fee: "Insufficient fee paid"
+    //         tollFee.balance >= FlowEVMBridgeConfig.fee: "Insufficient fee paid"
     //         FlowEVMBridgeUtils.isEVMToken(evmContractAddress: evmContractAddress): "Unsupported asset type"
     //         FlowEVMBridgeUtils.hasSufficientBalance(amount: amount, owner: caller, evmContractAddress: evmContractAddress):
     //             "Caller does not have sufficient funds to bridge requested amount"
@@ -137,7 +134,7 @@ access(all) contract FlowEVMBridge {
 
     /// Returns the bridge contract's COA EVMAddress
     access(all) fun getBridgeCOAEVMAddress(): EVM.EVMAddress {
-        return self.coa.address()
+        return FlowEVMBridgeUtils.borrowCOA().address()
     }
     /// Retrieves the EVM address of the contract related to the bridge contract-defined asset
     /// Useful for bridging flow-native assets back from EVM
@@ -163,6 +160,7 @@ access(all) contract FlowEVMBridge {
 
     /// Returns whether an asset needs to be onboarded to the bridge
     ///
+    // TODO: Add evmAddressRequiresOnboarding(address: EVM.EVMAddress)
     access(all) view fun typeRequiresOnboarding(_ type: Type): Bool? {
         // If type is not an NFT or FT type, it's not supported - return nil
         if !type.isSubtype(of: Type<@{NonFungibleToken.NFT}>()) && !type.isSubtype(of: Type<@{FungibleToken.Vault}>()) {
@@ -333,11 +331,6 @@ access(all) contract FlowEVMBridge {
         return erc721Address
     }
 
-    /// Enables other bridge contracts to orchestrate bridge operations from contract-owned COA
-    access(account) fun borrowCOA(): &EVM.BridgedAccount {
-        return &self.coa as &EVM.BridgedAccount
-    }
-
     access(self) fun call(
         signature: String,
         targetEVMAddress: EVM.EVMAddress,
@@ -348,17 +341,11 @@ access(all) contract FlowEVMBridge {
         let methodID: [UInt8] = FlowEVMBridgeUtils.getFunctionSelector(signature: signature)
             ?? panic("Problem getting function selector for ".concat(signature))
         let calldata: [UInt8] = methodID.concat(EVM.encodeABI(args))
-        return self.coa.call(
+        return FlowEVMBridgeUtils.borrowCOA().call(
             to: targetEVMAddress,
             data: calldata,
             gasLimit: gasLimit,
             value: EVM.Balance(flow: value)
         )
-    }
-
-    init() {
-        self.fee = 0.0
-        self.coa <- self.account.storage.load<@EVM.BridgedAccount>(from: /storage/evm)
-            ?? panic("No COA found in storage")
     }
 }
