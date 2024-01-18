@@ -226,7 +226,7 @@ access(all) contract FlowEVMBridge {
         )
         let decodedResponse: [AnyStruct] = EVM.decodeABI(types: [Type<String>()], data: response)
         let identifier: String = decodedResponse[0] as! String
-        let lockedType = CompositeType(identifier) ?? panic("Invalid identifier returned from EVM contract")
+        let lockedType: Type = CompositeType(identifier) ?? panic("Invalid identifier returned from EVM contract")
         let lockerContractName: String = FlowEVMBridgeUtils.deriveLockerContractName(fromType: lockedType) ??
             panic("Could not derive locker contract name for token type: ".concat(lockedType.identifier))
         let lockerContract: &IEVMBridgeNFTLocker = self.account.contracts.borrow<&IEVMBridgeNFTLocker>(name: lockerContractName)
@@ -315,8 +315,8 @@ access(all) contract FlowEVMBridge {
     }
 
     access(self) fun deployERC721(_ forNFTType: Type): EVM.EVMAddress {
-        let name: String = FlowEVMBridgeUtils.deriveLockerContractName(fromType: forNFTType)
-            ?? panic("Could not derive locker contract name for token type: ".concat(forNFTType.identifier))
+        let name: String = FlowEVMBridgeUtils.getContractName(fromType: forNFTType)
+            ?? panic("Could not contract name from type: ".concat(forNFTType.identifier))
         let identifier: String = forNFTType.identifier
         let cadenceAddressStr: String = FlowEVMBridgeUtils.getContractAddress(fromType: forNFTType)?.toString()
             ?? panic("Could not derive contract address for token type: ".concat(identifier))
