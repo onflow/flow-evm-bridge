@@ -46,4 +46,14 @@ contract FlowBridgeFactoryTest is Test {
         address erc721Owner = deployedERC721Contract.owner();
         assertEq(factoryOwner, erc721Owner);
     }
+
+    function test_SuccessfulMint() public {
+        address recipient = address(27);
+        uint256 tokenId = 42;
+        string memory uri = "MOCK_URI";
+        deployedERC721Contract.safeMint(recipient, tokenId, uri);
+
+        address owner = deployedERC721Contract.ownerOf(tokenId);
+        assertEq(owner, recipient);
+    }
 }
