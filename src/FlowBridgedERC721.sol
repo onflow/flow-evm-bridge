@@ -41,4 +41,8 @@ contract FlowBridgedERC721 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable 
     function getFlowNFTIdentifier() public view returns (string memory) {
         return flowNFTIdentifier;
     }
+
+    function exists(uint256 tokenId) public view returns (bool) {
+        return _ownerOf(tokenId) != address(0);
+    }
 }
