@@ -1,6 +1,22 @@
 import "EVM"
 
-access(all) fun main(gatewayAddress: Address, evmContractAddressHex: String, calldata: String): UInt256 {
+access(all) fun getTypeArray(_ identifiers: [String]): [Type] {
+    var types: [Type] = []
+    for identifier in identifiers {
+        let type = CompositeType(identifier)
+            ?? panic("Invalid identifier: ".concat(identifier))
+        types.append(type)
+    }
+    return types
+}
+
+access(all) fun main(
+    gatewayAddress: Address,
+    evmContractAddressHex: String,
+    calldata: String,
+    gasLimit: UInt64,
+    typeIdentifiers: [String]
+): [AnyStruct] {
 
     let evmAddressBytes: [UInt8] = evmContractAddressHex.decodeHex()
     let evmAddress = EVM.EVMAddress(
@@ -21,9 +37,9 @@ access(all) fun main(gatewayAddress: Address, evmContractAddressHex: String, cal
     let evmResult = gatewayCOA.call(
         to: evmAddress,
         data: data,
-        gasLimit: 30000,
+        gasLimit: gasLimit,
         value: EVM.Balance(flow: 0.0)
     )
 
-    return EVM.decodeABI(types: [Type<UInt256>()], data: evmResult)[0] as! UInt256
+    return EVM.decodeABI(types: getTypeArray(typeIdentifiers), data: evmResult)
 }
