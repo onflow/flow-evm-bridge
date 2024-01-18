@@ -6,12 +6,6 @@
 				"emulator": "f8d6e0586b0a20c7"
 			}
 		},
-		"Events": {
-			"source": "./contracts/validation/Events.cdc",
-			"aliases": {
-				"emulator": "f8d6e0586b0a20c7"
-			}
-		},
 		"ExampleNFT": {
 			"source": "./contracts/example-assets/ExampleNFT.cdc",
 			"aliases": {
@@ -127,24 +121,7 @@
 	},
 	"deployments": {
 		"emulator": {
-			"emulator-account": [
-				"ICrossVM",
-				"IEVMBridgeNFTLocker",
-				{
-					"name": "FlowEVMBridgeUtils",
-					"args": [
-						{
-							"type": "String",
-							"value": "0000000000000000000000000000000000000001"
-						}
-					]
-				},
-				"FlowEVMBridgeTemplates",
-				"FlowEVMBridge"
-			],
-			"example-nft": [
-				"ExampleNFT"
-			]
+			"emulator-account": []
 		}
 	}
 }

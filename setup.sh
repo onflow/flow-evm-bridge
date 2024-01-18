@@ -41,3 +41,6 @@ flow transactions send ./transactions/evm/deposit.cdc 10.0 --signer user
 flow accounts add-contract ./contracts/example-assets/ExampleNFT.cdc --signer example-nft
 flow transactions send ./transactions/example-assets/setup_collection.cdc --signer user
 flow transactions send ./transactions/example-assets/mint_nft.cdc f3fcd2c1a78f5eee example description thumbnail '[]' '[]' '[]' --signer example-nft
+
+# Replace the COA in the emulator-account that was loaded into the bridge contract storage for RPC purposes
+flow evm create-account 100.0
