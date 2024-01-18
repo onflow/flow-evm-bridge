@@ -1,37 +1,37 @@
 {
 	"contracts": {
 		"EVM": {
-			"source": "./contracts/EVM.cdc",
+			"source": "./cadence/contracts/EVM.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7"
 			}
 		},
 		"ExampleNFT": {
-			"source": "./contracts/example-assets/ExampleNFT.cdc",
+			"source": "./cadence/contracts/example-assets/ExampleNFT.cdc",
 			"aliases": {
 				"emulator": "179b6b1cb6755e31"
 			}
 		},
 		"FlowEVMBridge": {
-			"source": "./contracts/bridge/FlowEVMBridge.cdc",
+			"source": "./cadence/contracts/bridge/FlowEVMBridge.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7"
 			}
 		},
 		"FlowEVMBridgeTemplates": {
-			"source": "./contracts/bridge/FlowEVMBridgeTemplates.cdc",
+			"source": "./cadence/contracts/bridge/FlowEVMBridgeTemplates.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7"
 			}
 		},
 		"FlowEVMBridgeUtils": {
-			"source": "./contracts/bridge/FlowEVMBridgeUtils.cdc",
+			"source": "./cadence/contracts/bridge/FlowEVMBridgeUtils.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7"
 			}
 		},
 		"FlowToken": {
-			"source": "./contracts/standards/FlowToken.cdc",
+			"source": "./cadence/contracts/standards/FlowToken.cdc",
 			"aliases": {
 				"emulator": "0ae53cb6e3f42a79",
 				"mainnet": "1654653399040a61",
@@ -39,7 +39,7 @@
 			}
 		},
 		"FungibleToken": {
-			"source": "./contracts/standards/FungibleToken.cdc",
+			"source": "./cadence/contracts/standards/FungibleToken.cdc",
 			"aliases": {
 				"emulator": "ee82856bf20e2aa6",
 				"mainnet": "f233dcee88fe0abe",
@@ -47,7 +47,7 @@
 			}
 		},
 		"FungibleTokenMetadataViews": {
-			"source": "./contracts/standards/FungibleTokenMetadataViews.cdc",
+			"source": "./cadence/contracts/standards/FungibleTokenMetadataViews.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "f233dcee88fe0abe",
@@ -55,19 +55,19 @@
 			}
 		},
 		"ICrossVM": {
-			"source": "./contracts/bridge/ICrossVM.cdc",
+			"source": "./cadence/contracts/bridge/ICrossVM.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7"
 			}
 		},
 		"IEVMBridgeNFTLocker": {
-			"source": "./contracts/bridge/IEVMBridgeNFTLocker.cdc",
+			"source": "./cadence/contracts/bridge/IEVMBridgeNFTLocker.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7"
 			}
 		},
 		"MetadataViews": {
-			"source": "./contracts/standards/MetadataViews.cdc",
+			"source": "./cadence/contracts/standards/MetadataViews.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "1d7e57aa55817448",
@@ -75,7 +75,7 @@
 			}
 		},
 		"NonFungibleToken": {
-			"source": "./contracts/standards/NonFungibleToken.cdc",
+			"source": "./cadence/contracts/standards/NonFungibleToken.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "1d7e57aa55817448",
@@ -83,7 +83,7 @@
 			}
 		},
 		"ViewResolver": {
-			"source": "./contracts/standards/ViewResolver.cdc",
+			"source": "./cadence/contracts/standards/ViewResolver.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "1d7e57aa55817448",
