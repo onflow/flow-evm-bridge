@@ -39,4 +39,8 @@ contract FlowBridgeFactory is Ownable {
     function getFlowAssetIdentifier(address contractAddr) public view returns (string memory) {
         return contractToflowIdentifier[contractAddr];
     }
+
+    function getContractAddress(string memory flowNFTIdentifier) public view returns (address) {
+        return flowIdentifierToContract[flowNFTIdentifier];
+    }
 }

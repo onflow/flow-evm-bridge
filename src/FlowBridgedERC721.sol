@@ -33,4 +33,12 @@ contract FlowBridgedERC721 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable 
     function supportsInterface(bytes4 interfaceId) public view override(ERC721, ERC721URIStorage) returns (bool) {
         return super.supportsInterface(interfaceId);
     }
+
+    function getFlowNFTAddress() public view returns (string memory) {
+        return flowNFTAddress;
+    }
+
+    function getFlowNFTIdentifier() public view returns (string memory) {
+        return flowNFTIdentifier;
+    }
 }
