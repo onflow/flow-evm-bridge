@@ -42,7 +42,7 @@ access(all) contract CONTRACT_NAME : IEVMBridgeNFTLocker {
         self.call(
             signature: "safeMint(address,uint256,string)",
             targetEVMAddress: self.evmNFTContractAddress,
-            args: [id, to, "MOCK_URI"],
+            args: [to, id, "MOCK_URI"],
             gasLimit: 15000000,
             value: 0.0
         )
