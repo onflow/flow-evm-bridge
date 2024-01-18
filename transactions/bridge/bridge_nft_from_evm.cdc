@@ -36,7 +36,7 @@ transaction(nftTypeIdentifier: String, id: UInt256, collectionStoragePathIdentif
             ?? panic("Could not borrow COA from provided gateway address")
         self.calldata = FlowEVMBridgeUtils.encodeABIWithSignature(
                 "approve(address,uint256)",
-                [FlowEVMBridgeUtils.bridgeFactoryEVMAddress, id]
+                [FlowEVMBridge.getBridgeCOAEVMAddress(), id]
             )
     }
 

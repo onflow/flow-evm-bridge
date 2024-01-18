@@ -16,9 +16,8 @@ transaction(id: UInt64, collectionStoragePathIdentifier: String, recipient: Stri
     let nft: @{NonFungibleToken.NFT}
     let nftType: Type
     let evmRecipient: EVM.EVMAddress
-    // let evmContractAddress: EVM.EVMAddress
     let tollFee: @FlowToken.Vault
-    // var success: Bool
+    var success: Bool
     
     prepare(signer: auth(BorrowValue) &Account) {
         // Withdraw the requested NFT
@@ -40,21 +39,21 @@ transaction(id: UInt64, collectionStoragePathIdentifier: String, recipient: Stri
                 from: /storage/flowTokenVault
             ) ?? panic("Could not access signer's FlowToken Vault")
         self.tollFee <- vault.withdraw(amount: FlowEVMBridge.fee) as! @FlowToken.Vault
-        // self.success = false
+        self.success = false
     }
 
     execute {
         // Execute the bridge
         FlowEVMBridge.bridgeNFTToEVM(token: <-self.nft, to: self.evmRecipient, tollFee: <-self.tollFee)
-        // self.success = FlowEVMBridgeUtils.isOwnerOrApproved(
-        //     ofNFT: UInt256(id),
-        //     owner: self.evmRecipient,
-        //     evmContractAddress: FlowEVMBridge.getAssetEVMContractAddress(type: self.nftType) ?? panic("No EVM Address found for NFT type")
-        // )
+        self.success = FlowEVMBridgeUtils.isOwnerOrApproved(
+            ofNFT: UInt256(id),
+            owner: self.evmRecipient,
+            evmContractAddress: FlowEVMBridge.getAssetEVMContractAddress(type: self.nftType) ?? panic("No EVM Address found for NFT type")
+        )
     }
 
     // Post-assert bridge completed successfully on EVM side
-    // post {
-    //     self.success: "Problem bridging to signer's COA!"
-    // }
+    post {
+        self.success: "Problem bridging to signer's COA!"
+    }
 }
