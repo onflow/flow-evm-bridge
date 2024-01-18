@@ -161,17 +161,14 @@ access(all) contract FlowEVMBridgeUtils {
     }
 
     access(all) fun isOwner(ofNFT: UInt256, owner: EVM.EVMAddress, evmContractAddress: EVM.EVMAddress): Bool {
-        let ownerResponse: [UInt8] = self.call(
-            signature: "ownerOf(uint256)",
-            targetEVMAddress: evmContractAddress,
-            args: [ofNFT],
-            gasLimit: 12000000,
-            value: 0.0
-        )
-        let decodedOwnerResponse: [AnyStruct] = EVM.decodeABI(
-                types: [Type<EVM.EVMAddress>()],
-                data: ownerResponse
+        let calldata: [UInt8] = FlowEVMBridgeUtils.encodeABIWithSignature("ownerOf(uint256)", [ofNFT])
+        let ownerResponse: [UInt8] = self.inspectorCOA.call(
+                to: evmContractAddress,
+                data: calldata,
+                gasLimit: 12000000,
+                value: EVM.Balance(flow: 0.0)
             )
+        let decodedOwnerResponse: [AnyStruct] = EVM.decodeABI(types: [Type<EVM.EVMAddress>()], data: ownerResponse)
         if decodedOwnerResponse.length == 1 {
             let actualOwner: EVM.EVMAddress = decodedOwnerResponse[0] as! EVM.EVMAddress
             return actualOwner.bytes == owner.bytes
@@ -187,8 +184,7 @@ access(all) contract FlowEVMBridgeUtils {
             gasLimit: 12000000,
             value: 0.0
         )
-        let decodedApprovedResponse: [AnyStruct] = self.decodeABIWithSignature(
-                "getApproved(uint256)",
+        let decodedApprovedResponse: [AnyStruct] = EVM.decodeABI(
                 types: [Type<EVM.EVMAddress>()],
                 data: approvedResponse
             )
@@ -396,7 +392,7 @@ access(all) contract FlowEVMBridgeUtils {
         let methodID: [UInt8] = self.getFunctionSelector(signature: signature)
             ?? panic("Problem getting function selector for ".concat(signature))
         let calldata: [UInt8] = methodID.concat(EVM.encodeABI(args))
-        let response = self.inspectorCOA.call(
+        let response: [UInt8] = self.inspectorCOA.call(
             to: targetEVMAddress,
             data: calldata,
             gasLimit: gasLimit,
