@@ -84,19 +84,22 @@ access(all) contract CONTRACT_NAME : IEVMBridgeNFTLocker {
 
         // Execute transfer of NFT to bridge COA address
         self.call(
-            signature: "safeTransferFrom(address,address,uint256)",
+            signature: "burn(uint256)",
             targetEVMAddress: evmContractAddress,
-            args: [caller.address(), FlowEVMBridge.getBridgeCOAEVMAddress(), id],
+            args: [id],
             gasLimit: 15000000,
             value: 0.0
         )
 
-        let isBridgeOwned: Bool = FlowEVMBridgeUtils.isOwnerOrApproved(
-            ofNFT: id,
-            owner: FlowEVMBridge.getBridgeCOAEVMAddress(),
-            evmContractAddress: evmContractAddress
-        )
-        assert(isBridgeOwned, message: "Bridge was not approved for requested NFT")
+        let response: [UInt8] = FlowEVMBridge.borrowCOA().call(
+                to: evmContractAddress,
+                data: FlowEVMBridgeUtils.encodeABIWithSignature("exists(uint256)", [id]),
+                gasLimit: 15000000,
+                value: EVM.Balance(flow: 0.0)
+            )
+        let decoded: [AnyStruct] = EVM.decodeABI(types:[Type<Bool>()], data: response)
+        let exists: Bool = decoded[0] as! Bool
+        assert(exists == false, message: "NFT was not successfully burned")
 
         let convertedID: UInt64 = FlowEVMBridgeUtils.uint256ToUInt64(value: id)
         return <- self.locker.withdraw(withdrawID: convertedID)
