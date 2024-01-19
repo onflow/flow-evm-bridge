@@ -1,25 +1,23 @@
 # [WIP] Flow EVM Bridge
 
-> :warning: This repo is a work in progress
+> :warning: This repo is a work in progress :building_construction:
 
-This repo contains the contracts enabling asset bridging between Flow and Flow EVM.
+This repo contains contracts enabling bridging of fungible & non-fungible assets between Flow and Flow EVM.
 
-## Repository settings and configuration
-- [ ]  Repository info
-    - [ ]  Add repo description
-    - [ ]  Update website to https://onflow.org
-    - [ ]  Add relevant repository topics (i.e. `blockchain` `onflow`, etc)
-    - [ ]  Check issue labels on `.github/labels.yml` and do any commit to main to get them synced
-- [ ]  Define merge workflow (create new branch protection rule)
-    - [ ]  `main` branch rule:
-        - [ ]  **Require pull request reviews before merging (2 approving reviews)**
-            - [ ]  **Require review from Code Owners**
-        - [ ]  **Require status checks to pass before merging**
-            - [ ]  **Require branches to be up to date before merging**
-        - [ ]  **Require linear history**
-        - [ ]   **Restrict who can push to matching branches**
-            - [ ]  Choose `onflow/flow` team
+## Demo
 
-- [ ]  Add necessary team members, adjust access levels
-    - [ ]  `onflow/flow-admin` ⇒ Admin access
-    - [ ]  `onflow/flow-engineering ` ⇒ Write access
+Check out this video demo showcasing bridging between Flow & FlowEVM
+
+:computer: [Bridging a Flow-native NFT between environments](https://www.loom.com/share/d5293000ff614f9693d48006ab1a842b?sid=3a2fff84-e951-4f3f-ae5d-4419bbd30d17)
+
+## References
+
+This repo is working on the basis of the design laid out in [FLIP #237](https://github.com/onflow/flips/pull/233).
+
+### Additional Resource
+
+For the current state of Flow EVM across various task paths, see the following resources:
+
+- [Flow EVM Equivalence forum post](https://forum.flow.com/t/evm-equivalence-on-flow-proposal-and-path-forward/5478)
+- [EVM Integration FLIP #223](https://github.com/onflow/flips/pull/225/files)
+- [Gateway & JSON RPC FLIP #235](https://github.com/onflow/flips/pull/235)
