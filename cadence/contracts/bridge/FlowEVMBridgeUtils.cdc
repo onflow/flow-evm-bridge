@@ -5,14 +5,8 @@ import "FlowToken"
 import "EVM"
 import "FlowEVMBridgeConfig"
 
-/// Util contract serving all bridge contracts
+/// This contract serves as a source of utility methods leveraged by FlowEVMBridge contracts
 //
-// TODO:
-// - [ ] Validate bytes4 .sol type can receive [UInt8] from Cadence when encoded - affects supportsInterface calls
-// - [ ] Clarify gas limit values for robustness across various network conditions
-// - [ ] Implement inspector methods in Factory.sol contract
-// - [ ] Remove getEVMAddressAsHexString once EVMAddress.toString() is available
-// - [ ] Implement view functions once available in EVM contract
 access(all) contract FlowEVMBridgeUtils {
 
     /// Address of the bridge factory Solidity contract
@@ -23,6 +17,11 @@ access(all) contract FlowEVMBridgeUtils {
     access(self) let contractNamePrefixes: {Type: {String: String}}
 
     /// Returns an EVMAddress as a hex string without a 0x prefix
+    ///
+    /// @param: address The EVMAddress to convert to a hex string
+    ///
+    /// @return The hex string representation of the EVMAddress without 0x prefix
+    ///
     // TODO: Remove once EVMAddress.toString() is available
     access(all) fun getEVMAddressAsHexString(address: EVM.EVMAddress): String {
         let addressBytes: [UInt8] = []
@@ -31,8 +30,13 @@ access(all) contract FlowEVMBridgeUtils {
         }
         return String.encodeHex(addressBytes)
     }
+
     /// Returns an EVMAddress as a hex string without a 0x prefix
-    // TODO: Remove once EVMAddress.toString() is available
+    ///
+    /// @param: address The hex string to convert to an EVMAddress
+    ///
+    /// @return The EVMAddress representation of the hex string
+    ///
     access(all) fun getEVMAddressFromHexString(address: String): EVM.EVMAddress? {
         let addressBytes: [UInt8] = address.decodeHex()
         return EVM.EVMAddress(bytes: [
@@ -45,6 +49,11 @@ access(all) contract FlowEVMBridgeUtils {
     }
 
     /// Identifies if an asset is Flow- or EVM-native, defined by whether a bridge contract defines it or not
+    ///
+    /// @param: type The Type of the asset to check
+    ///
+    /// @return True if the asset is Flow-native, false if it is EVM-native
+    ///
     access(all) fun isFlowNative(type: Type): Bool {
         let definingAddress: Address = self.getContractAddress(fromType: type)
             ?? panic("Could not construct address from type identifier: ".concat(type.identifier))
@@ -52,6 +61,9 @@ access(all) contract FlowEVMBridgeUtils {
     }
 
     /// Identifies if an asset is Flow- or EVM-native, defined by whether a bridge-owned contract defines it or not
+    ///
+    /// @param: type The Type of the asset to check
+    ///
     access(all) fun isEVMNative(evmContractAddress: EVM.EVMAddress): Bool {
         // Ask the bridge factory if the given contract address was deployed by the bridge
         let response: [UInt8] = self.call(

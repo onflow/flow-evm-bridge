@@ -30,7 +30,9 @@ access(all) contract interface IEVMBridgeNFTLocker : ICrossVM {
     // access(all) event BridgedFromEVM(type: Type, id: UInt64, caller: EVM.EVMAddress, evmContractAddress: EVM.EVMAddress, flowNative: Bool)
     access(all) event BridgedFromEVM(type: Type, id: UInt64, flowNative: Bool)
 
-    /* --- Auxiliary entrypoints --- */
+    /************************************
+        Auxiliary Bridge Entrypoints
+    *************************************/
 
     access(all) fun bridgeToEVM(token: @{NonFungibleToken.NFT}, to: EVM.EVMAddress, tollFee: @FlowToken.Vault) {
         pre {

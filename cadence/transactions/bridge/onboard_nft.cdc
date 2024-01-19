@@ -7,6 +7,8 @@ import "EVM"
 import "FlowEVMBridge"
 import "FlowEVMBridgeConfig"
 
+/// This transaction onboards the NFT type to the bridge, configuring the bridge to move NFTs between environments
+///
 transaction(identifier: String) {
 
     let nftType: Type
@@ -24,7 +26,7 @@ transaction(identifier: String) {
 
     execute {
         // Execute the bridge
-        FlowEVMBridge.onboardNFT(type: self.nftType,tollFee: <-self.tollFee)
+        FlowEVMBridge.onboardNFTByType(self.nftType, tollFee: <-self.tollFee)
     }
 
     // Post-assert bridge onboarding completed successfully 

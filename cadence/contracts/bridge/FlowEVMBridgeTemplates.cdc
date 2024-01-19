@@ -3,14 +3,9 @@ import "NonFungibleToken"
 
 import "FlowEVMBridgeUtils"
 
-/// Helper contract serving templates
-//
-// TODO:
-// - [ ] Add support for:
-//      - [ ] Derive and provide nftLockerContractCodeChunks on init for proof of concept
-//      - [ ] Token locker contracts
-//      - [ ] Bridged NFT contracts
-//      - [ ] Bridged token contracts
+/// This contract serves Cadence code from chunked templates, replacing the contract name with the name derived from
+/// given arguments - either Cadence Type or EVM contract address.
+///
 access(all) contract FlowEVMBridgeTemplates {
 
     access(self) var nftLockerContractCodeChunks: [String]
@@ -28,9 +23,10 @@ access(all) contract FlowEVMBridgeTemplates {
         }
         return nil
     }
+
     /// Serves bridged asset contract code for a given type, deriving the contract name from the EVM contract info
     // TODO: Consider adding the values we would need to derive from instead of abstracting EVM calls in scope
-    // access(all) fun getBridgedAssetContractCode(forEVMContract: EVM.EVMAddress): [UInt8]?
+    // access(all) fun getBridgedAssetContractCode(forEVMContract: EVM.EVMAddress): [UInt8]? {}
 
     access(self) fun getNFTLockerContractCode(forType: Type): [UInt8]? {
         if let contractName: String = FlowEVMBridgeUtils.deriveLockerContractName(fromType: forType) {
@@ -57,7 +53,8 @@ access(all) contract FlowEVMBridgeTemplates {
         self.nftLockerContractCodeChunks = new
     }
 
-    // TODO: Flow CLI breaks flow.json on [String] in contract init - hard coding for the time being but needs new hex on template changes
+    // Flow CLI currently breaks flow.json on [String] in contract init - hard coding for the time being but needs new
+    // hex on template changes
     // init(nftLockerContractCodeChunks: [String]) {
     init() {
         // self.nftLockerContractCodeChunks = nftLockerContractCodeChunks
