@@ -10,6 +10,8 @@ access(all) fun getTypeArray(_ identifiers: [String]): [Type] {
     return types
 }
 
+/// Supports generic calls to EVM contracts that might have return values
+///
 access(all) fun main(
     gatewayAddress: Address,
     evmContractAddressHex: String,

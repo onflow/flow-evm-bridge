@@ -2,6 +2,7 @@ import "EVM"
 import "FungibleToken"
 import "FlowToken"
 
+/// Creates a COA and saves it in the signer's Flow account & passing the given value of Flow into FlowEVM
 transaction(amount: UFix64) {
     let sentVault: @FlowToken.Vault
     let auth: auth(Storage) &Account

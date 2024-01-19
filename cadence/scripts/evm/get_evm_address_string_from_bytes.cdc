@@ -2,6 +2,8 @@ import "EVM"
 
 import "FlowEVMBridgeUtils"
 
+/// Converts EVM address bytes into to a hex string
+///
 access(all) fun main(bytes: [UInt8]): String? {
     let address = EVM.EVMAddress(
             bytes: [

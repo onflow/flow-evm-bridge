@@ -1,5 +1,7 @@
 import "EVM"
 
+/// Executes the calldata from the signer's COA
+///
 transaction(evmContractAddressHex: String, calldata: String, gasLimit: UInt64, value: UFix64) {
 
     let evmAddress: EVM.EVMAddress

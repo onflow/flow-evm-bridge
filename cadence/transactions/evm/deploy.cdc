@@ -3,6 +3,8 @@ import "FlowToken"
 
 import "EVM"
 
+/// Deploys a compiled solidity contract from bytecode to the EVM, with the signer's COA as the deployer
+///
 transaction(bytecode: String, gasLimit: UInt64, value: UFix64) {
 
     let bridgedAccount: &EVM.BridgedAccount

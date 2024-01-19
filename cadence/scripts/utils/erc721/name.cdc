@@ -2,11 +2,13 @@ import "EVM"
 
 import "FlowEVMBridgeUtils"
 
-access(all) fun main(coaHost: Address, tokenID: UInt256, contractAddressHex: String): String {
+/// Returns the name of the ERC721 at the given address.
+///
+access(all) fun main(coaHost: Address, contractAddressHex: String): String {
     let coa: &EVM.BridgedAccount = getAuthAccount<auth(BorrowValue) &Account>(coaHost).storage.borrow<&EVM.BridgedAccount>(
             from: /storage/evm
         )!
-    let calldata: [UInt8] = FlowEVMBridgeUtils.encodeABIWithSignature("tokenURI(uint256)", [tokenID])
+    let calldata: [UInt8] = FlowEVMBridgeUtils.encodeABIWithSignature("name()", [])
     let response: [UInt8] = coa.call(
             to: FlowEVMBridgeUtils.getEVMAddressFromHexString(address: contractAddressHex)!,
             data: calldata,

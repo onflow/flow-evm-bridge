@@ -3,6 +3,8 @@ import "FlowToken"
 
 import "EVM"
 
+/// Deposits $FLOW to the signer's COA in FlowEVM
+///
 transaction(amount: UFix64) {
     let preBalance: UFix64
     let bridgedAccount: &EVM.BridgedAccount

@@ -3,6 +3,8 @@ import "FlowToken"
 
 import "EVM"
 
+/// Withdraws $FLOW from the signer's COA and deposits it into their FLOW vault in the Cadence environment
+///
 transaction(amount: UFix64) {
     prepare(signer: AuthAccount) {
         let bridgedAccount = signer.borrow<&EVM.BridgedAccount>(from: EVM.StoragePath)

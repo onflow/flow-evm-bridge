@@ -11,8 +11,9 @@ import "FlowEVMBridge"
 import "FlowEVMBridgeConfig"
 import "FlowEVMBridgeUtils"
 
-// TODO: Try a simple NFT contract & interact via COA to confirm they can receive NFTs
-transaction(id: UInt64, collectionStoragePathIdentifier: String, recipient: String) {
+/// Bridges an NFT from the signer's collection in Flow to the recipient in FlowEVM
+///
+transaction(id: UInt64, collectionStoragePathIdentifier: String, recipient: String?) {
     
     let nft: @{NonFungibleToken.NFT}
     let nftType: Type
@@ -46,6 +47,8 @@ transaction(id: UInt64, collectionStoragePathIdentifier: String, recipient: Stri
     execute {
         // Execute the bridge
         FlowEVMBridge.bridgeNFTToEVM(token: <-self.nft, to: self.evmRecipient, tollFee: <-self.tollFee)
+
+        // Ensure the intended recipient is the owner of the NFT we bridged
         self.success = FlowEVMBridgeUtils.isOwnerOrApproved(
             ofNFT: UInt256(id),
             owner: self.evmRecipient,

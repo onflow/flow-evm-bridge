@@ -5,6 +5,8 @@ import "EVM"
 
 import "FlowEVMBridgeUtils"
 
+/// Transfers $FLOW from the signer's account Cadence Flow balance to the recipient's hex-encoded EVM address
+///
 transaction(amount: UFix64, recipientEVMAddressHex: String) {
 
     let sender: &EVM.BridgedAccount

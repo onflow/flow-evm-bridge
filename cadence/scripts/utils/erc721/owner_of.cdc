@@ -2,6 +2,7 @@ import "EVM"
 
 import "FlowEVMBridgeUtils"
 
+/// Returns the EVM address of the owner of the ERC721 token with the given ID.
 access(all) fun main(coaHost: Address, id: UInt256, contractAddressHex: String): EVM.EVMAddress {
     let coa: &EVM.BridgedAccount = getAuthAccount<auth(BorrowValue) &Account>(coaHost).storage.borrow<&EVM.BridgedAccount>(
             from: /storage/evm
