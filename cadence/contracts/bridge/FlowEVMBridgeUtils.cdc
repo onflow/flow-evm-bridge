@@ -21,16 +21,7 @@ access(all) contract FlowEVMBridgeUtils {
     access(self) let contractNameDelimiter: String
     /// Mapping containing contract name prefixes
     access(self) let contractNamePrefixes: {Type: {String: String}}
-    /// Mapping of EVM contract interfaces to their 4 byte hash prefixes
-    access(self) let interface4Bytes: {String: [UInt8; 4]}
-    /// Commonly used Solidity function selectors to call into EVM from bridge contracts to support call encoding
-    // TODO: Get rid of this value in favor of encodeAbiWithSignature once available in EVM contract
-    access(self) let functionSelectors: {String: [UInt8]}
 
-    /// Returns the requested function selector
-    access(all) view fun getFunctionSelector(signature: String): [UInt8]? {
-        return self.functionSelectors[signature]
-    }
     /// Returns an EVMAddress as a hex string without a 0x prefix
     // TODO: Remove once EVMAddress.toString() is available
     access(all) fun getEVMAddressAsHexString(address: EVM.EVMAddress): String {
@@ -350,33 +341,21 @@ access(all) contract FlowEVMBridgeUtils {
         vault.deposit(from: <-tollFee)
     }
 
-    /// Upserts the function selector of the given signature
-    access(account) fun upsertFunctionSelector(signature: String) {
-        let methodID: [UInt8] = HashAlgorithm.KECCAK_256.hash(
-            signature.utf8
-        ).slice(from: 0, upTo: 4)
-
-        self.functionSelectors[signature] = methodID
-    }
-
     /// Enables other bridge contracts to orchestrate bridge operations from contract-owned COA
     access(account) fun borrowCOA(): &EVM.BridgedAccount {
         return self.account.storage.borrow<&EVM.BridgedAccount>(from: FlowEVMBridgeConfig.coaStoragePath)
             ?? panic("Could not borrow COA reference")
     }
 
-    // TODO: Make account method retrieving reference to account stored COA. Determine if we need to limit util getters
-    // to prevent spam attacks draining EVM Flow funds
-    access(self) fun call(
+    /// Shared helper simplifying calls using the bridge account's COA
+    access(account) fun call(
         signature: String,
         targetEVMAddress: EVM.EVMAddress,
         args: [AnyStruct],
         gasLimit: UInt64,
         value: UFix64
     ): [UInt8] {
-        let methodID: [UInt8] = self.getFunctionSelector(signature: signature)
-            ?? panic("Problem getting function selector for ".concat(signature))
-        let calldata: [UInt8] = methodID.concat(EVM.encodeABI(args))
+        let calldata: [UInt8] = self.encodeABIWithSignature(signature, args)
         let response: [UInt8] = self.borrowCOA().call(
             to: targetEVMAddress,
             data: calldata,
@@ -398,12 +377,6 @@ access(all) contract FlowEVMBridgeUtils {
                 "bridged": "EVMVMBridgedToken"
             }
         }
-        let erc20InterfaceBytes: [UInt8] = "36372b07".decodeHex()
-        let erc721InterfaceBytes: [UInt8] = "80ac58cd".decodeHex()
-        self.interface4Bytes = {
-            "IERC20": [erc20InterfaceBytes[0], erc20InterfaceBytes[1], erc20InterfaceBytes[2], erc20InterfaceBytes[3]],
-            "IERC721": [erc721InterfaceBytes[0], erc721InterfaceBytes[1], erc721InterfaceBytes[2], erc721InterfaceBytes[3]]
-        }
         let bridgeFactoryEVMAddressBytes: [UInt8] = bridgeFactoryEVMAddress.decodeHex()
         self.bridgeFactoryEVMAddress = EVM.EVMAddress(bytes: [
             bridgeFactoryEVMAddressBytes[0], bridgeFactoryEVMAddressBytes[1], bridgeFactoryEVMAddressBytes[2], bridgeFactoryEVMAddressBytes[3],
@@ -412,38 +385,5 @@ access(all) contract FlowEVMBridgeUtils {
             bridgeFactoryEVMAddressBytes[12], bridgeFactoryEVMAddressBytes[13], bridgeFactoryEVMAddressBytes[14], bridgeFactoryEVMAddressBytes[15],
             bridgeFactoryEVMAddressBytes[16], bridgeFactoryEVMAddressBytes[17], bridgeFactoryEVMAddressBytes[18], bridgeFactoryEVMAddressBytes[19]
         ])
-        let signatures = [
-            "decimals()", // (uint8)
-            "balanceOf(address)", // (uint256)
-            "ownerOf(uint256)", // (address)
-            "getApproved(uint256)", // (address)
-            "approve(address,uint256)",
-            "safeMint(address,uint256,string)",
-            "burn(uint256)",
-            "safeTransferFrom(contract IERC20,address,address,uint256)",
-            "safeTransferFrom(address,address,uint256)",
-            // FLAG - May need to implement supportsInterface in the Factory contract as inspection method until we
-            "supportsInterface(bytes4)", // (bool)
-            "symbol()", // (string)
-            "name()", // (string)
-            "tokenURI(uint256)", // (string)
-            "isFactoryDeployed(address)", //s) (bool
-            "getFlowAssetContractAddress(string)", // (string)
-            "getFlowAssetIdentifier(address)", // (string)
-            "isERC721(address)", // (bool)
-            "isEVMToken(address)", // (bool)
-            "deployERC721(string,string,string,string)" // (address)
-        ]
-        self.functionSelectors = {}
-        for signature in signatures {
-            let methodID = HashAlgorithm.KECCAK_256.hash(
-                signature.utf8
-            ).slice(from: 0, upTo: 4)
-            self.functionSelectors[signature] = methodID
-        }
-        assert(
-            self.functionSelectors.length == signatures.length,
-            message: "Function selector initialization failed"
-        )
     }
 }

@@ -40,7 +40,7 @@ access(all) contract CONTRACT_NAME : IEVMBridgeNFTLocker {
 
         self.locker.deposit(token: <-token)
         // TODO - pull URI from NFT if display exists & pass on minting
-        self.call(
+        FlowEVMBridgeUtils.call(
             signature: "safeMint(address,uint256,string)",
             targetEVMAddress: self.evmNFTContractAddress,
             args: [to, id, "MOCK_URI"],
@@ -84,7 +84,7 @@ access(all) contract CONTRACT_NAME : IEVMBridgeNFTLocker {
         )
 
         // Execute transfer of NFT to bridge COA address
-        self.call(
+        FlowEVMBridgeUtils.call(
             signature: "burn(uint256)",
             targetEVMAddress: evmContractAddress,
             args: [id],
@@ -216,27 +216,6 @@ access(all) contract CONTRACT_NAME : IEVMBridgeNFTLocker {
             return <-self.lockedNFTs.remove(key: withdrawID)!
         }
 
-    }
-
-    /* --- Internal --- */
-
-    access(self) fun call(
-        signature: String,
-        targetEVMAddress: EVM.EVMAddress,
-        args: [AnyStruct],
-        gasLimit: UInt64,
-        value: UFix64
-    ): [UInt8] {
-        let methodID: [UInt8] = FlowEVMBridgeUtils.getFunctionSelector(signature: signature)
-            ?? panic("Problem getting function selector for ".concat(signature))
-        let calldata: [UInt8] = methodID.concat(EVM.encodeABI(args))
-        let response = FlowEVMBridgeUtils.borrowCOA().call(
-            to: targetEVMAddress,
-            data: calldata,
-            gasLimit: gasLimit,
-            value: EVM.Balance(flow: value)
-        )
-        return response
     }
 
     init(lockedNFTType: Type, flowNFTContractAddress: Address, evmNFTContractAddress: EVM.EVMAddress) {

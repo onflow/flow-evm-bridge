@@ -215,7 +215,7 @@ access(all) contract FlowEVMBridge {
         evmContractAddress: EVM.EVMAddress,
         tollFee: @FlowToken.Vault
     ): @{NonFungibleToken.NFT} {
-        let response: [UInt8] = self.call(
+        let response: [UInt8] = FlowEVMBridgeUtils.call(
             signature: "getFlowAssetIdentifier(address)",
             targetEVMAddress: FlowEVMBridgeUtils.bridgeFactoryEVMAddress,
             args: [evmContractAddress],
@@ -321,7 +321,7 @@ access(all) contract FlowEVMBridge {
         let cadenceAddressStr: String = FlowEVMBridgeUtils.getContractAddress(fromType: forNFTType)?.toString()
             ?? panic("Could not derive contract address for token type: ".concat(identifier))
 
-        let response: [UInt8] = self.call(
+        let response: [UInt8] = FlowEVMBridgeUtils.call(
             signature: "deployERC721(string,string,string,string)",
             targetEVMAddress: FlowEVMBridgeUtils.bridgeFactoryEVMAddress,
             args: [name, "BRDG", cadenceAddressStr, identifier],
@@ -331,23 +331,5 @@ access(all) contract FlowEVMBridge {
         let decodedResponse: [AnyStruct] = EVM.decodeABI(types: [Type<EVM.EVMAddress>()], data: response)
         let erc721Address: EVM.EVMAddress = decodedResponse[0] as! EVM.EVMAddress
         return erc721Address
-    }
-
-    access(self) fun call(
-        signature: String,
-        targetEVMAddress: EVM.EVMAddress,
-        args: [AnyStruct],
-        gasLimit: UInt64,
-        value: UFix64
-    ): [UInt8] {
-        let methodID: [UInt8] = FlowEVMBridgeUtils.getFunctionSelector(signature: signature)
-            ?? panic("Problem getting function selector for ".concat(signature))
-        let calldata: [UInt8] = methodID.concat(EVM.encodeABI(args))
-        return FlowEVMBridgeUtils.borrowCOA().call(
-            to: targetEVMAddress,
-            data: calldata,
-            gasLimit: gasLimit,
-            value: EVM.Balance(flow: value)
-        )
     }
 }
