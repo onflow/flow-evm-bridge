@@ -32,15 +32,19 @@ contract FlowBridgeFactory is Ownable {
         return address(newERC721);
     }
 
-    function isFactoryDeployed(address contractAddr) public view returns (bool) {
-        return bytes(contractToflowIdentifier[contractAddr]).length != 0;
-    }
-
     function getFlowAssetIdentifier(address contractAddr) public view returns (string memory) {
         return contractToflowIdentifier[contractAddr];
     }
 
     function getContractAddress(string memory flowNFTIdentifier) public view returns (address) {
         return flowIdentifierToContract[flowNFTIdentifier];
+    }
+
+    function isFactoryDeployed(address contractAddr) public view returns (bool) {
+        return bytes(contractToflowIdentifier[contractAddr]).length != 0;
+    }
+
+    function isERC721(address contractAddr) public view returns (bool) {
+        return ERC165(contractAddr).supportsInterface(0x80ac58cd);
     }
 }

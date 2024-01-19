@@ -295,6 +295,8 @@ access(all) contract FlowEVMBridge {
         let contractAddress: Address = FlowEVMBridgeUtils.getContractAddress(fromType: forType)
             ?? panic("Could not derive locker contract address for token type: ".concat(forType.identifier))
         self.account.contracts.add(name: name, code: code, forType, contractAddress, evmContractAddress)
+
+        emit BridgeLockerContractDeployed(type: forType, name: name, evmContractAddress: evmContractAddress)
     }
     /// Helper for deploying templated defining contract supporting EVM-native asset bridging to Flow
     /// Deploys either NFT or FT contract depending on the provided type
