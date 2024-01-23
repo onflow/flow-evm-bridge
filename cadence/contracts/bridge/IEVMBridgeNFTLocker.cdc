@@ -21,11 +21,11 @@ access(all) contract interface IEVMBridgeNFTLocker : ICrossVM {
     /// Resource which holds locked NFTs
     access(contract) let locker: @{Locker, NonFungibleToken.Collection}
 
-    /// Asset bridged from Flow to EVM - satisfies both FT & NFT (always amount == 1.0)
+    /// NFT bridged from Flow to EVM
     // TODO: Add evmContractAddress back once COA.address() is view
     // access(all) event BridgedToEVM(type: Type, id: UInt64, to: EVM.EVMAddress, evmContractAddress: EVM.EVMAddress, flowNative: Bool)
     access(all) event BridgedToEVM(type: Type, id: UInt64, to: EVM.EVMAddress, flowNative: Bool)
-    /// Asset bridged from EVM to Flow - satisfies both FT & NFT (always amount == 1.0)
+    /// NFT bridged from EVM to Flow
     // TODO: Add caller and evmContractAddress back once COA.address() is view
     // access(all) event BridgedFromEVM(type: Type, id: UInt64, caller: EVM.EVMAddress, evmContractAddress: EVM.EVMAddress, flowNative: Bool)
     access(all) event BridgedFromEVM(type: Type, id: UInt64, flowNative: Bool)
@@ -64,12 +64,16 @@ access(all) contract interface IEVMBridgeNFTLocker : ICrossVM {
         }
     }
 
-    /* --- Getters --- */
+    /****************
+        Getters
+    *****************/
 
     access(all) view fun getLockedNFTCount(): Int
     access(all) view fun borrowLockedNFT(id: UInt64): &{NonFungibleToken.NFT}?
 
-    /* --- Locker interface --- */
+    /*************************
+        Locker interface
+    **************************/
 
     access(all) resource interface Locker : NonFungibleToken.Collection {
         access(all) view fun isLocked(id: UInt64): Bool
