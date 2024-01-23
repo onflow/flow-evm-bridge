@@ -43,6 +43,8 @@ access(all) contract FlowEVMBridge {
     access(all) fun onboardNFTByType(_ type: Type, tollFee: @FlowToken.Vault) {
         pre {
             self.typeRequiresOnboarding(type) == true: "Onboarding is not needed for this type"
+            type.isSubtype(of: Type<@{NonFungibleToken.NFT}>()) && !type.isSubtype(of: Type<@{FungibleToken.Vault}>()):
+                "Invalid type provided"
         }
         FlowEVMBridgeUtils.depositTollFee(<-tollFee)
         if FlowEVMBridgeUtils.isFlowNative(type: type) {
