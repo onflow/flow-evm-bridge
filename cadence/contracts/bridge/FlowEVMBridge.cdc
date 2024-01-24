@@ -182,8 +182,21 @@ access(all) contract FlowEVMBridge {
     }
 
     /// Returns whether an EVM-native asset needs to be onboarded to the bridge
-    // TODO
-    // access(all) fun evmAddressRequiresOnboarding(address: EVM.EVMAddress) {}
+    access(all) fun evmAddressRequiresOnboarding(address: EVM.EVMAddress): Bool? {
+        if FlowEVMBridgeUtils.isEVMContractBridgeOwned(evmContractAddress: address) {
+            return false
+        }
+
+        // Dealing with EVM-native asset, check if it's NFT or FT exclusively
+        let isERC721: Bool = FlowEVMBridgeUtils.isEVMNFT(evmContractAddress: address)
+        let isERC20: Bool = FlowEVMBridgeUtils.isEVMToken(evmContractAddress: address)
+        if (isERC721 && !isERC20) || (!isERC721 && isERC20) {
+            return true
+        }
+
+        // If neither, return nil
+        return nil
+    }
 
     /// Borrows the locker contract from the bridge account for the given asset type
     ///

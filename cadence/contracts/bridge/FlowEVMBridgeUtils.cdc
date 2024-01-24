@@ -65,6 +65,10 @@ access(all) contract FlowEVMBridgeUtils {
     /// @param: type The Type of the asset to check
     ///
     access(all) fun isEVMNative(evmContractAddress: EVM.EVMAddress): Bool {
+        return self.isEVMContractBridgeOwned(evmContractAddress: evmContractAddress) == false
+    }
+
+    access(all) fun isEVMContractBridgeOwned(evmContractAddress: EVM.EVMAddress): Bool {
         // Ask the bridge factory if the given contract address was deployed by the bridge
         let response: [UInt8] = self.call(
                 signature: "isFactoryDeployed(address)",
@@ -75,9 +79,7 @@ access(all) contract FlowEVMBridgeUtils {
             )
         let decodedResponse: [AnyStruct] = EVM.decodeABI(types: [Type<Bool>()], data: response)
         let decodedBool: Bool = decodedResponse[0] as! Bool
-
-        // If it was not bridge-deployed, then assume asset is EVM-native
-        return decodedBool == false
+        return decodedBool
     }
 
     /// Identifies if an asset is ERC721
