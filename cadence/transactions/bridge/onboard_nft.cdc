@@ -8,6 +8,7 @@ import "FlowEVMBridge"
 import "FlowEVMBridgeConfig"
 
 /// This transaction onboards the NFT type to the bridge, configuring the bridge to move NFTs between environments
+/// NOTE: This must be done before bridging a Flow-native NFT to Flow EVM
 ///
 transaction(identifier: String) {
 
@@ -24,13 +25,14 @@ transaction(identifier: String) {
         self.tollFee <- vault.withdraw(amount: FlowEVMBridgeConfig.fee) as! @FlowToken.Vault
     }
 
-    execute {
-        // Execute the bridge
-        FlowEVMBridge.onboardNFTByType(self.nftType, tollFee: <-self.tollFee)
+    // Added for context - how to check if a type requires onboarding to the bridge
+    pre {
+        FlowEVMBridge.typeRequiresOnboarding(self.nftType) != nil: "Requesting to bridge unsupported asset type"
+        FlowEVMBridge.typeRequiresOnboarding(self.nftType) == true: "This NFT type has already been onboarded"
     }
 
-    // Post-assert bridge onboarding completed successfully 
-    post {
-        FlowEVMBridge.typeRequiresOnboarding(self.nftType) == true: "Bridge was not configured for given type"
+    execute {
+        // Onboard the NFT Type
+        FlowEVMBridge.onboardNFTByType(self.nftType, tollFee: <-self.tollFee)
     }
 }

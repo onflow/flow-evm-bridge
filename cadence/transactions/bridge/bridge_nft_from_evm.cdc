@@ -1,9 +1,6 @@
 import "FungibleToken"
 import "NonFungibleToken"
-import "ViewResolver"
-import "MetadataViews"
 import "FlowToken"
-import "ExampleNFT"
 
 import "EVM"
 
@@ -12,9 +9,12 @@ import "FlowEVMBridgeConfig"
 import "FlowEVMBridgeUtils"
 
 /// This transaction bridges an NFT from FlowEVM to Flow assuming it has already been onboarded to the FlowEVMBridge
+/// NOTE: The ERC721 must have first been onboarded to the bridge. This can be checked via the method
+///     FlowEVMBridge.evmAddressRequiresOnboarding(address: self.evmContractAddress) shown below
 ///
 transaction(nftTypeIdentifier: String, id: UInt256, collectionStoragePathIdentifier: String) {
 
+    let requiresOnboarding: Bool?
     let evmContractAddress: EVM.EVMAddress
     let collection: &{NonFungibleToken.Collection}
     let tollFee: @FlowToken.Vault
@@ -22,10 +22,13 @@ transaction(nftTypeIdentifier: String, id: UInt256, collectionStoragePathIdentif
     let calldata: [UInt8]
     
     prepare(signer: auth(BorrowValue) &Account) {
+
         // Get the ERC721 contract address for the given NFT type
         let nftType: Type = CompositeType(nftTypeIdentifier) ?? panic("Could not construct NFT type")
         self.evmContractAddress = FlowEVMBridge.getAssetEVMContractAddress(type: nftType)
             ?? panic("EVM Contract address not found for given NFT type")
+        // Gather value to check before executing the bridge - added here for context
+        self.requiresOnboarding = FlowEVMBridge.evmAddressRequiresOnboarding(address: self.evmContractAddress)
 
         // Borrow a reference to the NFT collection
         let storagePath = StoragePath(identifier: collectionStoragePathIdentifier) ?? panic("Could not create storage path")
@@ -47,6 +50,14 @@ transaction(nftTypeIdentifier: String, id: UInt256, collectionStoragePathIdentif
                 "approve(address,uint256)",
                 [FlowEVMBridge.getBridgeCOAEVMAddress(), id]
             )
+    }
+
+    // Assert the bridge is configured to bridge the requested NFT
+    pre {
+        self.requiresOnboarding != nil:
+            "Requesting to bridge unsupported asset type"
+        self.requiresOnboarding == false:
+            "The requested NFT type has not yet been onboarded to the bridge"
     }
 
     execute {

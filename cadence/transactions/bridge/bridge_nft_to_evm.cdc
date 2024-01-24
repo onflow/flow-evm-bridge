@@ -12,8 +12,10 @@ import "FlowEVMBridgeConfig"
 import "FlowEVMBridgeUtils"
 
 /// Bridges an NFT from the signer's collection in Flow to the recipient in FlowEVM
+/// NOTE: The NFT being bridged must have first been onboarded by type. This can be checked for with the method
+///     FlowEVMBridge.typeRequiresOnboarding(type): Bool? - see the pre-condition below
 ///
-transaction(id: UInt64, collectionStoragePathIdentifier: String, recipient: String?) {
+transaction(id: UInt64, collectionStoragePathIdentifier: String, recipient: String) {
     
     let nft: @{NonFungibleToken.NFT}
     let nftType: Type
@@ -29,19 +31,23 @@ transaction(id: UInt64, collectionStoragePathIdentifier: String, recipient: Stri
         self.nft <- collection.withdraw(withdrawID: id)
         // Save the type for our post-assertion
         self.nftType = self.nft.getType()
-        // Get the signer's COA EVMAddress as recipient
-        if recipient == nil {
-            self.evmRecipient = signer.storage.borrow<&EVM.BridgedAccount>(from: /storage/evm)!.address()
-        } else {
-            self.evmRecipient = FlowEVMBridgeUtils.getEVMAddressFromHexString(address: recipient!)
-                ?? panic("Malformed Recipient Address")
-        }
+        // Assign the recipient EVMAddress
+        self.evmRecipient = FlowEVMBridgeUtils.getEVMAddressFromHexString(address: recipient)
+            ?? panic("Malformed Recipient Address")
         // Pay the bridge toll
         let vault = signer.storage.borrow<auth(FungibleToken.Withdrawable) &FlowToken.Vault>(
                 from: /storage/flowTokenVault
             ) ?? panic("Could not access signer's FlowToken Vault")
         self.tollFee <- vault.withdraw(amount: FlowEVMBridgeConfig.fee) as! @FlowToken.Vault
         self.success = false
+    }
+
+    // Check that the type has been onboarded to the bridge - checked in the bridge contract, added here for context
+    pre {
+        FlowEVMBridge.typeRequiresOnboarding(self.nftType) != nil:
+            "Requesting to bridge unsupported asset type"
+        FlowEVMBridge.typeRequiresOnboarding(self.nftType) == false:
+            "The requested NFT type has not yet been onboarded to the bridge"
     }
 
     execute {
