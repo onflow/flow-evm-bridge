@@ -33,6 +33,6 @@ transaction(identifier: String) {
 
     execute {
         // Onboard the NFT Type
-        FlowEVMBridge.onboardNFTByType(self.nftType, tollFee: <-self.tollFee)
+        FlowEVMBridge.onboardByType(self.nftType, tollFee: <-self.tollFee)
     }
 }

@@ -68,6 +68,10 @@ access(all) contract FlowEVMBridgeUtils {
         return self.isEVMContractBridgeOwned(evmContractAddress: evmContractAddress) == false
     }
 
+    /// Determines if the given EVM contract address was deployed by the bridge by querying the factory contract
+    ///
+    /// @param: evmContractAddress The EVM contract address to check
+    ///
     access(all) fun isEVMContractBridgeOwned(evmContractAddress: EVM.EVMAddress): Bool {
         // Ask the bridge factory if the given contract address was deployed by the bridge
         let response: [UInt8] = self.call(

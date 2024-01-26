@@ -40,10 +40,11 @@ access(all) contract FlowEVMBridge {
     /// @param type: The Cadence Type of the NFT to be onboarded
     /// @param tollFee: Fee paid for onboarding
     ///
-    access(all) fun onboardNFTByType(_ type: Type, tollFee: @FlowToken.Vault) {
+    access(all) fun onboardByType(_ type: Type, tollFee: @FlowToken.Vault) {
         pre {
             self.typeRequiresOnboarding(type) == true: "Onboarding is not needed for this type"
-            type.isSubtype(of: Type<@{NonFungibleToken.NFT}>()) && !type.isSubtype(of: Type<@{FungibleToken.Vault}>()):
+            (type.isSubtype(of: Type<@{NonFungibleToken.NFT}>()) && !type.isSubtype(of: Type<@{FungibleToken.Vault}>())) ||
+            (!type.isSubtype(of: Type<@{NonFungibleToken.NFT}>()) && type.isSubtype(of: Type<@{FungibleToken.Vault}>())):
                 "Invalid type provided"
         }
         FlowEVMBridgeUtils.depositTollFee(<-tollFee)
