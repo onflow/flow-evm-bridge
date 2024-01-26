@@ -26,7 +26,7 @@ access(all) contract FlowEVMBridge {
     //
     /// Denotes a Locker contract was deployed to the bridge account
     access(all) event BridgeLockerContractDeployed(type: Type, name: String, evmContractAddress: EVM.EVMAddress)
-    /// Denotes a defining contract was deployed to the bridge account
+    /// Denotes a defining contract was deployed to the bridge accountcode 
     access(all) event BridgeDefiningContractDeployed(type: Type, name: String, evmContractAddress: EVM.EVMAddress)
 
     /**************************
@@ -48,13 +48,21 @@ access(all) contract FlowEVMBridge {
                 "Invalid type provided"
         }
         FlowEVMBridgeUtils.depositTollFee(<-tollFee)
-        if FlowEVMBridgeUtils.isFlowNative(type: type) {
-            self.deployLockerContract(forType: type)
-        } else {
-            // TODO: EVM-native NFT path - deploy defining contract
-            // self.deployLockerContract(forType: type)
-        }
+        assert(FlowEVMBridgeUtils.isFlowNative(type: type), message: "Only Flow-native assets can be onboarded by Type")
+        self.deployLockerContract(forType: type)
     }
+
+    // /// Onboards a given ERC721 to the bridge. Since we're onboarding by EVM Address, the asset must be defined in a
+    // /// third-party EVM contract. Attempting to onboard a bridge-defined asset will result in an error as onboarding is
+    // /// not required
+    // access(all) fun onboardNFTByEVMAddress(_ address: EVM.EVMAddress, tollFee: @FlowToken.Vault) {
+    //     pre {
+    //         self.evmAddressRequiresOnboarding(address) == true: "Onboarding is not needed for this contract"
+    //         self.isERC721(evmContractAddress: address) && !self.isERC20(evmContractAddress: address):
+    //             "Target contract address is not a valid asset type"
+    //         tollFee.balance >= FlowEVMBridgeConfig.fee: "Insufficient fee paid"
+    //     }
+    // }
 
     /// Public entrypoint to bridge NFTs from Flow to EVM - cross-account bridging supported (e.g. straight to EOA)
     ///
