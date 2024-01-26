@@ -87,6 +87,7 @@ access(all) contract FlowEVMBridgeUtils {
     }
 
     /// Identifies if an asset is ERC721
+    ///
     access(all) fun isEVMNFT(evmContractAddress: EVM.EVMAddress): Bool {
         let response: [UInt8] = self.call(
             signature: "isERC721(address)",
@@ -99,11 +100,28 @@ access(all) contract FlowEVMBridgeUtils {
         return decodedResponse[0] as! Bool
     }
     /// Identifies if an asset is ERC20
+    ///
     access(all) fun isEVMToken(evmContractAddress: EVM.EVMAddress): Bool {
         // TODO: We will need to figure out how to identify ERC20s without ERC165 support
         return false
     }
+    /// Returns whether the contract address is either an ERC721 or ERC20 exclusively
+    ///
+    acces(all) fun isValidEVMAsset(evmContractAddress: EVM.EVMAddress): Bool {
+        let isEVMNFT: Bool = FlowEVMBridgeUtils.isEVMNFT(evmContractAddress: address)
+        let isEVMToken: Bool = FlowEVMBridgeUtils.isEVMToken(evmContractAddress: address)
+        return (isEVMNFT && !isEVMToken) || (!isEVMNFT && isEVMToken)
+    }
+    /// Returns whether the given type is either an NFT or FT exclusively
+    ///
+    access(all) view fun isValidFlowAsset(type: Type): Bool {
+        let isFlowNFT: Bool = type.isSubtype(of: Type<@{NonFungibleToken.NFT}>())
+        let isFlowToken: Bool = type.isSubtype(of: Type<@{FungibleToken.Vault}>())
+        return (isFlowNFT && !isFlowToken) || (!isFlowNFT && isFlowToken)
+    }
+
     /// Retrieves the NFT/FT name from the given EVM contract address - applies for both ERC20 & ERC721
+    ///
     access(all) fun getName(evmContractAddress: EVM.EVMAddress): String {
         let response: [UInt8] = self.call(
             signature: "name()",
