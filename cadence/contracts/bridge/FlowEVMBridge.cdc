@@ -5,6 +5,7 @@ import "FlowToken"
 import "EVM"
 
 import "ICrossVM"
+import "IFlowEVMNFTBridge"
 import "FlowEVMBridgeConfig"
 import "FlowEVMBridgeUtils"
 import "IEVMBridgeNFTLocker"
@@ -20,14 +21,23 @@ import "FlowEVMBridgeTemplates"
 /// - Code in context: https://github.com/onflow/flow-evm-bridge
 /// - FLIP #237: https://github.com/onflow/flips/pull/233
 ///
-access(all) contract FlowEVMBridge {
+access(all) contract FlowEVMBridge : IFlowEVMNFTBridge {
 
     /* --- Events --- */
     //
     /// Denotes a Locker contract was deployed to the bridge account
     access(all) event BridgeLockerContractDeployed(type: Type, name: String, evmContractAddress: EVM.EVMAddress)
-    /// Denotes a defining contract was deployed to the bridge accountcode 
+    /// Denotes a defining contract was deployed to the bridge accountcode
     access(all) event BridgeDefiningContractDeployed(type: Type, name: String, evmContractAddress: EVM.EVMAddress)
+    // TODO: Add events & access(account) methods to protect events from being emitted from arbitrary interface implementations
+    /// NFT bridged from Flow to EVM
+    // TODO: Add evmContractAddress back once COA.address() is view
+    // access(all) event BridgedToEVM(type: Type, id: UInt64, to: EVM.EVMAddress, evmContractAddress: EVM.EVMAddress, flowNative: Bool)
+    access(all) event BridgedToEVM(type: Type, id: UInt64, to: EVM.EVMAddress, flowNative: Bool)
+    /// NFT bridged from EVM to Flow
+    // TODO: Add caller and evmContractAddress back once COA.address() is view
+    // access(all) event BridgedFromEVM(type: Type, id: UInt64, caller: EVM.EVMAddress, evmContractAddress: EVM.EVMAddress, flowNative: Bool)
+    access(all) event BridgedFromEVM(type: Type, id: UInt64, flowNative: Bool)
 
     /**************************
         Public NFT Handling
@@ -70,6 +80,7 @@ access(all) contract FlowEVMBridge {
             self.evmAddressRequiresOnboarding(address: address) == true,
             message: "Onboarding is not needed for this contract"
         )
+        self.deployDefiningContract(evmContractAddress: address)
     }
 
     /// Public entrypoint to bridge NFTs from Flow to EVM - cross-account bridging supported (e.g. straight to EOA)
@@ -248,7 +259,7 @@ access(all) contract FlowEVMBridge {
 
         let lockerContract: &IEVMBridgeNFTLocker = self.account.contracts.borrow<&IEVMBridgeNFTLocker>(name: lockerContractName)
             ?? panic("Problem locating Locker contract for token type: ".concat(token.getType().identifier))
-        lockerContract.bridgeToEVM(token: <-token, to: to, tollFee: <-tollFee)
+        lockerContract.bridgeNFTToEVM(token: <-token, to: to, tollFee: <-tollFee)
     }
     /// Handles bridging Flow-native NFTs from EVM - unlocks NFT from designated Flow locker contract & burns in EVM
     /// Within scope, locker contract is deployed if needed & passing on call to said contract
@@ -274,7 +285,7 @@ access(all) contract FlowEVMBridge {
             panic("Could not derive locker contract name for token type: ".concat(lockedType.identifier))
         let lockerContract: &IEVMBridgeNFTLocker = self.account.contracts.borrow<&IEVMBridgeNFTLocker>(name: lockerContractName)
             ?? panic("Problem configuring Locker contract for token type: ".concat(lockedType.identifier))
-        return <- lockerContract.bridgeFromEVM(
+        return <- lockerContract.bridgeNFTFromEVM(
             caller: caller,
             calldata: calldata,
             id: id,
@@ -340,5 +351,7 @@ access(all) contract FlowEVMBridge {
     /// Helper for deploying templated defining contract supporting EVM-native asset bridging to Flow
     /// Deploys either NFT or FT contract depending on the provided type
     // TODO
-    // access(self) fun deployDefiningContract(type: Type) {}
+    access(self) fun deployDefiningContract(evmContractAddress: EVM.EVMAddress) {
+
+    }
 }
