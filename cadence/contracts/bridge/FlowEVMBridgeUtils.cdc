@@ -107,9 +107,9 @@ access(all) contract FlowEVMBridgeUtils {
     }
     /// Returns whether the contract address is either an ERC721 or ERC20 exclusively
     ///
-    acces(all) fun isValidEVMAsset(evmContractAddress: EVM.EVMAddress): Bool {
-        let isEVMNFT: Bool = FlowEVMBridgeUtils.isEVMNFT(evmContractAddress: address)
-        let isEVMToken: Bool = FlowEVMBridgeUtils.isEVMToken(evmContractAddress: address)
+    access(all) fun isValidEVMAsset(evmContractAddress: EVM.EVMAddress): Bool {
+        let isEVMNFT: Bool = FlowEVMBridgeUtils.isEVMNFT(evmContractAddress: evmContractAddress)
+        let isEVMToken: Bool = FlowEVMBridgeUtils.isEVMToken(evmContractAddress: evmContractAddress)
         return (isEVMNFT && !isEVMToken) || (!isEVMNFT && isEVMToken)
     }
     /// Returns whether the given type is either an NFT or FT exclusively
