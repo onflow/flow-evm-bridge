@@ -37,7 +37,8 @@ access(all) contract CONTRACT_NAME : IEVMBridgeNFTLocker {
             tollFee.getBalance() >= FlowEVMBridgeConfig.fee: "Insufficient bridging fee provided"
         }
         FlowEVMBridgeUtils.depositTollFee(<-tollFee)
-        let id: UInt256 = UInt256(token.getID())
+        let id: UInt64 = token.getID()
+        let convertedID: UInt256 = UInt256(token.getID())
 
         let isFlowNative = FlowEVMBridgeUtils.isFlowNative(type: token.getType())
 
@@ -46,9 +47,18 @@ access(all) contract CONTRACT_NAME : IEVMBridgeNFTLocker {
         FlowEVMBridgeUtils.call(
             signature: "safeMint(address,uint256,string)",
             targetEVMAddress: self.evmNFTContractAddress,
-            args: [to, id, "MOCK_URI"],
+            args: [to, convertedID, "MOCK_URI"],
             gasLimit: 15000000,
             value: 0.0
+        )
+
+        FlowEVMBridge.emitBridgeNFTToEVMEvent(
+            type: self.lockedNFTType,
+            id: id,
+            evmID: convertedID,
+            to: to,
+            evmContractAddress: self.evmNFTContractAddress,
+            flowNative: true
         )
     }
 
@@ -109,8 +119,16 @@ access(all) contract CONTRACT_NAME : IEVMBridgeNFTLocker {
         let exists: Bool = decoded[0] as! Bool
         assert(exists == false, message: "NFT was not successfully burned")
 
-        // Finally return the NFT to the caller
         let convertedID: UInt64 = FlowEVMBridgeUtils.uint256ToUInt64(value: id)
+        FlowEVMBridge.emitBridgeNFTFromEVMEvent(
+            type: self.lockedNFTType,
+            id: convertedID,
+            evmID: id,
+            caller: caller.address(),
+            evmContractAddress: self.evmNFTContractAddress,
+            flowNative: true
+        )
+        // Finally return the NFT to the caller
         return <- self.locker.withdraw(withdrawID: convertedID)
     }
 

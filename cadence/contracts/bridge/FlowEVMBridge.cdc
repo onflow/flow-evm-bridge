@@ -29,15 +29,23 @@ access(all) contract FlowEVMBridge : IFlowEVMNFTBridge {
     access(all) event BridgeLockerContractDeployed(type: Type, name: String, evmContractAddress: EVM.EVMAddress)
     /// Denotes a defining contract was deployed to the bridge accountcode
     access(all) event BridgeDefiningContractDeployed(type: Type, name: String, evmContractAddress: EVM.EVMAddress)
-    // TODO: Add events & access(account) methods to protect events from being emitted from arbitrary interface implementations
     /// NFT bridged from Flow to EVM
-    // TODO: Add evmContractAddress back once COA.address() is view
-    // access(all) event BridgedToEVM(type: Type, id: UInt64, to: EVM.EVMAddress, evmContractAddress: EVM.EVMAddress, flowNative: Bool)
-    access(all) event BridgedToEVM(type: Type, id: UInt64, to: EVM.EVMAddress, flowNative: Bool)
+    access(all) event BridgedNFTToEVM(
+        type: Type,
+        id: UInt64,
+        evmID: UInt256,
+        to: EVM.EVMAddress,
+        evmContractAddress: EVM.EVMAddress,
+        flowNative: Bool
+    )
     /// NFT bridged from EVM to Flow
-    // TODO: Add caller and evmContractAddress back once COA.address() is view
-    // access(all) event BridgedFromEVM(type: Type, id: UInt64, caller: EVM.EVMAddress, evmContractAddress: EVM.EVMAddress, flowNative: Bool)
-    access(all) event BridgedFromEVM(type: Type, id: UInt64, flowNative: Bool)
+    access(all) event BridgedNFTFromEVM(type: Type,
+        id: UInt64,
+        evmID: UInt256,
+        caller: EVM.EVMAddress,
+        evmContractAddress: EVM.EVMAddress,
+        flowNative: Bool
+    )
 
     /**************************
         Public NFT Handling
@@ -242,6 +250,32 @@ access(all) contract FlowEVMBridge : IFlowEVMNFTBridge {
     /**************************
         Internal Helpers
     ***************************/
+
+    /// Enables all bridge contracts to emit Flow to EVM NFT bridging events from this central contract
+    ///
+    access(account) view fun emitBridgeNFTToEVMEvent(
+        type: Type,
+        id: UInt64,
+        evmID: UInt256,
+        to: EVM.EVMAddress,
+        evmContractAddress: EVM.EVMAddress,
+        flowNative: Bool
+    ) {
+        emit BridgedNFTToEVM(type: type, id: id, evmID: evmID, to: to, evmContractAddress: evmContractAddress, flowNative: flowNative)
+    }
+
+    /// Enables all bridge contracts to emit Flow to EVM NFT bridging events from this central contract
+    ///
+    access(account) view fun emitBridgeNFTFromEVMEvent(
+        type: Type,
+        id: UInt64,
+        evmID: UInt256,
+        caller: EVM.EVMAddress,
+        evmContractAddress: EVM.EVMAddress,
+        flowNative: Bool
+    ) {
+        emit BridgedNFTFromEVM(type: type, id: id, evmID: evmID, caller: caller, evmContractAddress: evmContractAddress, flowNative: flowNative)
+    }
 
     /// Handles bridging Flow-native NFTs to EVM - locks NFT in designated Flow locker contract & mints in EVM.
     /// Within scope, locker contract is deployed if needed & call is passed on to said locker contract.
