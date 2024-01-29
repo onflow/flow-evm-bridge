@@ -240,7 +240,9 @@ access(all) contract FlowEVMBridgeUtils {
 
             if prefix != nil {
                 return prefix!.concat(self.contractNameDelimiter)
-                    .concat(sourceContractAddress.toString()).concat(sourceContractName).concat(resourceName)
+                    .concat(sourceContractAddress.toString()).concat(self.contractNameDelimiter)
+                    .concat(sourceContractName).concat(self.contractNameDelimiter)
+                    .concat(resourceName)
             }
         }
         return nil
