@@ -40,14 +40,15 @@ access(all) contract CONTRACT_NAME : IEVMBridgeNFTLocker {
         let id: UInt64 = token.getID()
         let convertedID: UInt256 = UInt256(token.getID())
 
-        let isFlowNative = FlowEVMBridgeUtils.isFlowNative(type: token.getType())
-
+        var uri: String = ""
+        if let display = token.resolveView(Type<MetadataViews.Display>()) as! MetadataViews.Display? {
+            uri = display.thumbnail.uri()
+        }
         self.locker.deposit(token: <-token)
-        // TODO - pull URI from NFT if display exists & pass on minting
         FlowEVMBridgeUtils.call(
             signature: "safeMint(address,uint256,string)",
             targetEVMAddress: self.evmNFTContractAddress,
-            args: [to, convertedID, "MOCK_URI"],
+            args: [to, convertedID, uri],
             gasLimit: 15000000,
             value: 0.0
         )
