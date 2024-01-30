@@ -1,6 +1,7 @@
 import NonFungibleToken from 0xf8d6e0586b0a20c7
 import MetadataViews from 0xf8d6e0586b0a20c7
 import ViewResolver from 0xf8d6e0586b0a20c7
+import FungibleToken from 0xee82856bf20e2aa6
 import FlowToken from 0x0ae53cb6e3f42a79
 
 import EVM from 0xf8d6e0586b0a20c7
@@ -53,6 +54,10 @@ access(all) contract CONTRACT_NAME: ICrossVM, IFlowEVMNFTBridge, ViewResolver {
             self.evmID = evmID
             self.uri = uri
             self.metadata = metadata
+        }
+
+        access(all) view fun getID(): UInt64 {
+            return self.id
         }
 
         access(all) view fun getViews(): [Type] {
@@ -142,9 +147,13 @@ access(all) contract CONTRACT_NAME: ICrossVM, IFlowEVMNFTBridge, ViewResolver {
            }
         }
 
-        access(ICrossVMNFT.Bridgeable) fun bridgeToEVM(id: UInt64, to: EVM.EVMAddress, tollFee: @{FungibleToken.Vault}) {
+        access(CrossVMNFT.Bridgeable) fun bridgeToEVM(id: UInt64, to: EVM.EVMAddress, tollFee: @{FungibleToken.Vault}) {
+            pre {
+                tollFee.getType() == Type<@FlowToken.Vault>(): "Toll fee must be paid in FlowToken"
+            }
+            let castVault <- tollFee as! @FlowToken.Vault
             let token <- self.withdraw(withdrawID: id)
-            CONTRACT_NAME.bridgeNFTToEVM(nft: <-token, to: to, tollFee: <-tollFee)
+            CONTRACT_NAME.bridgeNFTToEVM(token: <-token, to: to, tollFee: <-castVault)
         }
 
         /// withdraw removes an NFT from the collection and moves it to the caller
@@ -176,8 +185,8 @@ access(all) contract CONTRACT_NAME: ICrossVM, IFlowEVMNFTBridge, ViewResolver {
             return self.ownedNFTs.keys.length
         }
 
-        access(all) fun borrowEVMNFT(id: UInt64): &{NonFungibleToken.NFT, ICrossVMNFT.EVMNFT}? {
-            return &self.ownedNFTs[id] as &{NonFungibleToken.NFT, ICrossVMNFT.EVMNFT}?
+        access(all) view fun borrowEVMNFT(id: UInt64): &{NonFungibleToken.NFT, CrossVMNFT.EVMNFT}? {
+            return &self.ownedNFTs[id] as &{NonFungibleToken.NFT, CrossVMNFT.EVMNFT}?
         }
 
         access(all) view fun borrowNFT(_ id: UInt64): &{NonFungibleToken.NFT}? {
@@ -190,6 +199,10 @@ access(all) contract CONTRACT_NAME: ICrossVM, IFlowEVMNFTBridge, ViewResolver {
                 return nft as &{ViewResolver.Resolver}
             }
             return nil
+        }
+
+        access(all) fun createEmptyCollection(): @{NonFungibleToken.Collection}  {
+            return <- create Collection()
         }
     }
 
@@ -291,6 +304,7 @@ access(all) contract CONTRACT_NAME: ICrossVM, IFlowEVMNFTBridge, ViewResolver {
             token.getType() == Type<@CONTRACT_NAME.NFT>(): "Unsupported NFT type"
             tollFee.balance >= FlowEVMBridgeConfig.fee: "Insufficient fee provided"
         }
+        FlowEVMBridgeUtils.depositTollFee(<-tollFee)
         let tokenID: UInt64 = token.getID()
         assert(
             FlowEVMBridgeUtils.isOwnerOrApproved(
@@ -300,16 +314,17 @@ access(all) contract CONTRACT_NAME: ICrossVM, IFlowEVMNFTBridge, ViewResolver {
             ), message: "The requested NFT is not owned by the bridge COA account"
         )
         let cast <- token as! @CONTRACT_NAME.NFT
-        self.burnNFT(nft: <-cast)
 
-        FlowEVMBridge.emitBridgeNFTFromEVMEvent(
-            type: Type<@CONTRACT_NAME.NFT>(),
+        FlowEVMBridge.emitBridgeNFTToEVMEvent(
+            type: cast.getType(),
             id: tokenID,
-            evmID: UInt256,
-            caller: EVM.EVMAddress,
-            evmContractAddress: EVM.EVMAddress,
-            flowNative: Bool
+            evmID: cast.evmID,
+            to: to,
+            evmContractAddress: self.getEVMContractAddress(),
+            flowNative: false
         )
+
+        self.burnNFT(nft: <-cast)
         
         FlowEVMBridgeUtils.call(
             signature: "safeTransferFrom(address,address,uint256)",
@@ -327,6 +342,7 @@ access(all) contract CONTRACT_NAME: ICrossVM, IFlowEVMNFTBridge, ViewResolver {
         evmContractAddress: EVM.EVMAddress,
         tollFee: @FlowToken.Vault
     ): @{NonFungibleToken.NFT} {
+        FlowEVMBridgeUtils.depositTollFee(<-tollFee)
         // TODO: Implement
         return <-create NFT(
             name: "",
@@ -377,8 +393,9 @@ access(all) contract CONTRACT_NAME: ICrossVM, IFlowEVMNFTBridge, ViewResolver {
         }
     }
 
-    init(name: String, symbol: String, evmContractAddress: EVM.EVMAddress) {
-        self.evmNFTContractAddress = evmContractAddress
+    init(name: String, symbol: String, evmContractAddressHex: String) {
+        self.evmNFTContractAddress = FlowEVMBridgeUtils.getEVMAddressFromHexString(address: evmContractAddressHex)
+            ?? panic("Malformed EVM contract address hex string")
         self.name = name
         self.symbol = symbol
 
