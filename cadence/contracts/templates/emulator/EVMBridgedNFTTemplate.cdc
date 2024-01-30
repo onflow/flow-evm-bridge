@@ -23,10 +23,6 @@ access(all) contract CONTRACT_NAME: ICrossVM, IFlowEVMNFTBridge, ViewResolver {
     access(all) let name: String
     /// Symbol of the NFT collection defined in the corresponding ERC721 contract
     access(all) let symbol: String
-    
-    /// Path where the minter should be stored
-    /// The standard paths for the collection are stored in the collection resource type
-    access(all) let MinterStoragePath: StoragePath
 
     /// We choose the name NFT here, but this type can have any name now
     /// because the interface does not require it to have a specific name any more
@@ -43,14 +39,13 @@ access(all) contract CONTRACT_NAME: ICrossVM, IFlowEVMNFTBridge, ViewResolver {
         init(
             name: String,
             symbol: String,
-            id: UInt64,
             evmID: UInt256,
             uri: String,
             metadata: {String: AnyStruct}
         ) {
             self.name = name
             self.symbol = symbol
-            self.id = id
+            self.id = self.uuid
             self.evmID = evmID
             self.uri = uri
             self.metadata = metadata
@@ -325,7 +320,7 @@ access(all) contract CONTRACT_NAME: ICrossVM, IFlowEVMNFTBridge, ViewResolver {
         )
 
         self.burnNFT(nft: <-cast)
-        
+
         FlowEVMBridgeUtils.call(
             signature: "safeTransferFrom(address,address,uint256)",
             targetEVMAddress: self.evmNFTContractAddress,
@@ -342,16 +337,69 @@ access(all) contract CONTRACT_NAME: ICrossVM, IFlowEVMNFTBridge, ViewResolver {
         evmContractAddress: EVM.EVMAddress,
         tollFee: @FlowToken.Vault
     ): @{NonFungibleToken.NFT} {
+        pre {
+            self.evmNFTContractAddress.bytes == evmContractAddress.bytes: "Invalid EVM contract address"
+            tollFee.balance >= FlowEVMBridgeConfig.fee: "Insufficient fee provided"
+        }
         FlowEVMBridgeUtils.depositTollFee(<-tollFee)
-        // TODO: Implement
-        return <-create NFT(
-            name: "",
-            symbol: "",
-            id: 0,
-            evmID: 0,
-            uri: "",
-            metadata: {}
+        assert(
+            FlowEVMBridgeUtils.isOwnerOrApproved(
+                ofNFT: id,
+                owner: caller.address(),
+                evmContractAddress: evmContractAddress
+            ), message: "Caller does not own the NFT"
         )
+        caller.call(
+            to: evmContractAddress,
+            data: calldata,
+            gasLimit: 15000000,
+            value: EVM.Balance(flow: 0.0)
+        )
+        FlowEVMBridgeUtils.call(
+            signature: "safeTransferFrom(address,address,uint256)",
+            targetEVMAddress: self.evmNFTContractAddress,
+            args: [caller.address(), FlowEVMBridge.getBridgeCOAEVMAddress(), id],
+            gasLimit: 15000000,
+            value: 0.0
+        )
+        assert(
+            FlowEVMBridgeUtils.isOwnerOrApproved(
+                ofNFT: id,
+                owner: FlowEVMBridge.getBridgeCOAEVMAddress(),
+                evmContractAddress: evmContractAddress
+            ), message: "Transfer to Bridge COA was not successful"
+        )
+        let tokenURI: String = (
+            EVM.decodeABI(
+                types: [Type<String>()],
+                data: FlowEVMBridgeUtils.call(
+                    signature: "tokenURI(uint256)",
+                    targetEVMAddress: self.getEVMContractAddress(),
+                    args: [id],
+                    gasLimit: 15000000,
+                    value: 0.0
+                )
+            ) as! [String]
+        )[0]
+        let bridgedNFT <- create NFT(
+            name: self.name,
+            symbol: self.symbol,
+            evmID: id,
+            uri: tokenURI,
+            metadata: {
+                "Bridged Block": getCurrentBlock().height,
+                "Bridged Timestamp": getCurrentBlock().timestamp
+            }
+        )
+        FlowEVMBridge.emitBridgeNFTFromEVMEvent(
+            type: bridgedNFT.getType(),
+            id: bridgedNFT.getID(),
+            evmID: bridgedNFT.evmID,
+            caller: caller.address(),
+            evmContractAddress: self.getEVMContractAddress(),
+            flowNative: false
+        )
+        return <- bridgedNFT
     }
 
     // TODO: Replace with standard burning mechanism & event
@@ -359,57 +407,19 @@ access(all) contract CONTRACT_NAME: ICrossVM, IFlowEVMNFTBridge, ViewResolver {
         destroy nft
     }
 
-    /// Resource that an admin or something similar would own to be
-    /// able to mint new NFTs
-    ///
-    access(all) resource NFTMinter {
-
-        /// mintNFT mints a new NFT with a new ID
-        /// and returns it to the calling context
-        access(all) fun mintNFT(
-            name: String,
-            symbol: String,
-            id: UInt64,
-            evmID: UInt256,
-            uri: String
-        ): @CONTRACT_NAME.NFT {
-
-            let metadata: {String: AnyStruct} = {}
-            let currentBlock = getCurrentBlock()
-            metadata["Bridged Block"] = currentBlock.height
-            metadata["Bridged Time"] = currentBlock.timestamp
-
-            // create a new NFT
-            var newNFT <- create NFT(
-                name: name,
-                symbol: symbol,
-                id: id,
-                evmID: evmID,
-                uri: uri,
-                metadata: metadata
-            )
-
-            return <-newNFT
-        }
-    }
-
+    // TODO: Replace
+    // init(name: String, symbol: String, evmContractAddress: EVM.EVMAddress) {
     init(name: String, symbol: String, evmContractAddressHex: String) {
+        // TODO: Replace
         self.evmNFTContractAddress = FlowEVMBridgeUtils.getEVMAddressFromHexString(address: evmContractAddressHex)
             ?? panic("Malformed EVM contract address hex string")
         self.name = name
         self.symbol = symbol
-
-        // Set the named paths
-        self.MinterStoragePath = /storage/CONTRACT_NAMEMinter
 
         // Create a Collection resource and save it to storage
         let collection <- create Collection()
         let defaultStoragePath = collection.getDefaultStoragePath()!
         let defaultPublicPath = collection.getDefaultPublicPath()!
         self.account.storage.save(<-collection, to: defaultStoragePath)
-
-        // Create a Minter resource and save it to storage
-        let minter <- create NFTMinter()
-        self.account.storage.save(<-minter, to: self.MinterStoragePath)
     }
 }
