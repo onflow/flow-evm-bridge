@@ -4,6 +4,7 @@ sh pass_precompiles.sh
 
 # Deploy initial bridge contracts
 flow accounts add-contract ./cadence/contracts/bridge/ICrossVM.cdc
+flow accounts add-contract ./cadence/contracts/bridge/CrossVMNFT.cdc
 flow accounts add-contract ./cadence/contracts/bridge/IFlowEVMNFTBridge.cdc
 flow accounts add-contract ./cadence/contracts/bridge/FlowEVMBridgeConfig.cdc
 flow accounts add-contract ./cadence/contracts/bridge/IEVMBridgeNFTLocker.cdc

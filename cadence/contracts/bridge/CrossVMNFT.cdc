@@ -41,7 +41,7 @@ access(all) contract CrossVMNFT {
     }
     /// Enables a bridging entrypoint on an implementing Collection
     access(all) resource interface EVMBridgeableCollection {
-        access(all) fun borrowEVMNFT(id: UInt64): &{EVMNFT}
+        access(all) view fun borrowEVMNFT(id: UInt64): &{EVMNFT}?
         access(Bridgeable) fun bridgeToEVM(id: UInt64, to: EVM.EVMAddress, tollFee: @{FungibleToken.Vault})
     }
 }
