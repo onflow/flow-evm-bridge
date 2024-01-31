@@ -253,7 +253,7 @@ access(all) contract FlowEVMBridge : IFlowEVMNFTBridge {
 
     /// Enables all bridge contracts to emit Flow to EVM NFT bridging events from this central contract
     ///
-    access(account) view fun emitBridgeNFTToEVMEvent(
+    access(account) fun emitBridgeNFTToEVMEvent(
         type: Type,
         id: UInt64,
         evmID: UInt256,
@@ -262,11 +262,18 @@ access(all) contract FlowEVMBridge : IFlowEVMNFTBridge {
         flowNative: Bool
     ) {
         emit BridgedNFTToEVM(type: type, id: id, evmID: evmID, to: to, evmContractAddress: evmContractAddress, flowNative: flowNative)
+        FlowEVMBridgeUtils.call(
+            signature: "emitERC721BridgedFromFlow(address,uint256,address)",
+            targetEVMAddress: FlowEVMBridgeUtils.bridgeFactoryEVMAddress,
+            args: [evmContractAddress, evmID, to],
+            gasLimit: 12000000,
+            value: 0.0
+        )
     }
 
     /// Enables all bridge contracts to emit Flow to EVM NFT bridging events from this central contract
     ///
-    access(account) view fun emitBridgeNFTFromEVMEvent(
+    access(account) fun emitBridgeNFTFromEVMEvent(
         type: Type,
         id: UInt64,
         evmID: UInt256,
@@ -275,6 +282,13 @@ access(all) contract FlowEVMBridge : IFlowEVMNFTBridge {
         flowNative: Bool
     ) {
         emit BridgedNFTFromEVM(type: type, id: id, evmID: evmID, caller: caller, evmContractAddress: evmContractAddress, flowNative: flowNative)
+        FlowEVMBridgeUtils.call(
+            signature: "emitERC721BridgedToFlow(address,uint256,address)",
+            targetEVMAddress: FlowEVMBridgeUtils.bridgeFactoryEVMAddress,
+            args: [evmContractAddress, evmID, caller],
+            gasLimit: 12000000,
+            value: 0.0
+        )
     }
 
     /// Handles bridging Flow-native NFTs to EVM - locks NFT in designated Flow locker contract & mints in EVM.

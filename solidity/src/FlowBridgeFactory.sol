@@ -13,6 +13,8 @@ contract FlowBridgeFactory is Ownable {
     event ERC721Deployed(
         address contractAddress, string name, string symbol, string flowNFTAddress, string flowNFTIdentifier
     );
+    event ERC721BridgedToFlow(address contractAddress, uint256 tokenId, address to);
+    event ERC721BridgedFromFlow(address contractAddress, uint256 tokenId, address to);
 
     // Function to deploy a new ERC721 contract
     function deployERC721(
@@ -46,5 +48,13 @@ contract FlowBridgeFactory is Ownable {
 
     function isERC721(address contractAddr) public view returns (bool) {
         return ERC165(contractAddr).supportsInterface(0x80ac58cd);
+    }
+
+    function emitERC721BridgedToFlow(address contractAddress, uint256 tokenId, address initiator) public onlyOwner {
+        emit ERC721BridgedToFlow(contractAddress, tokenId, initiator);
+    }
+
+    function emitERC721BridgedFromFlow(address contractAddress, uint256 tokenId, address to) public onlyOwner {
+        emit ERC721BridgedToFlow(contractAddress, tokenId, to);
     }
 }
