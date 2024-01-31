@@ -31,14 +31,17 @@ access(all) contract FlowEVMBridgeUtils {
         return String.encodeHex(addressBytes)
     }
 
-    /// Returns an EVMAddress as a hex string without a 0x prefix
+    /// Returns an EVMAddress as a hex string without a 0x prefix, truncating the string's last 20 bytes if exceeded
     ///
     /// @param: address The hex string to convert to an EVMAddress
     ///
     /// @return The EVMAddress representation of the hex string
     ///
     access(all) fun getEVMAddressFromHexString(address: String): EVM.EVMAddress? {
-        let addressBytes: [UInt8] = address.decodeHex()
+        var addressBytes: [UInt8] = address.decodeHex()
+        if addressBytes.length > 20 {
+            addressBytes = addressBytes.slice(from: addressBytes.length - 20, upTo: addressBytes.length)
+        }
         return EVM.EVMAddress(bytes: [
             addressBytes[0], addressBytes[1], addressBytes[2], addressBytes[3],
             addressBytes[4], addressBytes[5], addressBytes[6], addressBytes[7],
