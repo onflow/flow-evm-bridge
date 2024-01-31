@@ -66,6 +66,8 @@ access(all) contract CONTRACT_NAME: ICrossVM, IFlowEVMNFTBridge, ViewResolver {
 
         access(all) fun resolveView(_ view: Type): AnyStruct? {
             switch view {
+                // We don't know what kind of file the URI represents (IPFS v HTTP), so we can't resolve Display view
+                // with the URI as thumbnail - we may a new standard view for EVM NFTs - this is interim
                 case Type<CrossVMNFT.BridgedMetadata>():
                     return CrossVMNFT.BridgedMetadata(
                         name: self.name,
@@ -300,34 +302,33 @@ access(all) contract CONTRACT_NAME: ICrossVM, IFlowEVMNFTBridge, ViewResolver {
             tollFee.balance >= FlowEVMBridgeConfig.fee: "Insufficient fee provided"
         }
         FlowEVMBridgeUtils.depositTollFee(<-tollFee)
-        let tokenID: UInt64 = token.getID()
+        let cast <- token as! @CONTRACT_NAME.NFT
         assert(
             FlowEVMBridgeUtils.isOwnerOrApproved(
-                ofNFT: UInt256(tokenID),
-                owner: FlowEVMBridgeUtils.borrowCOA().address(),
+                ofNFT: cast.evmID,
+                owner: FlowEVMBridge.getBridgeCOAEVMAddress(),
                 evmContractAddress: self.getEVMContractAddress()
             ), message: "The requested NFT is not owned by the bridge COA account"
         )
-        let cast <- token as! @CONTRACT_NAME.NFT
 
         FlowEVMBridge.emitBridgeNFTToEVMEvent(
             type: cast.getType(),
-            id: tokenID,
+            id: cast.getID(),
             evmID: cast.evmID,
             to: to,
             evmContractAddress: self.getEVMContractAddress(),
             flowNative: false
         )
 
-        self.burnNFT(nft: <-cast)
-
         FlowEVMBridgeUtils.call(
             signature: "safeTransferFrom(address,address,uint256)",
             targetEVMAddress: self.evmNFTContractAddress,
-            args: [self.getEVMContractAddress(), to, tokenID],
+            args: [FlowEVMBridge.getBridgeCOAEVMAddress(), to, cast.evmID],
             gasLimit: 15000000,
             value: 0.0
         )
+
+        self.burnNFT(nft: <-cast)
     }
 
     access(all) fun bridgeNFTFromEVM(
@@ -369,7 +370,7 @@ access(all) contract CONTRACT_NAME: ICrossVM, IFlowEVMNFTBridge, ViewResolver {
                 evmContractAddress: evmContractAddress
             ), message: "Transfer to Bridge COA was not successful"
         )
-        let tokenURI: String = (
+        let tokenURIResponse: [AnyStruct] = (
             EVM.decodeABI(
                 types: [Type<String>()],
                 data: FlowEVMBridgeUtils.call(
@@ -379,8 +380,9 @@ access(all) contract CONTRACT_NAME: ICrossVM, IFlowEVMNFTBridge, ViewResolver {
                     gasLimit: 15000000,
                     value: 0.0
                 )
-            ) as! [String]
-        )[0]
+            ) as! [AnyStruct]
+        )
+        let tokenURI: String = tokenURIResponse[0] as! String
         let bridgedNFT <- create NFT(
             name: self.name,
             symbol: self.symbol,
