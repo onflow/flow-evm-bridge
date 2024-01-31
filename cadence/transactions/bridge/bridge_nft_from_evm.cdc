@@ -17,7 +17,7 @@ transaction(nftTypeIdentifier: String, id: UInt256, collectionStoragePathIdentif
     let requiresOnboarding: Bool?
     let evmContractAddress: EVM.EVMAddress
     let collection: &{NonFungibleToken.Collection}
-    let tollFee: @FlowToken.Vault
+    let tollFee: @{FungibleToken.Vault}
     let coa: &EVM.BridgedAccount
     let calldata: [UInt8]
     
@@ -39,7 +39,7 @@ transaction(nftTypeIdentifier: String, id: UInt256, collectionStoragePathIdentif
         let vault = signer.storage.borrow<auth(FungibleToken.Withdrawable) &FlowToken.Vault>(
                 from: /storage/flowTokenVault
             ) ?? panic("Could not access signer's FlowToken Vault")
-        self.tollFee <- vault.withdraw(amount: FlowEVMBridgeConfig.fee) as! @FlowToken.Vault
+        self.tollFee <- vault.withdraw(amount: FlowEVMBridgeConfig.fee)
 
         // Borrow a reference to the signer's COA
         // NOTE: This should also be the ERC721 owner of the requested NFT in FlowEVM

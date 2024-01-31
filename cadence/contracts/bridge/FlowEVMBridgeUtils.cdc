@@ -376,7 +376,10 @@ access(all) contract FlowEVMBridgeUtils {
     // TODO: Embed these methods into an Admin resource
 
     /// Deposits fees to the bridge account's FlowToken Vault - helps fund asset storage
-    access(account) fun depositTollFee(_ tollFee: @FlowToken.Vault) {
+    access(account) fun depositTollFee(_ tollFee: @{FungibleToken.Vault}) {
+        pre {
+            tollFee.getType() == Type<@FlowToken.Vault>(): "Fee paid in invalid token type"
+        }
         let vault = self.account.storage.borrow<&FlowToken.Vault>(from: /storage/flowTokenVault)
             ?? panic("Could not borrow FlowToken.Vault reference")
         vault.deposit(from: <-tollFee)

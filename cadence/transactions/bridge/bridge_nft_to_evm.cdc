@@ -20,7 +20,7 @@ transaction(id: UInt64, collectionStoragePathIdentifier: String, recipient: Stri
     let nft: @{NonFungibleToken.NFT}
     let nftType: Type
     let evmRecipient: EVM.EVMAddress
-    let tollFee: @FlowToken.Vault
+    let tollFee: @{FungibleToken.Vault}
     var success: Bool
     
     prepare(signer: auth(BorrowValue) &Account) {
@@ -38,7 +38,7 @@ transaction(id: UInt64, collectionStoragePathIdentifier: String, recipient: Stri
         let vault = signer.storage.borrow<auth(FungibleToken.Withdrawable) &FlowToken.Vault>(
                 from: /storage/flowTokenVault
             ) ?? panic("Could not access signer's FlowToken Vault")
-        self.tollFee <- vault.withdraw(amount: FlowEVMBridgeConfig.fee) as! @FlowToken.Vault
+        self.tollFee <- vault.withdraw(amount: FlowEVMBridgeConfig.fee)
         self.success = false
     }
 

@@ -1,3 +1,4 @@
+import "FungibleToken"
 import "NonFungibleToken"
 import "FlowToken"
 
@@ -11,7 +12,7 @@ access(all) contract interface IFlowEVMNFTBridge {
     /// @param to: The NFT recipient in FlowEVM
     /// @param tollFee: The fee paid for bridging
     ///
-    access(all) fun bridgeNFTToEVM(token: @{NonFungibleToken.NFT}, to: EVM.EVMAddress, tollFee: @FlowToken.Vault)
+    access(all) fun bridgeNFTToEVM(token: @{NonFungibleToken.NFT}, to: EVM.EVMAddress, tollFee: @{FungibleToken.Vault})
 
     /// Public entrypoint to bridge NFTs from EVM to Flow
     ///
@@ -28,7 +29,7 @@ access(all) contract interface IFlowEVMNFTBridge {
         calldata: [UInt8],
         id: UInt256,
         evmContractAddress: EVM.EVMAddress,
-        tollFee: @FlowToken.Vault
+        tollFee: @{FungibleToken.Vault}
     ): @{NonFungibleToken.NFT}
 
 }

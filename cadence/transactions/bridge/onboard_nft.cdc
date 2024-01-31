@@ -13,7 +13,7 @@ import "FlowEVMBridgeConfig"
 transaction(identifier: String) {
 
     let nftType: Type
-    let tollFee: @FlowToken.Vault
+    let tollFee: @{FungibleToken.Vault}
     
     prepare(signer: auth(BorrowValue) &Account) {
         // Construct the type from the identifier
@@ -22,7 +22,7 @@ transaction(identifier: String) {
         let vault = signer.storage.borrow<auth(FungibleToken.Withdrawable) &FlowToken.Vault>(
                 from: /storage/flowTokenVault
             ) ?? panic("Could not access signer's FlowToken Vault")
-        self.tollFee <- vault.withdraw(amount: FlowEVMBridgeConfig.fee) as! @FlowToken.Vault
+        self.tollFee <- vault.withdraw(amount: FlowEVMBridgeConfig.fee)
     }
 
     // Added for context - how to check if a type requires onboarding to the bridge

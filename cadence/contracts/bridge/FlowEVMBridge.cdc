@@ -58,8 +58,9 @@ access(all) contract FlowEVMBridge : IFlowEVMNFTBridge {
     /// @param type: The Cadence Type of the NFT to be onboarded
     /// @param tollFee: Fee paid for onboarding
     ///
-    access(all) fun onboardByType(_ type: Type, tollFee: @FlowToken.Vault) {
+    access(all) fun onboardByType(_ type: Type, tollFee: @{FungibleToken.Vault}) {
         pre {
+            tollFee.getType() == Type<@FlowToken.Vault>(): "Fee paid in invalid token type"
             self.typeRequiresOnboarding(type) == true: "Onboarding is not needed for this type"
             FlowEVMBridgeUtils.isValidFlowAsset(type: type): "Invalid type provided"
         }
@@ -75,9 +76,10 @@ access(all) contract FlowEVMBridge : IFlowEVMNFTBridge {
     /// @param address: The EVMAddress of the ERC721 or ERC20 to be onboarded
     /// @param tollFee: Fee paid for onboarding
     ///
-    access(all) fun onboardByEVMAddress(_ address: EVM.EVMAddress, tollFee: @FlowToken.Vault) {
+    access(all) fun onboardByEVMAddress(_ address: EVM.EVMAddress, tollFee: @{FungibleToken.Vault}) {
         pre {
-            tollFee.balance >= FlowEVMBridgeConfig.fee: "Insufficient fee paid"
+            tollFee.getType() == Type<@FlowToken.Vault>(): "Fee paid in invalid token type"
+            tollFee.getBalance() >= FlowEVMBridgeConfig.fee: "Insufficient fee paid"
         }
         FlowEVMBridgeUtils.depositTollFee(<-tollFee)
         assert(
@@ -97,9 +99,10 @@ access(all) contract FlowEVMBridge : IFlowEVMNFTBridge {
     /// @param to: The NFT recipient in FlowEVM
     /// @param tollFee: The fee paid for bridging
     ///
-    access(all) fun bridgeNFTToEVM(token: @{NonFungibleToken.NFT}, to: EVM.EVMAddress, tollFee: @FlowToken.Vault) {
+    access(all) fun bridgeNFTToEVM(token: @{NonFungibleToken.NFT}, to: EVM.EVMAddress, tollFee: @{FungibleToken.Vault}) {
         pre {
-            tollFee.balance >= FlowEVMBridgeConfig.fee: "Insufficient fee paid"
+            tollFee.getBalance() >= FlowEVMBridgeConfig.fee: "Insufficient fee paid"
+            tollFee.getType() == Type<@FlowToken.Vault>(): "Fee paid in invalid token type"
             token.isInstance(Type<@{FungibleToken.Vault}>()) == false: "Mixed asset types are not yet supported"
             self.typeRequiresOnboarding(token.getType()) == false: "NFT must first be onboarded"
         }
@@ -128,10 +131,11 @@ access(all) contract FlowEVMBridge : IFlowEVMNFTBridge {
         calldata: [UInt8],
         id: UInt256,
         evmContractAddress: EVM.EVMAddress,
-        tollFee: @FlowToken.Vault
+        tollFee: @{FungibleToken.Vault}
     ): @{NonFungibleToken.NFT} {
         pre {
-            tollFee.balance >= FlowEVMBridgeConfig.fee: "Insufficient fee paid"
+            tollFee.getBalance() >= FlowEVMBridgeConfig.fee: "Insufficient fee paid"
+            tollFee.getType() == Type<@FlowToken.Vault>(): "Fee paid in invalid token type"
         }
         if FlowEVMBridgeUtils.isEVMNative(evmContractAddress: evmContractAddress) {
             // TODO: EVM-native NFT path
@@ -297,7 +301,7 @@ access(all) contract FlowEVMBridge : IFlowEVMNFTBridge {
     access(self) fun bridgeFlowNativeNFTToEVM(
         token: @{NonFungibleToken.NFT},
         to: EVM.EVMAddress,
-        tollFee: @FlowToken.Vault
+        tollFee: @{FungibleToken.Vault}
     ) {
         let lockerContractName: String = FlowEVMBridgeUtils.deriveLockerContractName(fromType: token.getType()) ??
             panic("Could not derive locker contract name for token type: ".concat(token.getType().identifier))
@@ -317,7 +321,7 @@ access(all) contract FlowEVMBridge : IFlowEVMNFTBridge {
         calldata: [UInt8],
         id: UInt256,
         evmContractAddress: EVM.EVMAddress,
-        tollFee: @FlowToken.Vault
+        tollFee: @{FungibleToken.Vault}
     ): @{NonFungibleToken.NFT} {
         let response: [UInt8] = FlowEVMBridgeUtils.call(
             signature: "getFlowAssetIdentifier(address)",
