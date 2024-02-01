@@ -133,8 +133,8 @@ access(all) contract FlowEVMBridgeUtils {
             gasLimit: 60000,
             value: 0.0
         )
-        let decodedResponse: [String] = EVM.decodeABI(types: [Type<String>()], data: response) as! [String]
-        return decodedResponse[0]
+        let decodedResponse = EVM.decodeABI(types: [Type<String>()], data: response) as! [AnyStruct]
+        return decodedResponse[0] as! String
     }
 
     /// Retrieves the NFT/FT symbol from the given EVM contract address - applies for both ERC20 & ERC721
@@ -146,8 +146,8 @@ access(all) contract FlowEVMBridgeUtils {
             gasLimit: 60000,
             value: 0.0
         )
-        let decodedResponse: [String] = EVM.decodeABI(types: [Type<String>()], data: response) as! [String]
-        return decodedResponse[0]
+        let decodedResponse = EVM.decodeABI(types: [Type<String>()], data: response) as! [AnyStruct]
+        return decodedResponse[0] as! String
     }
 
     /// Retrieves the number of decimals for a given ERC20 contract address
@@ -159,8 +159,8 @@ access(all) contract FlowEVMBridgeUtils {
                 gasLimit: 60000,
                 value: 0.0
             )
-        let decodedResponse: [UInt8] = EVM.decodeABI(types: [Type<UInt8>()], data: response) as! [UInt8]
-        return decodedResponse[0]
+        let decodedResponse = EVM.decodeABI(types: [Type<UInt8>()], data: response) as! [AnyStruct]
+        return decodedResponse[0] as! UInt8
     }
 
     /// Determines if the provided owner address is either the owner or approved for the NFT in the ERC721 contract
@@ -253,23 +253,24 @@ access(all) contract FlowEVMBridgeUtils {
     /// Derives the Cadence contract name for a given EVM asset of the form
     /// (EVMVMBridgedNFT|EVMVMBridgedToken)_<0xCONTRACT_ADDRESS>
     access(all) fun deriveBridgedAssetContractName(fromEVMContract: EVM.EVMAddress): String? {
-        // Determine if the asset is an FT or NFT
-        let isToken: Bool = self.isEVMToken(evmContractAddress: fromEVMContract)
-        let isNFT: Bool = self.isEVMNFT(evmContractAddress: fromEVMContract)
-        let isEVMNative: Bool = self.isEVMNative(evmContractAddress: fromEVMContract)
-        // Semi-fungible tokens are not currently supported & Flow-native assets are locked, not bridge-defined
-        if (isToken && isNFT) || !isEVMNative {
-            return nil
-        }
+        // // Determine if the asset is an FT or NFT
+        // let isToken: Bool = self.isEVMToken(evmContractAddress: fromEVMContract)
+        // let isNFT: Bool = self.isEVMNFT(evmContractAddress: fromEVMContract)
+        // let isEVMNative: Bool = self.isEVMNative(evmContractAddress: fromEVMContract)
+        // // Semi-fungible tokens are not currently supported & Flow-native assets are locked, not bridge-defined
+        // if (isToken && isNFT) || !isEVMNative {
+        //     return nil
+        // }
 
         // Get the NFT or FT name
         let name: String = self.getName(evmContractAddress: fromEVMContract)
-        // Concatenate the
+        // Concatenate the prefix & t
         var prefix: String? = nil
-        if isToken {
-            prefix = self.contractNamePrefixes[Type<@{FungibleToken.Vault}>()]!["bridged"]!
-        } else if isNFT {
+        let isERC721: Bool = FlowEVMBridgeUtils.isEVMNFT(evmContractAddress: fromEVMContract)
+        if isERC721 {
             prefix = self.contractNamePrefixes[Type<@{NonFungibleToken.NFT}>()]!["bridged"]!
+        } else {
+            prefix = self.contractNamePrefixes[Type<@{FungibleToken.Vault}>()]!["bridged"]!
         }
         if prefix != nil {
             return prefix!.concat(self.contractNameDelimiter)
@@ -338,6 +339,14 @@ access(all) contract FlowEVMBridgeUtils {
     access(all) view fun splitObjectIdentifier(identifier: String): [String]? {
         let identifierSplit: [String] = identifier.split(separator: ".")
         return identifierSplit.length != 4 ? nil : identifierSplit
+    }
+
+    access(all) view fun buildCompositeType(address: Address, contractName: String, resourceName: String): Type? {
+        let addressStr = address.toString()
+        let subtract0x = addressStr.slice(from: 2, upTo: addressStr.length)
+        let identifier = "A".concat(".").concat(subtract0x).concat(".").concat(contractName).concat(".").concat(resourceName)
+        log(identifier)
+        return CompositeType(identifier)
     }
 
     /* --- ABI Utils --- */
