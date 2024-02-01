@@ -345,7 +345,6 @@ access(all) contract FlowEVMBridgeUtils {
         let addressStr = address.toString()
         let subtract0x = addressStr.slice(from: 2, upTo: addressStr.length)
         let identifier = "A".concat(".").concat(subtract0x).concat(".").concat(contractName).concat(".").concat(resourceName)
-        log(identifier)
         return CompositeType(identifier)
     }
 

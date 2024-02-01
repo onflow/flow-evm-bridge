@@ -1,5 +1,7 @@
 import "FungibleToken"
 import "NonFungibleToken"
+import "ViewResolver"
+import "MetadataViews"
 import "FlowToken"
 
 import "EVM"
@@ -10,29 +12,39 @@ import "FlowEVMBridgeUtils"
 
 /// This transaction bridges an NFT from FlowEVM to Flow assuming it has already been onboarded to the FlowEVMBridge
 /// NOTE: The ERC721 must have first been onboarded to the bridge. This can be checked via the method
-///     FlowEVMBridge.evmAddressRequiresOnboarding(address: self.evmContractAddress) shown below
+///     FlowEVMBridge.evmAddressRequiresOnboarding(address: self.evmContractAddress)
 ///
-transaction(nftTypeIdentifier: String, id: UInt256, collectionStoragePathIdentifier: String) {
+transaction(nftContractAddress: Address, nftContractName: String, id: UInt256) {
 
-    let requiresOnboarding: Bool?
     let evmContractAddress: EVM.EVMAddress
     let collection: &{NonFungibleToken.Collection}
     let tollFee: @{FungibleToken.Vault}
     let coa: &EVM.BridgedAccount
     let calldata: [UInt8]
     
-    prepare(signer: auth(BorrowValue) &Account) {
+    prepare(signer: auth(BorrowValue, IssueStorageCapabilityController, PublishCapability, SaveValue, UnpublishCapability) &Account) {
 
         // Get the ERC721 contract address for the given NFT type
-        let nftType: Type = CompositeType(nftTypeIdentifier) ?? panic("Could not construct NFT type")
+        let nftType = FlowEVMBridgeUtils.buildCompositeType(
+                address: nftContractAddress,
+                contractName: nftContractName,
+                resourceName: "NFT"
+            ) ?? panic("Could not construct NFT type")
         self.evmContractAddress = FlowEVMBridge.getAssetEVMContractAddress(type: nftType)
             ?? panic("EVM Contract address not found for given NFT type")
-        // Gather value to check before executing the bridge - added here for context
-        self.requiresOnboarding = FlowEVMBridge.evmAddressRequiresOnboarding(address: self.evmContractAddress)
 
-        // Borrow a reference to the NFT collection
-        let storagePath = StoragePath(identifier: collectionStoragePathIdentifier) ?? panic("Could not create storage path")
-        self.collection = signer.storage.borrow<&{NonFungibleToken.Collection}>(from: storagePath)
+        // Borrow a reference to the NFT collection, configuring if necessary
+        let viewResolver = getAccount(nftContractAddress).contracts.borrow<&ViewResolver>(name: nftContractName)
+            ?? panic("Could not borrow ViewResolver from NFT contract")
+        let collectionData = viewResolver.resolveView(Type<MetadataViews.NFTCollectionData>()) as! MetadataViews.NFTCollectionData?
+            ?? panic("Could not resolve NFTCollectionData view")
+        if signer.storage.borrow<&{NonFungibleToken.Collection}>(from: collectionData.storagePath) == nil {
+            signer.storage.save(<-collectionData.createEmptyCollection(), to: collectionData.storagePath)
+            signer.capabilities.unpublish(collectionData.publicPath)
+            let collectionCap = signer.capabilities.storage.issue<&{NonFungibleToken.Collection}>(collectionData.storagePath)
+            signer.capabilities.publish(collectionCap, at: collectionData.publicPath)
+        }
+        self.collection = signer.storage.borrow<&{NonFungibleToken.Collection}>(from: collectionData.storagePath)
             ?? panic("Could not borrow collection from storage path")
 
         // Get the funds to pay the bridging fee from the signer's FlowToken Vault
@@ -52,14 +64,6 @@ transaction(nftTypeIdentifier: String, id: UInt256, collectionStoragePathIdentif
             )
     }
 
-    // Assert the bridge is configured to bridge the requested NFT
-    pre {
-        self.requiresOnboarding != nil:
-            "Requesting to bridge unsupported asset type"
-        self.requiresOnboarding == false:
-            "The requested NFT type has not yet been onboarded to the bridge"
-    }
-
     execute {
         // Execute the bridge
         let nft: @{NonFungibleToken.NFT} <- FlowEVMBridge.bridgeNFTFromEVM(
@@ -71,13 +75,5 @@ transaction(nftTypeIdentifier: String, id: UInt256, collectionStoragePathIdentif
         )
         // Deposit the bridged NFT into the signer's collection
         self.collection.deposit(token: <-nft)
-    }
-
-    // Post-assert bridge completed successfully by checking the NFT resides in the Collection
-    post {
-        self.collection.borrowNFT(
-            FlowEVMBridgeUtils.uint256ToUInt64(value: id)
-        ) != nil:
-            "Problem bridging to signer's COA!"
     }
 }
