@@ -296,10 +296,10 @@ access(all) contract CONTRACT_NAME: ICrossVM, IFlowEVMNFTBridge, ViewResolver {
     /* --- IFlowEVMNFTBridge conformance --- */
     //
     ///
-    access(all) fun bridgeNFTToEVM(token: @{NonFungibleToken.NFT}, to: EVM.EVMAddress, tollFee: @FlowToken.Vault) {
+    access(all) fun bridgeNFTToEVM(token: @{NonFungibleToken.NFT}, to: EVM.EVMAddress, tollFee: @{FungibleToken.Vault}) {
         pre {
             token.getType() == Type<@CONTRACT_NAME.NFT>(): "Unsupported NFT type"
-            tollFee.balance >= FlowEVMBridgeConfig.fee: "Insufficient fee provided"
+            tollFee.getBalance() >= FlowEVMBridgeConfig.fee: "Insufficient fee provided"
         }
         FlowEVMBridgeUtils.depositTollFee(<-tollFee)
         let cast <- token as! @CONTRACT_NAME.NFT
@@ -336,11 +336,11 @@ access(all) contract CONTRACT_NAME: ICrossVM, IFlowEVMNFTBridge, ViewResolver {
         calldata: [UInt8],
         id: UInt256,
         evmContractAddress: EVM.EVMAddress,
-        tollFee: @FlowToken.Vault
+        tollFee: @{FungibleToken.Vault}
     ): @{NonFungibleToken.NFT} {
         pre {
             self.evmNFTContractAddress.bytes == evmContractAddress.bytes: "Invalid EVM contract address"
-            tollFee.balance >= FlowEVMBridgeConfig.fee: "Insufficient fee provided"
+            tollFee.getBalance() >= FlowEVMBridgeConfig.fee: "Insufficient fee provided"
         }
         FlowEVMBridgeUtils.depositTollFee(<-tollFee)
         assert(
@@ -409,12 +409,8 @@ access(all) contract CONTRACT_NAME: ICrossVM, IFlowEVMNFTBridge, ViewResolver {
         destroy nft
     }
 
-    // TODO: Replace
-    // init(name: String, symbol: String, evmContractAddress: EVM.EVMAddress) {
-    init(name: String, symbol: String, evmContractAddressHex: String) {
-        // TODO: Replace
-        self.evmNFTContractAddress = FlowEVMBridgeUtils.getEVMAddressFromHexString(address: evmContractAddressHex)
-            ?? panic("Malformed EVM contract address hex string")
+    init(name: String, symbol: String, evmContractAddress: EVM.EVMAddress) {
+        self.evmNFTContractAddress = evmContractAddress
         self.name = name
         self.symbol = symbol
 
