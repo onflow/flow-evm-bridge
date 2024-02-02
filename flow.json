@@ -128,6 +128,10 @@
 			"address": "ee82856bf20e2aa6",
 			"key": "686779d775e5fcbf8d2f4a85cb4c53525d02b7ef53230d180fc16f35d9b7d025"
 		},
+		"erc721": {
+			"address": "e03daebed8ca0615",
+			"key": "bf602a4cdffb5610a008622f6601ba7059f8a6f533d7489457deb3d45875acb0"
+		},
 		"example-nft": {
 			"address": "179b6b1cb6755e31",
 			"key": "96dfbadf086daa187100a24b1fd2b709b702954bbd030a394148e11bcbb799ef"
