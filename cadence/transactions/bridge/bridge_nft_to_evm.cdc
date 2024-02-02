@@ -3,7 +3,6 @@ import "NonFungibleToken"
 import "ViewResolver"
 import "MetadataViews"
 import "FlowToken"
-import "ExampleNFT"
 
 import "EVM"
 
@@ -15,7 +14,7 @@ import "FlowEVMBridgeUtils"
 /// NOTE: The NFT being bridged must have first been onboarded by type. This can be checked for with the method
 ///     FlowEVMBridge.typeRequiresOnboarding(type): Bool?
 ///
-transaction(id: UInt64, collectionStoragePathIdentifier: String, recipient: String) {
+transaction(nftContractAddress: Address, nftContractName: String, id: UInt64, recipient: String) {
     
     let nft: @{NonFungibleToken.NFT}
     let nftType: Type
@@ -23,10 +22,15 @@ transaction(id: UInt64, collectionStoragePathIdentifier: String, recipient: Stri
     let tollFee: @{FungibleToken.Vault}
     
     prepare(signer: auth(BorrowValue) &Account) {
+        // Borrow a reference to the NFT collection, configuring if necessary
+        let viewResolver = getAccount(nftContractAddress).contracts.borrow<&ViewResolver>(name: nftContractName)
+            ?? panic("Could not borrow ViewResolver from NFT contract")
+        let collectionData = viewResolver.resolveView(Type<MetadataViews.NFTCollectionData>()) as! MetadataViews.NFTCollectionData?
+            ?? panic("Could not resolve NFTCollectionData view")
         // Withdraw the requested NFT
         let collection = signer.storage.borrow<auth(NonFungibleToken.Withdrawable) &{NonFungibleToken.Collection}>(
-                from: StoragePath(identifier: collectionStoragePathIdentifier) ?? panic("Could not create storage path")
-            )!
+                from: collectionData.storagePath
+            ) ?? panic("Could not access signer's NFT Collection")
         self.nft <- collection.withdraw(withdrawID: id)
         // Save the type for our post-assertion
         self.nftType = self.nft.getType()
