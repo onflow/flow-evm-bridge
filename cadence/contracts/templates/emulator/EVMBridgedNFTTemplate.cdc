@@ -26,7 +26,7 @@ access(all) contract CONTRACT_NAME: ICrossVM, IFlowEVMNFTBridge, ViewResolver {
 
     /// We choose the name NFT here, but this type can have any name now
     /// because the interface does not require it to have a specific name any more
-    access(all) resource NFT: CrossVMNFT.EVMNFT, NonFungibleToken.NFT, ViewResolver.Resolver {
+    access(all) resource NFT: CrossVMNFT.EVMNFT {
 
         access(all) let id: UInt64
         access(all) let evmID: UInt256

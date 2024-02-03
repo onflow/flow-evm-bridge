@@ -1,3 +1,4 @@
+import "NonFungibleToken"
 import "FungibleToken"
 import "MetadataViews"
 
@@ -32,16 +33,18 @@ access(all) contract CrossVMNFT {
         }
     }
 
-    access(all) resource interface EVMNFT {
+    access(all) resource interface EVMNFT : NonFungibleToken.NFT {
         access(all) let evmID: UInt256
         access(all) let name: String
         access(all) let symbol: String
-        access(all) fun getEVMContractAddress(): EVM.EVMAddress
         access(all) fun tokenURI(): String
+        access(all) fun getEVMContractAddress(): EVM.EVMAddress
+        // access(all) view fun getDefaultBridgeAddress(): Address
     }
     /// Enables a bridging entrypoint on an implementing Collection
     access(all) resource interface EVMBridgeableCollection {
         access(all) view fun borrowEVMNFT(id: UInt64): &{EVMNFT}?
         access(Bridgeable) fun bridgeToEVM(id: UInt64, to: EVM.EVMAddress, tollFee: @{FungibleToken.Vault})
+        // access(all) access(all) fun getDefaultBridgeAddress(): Address
     }
 }

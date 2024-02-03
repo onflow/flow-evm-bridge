@@ -10,6 +10,7 @@ import IEVMBridgeNFTLocker from 0xf8d6e0586b0a20c7
 import FlowEVMBridgeConfig from 0xf8d6e0586b0a20c7
 import FlowEVMBridgeUtils from 0xf8d6e0586b0a20c7
 import FlowEVMBridge from 0xf8d6e0586b0a20c7
+import CrossVMNFT from 0xf8d6e0586b0a20c7
 
 /// This is a contract template for a Locker which can be used to lock NFTs on Flow and mint them on EVM. It's served
 /// by the FlowEVMBridgeTemplates contract with `CONTRACT_NAME` replaced with the name derived from the NFT type.
@@ -40,7 +41,12 @@ access(all) contract CONTRACT_NAME : IEVMBridgeNFTLocker {
         }
         FlowEVMBridgeUtils.depositTollFee(<-tollFee)
         let id: UInt64 = token.getID()
-        let convertedID: UInt256 = UInt256(token.getID())
+        var convertedID: UInt256 = UInt256(token.getID())
+        if token.getType().isSubtype(of: Type<@{CrossVMNFT.EVMNFT}>()) {
+            let tokenRef: &{NonFungibleToken.NFT} = &token
+            let castRef = tokenRef as! &{CrossVMNFT.EVMNFT}
+            convertedID = castRef.evmID
+        }
 
         var uri: String = ""
         if let display = token.resolveView(Type<MetadataViews.Display>()) as! MetadataViews.Display? {
