@@ -33,11 +33,13 @@ access(all) contract CrossVMNFT {
         access(all) let name: String
         access(all) let symbol: String
         access(all) let uri: URI
+        // access(all) let evmContractAddress: EVM.EVMAddress
 
         init(name: String, symbol: String, uri: URI) {
             self.name = name
             self.symbol = symbol
             self.uri = uri
+            // self.evmContractAddress = evmContractAddress
         }
     }
 
@@ -57,10 +59,14 @@ access(all) contract CrossVMNFT {
         access(all) fun getEVMContractAddress(): EVM.EVMAddress
     }
 
+    access(all) resource interface EVMNFTCollection {
+        access(all) view fun getEVMIDs(): [UInt256]
+        access(all) view fun getFlowID(from evmID: UInt256): UInt64?
+    }
+
     /// Enables a bridging entrypoint on an implementing Collection, bridging an owned NFT to EVM
     ///
-    access(all) resource interface EVMBridgeableCollection : CrossVMAsset.BridgeableAsset {
-        access(all) view fun borrowEVMNFT(id: UInt64): &{EVMNFT}?
+    access(all) resource interface EVMBridgeableCollection : EVMNFTCollection, CrossVMAsset.BridgeableAsset {
         access(Bridgeable) fun bridgeToEVM(id: UInt64, to: EVM.EVMAddress, tollFee: @{FungibleToken.Vault})
     }
 

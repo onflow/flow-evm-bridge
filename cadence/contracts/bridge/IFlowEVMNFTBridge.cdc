@@ -8,9 +8,15 @@ import "CrossVMNFT"
 
 access(all) contract interface IFlowEVMNFTBridge {
 
-    /// Assuming a 1:1 relationship between bridge Cadence & Solidity contracts where the implementing bridge targets
-    /// a single EVM contract
+    /* --- Contract address associations --- */
+    //
+    // Assuming a 1:1 relationship between bridge Cadence & Solidity contracts where the implementing bridge targets
+    // a single EVM contract and a single Flow contract
+    //
+    /// The address of the EVM contract targetted by this bridge. Defines the NFT being bridged in Flow EVM
     access(all) let evmNFTContractAddress: EVM.EVMAddress
+    /// The address of the Flow contract targetted by this bridge. Defines the NFT being bridged in Flow
+    access(all) let flowNFTContractAddress: Address
 
     /* --- Interface Events --- */
     //
