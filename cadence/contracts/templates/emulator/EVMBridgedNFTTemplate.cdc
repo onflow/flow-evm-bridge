@@ -311,15 +311,6 @@ access(all) contract CONTRACT_NAME: ICrossVM, IFlowEVMNFTBridge, ViewResolver {
             ), message: "The requested NFT is not owned by the bridge COA account"
         )
 
-        FlowEVMBridge.emitBridgeNFTToEVMEvent(
-            type: cast.getType(),
-            id: cast.getID(),
-            evmID: cast.evmID,
-            to: to,
-            evmContractAddress: self.getEVMContractAddress(),
-            flowNative: false
-        )
-
         FlowEVMBridgeUtils.call(
             signature: "safeTransferFrom(address,address,uint256)",
             targetEVMAddress: self.evmNFTContractAddress,
@@ -392,14 +383,6 @@ access(all) contract CONTRACT_NAME: ICrossVM, IFlowEVMNFTBridge, ViewResolver {
                 "Bridged Block": getCurrentBlock().height,
                 "Bridged Timestamp": getCurrentBlock().timestamp
             }
-        )
-        FlowEVMBridge.emitBridgeNFTFromEVMEvent(
-            type: bridgedNFT.getType(),
-            id: bridgedNFT.getID(),
-            evmID: bridgedNFT.evmID,
-            caller: caller.address(),
-            evmContractAddress: self.getEVMContractAddress(),
-            flowNative: false
         )
         return <- bridgedNFT
     }

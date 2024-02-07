@@ -250,33 +250,20 @@ access(all) contract FlowEVMBridgeUtils {
         }
         return nil
     }
-    /// Derives the Cadence contract name for a given EVM asset of the form
-    /// (EVMVMBridgedNFT|EVMVMBridgedToken)_<0xCONTRACT_ADDRESS>
-    access(all) fun deriveBridgedAssetContractName(fromEVMContract: EVM.EVMAddress): String? {
-        // // Determine if the asset is an FT or NFT
-        // let isToken: Bool = self.isEVMToken(evmContractAddress: fromEVMContract)
-        // let isNFT: Bool = self.isEVMNFT(evmContractAddress: fromEVMContract)
-        // let isEVMNative: Bool = self.isEVMNative(evmContractAddress: fromEVMContract)
-        // // Semi-fungible tokens are not currently supported & Flow-native assets are locked, not bridge-defined
-        // if (isToken && isNFT) || !isEVMNative {
-        //     return nil
-        // }
-
-        // Get the NFT or FT name
-        let name: String = self.getName(evmContractAddress: fromEVMContract)
+    /// Derives the Cadence contract name for a given EVM NFT of the form
+    /// EVMVMBridgedNFT_<0xCONTRACT_ADDRESS>
+    access(all) fun deriveBridgedNFTContractName(from evmContract: EVM.EVMAddress): String {
         // Concatenate the prefix & t
-        var prefix: String? = nil
-        let isERC721: Bool = FlowEVMBridgeUtils.isEVMNFT(evmContractAddress: fromEVMContract)
-        if isERC721 {
-            prefix = self.contractNamePrefixes[Type<@{NonFungibleToken.NFT}>()]!["bridged"]!
-        } else {
-            prefix = self.contractNamePrefixes[Type<@{FungibleToken.Vault}>()]!["bridged"]!
-        }
-        if prefix != nil {
-            return prefix!.concat(self.contractNameDelimiter)
-                .concat("0x".concat(self.getEVMAddressAsHexString(address: fromEVMContract)))
-        }
-        return nil
+        return self.contractNamePrefixes[Type<@{NonFungibleToken.NFT}>()]!["bridged"]!
+            .concat(self.contractNameDelimiter)
+            .concat("0x".concat(self.getEVMAddressAsHexString(address: evmContract)))
+    }
+    /// Derives the Cadence contract name for a given EVM fungible token of the form
+    /// EVMVMBridgedToken_<0xCONTRACT_ADDRESS>
+    access(all) fun deriveBridgedTokenContractName(from evmContract: EVM.EVMAddress): String {
+        return self.contractNamePrefixes[Type<@{FungibleToken.Vault}>()]!["bridged"]!
+            .concat(self.contractNameDelimiter)
+            .concat("0x".concat(self.getEVMAddressAsHexString(address: evmContract)))
     }
 
     /* --- Math Utils --- */
