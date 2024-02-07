@@ -41,12 +41,7 @@ access(all) contract CONTRACT_NAME : IEVMBridgeNFTLocker {
         }
         FlowEVMBridgeUtils.depositTollFee(<-tollFee)
         let id: UInt64 = token.getID()
-        var convertedID: UInt256 = UInt256(token.getID())
-        if token.getType().isSubtype(of: Type<@{CrossVMNFT.EVMNFT}>()) {
-            let tokenRef: &{NonFungibleToken.NFT} = &token
-            let castRef = tokenRef as! &{CrossVMNFT.EVMNFT}
-            convertedID = castRef.evmID
-        }
+        var convertedID: UInt256 = self.getEVMID(from: &token) ?? UInt256(token.getID())
 
         var uri: String = ""
         if let display = token.resolveView(Type<MetadataViews.Display>()) as! MetadataViews.Display? {
@@ -74,6 +69,7 @@ access(all) contract CONTRACT_NAME : IEVMBridgeNFTLocker {
     /// Bridges the NFT from Flow to EVM given the NFT is of the type handled by this locker, acting as a secondary
     /// bridge access point
     ///
+    // TODO: Add coverage for EVM ID -> Flow NFT ID
     access(all) fun bridgeNFTFromEVM(
         caller: &EVM.BridgedAccount,
         calldata: [UInt8],
@@ -129,17 +125,25 @@ access(all) contract CONTRACT_NAME : IEVMBridgeNFTLocker {
         let exists: Bool = decoded[0] as! Bool
         assert(exists == false, message: "NFT was not successfully burned")
 
-        let convertedID: UInt64 = FlowEVMBridgeUtils.uint256ToUInt64(value: id)
+        // Cover the case where Cadence NFT ID is not the same as EVM NFT ID
+        var convertedID: UInt64? = nil
+        if let flowID = self.locker.getFlowIDFromEVMID(id) {
+            convertedID = flowID
+        } else {
+            convertedID = FlowEVMBridgeUtils.uint256ToUInt64(value: id)
+        }
+        assert(convertedID != nil, message: "NFT ID conversion failed")
+
         FlowEVMBridge.emitBridgeNFTFromEVMEvent(
             type: self.lockedNFTType,
-            id: convertedID,
+            id: convertedID!,
             evmID: id,
             caller: caller.address(),
             evmContractAddress: self.evmNFTContractAddress,
             flowNative: true
         )
         // Finally return the NFT to the caller
-        return <- self.locker.withdraw(withdrawID: convertedID)
+        return <- self.locker.withdraw(withdrawID: convertedID!)
     }
 
     /**********************
@@ -183,10 +187,13 @@ access(all) contract CONTRACT_NAME : IEVMBridgeNFTLocker {
         access(self) var lockedNFTCount: Int
         /// Indexed on NFT UUID to prevent collisions
         access(self) let lockedNFTs: @{UInt64: {NonFungibleToken.NFT}}
+        /// Maps EVM NFT ID to Flow NFT ID, covering cross-VM project NFTs
+        access(self) let evmIDToFlowID: {UInt256: UInt64}
 
         init() {
             self.lockedNFTCount = 0
             self.lockedNFTs <- {}
+            self.evmIDToFlowID = {}
         }
 
         /* --- Getters --- */
@@ -197,10 +204,25 @@ access(all) contract CONTRACT_NAME : IEVMBridgeNFTLocker {
             return self.lockedNFTCount
         }
 
+        /// Returns the Flow NFT ID associated with the EVM NFT ID if the locked token implements CrossVMNFT.EVMNFT
+        ///
+        access(all) view fun getFlowIDFromEVMID(_ id: UInt256): UInt64? {
+            return self.evmIDToFlowID[id]
+        }
+
         /// Returns a reference to the NFT if it is locked
         ///
         access(all) view fun borrowNFT(_ id: UInt64): &{NonFungibleToken.NFT}? {
             return &self.lockedNFTs[id]
+        }
+
+        /// Returns a reference to the NFT CrossVMNFT.EVMNFT if it is locked and conforms to the interface
+        ///
+        access(all) view fun borrowEVMNFT(_ id: UInt256): &{CrossVMNFT.EVMNFT}? {
+            if let evmID = self.getFlowIDFromEVMID(id) {
+                return self.borrowNFT(evmID) as! &{CrossVMNFT.EVMNFT}?
+            }
+            return nil
         }
 
         /// Returns a map of supported NFT types - at the moment Lockers only support the lockedNFTType defined by
@@ -254,6 +276,9 @@ access(all) contract CONTRACT_NAME : IEVMBridgeNFTLocker {
             pre {
                 self.borrowNFT(token.getID()) == nil: "NFT with this ID already exists in the Locker"
             }
+            if let evmID = CONTRACT_NAME.getEVMID(from: &token) {
+                self.evmIDToFlowID[evmID] = token.getID()
+            }
             self.lockedNFTCount = self.lockedNFTCount + 1
             self.lockedNFTs[token.getID()] <-! token
         }
@@ -271,10 +296,19 @@ access(all) contract CONTRACT_NAME : IEVMBridgeNFTLocker {
             // Should not happen, but prevent underflow
             assert(self.lockedNFTCount > 0, message: "No NFTs to withdraw")
             self.lockedNFTCount = self.lockedNFTCount - 1
-
-            return <-self.lockedNFTs.remove(key: withdrawID)!
+            let token <- self.lockedNFTs.remove(key: withdrawID)!
+            if let evmID = CONTRACT_NAME.getEVMID(from: &token) {
+                self.evmIDToFlowID.remove(key: evmID)
+            }
+            return <- token
         }
+    }
 
+    access(self) fun getEVMID(from token: &{NonFungibleToken.NFT}): UInt256? {
+        if let evmNFT = token as? &{CrossVMNFT.EVMNFT} {
+            return evmNFT.evmID
+        }
+        return nil
     }
 
     init(lockedNFTType: Type, flowNFTContractAddress: Address, evmNFTContractAddress: EVM.EVMAddress) {

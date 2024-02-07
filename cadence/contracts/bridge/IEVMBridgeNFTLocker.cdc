@@ -35,5 +35,6 @@ access(all) contract interface IEVMBridgeNFTLocker : ICrossVM, IFlowEVMNFTBridge
 
     access(all) resource interface Locker : NonFungibleToken.Collection {
         access(all) view fun isLocked(id: UInt64): Bool
+        access(all) view fun getFlowIDFromEVMID(_ id: UInt256): UInt64?
     }
 }
