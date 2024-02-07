@@ -21,7 +21,7 @@ import CrossVMNFT from 0xf8d6e0586b0a20c7
 /// On bridging, the ERC721 is transferred to the bridge's CadenceOwnedAccount EVM address and a new NFT is minted from
 /// this contract to the bridging caller. On return to Flow EVM, the reverse process is followed - the token is burned
 /// in this contract and the ERC721 is transferred to the defined recipient. In this way, the Cadence token acts as a
-/// representation of both the EVM NFT as well as ownership rights to it upon bridging back to Flow EVM.
+/// representation of both the EVM NFT and thus ownership rights to it upon bridging back to Flow EVM.
 ///
 /// To bridge between VMs, a caller can either use the contract methods defined below, or use the FlowEVMBridge's
 /// bridging methods which will programatically route bridging calls to this contract.
@@ -30,6 +30,8 @@ access(all) contract CONTRACT_NAME: ICrossVM, IFlowEVMNFTBridge, ViewResolver {
 
     /// Pointer to the Factory deployed Solidity contract address defining the bridged asset
     access(all) let evmNFTContractAddress: EVM.EVMAddress
+    /// Pointer to the Flow NFT contract address defining the bridged asset, this contract address in this case
+    access(all) let flowNFTContractAddress: Address
     /// Name of the NFT collection defined in the corresponding ERC721 contract
     access(all) let name: String
     /// Symbol of the NFT collection defined in the corresponding ERC721 contract
@@ -142,6 +144,10 @@ access(all) contract CONTRACT_NAME: ICrossVM, IFlowEVMNFTBridge, ViewResolver {
             return self.publicPath
         }
 
+        access(all) view fun getDefaultBridgeAddress(): Address {
+            return 0xf8d6e0586b0a20c7
+        }
+
         init () {
             self.ownedNFTs <- {}
             self.evmIDToFlowID = {}
@@ -208,9 +214,9 @@ access(all) contract CONTRACT_NAME: ICrossVM, IFlowEVMNFTBridge, ViewResolver {
             return self.evmIDToFlowID.keys
         }
 
-        /// Returns an array of the EVM IDs that are in the collection
-        access(all) view fun getEVMIDToFlowID(): {UInt256: UInt64} {
-            return self.evmIDToFlowID
+        /// Returns the flow 
+        access(all) view fun getFlowID(from evmID: UInt256): UInt64? {
+            return self.evmIDToFlowID[evmID]
         }
 
         /// Gets the amount of NFTs stored in the collection
@@ -218,14 +224,7 @@ access(all) contract CONTRACT_NAME: ICrossVM, IFlowEVMNFTBridge, ViewResolver {
             return self.ownedNFTs.keys.length
         }
 
-        /// Retrieves a CrossVMNFT.EVMNFT reference to the NFT stored in the collection by its EVM ID
-        access(all) view fun borrowEVMNFT(evmID: UInt256): &{CrossVMNFT.EVMNFT}? {
-            if let id = self.evmIDToFlowID[evmID] {
-                return &self.ownedNFTs[id] as &{CrossVMNFT.EVMNFT}?
-            }
-            return nil
-        }
-
+        /// Retrieves a reference to the NFT stored in the collection by its ID
         access(all) view fun borrowNFT(_ id: UInt64): &{NonFungibleToken.NFT}? {
             return &self.ownedNFTs[id]
         }
@@ -449,6 +448,7 @@ access(all) contract CONTRACT_NAME: ICrossVM, IFlowEVMNFTBridge, ViewResolver {
 
     init(name: String, symbol: String, evmContractAddress: EVM.EVMAddress) {
         self.evmNFTContractAddress = evmContractAddress
+        self.flowNFTContractAddress = self.account.address
         self.name = name
         self.symbol = symbol
 
