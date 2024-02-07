@@ -1,5 +1,11 @@
 {
 	"contracts": {
+		"CrossVMAsset": {
+			"source": "./cadence/contracts/bridge/CrossVMAsset.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7"
+			}
+		},
 		"CrossVMNFT": {
 			"source": "./cadence/contracts/bridge/CrossVMNFT.cdc",
 			"aliases": {

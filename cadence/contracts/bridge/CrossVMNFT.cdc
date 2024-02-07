@@ -4,6 +4,8 @@ import "MetadataViews"
 
 import "EVM"
 
+import "CrossVMAsset"
+
 /// Contract defining cross-VM NFT & Collection interfaces
 ///
 access(all) contract CrossVMNFT {
@@ -45,23 +47,21 @@ access(all) contract CrossVMNFT {
     /// retain identifying token information on bridging.
     ///
     /// See discussion https://github.com/onflow/flow-nft/pull/126#discussion_r1462612559 where @austinkline raised
-    /// differentiating IDs in a minimal interface like the one below
+    /// differentiating IDs in a minimal interface incorporated into the one below
     ///
-    access(all) resource interface EVMNFT : NonFungibleToken.NFT {
+    access(all) resource interface EVMNFT : CrossVMAsset.BridgeableAsset, NonFungibleToken.NFT {
         access(all) let evmID: UInt256
         access(all) let name: String
         access(all) let symbol: String
         access(all) fun tokenURI(): String
         access(all) fun getEVMContractAddress(): EVM.EVMAddress
-        // access(all) view fun getDefaultBridgeAddress(): Address
     }
 
-    /// Enables a bridging entrypoint on an implementing Collection
+    /// Enables a bridging entrypoint on an implementing Collection, bridging an owned NFT to EVM
     ///
-    access(all) resource interface EVMBridgeableCollection {
+    access(all) resource interface EVMBridgeableCollection : CrossVMAsset.BridgeableAsset {
         access(all) view fun borrowEVMNFT(id: UInt64): &{EVMNFT}?
         access(Bridgeable) fun bridgeToEVM(id: UInt64, to: EVM.EVMAddress, tollFee: @{FungibleToken.Vault})
-        // access(all) access(all) fun getDefaultBridgeAddress(): Address
     }
 
     /// Retrieves the EVM ID of an NFT if it implements the EVMNFT interface, returning nil if not
