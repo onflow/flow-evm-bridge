@@ -82,10 +82,6 @@ access(all) contract CONTRACT_NAME : IEVMBridgeNFTLocker {
             tollFee.getBalance() >= FlowEVMBridgeConfig.fee: "Insufficient bridging fee provided"
             evmContractAddress.bytes == self.evmNFTContractAddress.bytes: "EVM contract address is not associated with this Locker"
         }
-        let isNFT: Bool = FlowEVMBridgeUtils.isEVMNFT(evmContractAddress: evmContractAddress)
-        let isToken: Bool = FlowEVMBridgeUtils.isEVMToken(evmContractAddress: evmContractAddress)
-        assert(isNFT && !isToken, message: "Unsupported asset type")
-
         // Ensure caller is current NFT owner or approved
         let isAuthorized: Bool = FlowEVMBridgeUtils.isOwnerOrApproved(
             ofNFT: id,
@@ -304,6 +300,8 @@ access(all) contract CONTRACT_NAME : IEVMBridgeNFTLocker {
         }
     }
 
+    /// Retrieves the EVM ID from the NFT if it conforms to the CrossVMNFT.EVMNFT interface
+    ///
     access(self) fun getEVMID(from token: &{NonFungibleToken.NFT}): UInt256? {
         if let evmNFT = token as? &{CrossVMNFT.EVMNFT} {
             return evmNFT.evmID
