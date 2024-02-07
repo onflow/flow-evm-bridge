@@ -60,7 +60,6 @@ access(all) contract CONTRACT_NAME : IEVMBridgeNFTLocker {
     /// Bridges the NFT from Flow to EVM given the NFT is of the type handled by this locker, acting as a secondary
     /// bridge access point
     ///
-    // TODO: Add coverage for EVM ID -> Flow NFT ID
     access(all) fun bridgeNFTFromEVM(
         caller: &EVM.BridgedAccount,
         calldata: [UInt8],
@@ -128,6 +127,12 @@ access(all) contract CONTRACT_NAME : IEVMBridgeNFTLocker {
     /**********************
             Getters
     ***********************/
+
+    /// Returns the amount of FLOW required to bridge an NFT
+    ///
+    access(all) view fun getFeeAmount(): UFix64 {
+        return FlowEVMBridgeConfig.fee
+    }
 
     /// Retrieves the number of locked NFTs
     ///

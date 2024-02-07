@@ -219,7 +219,7 @@ access(all) contract CONTRACT_NAME: ICrossVM, IFlowEVMNFTBridge, ViewResolver {
         }
 
         /// Retrieves a CrossVMNFT.EVMNFT reference to the NFT stored in the collection by its EVM ID
-        access(all) view fun borrowEVMNFT(evmID: UInt64): &{CrossVMNFT.EVMNFT}? {
+        access(all) view fun borrowEVMNFT(evmID: UInt256): &{CrossVMNFT.EVMNFT}? {
             if let id = self.evmIDToFlowID[evmID] {
                 return &self.ownedNFTs[id] as &{CrossVMNFT.EVMNFT}?
             }
@@ -250,6 +250,10 @@ access(all) contract CONTRACT_NAME: ICrossVM, IFlowEVMNFTBridge, ViewResolver {
     access(all) fun createEmptyCollection(): @CONTRACT_NAME.Collection {
         return <- create Collection()
     }
+
+    /**********************
+            Getters
+    ***********************/
 
     /// Function that returns all the Metadata Views implemented by a Non Fungible Token
     ///
@@ -327,20 +331,21 @@ access(all) contract CONTRACT_NAME: ICrossVM, IFlowEVMNFTBridge, ViewResolver {
         }
     }
 
-    /* --- ICrossVM conformance --- */
-    //
+    /// Returns the EVM contract address of the NFT this contract represents
     ///
     access(all) fun getEVMContractAddress(): EVM.EVMAddress {
         return self.evmNFTContractAddress
     }
 
-    /* --- IFlowEVMNFTBridge conformance --- */
-    //
     /// Returns the amount of FLOW required to bridge an NFT
     ///
     access(all) view fun getFeeAmount(): UFix64 {
         return FlowEVMBridgeConfig.fee
     }
+
+    /************************************
+        Auxiliary Bridge Entrypoints
+    *************************************/
 
     /// Completes the bridge of this contract's NFT from Flow to Flow EVM
     ///
