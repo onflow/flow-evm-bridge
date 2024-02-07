@@ -33,13 +33,13 @@ access(all) contract CrossVMNFT {
         access(all) let name: String
         access(all) let symbol: String
         access(all) let uri: URI
-        // access(all) let evmContractAddress: EVM.EVMAddress
+        access(all) let evmContractAddress: EVM.EVMAddress
 
-        init(name: String, symbol: String, uri: URI) {
+        init(name: String, symbol: String, uri: URI, evmContractAddress: EVM.EVMAddress) {
             self.name = name
             self.symbol = symbol
             self.uri = uri
-            // self.evmContractAddress = evmContractAddress
+            self.evmContractAddress = evmContractAddress
         }
     }
 

@@ -88,7 +88,8 @@ access(all) contract CONTRACT_NAME: ICrossVM, IFlowEVMNFTBridge, ViewResolver {
                     return CrossVMNFT.BridgedMetadata(
                         name: self.name,
                         symbol: self.symbol,
-                        uri: CrossVMNFT.URI(self.uri)
+                        uri: CrossVMNFT.URI(self.uri),
+                        evmContractAddress: self.getEVMContractAddress()
                     )
                 case Type<MetadataViews.Serial>():
                     return MetadataViews.Serial(
