@@ -124,6 +124,12 @@ access(all) contract CONTRACT_NAME: ICrossVM, IFlowEVMNFTBridge, ViewResolver {
         access(all) view fun getDefaultBridgeAddress(): Address {
             return 0xf8d6e0586b0a20c7
         }
+
+        /// Returns a reference to a contract as `&AnyStruct`. This enables the result to be cast as a bridging
+        /// contract by the caller and avoids circular dependency in the implementing contract
+        access(all) view fun borrowDefaultBridgeContract(): &AnyStruct {
+            return &CONTRACT_NAME
+        }
     }
 
     access(all) resource Collection: NonFungibleToken.Collection, CrossVMNFT.EVMBridgeableCollection {
@@ -145,8 +151,15 @@ access(all) contract CONTRACT_NAME: ICrossVM, IFlowEVMNFTBridge, ViewResolver {
             return self.publicPath
         }
 
+        /// Returns the Flow Address of the default bridge used by this Collection's contract
         access(all) view fun getDefaultBridgeAddress(): Address {
             return 0xf8d6e0586b0a20c7
+        }
+
+        /// Returns a reference to a contract as `&AnyStruct`. This enables the result to be cast as a bridging
+        /// contract by the caller and avoids circular dependency in the implementing contract
+        access(all) view fun borrowDefaultBridgeContract(): &AnyStruct {
+            return &CONTRACT_NAME
         }
 
         init () {
