@@ -59,6 +59,8 @@ access(all) contract CrossVMNFT {
         access(all) fun getEVMContractAddress(): EVM.EVMAddress
     }
 
+    /// A simple interface for a collection of EVMNFTs
+    ///
     access(all) resource interface EVMNFTCollection {
         access(all) view fun getEVMIDs(): [UInt256]
         access(all) view fun getFlowID(from evmID: UInt256): UInt64?
