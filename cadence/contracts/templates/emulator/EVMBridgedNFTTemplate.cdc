@@ -356,6 +356,12 @@ access(all) contract CONTRACT_NAME: ICrossVM, IFlowEVMNFTBridge, ViewResolver {
         return FlowEVMBridgeConfig.fee
     }
 
+    /// Returns the type of fungible tokens the bridge accepts for fees
+    ///
+    access(all) view fun getFeeVaultType(): Type {
+        return Type<@FungibleToken.Vault>()
+    }
+
     /************************************
         Auxiliary Bridge Entrypoints
     *************************************/

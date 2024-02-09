@@ -38,9 +38,12 @@ access(all) contract interface IFlowEVMNFTBridge {
         bridgeAddress: Address
     )
 
-    /// Returns the amount of FLOW required to bridge an NFT
+    /// Returns the amount of fungible tokens required to bridge an NFT
     ///
     access(all) view fun getFeeAmount(): UFix64
+    /// Returns the type of fungible tokens the bridge accepts for fees
+    ///
+    access(all) view fun getFeeVaultType(): Type
 
     /// Public entrypoint to bridge NFTs from Flow to EVM - cross-account bridging supported (e.g. straight to EOA)
     ///

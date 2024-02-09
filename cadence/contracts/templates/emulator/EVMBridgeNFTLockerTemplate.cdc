@@ -134,6 +134,12 @@ access(all) contract CONTRACT_NAME : IEVMBridgeNFTLocker {
         return FlowEVMBridgeConfig.fee
     }
 
+    /// Returns the type of fungible tokens the bridge accepts for fees
+    ///
+    access(all) view fun getFeeVaultType(): Type {
+        return Type<@FlowToken.Vault>()
+    }
+
     /// Retrieves the number of locked NFTs
     ///
     /// @returns Number of NFTs in the contract locker

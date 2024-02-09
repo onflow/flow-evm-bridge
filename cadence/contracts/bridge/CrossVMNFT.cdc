@@ -10,6 +10,7 @@ import "CrossVMAsset"
 ///
 access(all) contract CrossVMNFT {
 
+    // TODO: Update to use NFT v2 entitlements once available
     access(all) entitlement Bridgeable
 
     /// A struct to represent a general case URI, used to represent the URI of the NFT where the type of URI is not
