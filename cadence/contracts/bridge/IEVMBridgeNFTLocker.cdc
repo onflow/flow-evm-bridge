@@ -7,7 +7,7 @@ import "EVM"
 import "ICrossVM"
 import "IFlowEVMNFTBridge"
 
-/// Defines an NFT Locker interface used to lock bridge Flow-native NFTs. Included so the contract can be borrowed by
+/// Defines an NFT Locker interface used to lock bridged Flow-native NFTs. Included so the contract can be borrowed by
 /// the main bridge contract without statically declaring the contract due to dynamic deployments
 /// An implementation of this contract will be templated to be named dynamically based on the locked NFT Type
 ///
