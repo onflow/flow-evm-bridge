@@ -2,7 +2,7 @@
 ///
 access(all) contract FlowEVMBridgeConfig {
 
-    /// Amount of $FLOW paid to bridge
+    /// Amount of FLOW paid to bridge
     access(all) var fee: UFix64
     /// StoragePath where bridge Cadence Owned Account is stored
     access(all) let coaStoragePath: StoragePath
