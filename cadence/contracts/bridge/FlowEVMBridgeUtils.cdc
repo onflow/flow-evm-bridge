@@ -31,14 +31,17 @@ access(all) contract FlowEVMBridgeUtils {
         return String.encodeHex(addressBytes)
     }
 
-    /// Returns an EVMAddress as a hex string without a 0x prefix
+    /// Returns an EVMAddress as a hex string without a 0x prefix, truncating the string's last 20 bytes if exceeded
     ///
     /// @param: address The hex string to convert to an EVMAddress
     ///
     /// @return The EVMAddress representation of the hex string
     ///
     access(all) fun getEVMAddressFromHexString(address: String): EVM.EVMAddress? {
-        let addressBytes: [UInt8] = address.decodeHex()
+        var addressBytes: [UInt8] = address.decodeHex()
+        if addressBytes.length > 20 {
+            addressBytes = addressBytes.slice(from: addressBytes.length - 20, upTo: addressBytes.length)
+        }
         return EVM.EVMAddress(bytes: [
             addressBytes[0], addressBytes[1], addressBytes[2], addressBytes[3],
             addressBytes[4], addressBytes[5], addressBytes[6], addressBytes[7],
@@ -130,8 +133,8 @@ access(all) contract FlowEVMBridgeUtils {
             gasLimit: 60000,
             value: 0.0
         )
-        let decodedResponse: [String] = EVM.decodeABI(types: [Type<String>()], data: response) as! [String]
-        return decodedResponse[0]
+        let decodedResponse = EVM.decodeABI(types: [Type<String>()], data: response) as! [AnyStruct]
+        return decodedResponse[0] as! String
     }
 
     /// Retrieves the NFT/FT symbol from the given EVM contract address - applies for both ERC20 & ERC721
@@ -143,8 +146,8 @@ access(all) contract FlowEVMBridgeUtils {
             gasLimit: 60000,
             value: 0.0
         )
-        let decodedResponse: [String] = EVM.decodeABI(types: [Type<String>()], data: response) as! [String]
-        return decodedResponse[0]
+        let decodedResponse = EVM.decodeABI(types: [Type<String>()], data: response) as! [AnyStruct]
+        return decodedResponse[0] as! String
     }
 
     /// Retrieves the number of decimals for a given ERC20 contract address
@@ -156,8 +159,8 @@ access(all) contract FlowEVMBridgeUtils {
                 gasLimit: 60000,
                 value: 0.0
             )
-        let decodedResponse: [UInt8] = EVM.decodeABI(types: [Type<UInt8>()], data: response) as! [UInt8]
-        return decodedResponse[0]
+        let decodedResponse = EVM.decodeABI(types: [Type<UInt8>()], data: response) as! [AnyStruct]
+        return decodedResponse[0] as! UInt8
     }
 
     /// Determines if the provided owner address is either the owner or approved for the NFT in the ERC721 contract
@@ -247,32 +250,20 @@ access(all) contract FlowEVMBridgeUtils {
         }
         return nil
     }
-    /// Derives the Cadence contract name for a given EVM asset of the form
-    /// (EVMVMBridgedNFT|EVMVMBridgedToken)_<0xCONTRACT_ADDRESS>
-    access(all) fun deriveBridgedAssetContractName(fromEVMContract: EVM.EVMAddress): String? {
-        // Determine if the asset is an FT or NFT
-        let isToken: Bool = self.isEVMToken(evmContractAddress: fromEVMContract)
-        let isNFT: Bool = self.isEVMNFT(evmContractAddress: fromEVMContract)
-        let isEVMNative: Bool = self.isEVMNative(evmContractAddress: fromEVMContract)
-        // Semi-fungible tokens are not currently supported & Flow-native assets are locked, not bridge-defined
-        if (isToken && isNFT) || !isEVMNative {
-            return nil
-        }
-
-        // Get the NFT or FT name
-        let name: String = self.getName(evmContractAddress: fromEVMContract)
-        // Concatenate the
-        var prefix: String? = nil
-        if isToken {
-            prefix = self.contractNamePrefixes[Type<@{FungibleToken.Vault}>()]!["bridged"]!
-        } else if isNFT {
-            prefix = self.contractNamePrefixes[Type<@{NonFungibleToken.NFT}>()]!["bridged"]!
-        }
-        if prefix != nil {
-            return prefix!.concat(self.contractNameDelimiter)
-                .concat("0x".concat(self.getEVMAddressAsHexString(address: fromEVMContract)))
-        }
-        return nil
+    /// Derives the Cadence contract name for a given EVM NFT of the form
+    /// EVMVMBridgedNFT_<0xCONTRACT_ADDRESS>
+    access(all) fun deriveBridgedNFTContractName(from evmContract: EVM.EVMAddress): String {
+        // Concatenate the prefix & t
+        return self.contractNamePrefixes[Type<@{NonFungibleToken.NFT}>()]!["bridged"]!
+            .concat(self.contractNameDelimiter)
+            .concat("0x".concat(self.getEVMAddressAsHexString(address: evmContract)))
+    }
+    /// Derives the Cadence contract name for a given EVM fungible token of the form
+    /// EVMVMBridgedToken_<0xCONTRACT_ADDRESS>
+    access(all) fun deriveBridgedTokenContractName(from evmContract: EVM.EVMAddress): String {
+        return self.contractNamePrefixes[Type<@{FungibleToken.Vault}>()]!["bridged"]!
+            .concat(self.contractNameDelimiter)
+            .concat("0x".concat(self.getEVMAddressAsHexString(address: evmContract)))
     }
 
     /* --- Math Utils --- */
@@ -337,6 +328,13 @@ access(all) contract FlowEVMBridgeUtils {
         return identifierSplit.length != 4 ? nil : identifierSplit
     }
 
+    access(all) view fun buildCompositeType(address: Address, contractName: String, resourceName: String): Type? {
+        let addressStr = address.toString()
+        let subtract0x = addressStr.slice(from: 2, upTo: addressStr.length)
+        let identifier = "A".concat(".").concat(subtract0x).concat(".").concat(contractName).concat(".").concat(resourceName)
+        return CompositeType(identifier)
+    }
+
     /* --- ABI Utils --- */
     // TODO: Remove once available in EVM contract
     access(all) fun encodeABIWithSignature(
@@ -373,7 +371,10 @@ access(all) contract FlowEVMBridgeUtils {
     // TODO: Embed these methods into an Admin resource
 
     /// Deposits fees to the bridge account's FlowToken Vault - helps fund asset storage
-    access(account) fun depositTollFee(_ tollFee: @FlowToken.Vault) {
+    access(account) fun depositTollFee(_ tollFee: @{FungibleToken.Vault}) {
+        pre {
+            tollFee.getType() == Type<@FlowToken.Vault>(): "Fee paid in invalid token type"
+        }
         let vault = self.account.storage.borrow<&FlowToken.Vault>(from: /storage/flowTokenVault)
             ?? panic("Could not borrow FlowToken.Vault reference")
         vault.deposit(from: <-tollFee)

@@ -5,6 +5,7 @@ import "ViewResolver"
 import "EVM"
 
 import "ICrossVM"
+import "CrossVMNFT"
 import "IFlowEVMNFTBridge"
 
 /// Defines an NFT Locker interface used to lock bridged Flow-native NFTs. Included so the contract can be borrowed by
@@ -33,7 +34,7 @@ access(all) contract interface IEVMBridgeNFTLocker : ICrossVM, IFlowEVMNFTBridge
         Locker interface
     **************************/
 
-    access(all) resource interface Locker : NonFungibleToken.Collection {
+    access(all) resource interface Locker : CrossVMNFT.EVMNFTCollection, NonFungibleToken.Collection {
         access(all) view fun isLocked(id: UInt64): Bool
     }
 }
