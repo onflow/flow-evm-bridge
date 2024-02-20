@@ -50,15 +50,15 @@ access(all) contract FlowEVMBridge {
     ///
     access(all) fun onboardByType(_ type: Type, tollFee: @{FungibleToken.Vault}) {
         pre {
-            tollFee.getType() == Type<@FlowToken.Vault>(): "Fee paid in invalid token type"
+            FlowEVMBridgeUtils.validateFee(&tollFee): "Invalid fee paid"
             self.typeRequiresOnboarding(type) == true: "Onboarding is not needed for this type"
             FlowEVMBridgeUtils.isValidFlowAsset(type: type): "Invalid type provided"
+            FlowEVMBridgeUtils.isFlowNative(type: type): "Only Flow-native assets can be onboarded by Type"
         }
         if type.isSubtype(of: Type<@{CrossVMAsset.BridgeableAsset}>()) {
             panic("Asset is already bridgeable and does not require onboarding to this bridge")
         }
         FlowEVMBridgeUtils.depositTollFee(<-tollFee)
-        assert(FlowEVMBridgeUtils.isFlowNative(type: type), message: "Only Flow-native assets can be onboarded by Type")
         self.deployLockerContract(forType: type)
     }
 
@@ -71,8 +71,7 @@ access(all) contract FlowEVMBridge {
     ///
     access(all) fun onboardByEVMAddress(_ address: EVM.EVMAddress, tollFee: @{FungibleToken.Vault}) {
         pre {
-            tollFee.getType() == Type<@FlowToken.Vault>(): "Fee paid in invalid token type"
-            tollFee.getBalance() >= FlowEVMBridgeConfig.fee: "Insufficient fee paid"
+            FlowEVMBridgeUtils.validateFee(&tollFee): "Invalid fee paid"
         }
         // TODO: Add bridge association check once tryCall is implemented, until then we can't check if the EVM contract
         //      is associated with a self-rolled bridge without reverting on failure
@@ -92,8 +91,7 @@ access(all) contract FlowEVMBridge {
     ///
     access(all) fun bridgeNFTToEVM(token: @{NonFungibleToken.NFT}, to: EVM.EVMAddress, tollFee: @{FungibleToken.Vault}) {
         pre {
-            tollFee.getBalance() >= FlowEVMBridgeConfig.fee: "Insufficient fee paid"
-            tollFee.getType() == Type<@FlowToken.Vault>(): "Fee paid in invalid token type"
+            FlowEVMBridgeUtils.validateFee(&tollFee): "Invalid fee paid"
             token.isInstance(Type<@{FungibleToken.Vault}>()) == false: "Mixed asset types are not yet supported"
             self.typeRequiresOnboarding(token.getType()) == false: "NFT must first be onboarded"
         }
@@ -128,8 +126,7 @@ access(all) contract FlowEVMBridge {
         tollFee: @{FungibleToken.Vault}
     ): @{NonFungibleToken.NFT} {
         pre {
-            tollFee.getBalance() >= FlowEVMBridgeConfig.fee: "Insufficient fee paid"
-            tollFee.getType() == Type<@FlowToken.Vault>(): "Fee paid in invalid token type"
+            FlowEVMBridgeUtils.validateFee(&tollFee): "Invalid fee paid"
         }
         // TODO: Add bridge association check once tryCall is implemented, until then we can't check if the EVM contract
         //      is associated with a self-rolled bridge without reverting on failure

@@ -36,8 +36,7 @@ access(all) contract CONTRACT_NAME : IEVMBridgeNFTLocker {
     access(all) fun bridgeNFTToEVM(token: @{NonFungibleToken.NFT}, to: EVM.EVMAddress, tollFee: @{FungibleToken.Vault}) {
         pre {
             token.getType() == self.lockedNFTType: "Invalid NFT type for this Locker"
-            tollFee.getType() == Type<@FlowToken.Vault>(): "Fee paid in invalid token type"
-            tollFee.getBalance() >= FlowEVMBridgeConfig.fee: "Insufficient bridging fee provided"
+            FlowEVMBridgeUtils.validateFee(&tollFee): "Invalid fee paid"
         }
         FlowEVMBridgeUtils.depositTollFee(<-tollFee)
         let id: UInt64 = token.getID()
@@ -68,8 +67,7 @@ access(all) contract CONTRACT_NAME : IEVMBridgeNFTLocker {
         tollFee: @{FungibleToken.Vault}
     ): @{NonFungibleToken.NFT} {
         pre {
-            tollFee.getType() == Type<@FlowToken.Vault>(): "Fee paid in invalid token type"
-            tollFee.getBalance() >= FlowEVMBridgeConfig.fee: "Insufficient bridging fee provided"
+            FlowEVMBridgeUtils.validateFee(&tollFee): "Invalid fee paid"
             evmContractAddress.bytes == self.evmNFTContractAddress.bytes: "EVM contract address is not associated with this Locker"
         }
         // Ensure caller is current NFT owner or approved

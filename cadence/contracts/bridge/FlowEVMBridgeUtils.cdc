@@ -63,7 +63,7 @@ access(all) contract FlowEVMBridgeUtils {
     ///
     /// @return True if the asset is Flow-native, false if it is EVM-native
     ///
-    access(all) fun isFlowNative(type: Type): Bool {
+    access(all) view fun isFlowNative(type: Type): Bool {
         let definingAddress: Address = self.getContractAddress(fromType: type)
             ?? panic("Could not construct address from type identifier: ".concat(type.identifier))
         return definingAddress != self.account.address
@@ -258,7 +258,7 @@ access(all) contract FlowEVMBridgeUtils {
     }
     /// Derives the Cadence contract name for a given EVM NFT of the form
     /// EVMVMBridgedNFT_<0xCONTRACT_ADDRESS>
-    access(all) fun deriveBridgedNFTContractName(from evmContract: EVM.EVMAddress): String {
+    access(all) view fun deriveBridgedNFTContractName(from evmContract: EVM.EVMAddress): String {
         // Concatenate the prefix & t
         return self.contractNamePrefixes[Type<@{NonFungibleToken.NFT}>()]!["bridged"]!
             .concat(self.contractNameDelimiter)
@@ -266,7 +266,7 @@ access(all) contract FlowEVMBridgeUtils {
     }
     /// Derives the Cadence contract name for a given EVM fungible token of the form
     /// EVMVMBridgedToken_<0xCONTRACT_ADDRESS>
-    access(all) fun deriveBridgedTokenContractName(from evmContract: EVM.EVMAddress): String {
+    access(all) view fun deriveBridgedTokenContractName(from evmContract: EVM.EVMAddress): String {
         return self.contractNamePrefixes[Type<@{FungibleToken.Vault}>()]!["bridged"]!
             .concat(self.contractNameDelimiter)
             .concat("0x".concat(self.getEVMAddressAsHexString(address: evmContract)))
@@ -321,7 +321,7 @@ access(all) contract FlowEVMBridgeUtils {
         return nil
     }
 
-    access(all) fun getContractName(fromType: Type): String? {
+    access(all) view fun getContractName(fromType: Type): String? {
         // Split identifier of format A.<CONTRACT_ADDRESS>.<CONTRACT_NAME>.<RESOURCE_NAME>
         if let identifierSplit: [String] = self.splitObjectIdentifier(identifier: fromType.identifier) {
             return identifierSplit[2]
@@ -375,6 +375,15 @@ access(all) contract FlowEVMBridgeUtils {
 
     /* --- Bridge-Access Only Utils --- */
     // TODO: Embed these methods into an Admin resource
+
+    /// Validates the Vault used to pay the bridging fee
+    access(account) view fun validateFee(_ tollFee: &{FungibleToken.Vault}): Bool {
+        pre {
+            tollFee.getType() == Type<@FlowToken.Vault>(): "Fee paid in invalid token type"
+            tollFee.getBalance() == FlowEVMBridgeConfig.fee: "Incorrect fee amount paid"
+        }
+        return true
+    }
 
     /// Deposits fees to the bridge account's FlowToken Vault - helps fund asset storage
     access(account) fun depositTollFee(_ tollFee: @{FungibleToken.Vault}) {

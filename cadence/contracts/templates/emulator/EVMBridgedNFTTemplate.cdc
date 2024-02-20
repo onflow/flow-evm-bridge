@@ -393,8 +393,7 @@ access(all) contract CONTRACT_NAME: ICrossVM, IFlowEVMNFTBridge, IEVMBridgeNFTLo
     ///
     access(all) fun bridgeNFTToEVM(token: @{NonFungibleToken.NFT}, to: EVM.EVMAddress, tollFee: @{FungibleToken.Vault}) {
         pre {
-            token.getType() == Type<@CONTRACT_NAME.NFT>(): "Unsupported NFT type"
-            tollFee.getBalance() >= FlowEVMBridgeConfig.fee: "Insufficient fee provided"
+            FlowEVMBridgeUtils.validateFee(&tollFee): "Invalid fee paid"
         }
         FlowEVMBridgeUtils.depositTollFee(<-tollFee)
         let cast <- token as! @CONTRACT_NAME.NFT
@@ -429,7 +428,7 @@ access(all) contract CONTRACT_NAME: ICrossVM, IFlowEVMNFTBridge, IEVMBridgeNFTLo
     ): @{NonFungibleToken.NFT} {
         pre {
             self.evmNFTContractAddress.bytes == evmContractAddress.bytes: "Invalid EVM contract address"
-            tollFee.getBalance() >= FlowEVMBridgeConfig.fee: "Insufficient fee provided"
+            FlowEVMBridgeUtils.validateFee(&tollFee): "Invalid fee paid"
         }
         FlowEVMBridgeUtils.depositTollFee(<-tollFee)
         assert(
