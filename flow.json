@@ -13,7 +13,7 @@
 			}
 		},
 		"EVM": {
-			"source": "./cadence/contracts/EVM.cdc",
+			"source": "./cadence/contracts/standards/EVM.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7"
 			}
