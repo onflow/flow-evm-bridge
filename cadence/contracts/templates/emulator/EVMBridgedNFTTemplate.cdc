@@ -358,7 +358,7 @@ access(all) contract CONTRACT_NAME: ICrossVM, IFlowEVMNFTBridge, IEVMBridgeNFTLo
     /// Returns the amount of FLOW required to bridge an NFT
     ///
     access(all) view fun getFeeAmount(): UFix64 {
-        return FlowEVMBridgeConfig.fee
+        return FlowEVMBridgeConfig.bridgeFee
     }
 
     /// Returns the type of fungible tokens the bridge accepts for fees
@@ -393,7 +393,7 @@ access(all) contract CONTRACT_NAME: ICrossVM, IFlowEVMNFTBridge, IEVMBridgeNFTLo
     ///
     access(all) fun bridgeNFTToEVM(token: @{NonFungibleToken.NFT}, to: EVM.EVMAddress, tollFee: @{FungibleToken.Vault}) {
         pre {
-            FlowEVMBridgeUtils.validateFee(&tollFee): "Invalid fee paid"
+            FlowEVMBridgeUtils.validateFee(&tollFee, onboarding: false): "Invalid fee paid"
         }
         FlowEVMBridgeUtils.depositTollFee(<-tollFee)
         let cast <- token as! @CONTRACT_NAME.NFT
@@ -428,7 +428,7 @@ access(all) contract CONTRACT_NAME: ICrossVM, IFlowEVMNFTBridge, IEVMBridgeNFTLo
     ): @{NonFungibleToken.NFT} {
         pre {
             self.evmNFTContractAddress.bytes == evmContractAddress.bytes: "Invalid EVM contract address"
-            FlowEVMBridgeUtils.validateFee(&tollFee): "Invalid fee paid"
+            FlowEVMBridgeUtils.validateFee(&tollFee, onboarding: false): "Invalid fee paid"
         }
         FlowEVMBridgeUtils.depositTollFee(<-tollFee)
         assert(

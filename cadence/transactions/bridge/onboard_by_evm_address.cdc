@@ -23,7 +23,7 @@ transaction(contractAddressHex: String) {
         let vault = signer.storage.borrow<auth(FungibleToken.Withdrawable) &FlowToken.Vault>(
                 from: /storage/flowTokenVault
             ) ?? panic("Could not access signer's FlowToken Vault")
-        self.tollFee <- vault.withdraw(amount: FlowEVMBridgeConfig.fee)
+        self.tollFee <- vault.withdraw(amount: FlowEVMBridgeConfig.onboardFee)
     }
 
     execute {

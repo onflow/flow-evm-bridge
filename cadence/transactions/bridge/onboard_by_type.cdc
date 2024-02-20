@@ -21,7 +21,7 @@ transaction(identifier: String) {
         let vault = signer.storage.borrow<auth(FungibleToken.Withdrawable) &FlowToken.Vault>(
                 from: /storage/flowTokenVault
             ) ?? panic("Could not access signer's FlowToken Vault")
-        self.tollFee <- vault.withdraw(amount: FlowEVMBridgeConfig.fee)
+        self.tollFee <- vault.withdraw(amount: FlowEVMBridgeConfig.onboardFee)
     }
 
     // Added for context - how to check if a type requires onboarding to the bridge

@@ -41,7 +41,7 @@ transaction(nftContractAddress: Address, nftContractName: String, id: UInt64, re
         let vault = signer.storage.borrow<auth(FungibleToken.Withdrawable) &FlowToken.Vault>(
                 from: /storage/flowTokenVault
             ) ?? panic("Could not access signer's FlowToken Vault")
-        self.tollFee <- vault.withdraw(amount: FlowEVMBridgeConfig.fee)
+        self.tollFee <- vault.withdraw(amount: FlowEVMBridgeConfig.bridgeFee)
     }
 
     execute {

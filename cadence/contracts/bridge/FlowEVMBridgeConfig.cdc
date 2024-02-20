@@ -2,24 +2,30 @@
 ///
 access(all) contract FlowEVMBridgeConfig {
 
+    /// Amount of FLOW paid to onboard a Type or EVMAddress to the bridge
+    access(all) var onboardFee: UFix64
     /// Amount of FLOW paid to bridge
-    access(all) var fee: UFix64
+    access(all) var bridgeFee: UFix64
     /// StoragePath where bridge Cadence Owned Account is stored
     access(all) let coaStoragePath: StoragePath
     access(all) let adminStoragePath: StoragePath
 
-    access(all) event BridgeFeeUpdated(old: UFix64, new: UFix64)
+    access(all) event BridgeFeeUpdated(old: UFix64, new: UFix64, isOnboarding: Bool)
 
     access(all) resource Admin {
-        access(all) fun updateFee(_ new: UFix64) {
-            emit BridgeFeeUpdated(old: FlowEVMBridgeConfig.fee, new: new)
-
-            FlowEVMBridgeConfig.fee = new
+        access(all) fun updateOnboardingFee(_ new: UFix64) {
+            emit BridgeFeeUpdated(old: FlowEVMBridgeConfig.onboardFee, new: new, isOnboarding: true)
+            FlowEVMBridgeConfig.onboardFee = new
+        }
+        access(all) fun updateBridgeFee(_ new: UFix64) {
+            emit BridgeFeeUpdated(old: FlowEVMBridgeConfig.bridgeFee, new: new, isOnboarding: false)
+            FlowEVMBridgeConfig.bridgeFee = new
         }
     }
 
     init() {
-        self.fee = 0.0
+        self.onboardFee = 0.0
+        self.bridgeFee = 0.0
         self.adminStoragePath = /storage/flowEVMBridgeConfigAdmin
         self.coaStoragePath = /storage/evm
 

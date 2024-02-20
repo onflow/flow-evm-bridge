@@ -377,10 +377,11 @@ access(all) contract FlowEVMBridgeUtils {
     // TODO: Embed these methods into an Admin resource
 
     /// Validates the Vault used to pay the bridging fee
-    access(account) view fun validateFee(_ tollFee: &{FungibleToken.Vault}): Bool {
+    access(all) view fun validateFee(_ tollFee: &{FungibleToken.Vault}, onboarding: Bool): Bool {
         pre {
             tollFee.getType() == Type<@FlowToken.Vault>(): "Fee paid in invalid token type"
-            tollFee.getBalance() == FlowEVMBridgeConfig.fee: "Incorrect fee amount paid"
+            onboarding ? tollFee.getBalance() == FlowEVMBridgeConfig.onboardFee : tollFee.getBalance() == FlowEVMBridgeConfig.bridgeFee:
+                "Incorrect fee amount paid"
         }
         return true
     }

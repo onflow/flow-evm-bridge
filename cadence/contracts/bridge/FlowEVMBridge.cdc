@@ -50,7 +50,7 @@ access(all) contract FlowEVMBridge {
     ///
     access(all) fun onboardByType(_ type: Type, tollFee: @{FungibleToken.Vault}) {
         pre {
-            FlowEVMBridgeUtils.validateFee(&tollFee): "Invalid fee paid"
+            FlowEVMBridgeUtils.validateFee(&tollFee, onboarding: true): "Invalid fee paid"
             self.typeRequiresOnboarding(type) == true: "Onboarding is not needed for this type"
             FlowEVMBridgeUtils.isValidFlowAsset(type: type): "Invalid type provided"
             FlowEVMBridgeUtils.isFlowNative(type: type): "Only Flow-native assets can be onboarded by Type"
@@ -71,7 +71,7 @@ access(all) contract FlowEVMBridge {
     ///
     access(all) fun onboardByEVMAddress(_ address: EVM.EVMAddress, tollFee: @{FungibleToken.Vault}) {
         pre {
-            FlowEVMBridgeUtils.validateFee(&tollFee): "Invalid fee paid"
+            FlowEVMBridgeUtils.validateFee(&tollFee, onboarding: true): "Invalid fee paid"
         }
         // TODO: Add bridge association check once tryCall is implemented, until then we can't check if the EVM contract
         //      is associated with a self-rolled bridge without reverting on failure
@@ -91,7 +91,7 @@ access(all) contract FlowEVMBridge {
     ///
     access(all) fun bridgeNFTToEVM(token: @{NonFungibleToken.NFT}, to: EVM.EVMAddress, tollFee: @{FungibleToken.Vault}) {
         pre {
-            FlowEVMBridgeUtils.validateFee(&tollFee): "Invalid fee paid"
+            FlowEVMBridgeUtils.validateFee(&tollFee, onboarding: false): "Invalid fee paid"
             token.isInstance(Type<@{FungibleToken.Vault}>()) == false: "Mixed asset types are not yet supported"
             self.typeRequiresOnboarding(token.getType()) == false: "NFT must first be onboarded"
         }
@@ -126,7 +126,7 @@ access(all) contract FlowEVMBridge {
         tollFee: @{FungibleToken.Vault}
     ): @{NonFungibleToken.NFT} {
         pre {
-            FlowEVMBridgeUtils.validateFee(&tollFee): "Invalid fee paid"
+            FlowEVMBridgeUtils.validateFee(&tollFee, onboarding: false): "Invalid fee paid"
         }
         // TODO: Add bridge association check once tryCall is implemented, until then we can't check if the EVM contract
         //      is associated with a self-rolled bridge without reverting on failure
