@@ -231,7 +231,7 @@ access(all) contract FlowEVMBridgeUtils {
     }
 
     /// Derives the Cadence contract name for a given Type of the form
-    /// (EVMVMNFTLocker|EVMVMTokenLocker)_<0xCONTRACT_ADDRESS><CONTRACT_NAME><RESOURCE_NAME>
+    /// (EVMVMBridgeNFTLocker|EVMVMBridgeTokenLocker)_<0xCONTRACT_ADDRESS>_<CONTRACT_NAME>_<RESOURCE_NAME>
     access(all) view fun deriveLockerContractName(fromType: Type): String? {
         // Bridge-defined assets are not locked
         if self.getContractAddress(fromType: fromType) == self.account.address {
@@ -265,7 +265,6 @@ access(all) contract FlowEVMBridgeUtils {
     /// Derives the Cadence contract name for a given EVM NFT of the form
     /// EVMVMBridgedNFT_<0xCONTRACT_ADDRESS>
     access(all) view fun deriveBridgedNFTContractName(from evmContract: EVM.EVMAddress): String {
-        // Concatenate the prefix & t
         return self.contractNamePrefixes[Type<@{NonFungibleToken.NFT}>()]!["bridged"]!
             .concat(self.contractNameDelimiter)
             .concat("0x".concat(self.getEVMAddressAsHexString(address: evmContract)))
