@@ -24,7 +24,7 @@ access(all) contract CONTRACT_NAME : IEVMBridgeNFTLocker {
     /// Pointer to the Factory deployed Solidity contract address defining the bridged asset
     access(all) let evmNFTContractAddress: EVM.EVMAddress
     /// Resource which holds locked NFTs
-    access(contract) let locker: @{IEVMBridgeNFTLocker.Locker}
+    access(contract) let locker: @{CrossVMNFT.EVMNFTCollection, NonFungibleToken.Collection}
 
     /************************************
         Auxiliary Bridge Entrypoints
@@ -158,6 +158,16 @@ access(all) contract CONTRACT_NAME : IEVMBridgeNFTLocker {
         return self.locker.borrowNFT(id)
     }
 
+    /// Returns whether an NFT with the given ID is locked
+    ///
+    /// @param id ID of the NFT to check
+    ///
+    /// @returns True if the NFT is locked, false otherwise
+    ///
+    access(all) view fun isLocked(id: UInt64): Bool {
+        return self.locker.borrowNFT(id) != nil
+    }
+
     /// Retrieves the corresponding EVM contract address, assuming a 1:1 relationship between VM implementations
     ///
     /// @returns EVM contract address defining bridge-managed NFT representing the locked NFT type
@@ -172,7 +182,7 @@ access(all) contract CONTRACT_NAME : IEVMBridgeNFTLocker {
 
     /// The resource managing the locking & unlocking of NFTs via this contract's interface
     ///
-    access(all) resource Locker : IEVMBridgeNFTLocker.Locker {
+    access(all) resource Locker : CrossVMNFT.EVMNFTCollection, NonFungibleToken.Collection {
         /// Count of locked NFTs as lockedNFTs.length may exceed computation limits
         access(self) var lockedNFTCount: Int
         /// Indexed on NFT UUID to prevent collisions
@@ -192,8 +202,7 @@ access(all) contract CONTRACT_NAME : IEVMBridgeNFTLocker {
             return self.lockedNFTCount
         }
 
-        /// Depending on the number of locked NFTs, this may fail. See isLocked() as fallback to check if as specific
-        /// NFT is locked
+        /// Depending on the number of locked NFTs, this may fail.
         ///
         access(all) view fun getIDs(): [UInt64] {
             return self.lockedNFTs.keys
@@ -230,12 +239,6 @@ access(all) contract CONTRACT_NAME : IEVMBridgeNFTLocker {
         ///
         access(all) view fun isSupportedNFTType(type: Type): Bool {
             return type == CONTRACT_NAME.lockedNFTType
-        }
-
-        /// Returns true if the NFT is locked
-        ///
-        access(all) view fun isLocked(id: UInt64): Bool {
-            return self.borrowNFT(id) != nil
         }
 
         /// Returns the NFT as a Resolver if it is locked

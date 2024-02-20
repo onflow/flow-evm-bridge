@@ -21,7 +21,7 @@ access(all) contract interface IEVMBridgeNFTLocker : ICrossVM, IFlowEVMNFTBridge
     /// Pointer to the Factory deployed Solidity contract address defining the bridged asset
     access(all) let evmNFTContractAddress: EVM.EVMAddress
     /// Resource which holds locked NFTs
-    access(contract) let locker: @{Locker, NonFungibleToken.Collection}
+    access(contract) let locker: @{CrossVMNFT.EVMNFTCollection, NonFungibleToken.Collection}
 
     /****************
         Getters
@@ -29,12 +29,5 @@ access(all) contract interface IEVMBridgeNFTLocker : ICrossVM, IFlowEVMNFTBridge
 
     access(all) view fun getLockedNFTCount(): Int
     access(all) view fun borrowLockedNFT(id: UInt64): &{NonFungibleToken.NFT}?
-
-    /*************************
-        Locker interface
-    **************************/
-
-    access(all) resource interface Locker : CrossVMNFT.EVMNFTCollection, NonFungibleToken.Collection {
-        access(all) view fun isLocked(id: UInt64): Bool
-    }
+    access(all) view fun isLocked(id: UInt64): Bool
 }
