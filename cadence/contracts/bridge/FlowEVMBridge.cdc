@@ -27,14 +27,14 @@ access(all) contract FlowEVMBridge {
     /* --- Events --- */
     //
     /// Denotes a Locker contract was deployed to the bridge account
-    access(all) event BridgeLockerContractDeployed(lockedType: Type, contractName: String, evmContractAddress: EVM.EVMAddress)
+    access(all) event BridgeLockerContractDeployed(lockedType: Type, contractName: String, evmContractAddress: String)
     /// Denotes a defining contract was deployed to the bridge accountcode
     access(all) event BridgeDefiningContractDeployed(
         contractName: String,
         assetName: String,
         symbol: String,
         isERC721: Bool,
-        evmContractAddress: EVM.EVMAddress
+        evmContractAddress: String
     )
 
     /**************************
@@ -369,7 +369,11 @@ access(all) contract FlowEVMBridge {
             ?? panic("Could not derive locker contract address for token type: ".concat(forType.identifier))
         self.account.contracts.add(name: name, code: code, forType, contractAddress, evmContractAddress)
 
-        emit BridgeLockerContractDeployed(lockedType: forType, contractName: name, evmContractAddress: evmContractAddress)
+        emit BridgeLockerContractDeployed(
+            lockedType: forType,
+            contractName: name,
+            evmContractAddress: FlowEVMBridgeUtils.getEVMAddressAsHexString(address: evmContractAddress)
+        )
     }
 
     /// Deploys templated EVM contract via Solidity Factory contract supporting bridging of a given asset type
@@ -429,7 +433,7 @@ access(all) contract FlowEVMBridge {
             assetName: name,
             symbol: symbol,
             isERC721: isERC721,
-            evmContractAddress: evmContractAddress
+            evmContractAddress: FlowEVMBridgeUtils.getEVMAddressAsHexString(address: evmContractAddress)
         )
     }
 }

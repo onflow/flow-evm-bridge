@@ -5,6 +5,7 @@ import "FlowToken"
 import "EVM"
 
 import "CrossVMNFT"
+import "FlowEVMBridgeUtils"
 
 access(all) contract interface IFlowEVMNFTBridge {
 
@@ -25,16 +26,16 @@ access(all) contract interface IFlowEVMNFTBridge {
         type: Type,
         id: UInt64,
         evmID: UInt256,
-        to: EVM.EVMAddress,
-        evmContractAddress: EVM.EVMAddress,
+        to: String,
+        evmContractAddress: String,
         bridgeAddress: Address
     )
     /// Broadcasts an NFT was bridged from EVM to Flow - caller commented until EVM.BridgedAccount.address() is view
     access(all) event BridgedNFTFromEVM(type: Type,
         id: UInt64,
         evmID: UInt256,
-        // caller: EVM.EVMAddress,
-        evmContractAddress: EVM.EVMAddress,
+        // caller: String, // Include once coa.address() is view
+        evmContractAddress: String,
         bridgeAddress: Address
     )
 
@@ -57,8 +58,8 @@ access(all) contract interface IFlowEVMNFTBridge {
                 type: token.getType(),
                 id: token.getID(),
                 evmID: CrossVMNFT.getEVMID(from: &token) ?? UInt256(token.getID()),
-                to: to,
-                evmContractAddress: self.evmNFTContractAddress,
+                to: FlowEVMBridgeUtils.getEVMAddressAsHexString(address: to),
+                evmContractAddress: FlowEVMBridgeUtils.getEVMAddressAsHexString(address: self.evmNFTContractAddress),
                 bridgeAddress: self.account.address
             )
         }
@@ -86,8 +87,8 @@ access(all) contract interface IFlowEVMNFTBridge {
                 type: result.getType(),
                 id: result.getID(),
                 evmID: id,
-                // caller: caller.address(),
-                evmContractAddress: self.evmNFTContractAddress,
+                // caller: FlowEVMBridgeUtils.getEVMAddressAsHexString(address: caller.address()),
+                evmContractAddress: FlowEVMBridgeUtils.getEVMAddressAsHexString(address: self.evmNFTContractAddress),
                 bridgeAddress: self.account.address
             )
         }
