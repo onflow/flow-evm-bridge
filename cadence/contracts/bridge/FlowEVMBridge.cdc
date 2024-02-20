@@ -312,11 +312,9 @@ access(all) contract FlowEVMBridge {
     access(self) fun tryNFTPassthrough(token: &{NonFungibleToken.NFT}): Bool {
         if let bridgeableAsset: &{CrossVMAsset.BridgeableAsset} = token as? &{CrossVMAsset.BridgeableAsset} {
             if let bridgeContract = bridgeableAsset.borrowDefaultBridgeContract() as? &IFlowEVMNFTBridge {
-                log("PASSTHROUGH DRY RUN SUCCESSFUL")
                 return true
             }
         }
-        log("PASSTHROUGH DRY RUN FAILURE")
         return false
     }
 
