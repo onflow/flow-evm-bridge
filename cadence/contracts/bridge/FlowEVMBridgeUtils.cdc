@@ -91,6 +91,7 @@ access(all) contract FlowEVMBridgeUtils {
                 value: 0.0
             )
         let decodedResponse: [AnyStruct] = EVM.decodeABI(types: [Type<Bool>()], data: response)
+        assert(decodedResponse.length == 1, message: "Invalid response length")
         let decodedBool: Bool = decodedResponse[0] as! Bool
         return decodedBool
     }
@@ -106,6 +107,7 @@ access(all) contract FlowEVMBridgeUtils {
             value: 0.0
         )
         let decodedResponse: [AnyStruct] = EVM.decodeABI(types: [Type<Bool>()], data: response)
+        assert(decodedResponse.length == 1, message: "Invalid response length")
         return decodedResponse[0] as! Bool
     }
     /// Identifies if an asset is ERC20
@@ -140,6 +142,7 @@ access(all) contract FlowEVMBridgeUtils {
             value: 0.0
         )
         let decodedResponse = EVM.decodeABI(types: [Type<String>()], data: response) as! [AnyStruct]
+        assert(decodedResponse.length == 1, message: "Invalid response length")
         return decodedResponse[0] as! String
     }
 
@@ -153,6 +156,7 @@ access(all) contract FlowEVMBridgeUtils {
             value: 0.0
         )
         let decodedResponse = EVM.decodeABI(types: [Type<String>()], data: response) as! [AnyStruct]
+        assert(decodedResponse.length == 1, message: "Invalid response length")
         return decodedResponse[0] as! String
     }
 
@@ -166,6 +170,7 @@ access(all) contract FlowEVMBridgeUtils {
                 value: 0.0
             )
         let decodedResponse = EVM.decodeABI(types: [Type<UInt8>()], data: response) as! [AnyStruct]
+        assert(decodedResponse.length == 1, message: "Invalid response length")
         return decodedResponse[0] as! UInt8
     }
 
@@ -220,6 +225,7 @@ access(all) contract FlowEVMBridgeUtils {
             value: 0.0
         )
         let decodedResponse: [UInt256] = EVM.decodeABI(types: [Type<UInt256>()], data: response) as! [UInt256]
+        assert(decodedResponse.length == 1, message: "Invalid response length")
         let tokenDecimals: UInt8 = self.getTokenDecimals(evmContractAddress: evmContractAddress)
         return self.uint256ToUFix64(value: decodedResponse[0], decimals: tokenDecimals) >= amount
     }

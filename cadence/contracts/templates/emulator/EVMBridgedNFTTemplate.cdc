@@ -475,6 +475,7 @@ access(all) contract CONTRACT_NAME: ICrossVM, IFlowEVMNFTBridge, IEVMBridgeNFTLo
                 )
             ) as! [AnyStruct]
         )
+        assert(tokenURIResponse.length == 1, message: "Invalid response length")
         let tokenURI: String = tokenURIResponse[0] as! String
         let bridgedNFT <- create NFT(
             name: self.name,

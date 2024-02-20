@@ -287,6 +287,7 @@ access(all) contract FlowEVMBridge {
             value: 0.0
         )
         let decodedResponse: [AnyStruct] = EVM.decodeABI(types: [Type<String>()], data: response)
+        assert(decodedResponse.length == 1, message: "Invalid response length")
         let identifier: String = decodedResponse[0] as! String
         let lockedType: Type = CompositeType(identifier) ?? panic("Invalid identifier returned from EVM contract")
         let lockerContractName: String = FlowEVMBridgeUtils.deriveLockerContractName(fromType: lockedType) ??
@@ -404,6 +405,7 @@ access(all) contract FlowEVMBridge {
             value: 0.0
         )
         let decodedResponse: [AnyStruct] = EVM.decodeABI(types: [Type<EVM.EVMAddress>()], data: response)
+        assert(decodedResponse.length == 1, message: "Invalid response length")
         let erc721Address: EVM.EVMAddress = decodedResponse[0] as! EVM.EVMAddress
         return erc721Address
     }

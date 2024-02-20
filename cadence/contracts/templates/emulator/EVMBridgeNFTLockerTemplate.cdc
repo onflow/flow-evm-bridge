@@ -106,6 +106,7 @@ access(all) contract CONTRACT_NAME : IEVMBridgeNFTLocker {
                 value: EVM.Balance(flow: 0.0)
             )
         let decoded: [AnyStruct] = EVM.decodeABI(types:[Type<Bool>()], data: response)
+        assert(decoded.length == 1, message: "Invalid response length")
         let exists: Bool = decoded[0] as! Bool
         assert(exists == false, message: "NFT was not successfully burned")
 
