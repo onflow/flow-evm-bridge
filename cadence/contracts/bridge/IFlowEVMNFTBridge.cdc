@@ -69,8 +69,8 @@ access(all) contract interface IFlowEVMNFTBridge {
     ///
     /// @param caller: The caller executing the bridge - must be passed to check EVM state pre- & post-call in scope
     /// @param calldata: Caller-provided approve() call, enabling contract COA to operate on NFT in EVM contract
-    /// @param id: The NFT ID to bridged
-    /// @param evmContractAddress: Address of the EVM address defining the NFT being bridged - also call target
+    /// @param id: The NFT ID to bridge
+    /// @param evmContractAddress: Address of the EVM contract defining the NFT being bridged - also call target
     /// @param tollFee: The fee paid for bridging
     ///
     /// @returns The bridged NFT
