@@ -34,7 +34,7 @@ contract EVMBridgeRouter {
                 bridgeCapability.check(): "Invalid Capability provided"
             }
             self.bridgeCapability = bridgeCapability
-            self.bridgeAddress = bridgeCapability.borrow().owner!.address
+            self.bridgeAddress = bridgeCapability.borrow()!.owner!.address
         }
         
         /// Passes along the bridge request to the designated bridge address
@@ -47,12 +47,12 @@ contract EVMBridgeRouter {
         /// Updates the designated bridge Capability
         ///
         access(Admin)
-        fun updateBridgeCapability(to: bridgeCapability, Capability<auth(EVM.Bridge) &{EVM.BridgeAccessor}>) {
+        fun updateBridgeCapability(to: Capability<auth(EVM.Bridge) &{EVM.BridgeAccessor}>) {
             pre {
                 to.check(): "Invalid Capability provided"
             }
-            let newAddress = to.borrow().owner!.address
-            emit BridgeCapabilityUpdated(type: to.getType(), oldAddres: self.bridgeAddress, newAddress: newAddress)
+            let newAddress = to.borrow()!.owner!.address
+            emit BridgeCapabilityUpdated(type: to.getType(), oldAddress: self.bridgeAddress, newAddress: newAddress)
             self.bridgeCapability = to
             self.bridgeAddress = newAddress
         }
@@ -69,7 +69,7 @@ contract EVMBridgeRouter {
         let bridgeCapability = self.account.inbox.claim<auth(EVM.Bridge) &{EVM.BridgeAccessor}>(
                 "EVMBridgeAccessor",
                 provider: bridgeAddress
-            )
-        self.account.storage.save(<-create Router(bridgeCapability), to: /storage/evmBridgeRouter)
+            ) ?? panic("No capability has been published for claiming")
+        self.account.storage.save(<-create Router(bridgeCapability: bridgeCapability), to: /storage/evmBridgeRouter)
     }
 }
