@@ -16,10 +16,17 @@ access(all) contract interface IEVMBridgeNFTEscrow {
         Getters
     *****************/
 
-    access(all) view fun isInitialized(forType: Type): Bool
-    access(all) view fun borrowLockedNFT(type: Type, id: UInt64): &{NonFungibleToken.NFT}?
-    access(all) view fun isLocked(type: Type, id: UInt64): Bool
+    access(all)
+    view fun isInitialized(forType: Type): Bool
+    access(all)
+    view fun borrowLockedNFT(type: Type, id: UInt64): &{NonFungibleToken.NFT}?
+    access(all)
+    view fun isLocked(type: Type, id: UInt64): Bool
 
-    access(account) fun lockNFT(nft: &{NonFungibleToken.NFT})
-    access(account) fun unlockNFT(type: Type, id: UInt64)
+    access(account)
+    fun initializeEscrow(forType: Type, erc721Address: EVM.EVMAddress)
+    access(account)
+    fun lockNFT(_ nft: @{NonFungibleToken.NFT})
+    access(account)
+    fun unlockNFT(type: Type, id: UInt64): @{NonFungibleToken.NFT}
 }

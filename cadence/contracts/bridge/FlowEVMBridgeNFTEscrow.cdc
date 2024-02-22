@@ -6,6 +6,7 @@ import "FlowToken"
 
 import "EVM"
 
+import "IEVMBridgeNFTEscrow"
 import "FlowEVMBridgeConfig"
 import "FlowEVMBridgeUtils"
 import "CrossVMNFT"
@@ -58,7 +59,7 @@ access(all) contract FlowEVMBridgeNFTEscrow : IEVMBridgeNFTEscrow {
     }
 
     /**********************
-            Getters
+        Bridge Methods
     ***********************/
 
     access(account)
@@ -72,8 +73,7 @@ access(all) contract FlowEVMBridgeNFTEscrow : IEVMBridgeNFTEscrow {
         self.account.storage.save(<-locker, to: lockerPath)
     }
 
-    access(account)
-    fun lockNFT(_ nft: @{NonFungibleToken.NFT}) {
+    access(account) fun lockNFT(_ nft: @{NonFungibleToken.NFT}) {
         let lockerPath = FlowEVMBridgeUtils.deriveEscrowStoragePath(fromType: nft.getType())
             ?? panic("Problem deriving locker path")
         let locker = self.account.storage.borrow<&Locker>(from: lockerPath)
