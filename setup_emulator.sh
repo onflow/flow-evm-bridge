@@ -2,6 +2,9 @@
 
 sh pass_precompiles.sh
 
+# Update the emulator deployed EVM contract
+flow accounts update-contract ./cadence/contracts/standards/EVM.cdc
+
 # Create COA in emulator-account
 flow evm create-account 100.0
 
@@ -19,7 +22,10 @@ flow accounts add-contract ./cadence/contracts/bridge/IEVMBridgeNFTLocker.cdc
 flow accounts add-contract ./cadence/contracts/bridge/FlowEVMBridgeTemplates.cdc
 
 # Deploy main bridge contract
-flow accounts add-contract ./cadence/contracts/bridge/FlowEVMBridge.cdc
+flow accounts add-contract ./cadence/contracts/bridge/FlowEVMBridge.cdc f8d6e0586b0a20c7
+
+# Deploy the bridge router directing calls from COAs to the dedicated bridge
+flow accounts add-contract ./cadence/contracts/bridge/EVMBridgeRouter.cdc f8d6e0586b0a20c7
 
 # Create `example-nft` account 179b6b1cb6755e31 with private key 96dfbadf086daa187100a24b1fd2b709b702954bbd030a394148e11bcbb799ef
 flow accounts create --key "351e1310301a7374430f6077d7b1b679c9574f8e045234eac09568ceb15c4f5d937104b4c3180df1e416da20c9d58aac576ffc328a342198a5eae4a29a13c47a"
