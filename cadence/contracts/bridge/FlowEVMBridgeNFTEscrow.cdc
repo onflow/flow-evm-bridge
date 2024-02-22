@@ -10,8 +10,8 @@ import "FlowEVMBridgeConfig"
 import "FlowEVMBridgeUtils"
 import "CrossVMNFT"
 
-/// This escrow contract handles the custody of assets that are bridged from Flow to EVM and retrieval of escrowed
-/// assets when they are bridged back to Flow.
+/// This escrow contract handles the locking of assets that are bridged from Flow to EVM and retrieval of locked
+/// assets in escrow when they are bridged back to Flow.
 ///
 access(all) contract FlowEVMBridgeNFTEscrow : IEVMBridgeNFTEscrow {
 
@@ -59,13 +59,13 @@ access(all) contract FlowEVMBridgeNFTEscrow : IEVMBridgeNFTEscrow {
     ***********************/
 
     access(account)
-    fun initializeEscrow(forType: Type) {
-        let lockerPath = FlowEVMBridgeUtils.deriveEscrowStoragePath(fromType: nft.getType())
+    fun initializeEscrow(forType: Type, erc721Address: EVM.EVMAddress) {
+        let lockerPath = FlowEVMBridgeUtils.deriveEscrowStoragePath(fromType: forType)
             ?? panic("Problem deriving locker path")
         if self.account.storage.type(at: lockerPath) != nil {
             return
         }
-        let locker <- create Locker(lockedType: forType)
+        let locker <- create Locker(lockedType: forType, erc721Address: erc721Address)
         self.account.storage.save(<-locker, to: lockerPath)
     }
 
@@ -191,7 +191,10 @@ access(all) contract FlowEVMBridgeNFTEscrow : IEVMBridgeNFTEscrow {
     /// The resource managing the locking & unlocking of NFTs via this contract's interface
     ///
     access(all) resource Locker : CrossVMNFT.EVMNFTCollection, NonFungibleToken.Collection {
+        /// The type of NFTs this Locker escrows
         access(all) let lockedType: Type
+        /// Corresponding ERC721 address for the locked NFTs
+        access(all) let erc721Address: EVM.EVMAddress
         /// Count of locked NFTs as lockedNFTs.length may exceed computation limits
         access(self) var lockedNFTCount: Int
         /// Indexed on NFT UUID to prevent collisions
@@ -199,8 +202,9 @@ access(all) contract FlowEVMBridgeNFTEscrow : IEVMBridgeNFTEscrow {
         /// Maps EVM NFT ID to Flow NFT ID, covering cross-VM project NFTs
         access(self) let evmIDToFlowID: {UInt256: UInt64}
 
-        init(lockedType: Type) {
+        init(lockedType: Type, erc721Address: EVM.EVMAddress) {
             self.lockedType = lockedType
+            self.erc721Address = erc721Address
             self.lockedNFTCount = 0
             self.lockedNFTs <- {}
             self.evmIDToFlowID = {}
@@ -298,7 +302,7 @@ access(all) contract FlowEVMBridgeNFTEscrow : IEVMBridgeNFTEscrow {
         /// Creates an empty Collection - added here for NFT.Collection conformance
         ///
         access(all) fun createEmptyCollection(): @{NonFungibleToken.Collection} {
-            return <- create Locker(lockedType): self.lockedType)
+            return <- create Locker(lockedType: self.lockedType, erc721Address: self.erc721Address)
         }
     }
 }
