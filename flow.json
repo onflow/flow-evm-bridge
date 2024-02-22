@@ -18,8 +18,8 @@
 				"emulator": "f8d6e0586b0a20c7"
 			}
 		},
-		"EVMBridgeAccessor": {
-			"source": "./cadence/contracts/bridge/EVMBridgeAccessor.cdc",
+		"EVMBridgeRouter": {
+			"source": "./cadence/contracts/bridge/EVMBridgeRouter.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7"
 			}
@@ -38,6 +38,12 @@
 		},
 		"FlowEVMBridgeConfig": {
 			"source": "./cadence/contracts/bridge/FlowEVMBridgeConfig.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7"
+			}
+		},
+		"FlowEVMBridgeNFTEscrow": {
+			"source": "./cadence/contracts/bridge/FlowEVMBridgeNFTEscrow.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7"
 			}
@@ -84,8 +90,8 @@
 				"emulator": "f8d6e0586b0a20c7"
 			}
 		},
-		"IEVMBridgeNFTLocker": {
-			"source": "./cadence/contracts/bridge/IEVMBridgeNFTLocker.cdc",
+		"IEVMBridgeNFTEscrow": {
+			"source": "./cadence/contracts/bridge/IEVMBridgeNFTEscrow.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7"
 			}

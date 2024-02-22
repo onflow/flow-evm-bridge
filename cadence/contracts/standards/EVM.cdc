@@ -178,6 +178,7 @@ contract EVM {
 
     /// Interface for a resource which acts as an entrypoint to the VM bridge
     access(all) resource interface BridgeAccessor {
-        access(Bridge) fun depositNFT(nft: @{NonFungibleToken.NFT}, to: EVM.EVMAddress, fee: @{FungibleToken.Vault})
+        access(Bridge)
+        fun depositNFT(nft: @{NonFungibleToken.NFT}, to: EVM.EVMAddress, fee: @{FungibleToken.Vault})
     }
 }
