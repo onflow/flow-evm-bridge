@@ -12,7 +12,7 @@ access(all) contract FlowEVMBridgeUtils {
     /// Address of the bridge factory Solidity contract
     access(all) let bridgeFactoryEVMAddress: EVM.EVMAddress
     /// Delimeter used to derive contract names
-    access(self) let contractNameDelimiter: String
+    access(self) let delimiter: String
     /// Mapping containing contract name prefixes
     access(self) let contractNamePrefixes: {Type: {String: String}}
 
@@ -233,6 +233,27 @@ access(all) contract FlowEVMBridgeUtils {
         return self.uint256ToUFix64(value: decodedResponse[0], decimals: tokenDecimals) >= amount
     }
 
+    /// Derives the StoragePath where the escrow locker is stored for a given Type of asset & returns. The given type
+    /// must be of an asset supported by the bridge
+    ///
+    access(all) fun deriveEscrowStoragePath(fromType: Type): StoragePath? {
+        if !self.isValidFlowAsset(type: fromType) {
+            return nil
+        }
+        if let splitIdentifier: [String] = self.splitObjectIdentifier(identifier: fromType.identifier) {
+            let sourceContractAddress: Address = Address.fromString("0x".concat(splitIdentifier[1]))!
+            let sourceContractName: String = splitIdentifier[2]
+            let resourceName: String = splitIdentifier[3]
+            return StoragePath(
+                identifier: "flowEVMBridgeEscrow".concat(self.delimiter)
+                    .concat(sourceContractAddress.toString()).concat(self.delimiter)
+                    .concat(sourceContractName).concat(self.delimiter)
+                    .concat(resourceName)
+            ) ?? nil
+        }
+        return nil
+    }
+
     /// Derives the Cadence contract name for a given Type of the form
     /// (EVMVMBridgeNFTLocker|EVMVMBridgeTokenLocker)_<0xCONTRACT_ADDRESS>_<CONTRACT_NAME>_<RESOURCE_NAME>
     access(all) view fun deriveLockerContractName(fromType: Type): String? {
@@ -257,9 +278,9 @@ access(all) contract FlowEVMBridgeUtils {
             }
 
             if prefix != nil {
-                return prefix!.concat(self.contractNameDelimiter)
-                    .concat(sourceContractAddress.toString()).concat(self.contractNameDelimiter)
-                    .concat(sourceContractName).concat(self.contractNameDelimiter)
+                return prefix!.concat(self.delimiter)
+                    .concat(sourceContractAddress.toString()).concat(self.delimiter)
+                    .concat(sourceContractName).concat(self.delimiter)
                     .concat(resourceName)
             }
         }
@@ -269,14 +290,14 @@ access(all) contract FlowEVMBridgeUtils {
     /// EVMVMBridgedNFT_<0xCONTRACT_ADDRESS>
     access(all) view fun deriveBridgedNFTContractName(from evmContract: EVM.EVMAddress): String {
         return self.contractNamePrefixes[Type<@{NonFungibleToken.NFT}>()]!["bridged"]!
-            .concat(self.contractNameDelimiter)
+            .concat(self.delimiter)
             .concat("0x".concat(self.getEVMAddressAsHexString(address: evmContract)))
     }
     /// Derives the Cadence contract name for a given EVM fungible token of the form
     /// EVMVMBridgedToken_<0xCONTRACT_ADDRESS>
     access(all) view fun deriveBridgedTokenContractName(from evmContract: EVM.EVMAddress): String {
         return self.contractNamePrefixes[Type<@{FungibleToken.Vault}>()]!["bridged"]!
-            .concat(self.contractNameDelimiter)
+            .concat(self.delimiter)
             .concat("0x".concat(self.getEVMAddressAsHexString(address: evmContract)))
     }
 
@@ -322,7 +343,7 @@ access(all) contract FlowEVMBridgeUtils {
     /* --- Type Identifier Utils --- */
 
     access(all) view fun getContractAddress(fromType: Type): Address? {
-        // Split identifier of format A.<CONTRACT_ADDRESS>.<CONTRACT_NAME>.<RESOURCE_NAME>
+        // Split identifier of format A.<CONTRACT_ADDRESS>.<CONTRACT_NAME>.<OBJECT_NAME>
         if let identifierSplit: [String] = self.splitObjectIdentifier(identifier: fromType.identifier) {
             return Address.fromString("0x".concat(identifierSplit[1]))
         }
@@ -330,9 +351,17 @@ access(all) contract FlowEVMBridgeUtils {
     }
 
     access(all) view fun getContractName(fromType: Type): String? {
-        // Split identifier of format A.<CONTRACT_ADDRESS>.<CONTRACT_NAME>.<RESOURCE_NAME>
+        // Split identifier of format A.<CONTRACT_ADDRESS>.<CONTRACT_NAME>.<OBJECT_NAME>
         if let identifierSplit: [String] = self.splitObjectIdentifier(identifier: fromType.identifier) {
             return identifierSplit[2]
+        }
+        return nil
+    }
+
+    access(all) view fun getObjectName(fromType: Type): String? {
+        // Split identifier of format A.<CONTRACT_ADDRESS>.<CONTRACT_NAME>.<OBJECT_NAME>
+        if let identifierSplit: [String] = self.splitObjectIdentifier(identifier: fromType.identifier) {
+            return identifierSplit[3]
         }
         return nil
     }
@@ -429,7 +458,7 @@ access(all) contract FlowEVMBridgeUtils {
     }
 
     init(bridgeFactoryEVMAddress: String) {
-        self.contractNameDelimiter = "_"
+        self.delimiter = "_"
         self.contractNamePrefixes = {
             Type<@{NonFungibleToken.NFT}>(): {
                 "locker": "EVMVMBridgeNFTLocker",
