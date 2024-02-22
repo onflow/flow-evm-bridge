@@ -9,6 +9,7 @@ access(all) contract FlowEVMBridgeConfig {
     /// StoragePath where bridge Cadence Owned Account is stored
     access(all) let coaStoragePath: StoragePath
     access(all) let adminStoragePath: StoragePath
+    access(all) let bridgeAccessorPublicPath: PublicPath
 
     access(all) event BridgeFeeUpdated(old: UFix64, new: UFix64, isOnboarding: Bool)
 
@@ -28,6 +29,7 @@ access(all) contract FlowEVMBridgeConfig {
         self.bridgeFee = 0.0
         self.adminStoragePath = /storage/flowEVMBridgeConfigAdmin
         self.coaStoragePath = /storage/evm
+        self.bridgeAccessorPublicPath = /public/flowEVMBridgeAccessor
 
         self.account.storage.save(<-create Admin(), to: self.adminStoragePath)
     }

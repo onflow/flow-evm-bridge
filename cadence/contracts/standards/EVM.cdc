@@ -131,15 +131,10 @@ contract EVM {
             )
         }
 
+        /// Bridges the given NFT to the EVM environment
         access(all)
-        fun depositNFT(nft: @{NonFungibleToken.NFT}, fee: @FlowToken.Vault) {
-            let bridge = EVM.account.storage.borrow<&{BridgeAccessor}>(from: /storage/flowEVMBridge)
-                ?? panic("Could not borrow reference to the EVM bridge")
-            bridge.bridgeNFT(
-                nft: <-nft,
-                to: self.address(),
-                fee: <-fee
-            )
+        fun depositNFT(nft: @{NonFungibleToken.NFT}, to: EVM.EVMAddress, fee: @FlowToken.Vault) {
+            EVM.borrowBridgeAccessor().depositNFT(nft: <-nft, to: to, fee: <-fee)
         }
     }
 
@@ -171,7 +166,16 @@ contract EVM {
         return InternalEVM.decodeABI(types: types, data: data)
     }
 
+    /// Returns a reference to the BridgeAccessor designated for internal bridge requests
+    ///
+    access(self)
+    fun borrowBridgeAccessor(): &{BridgeAccessor} {
+        return self.account.storage.borrow<&{BridgeAccessor}>(from: /storage/evmBridgeRouter)
+            ?? panic("Could not borrow reference to the EVM bridge")
+    }
+
+    /// Interface for a resource which acts as an entrypoint to the VM bridge
     access(all) resource interface BridgeAccessor {
-        access(all) fun bridgeNFT(nft: @{NonFungibleToken.NFT}, to: EVM.EVMAddress, fee: @{FungibleToken.Vault})
+        access(contract) fun depositNFT(nft: @{NonFungibleToken.NFT}, to: EVM.EVMAddress, fee: @{FungibleToken.Vault})
     }
 }
