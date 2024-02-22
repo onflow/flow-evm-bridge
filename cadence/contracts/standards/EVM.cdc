@@ -1,4 +1,6 @@
 import "FlowToken"
+import "FungibleToken"
+import "NonFungibleToken"
 
 access(all)
 contract EVM {
@@ -128,6 +130,17 @@ contract EVM {
                  value: value.flow
             )
         }
+
+        access(all)
+        fun depositNFT(nft: @{NonFungibleToken.NFT}, fee: @FlowToken.Vault) {
+            let bridge = EVM.account.storage.borrow<&{BridgeAccessor}>(from: /storage/flowEVMBridge)
+                ?? panic("Could not borrow reference to the EVM bridge")
+            bridge.bridgeNFT(
+                nft: <-nft,
+                to: self.address(),
+                fee: <-fee
+            )
+        }
     }
 
     /// Creates a new bridged account
@@ -156,5 +169,9 @@ contract EVM {
     access(all)
     fun decodeABI(types: [Type], data: [UInt8]): [AnyStruct] {
         return InternalEVM.decodeABI(types: types, data: data)
+    }
+
+    access(all) resource interface BridgeAccessor {
+        access(all) fun bridgeNFT(nft: @{NonFungibleToken.NFT}, to: EVM.EVMAddress, fee: @{FungibleToken.Vault})
     }
 }

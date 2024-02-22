@@ -16,22 +16,19 @@ import "FlowEVMBridgeUtils"
 ///
 transaction(nftContractAddress: Address, nftContractName: String, id: UInt256) {
 
-    let evmContractAddress: EVM.EVMAddress
+    let nftType: Type
     let collection: &{NonFungibleToken.Collection}
     let tollFee: @{FungibleToken.Vault}
     let coa: &EVM.BridgedAccount
-    let calldata: [UInt8]
     
     prepare(signer: auth(BorrowValue, IssueStorageCapabilityController, PublishCapability, SaveValue, UnpublishCapability) &Account) {
 
         // Get the ERC721 contract address for the given NFT type
-        let nftType = FlowEVMBridgeUtils.buildCompositeType(
+        self.nftType = FlowEVMBridgeUtils.buildCompositeType(
                 address: nftContractAddress,
                 contractName: nftContractName,
                 resourceName: "NFT"
             ) ?? panic("Could not construct NFT type")
-        self.evmContractAddress = FlowEVMBridge.getAssetEVMContractAddress(type: nftType)
-            ?? panic("EVM Contract address not found for given NFT type")
 
         // Borrow a reference to the NFT collection, configuring if necessary
         let viewResolver = getAccount(nftContractAddress).contracts.borrow<&ViewResolver>(name: nftContractName)
@@ -57,20 +54,13 @@ transaction(nftContractAddress: Address, nftContractName: String, id: UInt256) {
         // NOTE: This should also be the ERC721 owner of the requested NFT in FlowEVM
         self.coa = signer.storage.borrow<&EVM.BridgedAccount>(from: /storage/evm)
             ?? panic("Could not borrow COA from provided gateway address")
-        // Encode the approve calldata, approving the Bridge COA to act on the NFT
-        self.calldata = FlowEVMBridgeUtils.encodeABIWithSignature(
-                "approve(address,uint256)",
-                [FlowEVMBridge.getBridgeCOAEVMAddress(), id]
-            )
     }
 
     execute {
         // Execute the bridge
-        let nft: @{NonFungibleToken.NFT} <- FlowEVMBridge.bridgeNFTFromEVM(
-            caller: self.coa,
-            calldata: self.calldata,
+        let nft: @{NonFungibleToken.NFT} <- self.coa.withdrawNFT(
+            type: self.nftType,
             id: id,
-            evmContractAddress: self.evmContractAddress,
             tollFee: <-self.tollFee
         )
         // Deposit the bridged NFT into the signer's collection

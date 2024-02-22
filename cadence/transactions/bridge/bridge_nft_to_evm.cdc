@@ -18,6 +18,7 @@ transaction(nftContractAddress: Address, nftContractName: String, id: UInt64, re
     
     let nft: @{NonFungibleToken.NFT}
     let nftType: Type
+    let coa: &EVM.BridgedAccount
     let evmRecipient: EVM.EVMAddress
     let tollFee: @{FungibleToken.Vault}
     
@@ -42,10 +43,13 @@ transaction(nftContractAddress: Address, nftContractName: String, id: UInt64, re
                 from: /storage/flowTokenVault
             ) ?? panic("Could not access signer's FlowToken Vault")
         self.tollFee <- vault.withdraw(amount: FlowEVMBridgeConfig.bridgeFee)
+        // Borrow a reference to the signer's COA
+        self.coa = signer.storage.borrow<&EVM.BridgedAccount>(from: /storage/evm)
+            ?? panic("Could not borrow COA from provided gateway address")
     }
 
     execute {
         // Execute the bridge
-        FlowEVMBridge.bridgeNFTToEVM(token: <-self.nft, to: self.evmRecipient, tollFee: <-self.tollFee)
+        self.coa.depositNFT(nft: <-self.nft, tollFee: <-self.tollFee)
     }
 }

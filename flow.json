@@ -18,6 +18,12 @@
 				"emulator": "f8d6e0586b0a20c7"
 			}
 		},
+		"EVMBridgeAccessor": {
+			"source": "./cadence/contracts/bridge/EVMBridgeAccessor.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7"
+			}
+		},
 		"ExampleNFT": {
 			"source": "./cadence/contracts/example-assets/ExampleNFT.cdc",
 			"aliases": {
