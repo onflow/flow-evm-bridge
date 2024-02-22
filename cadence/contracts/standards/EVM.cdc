@@ -5,6 +5,8 @@ import "NonFungibleToken"
 access(all)
 contract EVM {
 
+    access(all) entitlement Bridge
+
     /// EVMAddress is an EVM-compatible address
     access(all)
     struct EVMAddress {
@@ -169,13 +171,13 @@ contract EVM {
     /// Returns a reference to the BridgeAccessor designated for internal bridge requests
     ///
     access(self)
-    fun borrowBridgeAccessor(): &{BridgeAccessor} {
-        return self.account.storage.borrow<&{BridgeAccessor}>(from: /storage/evmBridgeRouter)
+    fun borrowBridgeAccessor(): auth(Bridge) &{BridgeAccessor} {
+        return self.account.storage.borrow<auth(Bridge) &{BridgeAccessor}>(from: /storage/evmBridgeRouter)
             ?? panic("Could not borrow reference to the EVM bridge")
     }
 
     /// Interface for a resource which acts as an entrypoint to the VM bridge
     access(all) resource interface BridgeAccessor {
-        access(contract) fun depositNFT(nft: @{NonFungibleToken.NFT}, to: EVM.EVMAddress, fee: @{FungibleToken.Vault})
+        access(Bridge) fun depositNFT(nft: @{NonFungibleToken.NFT}, to: EVM.EVMAddress, fee: @{FungibleToken.Vault})
     }
 }
