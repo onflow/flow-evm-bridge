@@ -47,7 +47,7 @@ contract EVMBridgeRouter {
         /// Updates the designated bridge Capability
         ///
         access(Admin)
-        fun updateBridgeCapability(to: bridgeCapability: Capability<auth(EVM.Bridge) &{EVM.BridgeAccessor}>) {
+        fun updateBridgeCapability(to: bridgeCapability, Capability<auth(EVM.Bridge) &{EVM.BridgeAccessor}>) {
             pre {
                 to.check(): "Invalid Capability provided"
             }
