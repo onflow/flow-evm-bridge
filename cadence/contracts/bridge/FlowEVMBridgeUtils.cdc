@@ -236,16 +236,23 @@ access(all) contract FlowEVMBridgeUtils {
     /// Derives the StoragePath where the escrow locker is stored for a given Type of asset & returns. The given type
     /// must be of an asset supported by the bridge
     ///
-    access(all) fun deriveEscrowStoragePath(fromType: Type): StoragePath? {
+    access(all) view fun deriveEscrowStoragePath(fromType: Type): StoragePath? {
         if !self.isValidFlowAsset(type: fromType) {
             return nil
         }
+        var prefix = ""
+        if fromType.isSubtype(of: Type<@{NonFungibleToken.NFT}>()) {
+            prefix = "flowEVMBridgeNFTEscrow"
+        } else if fromType.isSubtype(of: Type<@{FungibleToken.Vault}>()) {
+            prefix = "flowEVMBridgeTokenEscrow"
+        }
+        assert(prefix.length > 1, message: "Invalid prefix")
         if let splitIdentifier: [String] = self.splitObjectIdentifier(identifier: fromType.identifier) {
             let sourceContractAddress: Address = Address.fromString("0x".concat(splitIdentifier[1]))!
             let sourceContractName: String = splitIdentifier[2]
             let resourceName: String = splitIdentifier[3]
             return StoragePath(
-                identifier: "flowEVMBridgeEscrow".concat(self.delimiter)
+                identifier: prefix.concat(self.delimiter)
                     .concat(sourceContractAddress.toString()).concat(self.delimiter)
                     .concat(sourceContractName).concat(self.delimiter)
                     .concat(resourceName)
