@@ -45,6 +45,9 @@ access(all) contract interface IFlowEVMNFTBridge {
     /// Returns the type of fungible tokens the bridge accepts for fees
     ///
     access(all) view fun getFeeVaultType(): Type
+    /// Returns the public path of the BridgeAccessor Capability
+    ///
+    access(all) view fun getDefaultBridgeAccessorPublicPath(): PublicPath
 
     /// Public entrypoint to bridge NFTs from Flow to EVM - cross-account bridging supported (e.g. straight to EOA)
     ///
@@ -52,7 +55,7 @@ access(all) contract interface IFlowEVMNFTBridge {
     /// @param to: The NFT recipient in FlowEVM
     /// @param tollFee: The fee paid for bridging
     ///
-    access(all) fun bridgeNFTToEVM(token: @{NonFungibleToken.NFT}, to: EVM.EVMAddress, tollFee: @{FungibleToken.Vault}) {
+    access(contract) fun bridgeNFTToEVM(token: @{NonFungibleToken.NFT}, to: EVM.EVMAddress, tollFee: @{FungibleToken.Vault}) {
         pre {
             emit BridgedNFTToEVM(
                 type: token.getType(),
@@ -75,7 +78,7 @@ access(all) contract interface IFlowEVMNFTBridge {
     ///
     /// @returns The bridged NFT
     ///
-    access(all) fun bridgeNFTFromEVM(
+    access(contract) fun bridgeNFTFromEVM(
         caller: &EVM.BridgedAccount,
         calldata: [UInt8],
         id: UInt256,
