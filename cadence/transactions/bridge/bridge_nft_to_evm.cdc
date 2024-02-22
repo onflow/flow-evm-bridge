@@ -50,6 +50,6 @@ transaction(nftContractAddress: Address, nftContractName: String, id: UInt64, re
 
     execute {
         // Execute the bridge
-        self.coa.depositNFT(nft: <-self.nft, tollFee: <-self.tollFee)
+        self.coa.depositNFT(nft: <-self.nft, to: self.evmRecipient, fee: <-self.tollFee)
     }
 }
