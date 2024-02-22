@@ -6,10 +6,9 @@ import "EVM"
 
 import "ICrossVM"
 import "CrossVMAsset"
-import "IFlowEVMNFTBridge"
 import "FlowEVMBridgeConfig"
 import "FlowEVMBridgeUtils"
-import "IEVMBridgeNFTLocker"
+import "FlowEVMBridgeNFTEscrow"
 import "FlowEVMBridgeTemplates"
 
 /// The FlowEVMBridge contract is the main entrypoint for bridging NFT & FT assets between Flow & FlowEVM.
@@ -36,6 +35,23 @@ access(all) contract FlowEVMBridge {
         isERC721: Bool,
         evmContractAddress: String
     )
+    /// Broadcasts an NFT was bridged from Flow to EVM
+    access(all) event BridgedNFTToEVM(
+        type: Type,
+        id: UInt64,
+        evmID: UInt256,
+        to: String,
+        evmContractAddress: String,
+        bridgeAddress: Address
+    )
+    /// Broadcasts an NFT was bridged from EVM to Flow
+    access(all) event BridgedNFTFromEVM(type: Type,
+        id: UInt64,
+        evmID: UInt256,
+        caller: String,
+        evmContractAddress: String,
+        bridgeAddress: Address
+    )
 
     /**************************
         Public NFT Handling
@@ -52,14 +68,11 @@ access(all) contract FlowEVMBridge {
         pre {
             FlowEVMBridgeUtils.validateFee(&tollFee, onboarding: true): "Invalid fee paid"
             self.typeRequiresOnboarding(type) == true: "Onboarding is not needed for this type"
-            FlowEVMBridgeUtils.isValidFlowAsset(type: type): "Invalid type provided"
             FlowEVMBridgeUtils.isFlowNative(type: type): "Only Flow-native assets can be onboarded by Type"
         }
-        if type.isSubtype(of: Type<@{CrossVMAsset.BridgeableAsset}>()) {
-            panic("Asset is already bridgeable and does not require onboarding to this bridge")
-        }
         FlowEVMBridgeUtils.depositTollFee(<-tollFee)
-        self.deployLockerContract(forType: type)
+        let erc721Address = self.deployEVMContract(forAssetType: type)
+        FlowEVMBridgeNFTEscrow.initializeEscrow(forType: type, erc721Address: erc721Address)
     }
 
     /// Onboards a given ERC721 to the bridge. Since we're onboarding by EVM Address, the asset must be defined in a
@@ -89,17 +102,17 @@ access(all) contract FlowEVMBridge {
     /// @param to: The NFT recipient in FlowEVM
     /// @param tollFee: The fee paid for bridging
     ///
-    access(all) fun bridgeNFTToEVM(token: @{NonFungibleToken.NFT}, to: EVM.EVMAddress, tollFee: @{FungibleToken.Vault}) {
+    access(contract) fun bridgeNFTToEVM(token: @{NonFungibleToken.NFT}, to: EVM.EVMAddress, tollFee: @{FungibleToken.Vault}) {
         pre {
             FlowEVMBridgeUtils.validateFee(&tollFee, onboarding: false): "Invalid fee paid"
             token.isInstance(Type<@{FungibleToken.Vault}>()) == false: "Mixed asset types are not yet supported"
             self.typeRequiresOnboarding(token.getType()) == false: "NFT must first be onboarded"
         }
         // Passthrough to the asset's default bridge contract if it's defined by the token's contract
-        if token.getType().isSubtype(of: Type<@{CrossVMAsset.BridgeableAsset}>()) && self.tryNFTPassthrough(token: &token) {
-            self.passthroughNFTToEVM(token: <-token, to: to, tollFee: <-tollFee)
-            return
-        }
+        // if token.getType().isSubtype(of: Type<@{CrossVMAsset.BridgeableAsset}>()) && self.tryNFTPassthrough(token: &token) {
+        //     self.passthroughNFTToEVM(token: <-token, to: to, tollFee: <-tollFee)
+        //     return
+        // }
         if FlowEVMBridgeUtils.isFlowNative(type: token.getType()) {
             // Otherwise, pass through to bridge-owned locker contract
             self.bridgeFlowNativeNFTToEVM(token: <-token, to: to, tollFee: <-tollFee)
@@ -118,7 +131,7 @@ access(all) contract FlowEVMBridge {
     ///
     /// @returns The bridged NFT
     ///
-    access(all) fun bridgeNFTFromEVM(
+    access(contract) fun bridgeNFTFromEVM(
         caller: &EVM.BridgedAccount,
         calldata: [UInt8],
         id: UInt256,
@@ -201,22 +214,10 @@ access(all) contract FlowEVMBridge {
     /// @returns Whether the asset needs to be onboarded
     ///
     access(all) view fun typeRequiresOnboarding(_ type: Type): Bool? {
-        // If type is not an NFT or FT type, it's not supported - return nil
-        if !type.isSubtype(of: Type<@{NonFungibleToken.NFT}>()) && !type.isSubtype(of: Type<@{FungibleToken.Vault}>()) {
-            return nil
+        if FlowEVMBridgeUtils.isValidFlowAsset(type: type){
+            return FlowEVMBridgeNFTEscrow.isInitialized(forType: type)
+                // || FlowEVMBridgeTokenEscrow.isInitialized(forType: type)
         }
-
-        // If the type is a CrossVMAsset.BridgeableAsset implementation, it has a default bridge address and does not
-        // require onboarding. This includes all FTs & NFTs defined by contracts deployed to this bridge account.
-        if type.isSubtype(of: Type<@{CrossVMAsset.BridgeableAsset}>()) {
-            return false
-        }
-
-        // Otherwise, the type is Flow-native, so check if the locker contract is deployed
-        if let lockerContractName: String = FlowEVMBridgeUtils.deriveLockerContractName(fromType: type) {
-            return self.account.contracts.borrow<&IEVMBridgeNFTLocker>(name: lockerContractName) == nil
-        }
-
         return nil
     }
 
@@ -240,11 +241,20 @@ access(all) contract FlowEVMBridge {
     ///
     /// @returns The locker contract handling the asset type or nil if non-existent
     ///
-    access(all) view fun borrowLockerContract(forType: Type): &IEVMBridgeNFTLocker? {
-        if let lockerContractName: String = FlowEVMBridgeUtils.deriveLockerContractName(fromType: forType) {
-            return self.account.contracts.borrow<&IEVMBridgeNFTLocker>(name: lockerContractName)
+    // access(all) view fun borrowLockerContract(forType: Type): &IEVMBridgeNFTLocker? {
+    //     if let lockerContractName: String = FlowEVMBridgeUtils.deriveLockerContractName(fromType: forType) {
+    //         return self.account.contracts.borrow<&IEVMBridgeNFTLocker>(name: lockerContractName)
+    //     }
+    //     return nil
+    // }
+
+    /// Entrypoint for the bridging between VMs using this bridge contract
+    ///
+    access(all) resource Accessor : EVM.BridgeAccessor {
+        access(EVM.Bridge)
+        fun depositNFT(nft: @{NonFungibleToken.NFT}, to: EVM.EVMAddress, fee: @{FungibleToken.Vault}) {
+            FlowEVMBridge.bridgeNFTToEVM(token: <-nft, to: to, tollFee: <-fee)
         }
-        return nil
     }
 
     /**************************
@@ -261,13 +271,17 @@ access(all) contract FlowEVMBridge {
     ) {
         let lockerContractName: String = FlowEVMBridgeUtils.deriveLockerContractName(fromType: token.getType()) ??
             panic("Could not derive locker contract name for token type: ".concat(token.getType().identifier))
-        if self.account.contracts.borrow<&IEVMBridgeNFTLocker>(name: lockerContractName) == nil {
-            self.deployLockerContract(forType: token.getType())
-        }
-
-        let lockerContract: &IEVMBridgeNFTLocker = self.account.contracts.borrow<&IEVMBridgeNFTLocker>(name: lockerContractName)
-            ?? panic("Problem locating Locker contract for token type: ".concat(token.getType().identifier))
-        lockerContract.bridgeNFTToEVM(token: <-token, to: to, tollFee: <-tollFee)
+        // if self.account.contracts.borrow<&IEVMBridgeNFTLocker>(name: lockerContractName) == nil {
+        //     self.deployLockerContract(forType: token.getType())
+        // }
+        panic("TODO: Remove this panic")
+        // let lockerContract: &IEVMBridgeNFTLocker = self.account.contracts.borrow<&IEVMBridgeNFTLocker>(name: lockerContractName)
+        //     ?? panic("Problem locating Locker contract for token type: ".concat(token.getType().identifier))
+        // lockerContract.bridgeNFTToEVM(token: <-token, to: to, tollFee: <-tollFee)
+        // FlowEVMBridgeUtils.depositTollFee(<-tollFee)
+        // let tokenType = token.getType()
+        // FlowEVMBridgeNFTEscrow.lockNFT(<-token)
+        // self.executeNFTBridgeFromEVM(type: tokenType, to: to))
     }
     /// Handles bridging Flow-native NFTs from EVM - unlocks NFT from designated Flow locker contract & burns in EVM
     /// Within scope, locker contract is deployed if needed & passing on call to said contract
@@ -290,43 +304,44 @@ access(all) contract FlowEVMBridge {
         assert(decodedResponse.length == 1, message: "Invalid response length")
         let identifier: String = decodedResponse[0] as! String
         let lockedType: Type = CompositeType(identifier) ?? panic("Invalid identifier returned from EVM contract")
-        let lockerContractName: String = FlowEVMBridgeUtils.deriveLockerContractName(fromType: lockedType) ??
-            panic("Could not derive locker contract name for token type: ".concat(lockedType.identifier))
-        let lockerContract: &IEVMBridgeNFTLocker = self.account.contracts.borrow<&IEVMBridgeNFTLocker>(name: lockerContractName)
-            ?? panic("Problem configuring Locker contract for token type: ".concat(lockedType.identifier))
-        return <- lockerContract.bridgeNFTFromEVM(
-            caller: caller,
-            calldata: calldata,
-            id: id,
-            evmContractAddress: evmContractAddress,
-            tollFee: <-tollFee
-        )
+        let lockerContractName: String = FlowEVMBridgeUtils.deriveLockerContractName(fromType: lockedType)
+            ?? panic("Could not derive locker contract name for token type: ".concat(lockedType.identifier))
+        panic("TODO: Remove this panic")
+        // let lockerContract: &IEVMBridgeNFTLocker = self.account.contracts.borrow<&IEVMBridgeNFTLocker>(name: lockerContractName)
+        //     ?? panic("Problem configuring Locker contract for token type: ".concat(lockedType.identifier))
+        // return <- lockerContract.bridgeNFTFromEVM(
+        //     caller: caller,
+        //     calldata: calldata,
+        //     id: id,
+        //     evmContractAddress: evmContractAddress,
+        //     tollFee: <-tollFee
+        // )
     }
 
     /// Attempts to retrieve the bridging contract for NFT, returning true if it conforms to
     /// CrossVMAsset.BridgeableAsset and returns a reference to &IFlowEVMNFTBridge contract interface as its default
     /// bridge contract
     ///
-    access(self) fun tryNFTPassthrough(token: &{NonFungibleToken.NFT}): Bool {
-        if let bridgeableAsset: &{CrossVMAsset.BridgeableAsset} = token as? &{CrossVMAsset.BridgeableAsset} {
-            if let bridgeContract = bridgeableAsset.borrowDefaultBridgeContract() as? &IFlowEVMNFTBridge {
-                return true
-            }
-        }
-        return false
-    }
+    // access(self) fun tryNFTPassthrough(token: &{NonFungibleToken.NFT}): Bool {
+    //     if let bridgeableAsset: &{CrossVMAsset.BridgeableAsset} = token as? &{CrossVMAsset.BridgeableAsset} {
+    //         if let bridgeContract = bridgeableAsset.borrowDefaultBridgeContract() as? &IFlowEVMNFTBridge {
+    //             return true
+    //         }
+    //     }
+    //     return false
+    // }
 
     /// Passes through the bridge call to the default bridge contract of the NFT according to
     /// CrossVMAsset.BridgeableAsset and &IFlowEVMNFTBridge interfaces
     ///
-    access(self) fun passthroughNFTToEVM(token: @{NonFungibleToken.NFT}, to: EVM.EVMAddress, tollFee: @{FungibleToken.Vault}) {
-        // This call passes the bridge request, but the tollFee may not be sufficient to cover the request as
-        // that value is not defined by this bridge contract
-        let tokenRef: &{NonFungibleToken.NFT} = &token
-        let bridgeableAsset = tokenRef as! &{CrossVMAsset.BridgeableAsset}
-        let bridgeContract = bridgeableAsset.borrowDefaultBridgeContract() as! &IFlowEVMNFTBridge
-        bridgeContract.bridgeNFTToEVM(token: <-token, to: to, tollFee: <-tollFee)
-    }
+    // access(self) fun passthroughNFTToEVM(token: @{NonFungibleToken.NFT}, to: EVM.EVMAddress, tollFee: @{FungibleToken.Vault}) {
+    //     // This call passes the bridge request, but the tollFee may not be sufficient to cover the request as
+    //     // that value is not defined by this bridge contract
+    //     let tokenRef: &{NonFungibleToken.NFT} = &token
+    //     let bridgeableAsset = tokenRef as! &{CrossVMAsset.BridgeableAsset}
+    //     let bridgeContract = bridgeableAsset.borrowDefaultBridgeContract() as! &IFlowEVMNFTBridge
+    //     bridgeContract.bridgeNFTToEVM(token: <-token, to: to, tollFee: <-tollFee)
+    // }
 
     /// Handles bridging Flow-native NFTs from EVM - unlocks NFT from designated Flow locker contract & burns in EVM
     /// Within scope, locker contract is deployed if needed & passing on call to said contract
@@ -340,15 +355,16 @@ access(all) contract FlowEVMBridge {
     ): @{NonFungibleToken.NFT} {
         // Derive the bridged NFT contract name
         let contractName = FlowEVMBridgeUtils.deriveBridgedNFTContractName(from: evmContractAddress)
-        let bridgedNFTContract = self.account.contracts.borrow<&IFlowEVMNFTBridge>(name: contractName)
-            ?? panic("Could not borrow the bridged NFT contract for this EVM-native NFT")
-        return <- bridgedNFTContract.bridgeNFTFromEVM(
-            caller: caller,
-            calldata: calldata,
-            id: id,
-            evmContractAddress: evmContractAddress,
-            tollFee: <-tollFee
-        )
+        // let bridgedNFTContract = self.account.contracts.borrow<&IFlowEVMNFTBridge>(name: contractName)
+        //     ?? panic("Could not borrow the bridged NFT contract for this EVM-native NFT")
+        panic("TODO: Remove this panic for evm-native path")
+        // return <- bridgedNFTContract.bridgeNFTFromEVM(
+        //     caller: caller,
+        //     calldata: calldata,
+        //     id: id,
+        //     evmContractAddress: evmContractAddress,
+        //     tollFee: <-tollFee
+        // )
     }
 
     /// Helper for deploying templated Locker contract supporting Flow-native asset bridging to EVM
@@ -356,23 +372,23 @@ access(all) contract FlowEVMBridge {
     ///
     /// @param forType: The Cadence Type of the asset
     ///
-    access(self) fun deployLockerContract(forType: Type) {
-        let evmContractAddress: EVM.EVMAddress = self.deployEVMContract(forAssetType: forType)
+    // access(self) fun deployLockerContract(forType: Type) {
+    //     let evmContractAddress: EVM.EVMAddress = self.deployEVMContract(forAssetType: forType)
 
-        let code: [UInt8] = FlowEVMBridgeTemplates.getLockerContractCode(forType: forType)
-            ?? panic("Could not retrieve code for given asset type: ".concat(forType.identifier))
-        let name: String = FlowEVMBridgeUtils.deriveLockerContractName(fromType: forType)
-            ?? panic("Could not derive locker contract name for token type: ".concat(forType.identifier))
-        let contractAddress: Address = FlowEVMBridgeUtils.getContractAddress(fromType: forType)
-            ?? panic("Could not derive locker contract address for token type: ".concat(forType.identifier))
-        self.account.contracts.add(name: name, code: code, forType, contractAddress, evmContractAddress)
+    //     let code: [UInt8] = FlowEVMBridgeTemplates.getLockerContractCode(forType: forType)
+    //         ?? panic("Could not retrieve code for given asset type: ".concat(forType.identifier))
+    //     let name: String = FlowEVMBridgeUtils.deriveLockerContractName(fromType: forType)
+    //         ?? panic("Could not derive locker contract name for token type: ".concat(forType.identifier))
+    //     let contractAddress: Address = FlowEVMBridgeUtils.getContractAddress(fromType: forType)
+    //         ?? panic("Could not derive locker contract address for token type: ".concat(forType.identifier))
+    //     self.account.contracts.add(name: name, code: code, forType, contractAddress, evmContractAddress)
 
-        emit BridgeLockerContractDeployed(
-            lockedType: forType,
-            contractName: name,
-            evmContractAddress: FlowEVMBridgeUtils.getEVMAddressAsHexString(address: evmContractAddress)
-        )
-    }
+    //     emit BridgeLockerContractDeployed(
+    //         lockedType: forType,
+    //         contractName: name,
+    //         evmContractAddress: FlowEVMBridgeUtils.getEVMAddressAsHexString(address: evmContractAddress)
+    //     )
+    // }
 
     /// Deploys templated EVM contract via Solidity Factory contract supporting bridging of a given asset type
     ///
@@ -400,13 +416,14 @@ access(all) contract FlowEVMBridge {
         let response: [UInt8] = FlowEVMBridgeUtils.call(
             signature: "deployERC721(string,string,string,string)",
             targetEVMAddress: FlowEVMBridgeUtils.bridgeFactoryEVMAddress,
-            args: [name, "BRDG", cadenceAddressStr, identifier],
+            args: [name, "BRDG", cadenceAddressStr, identifier], // TODO: Decide on and update symbol
             gasLimit: 15000000,
             value: 0.0
         )
         let decodedResponse: [AnyStruct] = EVM.decodeABI(types: [Type<EVM.EVMAddress>()], data: response)
         assert(decodedResponse.length == 1, message: "Invalid response length")
         let erc721Address: EVM.EVMAddress = decodedResponse[0] as! EVM.EVMAddress
+        FlowEVMBridgeConfig.associateType(forNFTType, with: erc721Address)
         return erc721Address
     }
 
@@ -434,5 +451,13 @@ access(all) contract FlowEVMBridge {
             isERC721: isERC721,
             evmContractAddress: FlowEVMBridgeUtils.getEVMAddressAsHexString(address: evmContractAddress)
         )
+    }
+
+    init(evmBridgeRouterAddress: Address) {
+        self.account.storage.save(<-create Accessor(), to: /storage/flowEVMBridgeAccessor)
+        let accessorCap = self.account.capabilities.storage.issue<auth(EVM.Bridge) &{EVM.BridgeAccessor}>(
+                FlowEVMBridgeConfig.bridgeAccessorStoragePath
+            )
+        self.account.inbox.publish(accessorCap, name: "EVMBridgeAccessor", recipient: evmBridgeRouterAddress)
     }
 }

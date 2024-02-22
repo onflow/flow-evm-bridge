@@ -17,8 +17,8 @@ flow accounts add-contract ./cadence/contracts/bridge/FlowEVMBridgeConfig.cdc
 flow transactions send ./cadence/transactions/evm/deploy.cdc --args-json "$(cat deploy-factory-args.json)"
 # Provided address is the address of the Factory contract deployed in the previous txn
 flow accounts add-contract ./cadence/contracts/bridge/FlowEVMBridgeUtils.cdc 9ca416871ee388c7a41e0b7886dfcc47e08bbdef
-flow accounts add-contract ./cadence/contracts/bridge/IFlowEVMNFTBridge.cdc
-flow accounts add-contract ./cadence/contracts/bridge/IEVMBridgeNFTLocker.cdc
+flow accounts add-contract ./cadence/contracts/bridge/IEVMBridgeNFTEscrow.cdc
+flow accounts add-contract ./cadence/contracts/bridge/FlowEVMBridgeNFTEscrow.cdc
 flow accounts add-contract ./cadence/contracts/bridge/FlowEVMBridgeTemplates.cdc
 
 # Deploy main bridge contract
