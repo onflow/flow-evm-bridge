@@ -60,19 +60,19 @@ access(all) contract FlowEVMBridgeUtils {
         ])
     }
 
-    /// Identifies if an asset is Flow- or EVM-native, defined by whether a bridge contract defines it or not
+    /// Identifies if an asset is Cadence- or EVM-native, defined by whether a bridge contract defines it or not
     ///
     /// @param: type The Type of the asset to check
     ///
-    /// @return True if the asset is Flow-native, false if it is EVM-native
+    /// @return True if the asset is Cadence-native, false if it is EVM-native
     ///
-    access(all) view fun isFlowNative(type: Type): Bool {
+    access(all) view fun isCadenceNative(type: Type): Bool {
         let definingAddress: Address = self.getContractAddress(fromType: type)
             ?? panic("Could not construct address from type identifier: ".concat(type.identifier))
         return definingAddress != self.account.address
     }
 
-    /// Identifies if an asset is Flow- or EVM-native, defined by whether a bridge-owned contract defines it or not
+    /// Identifies if an asset is Cadence- or EVM-native, defined by whether a bridge-owned contract defines it or not
     ///
     /// @param: type The Type of the asset to check
     ///

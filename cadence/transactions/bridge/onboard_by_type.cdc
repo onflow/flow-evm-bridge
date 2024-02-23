@@ -7,7 +7,7 @@ import "FlowEVMBridge"
 import "FlowEVMBridgeConfig"
 
 /// This transaction onboards the asset type to the bridge, configuring the bridge to move assets between environments
-/// NOTE: This must be done before bridging a Flow-native asset to Flow EVM
+/// NOTE: This must be done before bridging a Cadence-native asset to EVM
 ///
 transaction(identifier: String) {
 

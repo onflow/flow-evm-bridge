@@ -2,13 +2,13 @@
 
 > :warning: This repo is a work in progress :building_construction:
 
-This repo contains contracts enabling bridging of fungible & non-fungible assets between Flow and Flow EVM.
+This repo contains contracts enabling bridging of fungible & non-fungible assets between Cadence and EVM.
 
 ## Demo
 
 Check out this video demo showcasing bridging between Flow & FlowEVM
 
-:computer: [Bridging a Flow-native NFT between environments](https://www.loom.com/share/d5293000ff614f9693d48006ab1a842b?sid=3a2fff84-e951-4f3f-ae5d-4419bbd30d17)
+:computer: [Bridging a Cadence-native NFT between environments](https://www.loom.com/share/d5293000ff614f9693d48006ab1a842b?sid=3a2fff84-e951-4f3f-ae5d-4419bbd30d17)
 
 ## References
 

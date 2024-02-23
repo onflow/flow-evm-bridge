@@ -36,7 +36,7 @@ access(all) contract FlowEVMBridge {
         isERC721: Bool,
         evmContractAddress: String
     )
-    /// Broadcasts an NFT was bridged from Flow to EVM
+    /// Broadcasts an NFT was bridged from Cadence to EVM
     access(all) event BridgedNFTToEVM(
         type: Type,
         id: UInt64,
@@ -44,7 +44,7 @@ access(all) contract FlowEVMBridge {
         to: String,
         evmContractAddress: String
     )
-    /// Broadcasts an NFT was bridged from EVM to Flow
+    /// Broadcasts an NFT was bridged from EVM to Cadence
     access(all) event BridgedNFTFromEVM(
         type: Type,
         id: UInt64,
@@ -68,7 +68,7 @@ access(all) contract FlowEVMBridge {
         pre {
             FlowEVMBridgeUtils.validateFee(&tollFee, onboarding: true): "Invalid fee paid"
             self.typeRequiresOnboarding(type) == true: "Onboarding is not needed for this type"
-            FlowEVMBridgeUtils.isFlowNative(type: type): "Only Flow-native assets can be onboarded by Type"
+            FlowEVMBridgeUtils.isCadenceNative(type: type): "Only Cadence-native assets can be onboarded by Type"
         }
         FlowEVMBridgeUtils.depositTollFee(<-tollFee)
         let erc721Address = self.deployEVMContract(forAssetType: type)
@@ -101,7 +101,7 @@ access(all) contract FlowEVMBridge {
         self.deployDefiningContract(evmContractAddress: address)
     }
 
-    /// Public entrypoint to bridge NFTs from Flow to EVM - cross-account bridging supported (e.g. straight to EOA)
+    /// Public entrypoint to bridge NFTs from Cadence to EVM - cross-account bridging supported (e.g. straight to EOA)
     ///
     /// @param token: The NFT to be bridged
     /// @param to: The NFT recipient in FlowEVM
@@ -182,7 +182,7 @@ access(all) contract FlowEVMBridge {
         )
     }
 
-    /// Public entrypoint to bridge NFTs from EVM to Flow
+    /// Public entrypoint to bridge NFTs from EVM to Cadence
     ///
     /// @param caller: The caller executing the bridge - must be passed to check EVM state pre- & post-call in scope
     /// @param calldata: Caller-provided approve() call, enabling contract COA to operate on NFT in EVM contract
@@ -362,7 +362,7 @@ access(all) contract FlowEVMBridge {
         panic("Unsupported asset type: ".concat(forAssetType.identifier))
     }
 
-    /// Deploys templated ERC721 contract supporting EVM-native asset bridging to Flow
+    /// Deploys templated ERC721 contract supporting EVM-native asset bridging to Cadence
     ///
     /// @param forNFTType: The Cadence Type of the NFT
     ///
@@ -389,7 +389,7 @@ access(all) contract FlowEVMBridge {
         return erc721Address
     }
 
-    /// Helper for deploying templated defining contract supporting EVM-native asset bridging to Flow
+    /// Helper for deploying templated defining contract supporting EVM-native asset bridging to Cadence
     /// Deploys either NFT or FT contract depending on the provided type
     ///
     /// @param evmContractAddress: The EVMAddress currently defining the asset to be bridged
