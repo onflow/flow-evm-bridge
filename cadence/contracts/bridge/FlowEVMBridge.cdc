@@ -227,6 +227,13 @@ access(all) contract FlowEVMBridge {
         )
         // NFT is locked - unlock
         if let cadenceID = FlowEVMBridgeNFTEscrow.getLockedCadenceID(type: type, evmID: id) {
+            emit BridgedNFTFromEVM(
+                type: type,
+                id: cadenceID,
+                evmID: id,
+                caller: FlowEVMBridgeUtils.getEVMAddressAsHexString(address: caller.address()),
+                evmContractAddress: FlowEVMBridgeUtils.getEVMAddressAsHexString(address: associatedAddress)
+            )
             return <-FlowEVMBridgeNFTEscrow.unlockNFT(type: type, id: cadenceID)
         }
         // NFT is not locked but has been onboarded - mint
@@ -235,7 +242,15 @@ access(all) contract FlowEVMBridge {
             let contractName = FlowEVMBridgeUtils.getContractName(fromType: type)!
             let nftContract = self.account.contracts.borrow<&IEVMBridgeNFTMinter>(name: contractName)!
             let uri = FlowEVMBridgeUtils.getTokenURI(evmContractAddress: associatedAddress, id: id)
-            return <-nftContract.mintNFT(id: id, tokenURI: uri)
+            let nft <- nftContract.mintNFT(id: id, tokenURI: uri)
+            emit BridgedNFTFromEVM(
+                    type: type,
+                    id: nft.getID(),
+                    evmID: id,
+                    caller: FlowEVMBridgeUtils.getEVMAddressAsHexString(address: caller.address()),
+                    evmContractAddress: FlowEVMBridgeUtils.getEVMAddressAsHexString(address: associatedAddress)
+                )
+            return <-nft
         }
         // Should not get to this point assuming Type was onboarded
         panic("Unexpected error bridging NFT from EVM")
