@@ -20,7 +20,7 @@ transaction(nftContractAddress: Address, nftContractName: String, id: UInt64, re
     let nftType: Type
     let coa: &EVM.BridgedAccount
     let evmRecipient: EVM.EVMAddress
-    let tollFee: @{FungibleToken.Vault}
+    let tollFee: @FlowToken.Vault
     
     prepare(signer: auth(BorrowValue) &Account) {
         // Borrow a reference to the NFT collection, configuring if necessary
@@ -42,7 +42,7 @@ transaction(nftContractAddress: Address, nftContractName: String, id: UInt64, re
         let vault = signer.storage.borrow<auth(FungibleToken.Withdrawable) &FlowToken.Vault>(
                 from: /storage/flowTokenVault
             ) ?? panic("Could not access signer's FlowToken Vault")
-        self.tollFee <- vault.withdraw(amount: FlowEVMBridgeConfig.bridgeFee)
+        self.tollFee <- vault.withdraw(amount: FlowEVMBridgeConfig.bridgeFee) as! @FlowToken.Vault
         // Borrow a reference to the signer's COA
         self.coa = signer.storage.borrow<&EVM.BridgedAccount>(from: /storage/evm)
             ?? panic("Could not borrow COA from provided gateway address")
