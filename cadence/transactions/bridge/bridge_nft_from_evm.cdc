@@ -18,7 +18,7 @@ transaction(nftContractAddress: Address, nftContractName: String, id: UInt256) {
 
     let nftType: Type
     let collection: &{NonFungibleToken.Collection}
-    let tollFee: @{FungibleToken.Vault}
+    let fee: @FlowToken.Vault
     let coa: &EVM.BridgedAccount
     
     prepare(signer: auth(BorrowValue, IssueStorageCapabilityController, PublishCapability, SaveValue, UnpublishCapability) &Account) {
@@ -48,7 +48,7 @@ transaction(nftContractAddress: Address, nftContractName: String, id: UInt256) {
         let vault = signer.storage.borrow<auth(FungibleToken.Withdrawable) &FlowToken.Vault>(
                 from: /storage/flowTokenVault
             ) ?? panic("Could not access signer's FlowToken Vault")
-        self.tollFee <- vault.withdraw(amount: FlowEVMBridgeConfig.bridgeFee)
+        self.fee <- vault.withdraw(amount: FlowEVMBridgeConfig.bridgeFee) as! @FlowToken.Vault
 
         // Borrow a reference to the signer's COA
         // NOTE: This should also be the ERC721 owner of the requested NFT in FlowEVM
@@ -61,7 +61,7 @@ transaction(nftContractAddress: Address, nftContractName: String, id: UInt256) {
         let nft: @{NonFungibleToken.NFT} <- self.coa.withdrawNFT(
             type: self.nftType,
             id: id,
-            tollFee: <-self.tollFee
+            fee: <-self.fee
         )
         // Deposit the bridged NFT into the signer's collection
         self.collection.deposit(token: <-nft)
