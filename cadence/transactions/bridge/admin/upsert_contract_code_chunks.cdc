@@ -1,6 +1,6 @@
 import "FlowEVMBridgeTemplates"
 
-/// Updates the code chunks of the NFT Locker contract template stored in FlowEVMBridgeTemplates
+/// Upserts the provided contract template stored in FlowEVMBridgeTemplates
 ///
 transaction(forTemplate: String, newChunks: [String]) {
     prepare(signer: auth(BorrowValue) &Account) {
