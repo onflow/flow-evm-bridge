@@ -20,6 +20,8 @@ flow accounts add-contract ./cadence/contracts/bridge/FlowEVMBridgeUtils.cdc 9ca
 flow accounts add-contract ./cadence/contracts/bridge/IEVMBridgeNFTEscrow.cdc
 flow accounts add-contract ./cadence/contracts/bridge/FlowEVMBridgeNFTEscrow.cdc
 flow accounts add-contract ./cadence/contracts/bridge/FlowEVMBridgeTemplates.cdc
+flow accounts add-contract ./cadence/contracts/bridge/IEVMBridgeNFTMinter.cdc
+
 
 # Deploy main bridge contract - Will break flow.json config due to bug in CLI - break here and update flow.json manually
 flow accounts add-contract ./cadence/contracts/bridge/FlowEVMBridge.cdc f8d6e0586b0a20c7
