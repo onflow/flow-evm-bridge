@@ -76,10 +76,10 @@ access(all) contract CONTRACT_NAME : ICrossVM, IEVMBridgeNFTMinter, ViewResolver
         /// Returns the metadata view types supported by this NFT
         access(all) view fun getViews(): [Type] {
             return [
-                Type<MetadataViews.Display>(),
+                Type<CrossVMNFT.BridgedMetadata>(),
+                Type<MetadataViews.Serial>(),
                 Type<MetadataViews.NFTCollectionData>(),
-                Type<MetadataViews.NFTCollectionDisplay>(),
-                Type<MetadataViews.Serial>()
+                Type<MetadataViews.NFTCollectionDisplay>()
             ]
         }
 
