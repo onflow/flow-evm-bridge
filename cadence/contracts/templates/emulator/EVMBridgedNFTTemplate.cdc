@@ -1,18 +1,18 @@
-import NonFungibleToken from 0xf8d6e0586b0a20c7
-import MetadataViews from 0xf8d6e0586b0a20c7
-import ViewResolver from 0xf8d6e0586b0a20c7
-import FungibleToken from 0xee82856bf20e2aa6
-import FlowToken from 0x0ae53cb6e3f42a79
+import "NonFungibleToken"
+import "MetadataViews"
+import "ViewResolver"
+import "FungibleToken"
+import "FlowToken"
 
-import EVM from 0xf8d6e0586b0a20c7
+import "EVM"
 
-import IFlowEVMNFTBridge from 0xf8d6e0586b0a20c7
-import IEVMBridgeNFTLocker from 0xf8d6e0586b0a20c7
-import FlowEVMBridgeConfig from 0xf8d6e0586b0a20c7
-import FlowEVMBridgeUtils from 0xf8d6e0586b0a20c7
-import FlowEVMBridge from 0xf8d6e0586b0a20c7
-import ICrossVM from 0xf8d6e0586b0a20c7
-import CrossVMNFT from 0xf8d6e0586b0a20c7
+import "ICrossVM"
+import "IEVMBridgeNFTMinter"
+import "FlowEVMBridgeNFTEscrow"
+import "FlowEVMBridgeConfig"
+import "FlowEVMBridgeUtils"
+import "FlowEVMBridge"
+import "CrossVMNFT"
 
 /// This contract is a template used by FlowEVMBridge to define EVM-native NFTs bridged from Flow EVM to Flow.
 /// Upon deployment of this contract, the contract name is derived as a function of the asset type (here an ERC721 aka
@@ -27,7 +27,8 @@ import CrossVMNFT from 0xf8d6e0586b0a20c7
 /// To bridge between VMs, a caller can either use the contract methods defined below, or use the FlowEVMBridge's
 /// bridging methods which will programatically route bridging calls to this contract.
 ///
-access(all) contract CONTRACT_NAME: ICrossVM, IFlowEVMNFTBridge, IEVMBridgeNFTLocker, ViewResolver {
+// TODO: Implement NFT contract interface once v2 available locally
+access(all) contract EVMVMBridgedNFT_0xd69e40309a188ee9007da49c1cec5602d7f9d767 : ICrossVM, IEVMBridgeNFTMinter, ViewResolver {
 
     /// Pointer to the Factory deployed Solidity contract address defining the bridged asset
     access(all) let evmNFTContractAddress: EVM.EVMAddress
@@ -37,10 +38,8 @@ access(all) contract CONTRACT_NAME: ICrossVM, IFlowEVMNFTBridge, IEVMBridgeNFTLo
     access(all) let name: String
     /// Symbol of the NFT collection defined in the corresponding ERC721 contract
     access(all) let symbol: String
-    /// Type of NFT locked in the contract
-    access(all) let lockedNFTType: Type
-    /// Resource which holds locked NFTs
-    access(contract) let locker: @{CrossVMNFT.EVMNFTCollection, NonFungibleToken.Collection}
+    /// Retain a Collection to reference when resolving Collection Metadata
+    access(self) let collection: @Collection
 
     /// We choose the name NFT here, but this type can have any name now
     /// because the interface does not require it to have a specific name any more
@@ -101,45 +100,34 @@ access(all) contract CONTRACT_NAME: ICrossVM, IFlowEVMNFTBridge, IEVMBridgeNFTLo
                         self.id
                     )
                 case Type<MetadataViews.NFTCollectionData>():
-                    return CONTRACT_NAME.getCollectionData(nftType: Type<@CONTRACT_NAME.NFT>())
+                    return EVMVMBridgedNFT_0xd69e40309a188ee9007da49c1cec5602d7f9d767.getCollectionData(nftType: Type<@EVMVMBridgedNFT_0xd69e40309a188ee9007da49c1cec5602d7f9d767.NFT>())
                 case Type<MetadataViews.NFTCollectionDisplay>():
-                    return CONTRACT_NAME.getCollectionDisplay(nftType: Type<@CONTRACT_NAME.NFT>())
+                    return EVMVMBridgedNFT_0xd69e40309a188ee9007da49c1cec5602d7f9d767.getCollectionDisplay(nftType: Type<@EVMVMBridgedNFT_0xd69e40309a188ee9007da49c1cec5602d7f9d767.NFT>())
             }
             return nil
         }
 
         /// public function that anyone can call to create a new empty collection
         access(all) fun createEmptyCollection(): @{NonFungibleToken.Collection} {
-            return <- create CONTRACT_NAME.Collection()
+            return <- create EVMVMBridgedNFT_0xd69e40309a188ee9007da49c1cec5602d7f9d767.Collection()
         }
 
         /* --- CrossVMNFT conformance --- */
         //
         /// Returns the EVM contract address of the NFT
         access(all) fun getEVMContractAddress(): EVM.EVMAddress {
-            return CONTRACT_NAME.getEVMContractAddress()
+            return EVMVMBridgedNFT_0xd69e40309a188ee9007da49c1cec5602d7f9d767.getEVMContractAddress()
         }
 
         /// Similar to ERC721.tokenURI method, returns the URI of the NFT with self.evmID at time of bridging
         access(all) fun tokenURI(): String {
             return self.uri
         }
-
-        /// Returns the Flow Address of the default bridge used by this NFT's contract
-        access(all) view fun getDefaultBridgeAddress(): Address {
-            return 0xf8d6e0586b0a20c7
-        }
-
-        /// Returns a reference to a contract as `&AnyStruct`. This enables the result to be cast as a bridging
-        /// contract by the caller and avoids circular dependency in the implementing contract
-        access(all) view fun borrowDefaultBridgeContract(): &AnyStruct {
-            return &CONTRACT_NAME
-        }
     }
 
-    access(all) resource Collection: NonFungibleToken.Collection, CrossVMNFT.EVMBridgeableCollection {
+    access(all) resource Collection: NonFungibleToken.Collection, CrossVMNFT.EVMNFTCollection {
         /// dictionary of NFT conforming tokens indexed on their ID
-        access(contract) var ownedNFTs: @{UInt64: CONTRACT_NAME.NFT}
+        access(contract) var ownedNFTs: @{UInt64: EVMVMBridgedNFT_0xd69e40309a188ee9007da49c1cec5602d7f9d767.NFT}
         /// Mapping of EVM IDs to Flow NFT IDs
         access(contract) let evmIDToFlowID: {UInt256: UInt64}
 
@@ -156,44 +144,23 @@ access(all) contract CONTRACT_NAME: ICrossVM, IFlowEVMNFTBridge, IEVMBridgeNFTLo
             return self.publicPath
         }
 
-        /// Returns the Flow Address of the default bridge used by this Collection's contract
-        access(all) view fun getDefaultBridgeAddress(): Address {
-            return 0xf8d6e0586b0a20c7
-        }
-
-        /// Returns a reference to a contract as `&AnyStruct`. This enables the result to be cast as a bridging
-        /// contract by the caller and avoids circular dependency in the implementing contract
-        access(all) view fun borrowDefaultBridgeContract(): &AnyStruct {
-            return &CONTRACT_NAME
-        }
-
         init () {
             self.ownedNFTs <- {}
             self.evmIDToFlowID = {}
-            let identifier = "CONTRACT_NAMECollection"
+            let identifier = "EVMVMBridgedNFT_0xd69e40309a188ee9007da49c1cec5602d7f9d767Collection"
             self.storagePath = StoragePath(identifier: identifier)!
             self.publicPath = PublicPath(identifier: identifier)!
         }
 
         /// Returns a list of NFT types that this receiver accepts
         access(all) view fun getSupportedNFTTypes(): {Type: Bool} {
-            return { Type<@CONTRACT_NAME.NFT>(): true }
+            return { Type<@EVMVMBridgedNFT_0xd69e40309a188ee9007da49c1cec5602d7f9d767.NFT>(): true }
         }
 
         /// Returns whether or not the given type is accepted by the collection
         /// A collection that can accept any type should just return true by default
         access(all) view fun isSupportedNFTType(type: Type): Bool {
-           return type == Type<@CONTRACT_NAME.NFT>()
-        }
-
-        /// Bridges an owned NFT to Flow EVM
-        access(CrossVMNFT.Bridgeable) fun bridgeToEVM(id: UInt64, to: EVM.EVMAddress, tollFee: @{FungibleToken.Vault}) {
-            pre {
-                tollFee.getType() == Type<@FlowToken.Vault>(): "Toll fee must be paid in FlowToken"
-            }
-            let castVault <- tollFee as! @FlowToken.Vault
-            let token <- self.withdraw(withdrawID: id)
-            CONTRACT_NAME.bridgeNFTToEVM(token: <-token, to: to, tollFee: <-castVault)
+           return type == Type<@EVMVMBridgedNFT_0xd69e40309a188ee9007da49c1cec5602d7f9d767.NFT>()
         }
 
         /// Removes an NFT from the collection and moves it to the caller
@@ -214,7 +181,7 @@ access(all) contract CONTRACT_NAME: ICrossVM, IFlowEVMNFTBridge, IEVMBridgeNFTLo
 
         /// Ttakes a NFT and adds it to the collections dictionary and adds the ID to the evmIDToFlowID mapping
         access(all) fun deposit(token: @{NonFungibleToken.NFT}) {
-            let token <- token as! @CONTRACT_NAME.NFT
+            let token <- token as! @EVMVMBridgedNFT_0xd69e40309a188ee9007da49c1cec5602d7f9d767.NFT
 
             // add the new token to the dictionary which removes the old one
             self.evmIDToFlowID[token.evmID] = token.id
@@ -233,9 +200,9 @@ access(all) contract CONTRACT_NAME: ICrossVM, IFlowEVMNFTBridge, IEVMBridgeNFTLo
             return self.evmIDToFlowID.keys
         }
 
-        /// Returns the flow 
-        access(all) view fun getFlowID(from evmID: UInt256): UInt64? {
-            return self.evmIDToFlowID[evmID]
+        /// Returns the Cadence NFT.id for the given EVM NFT ID if 
+        access(all) view fun getCadenceID(from evmID: UInt256): UInt64? {
+            return self.evmIDToFlowID[evmID] ?? UInt64(evmID)
         }
 
         /// Gets the amount of NFTs stored in the collection
@@ -250,7 +217,7 @@ access(all) contract CONTRACT_NAME: ICrossVM, IFlowEVMNFTBridge, IEVMBridgeNFTLo
 
         /// Borrow the view resolver for the specified NFT ID
         access(all) view fun borrowViewResolver(id: UInt64): &{ViewResolver.Resolver}? {
-            if let nft = &self.ownedNFTs[id] as &CONTRACT_NAME.NFT? {
+            if let nft = &self.ownedNFTs[id] as &EVMVMBridgedNFT_0xd69e40309a188ee9007da49c1cec5602d7f9d767.NFT? {
                 return nft as &{ViewResolver.Resolver}
             }
             return nil
@@ -265,7 +232,7 @@ access(all) contract CONTRACT_NAME: ICrossVM, IFlowEVMNFTBridge, IEVMBridgeNFTLo
     /// public function that anyone can call to create a new empty collection
     /// Since multiple collection types can be defined in a contract,
     /// The caller needs to specify which one they want to create
-    access(all) fun createEmptyCollection(): @CONTRACT_NAME.Collection {
+    access(all) fun createEmptyCollection(): @EVMVMBridgedNFT_0xd69e40309a188ee9007da49c1cec5602d7f9d767.Collection {
         return <- create Collection()
     }
 
@@ -293,9 +260,9 @@ access(all) contract CONTRACT_NAME: ICrossVM, IFlowEVMNFTBridge, IEVMBridgeNFTLo
     access(all) fun resolveView(_ view: Type): AnyStruct? {
         switch view {
             case Type<MetadataViews.NFTCollectionData>():
-                return CONTRACT_NAME.getCollectionData(nftType: Type<@CONTRACT_NAME.NFT>())
+                return EVMVMBridgedNFT_0xd69e40309a188ee9007da49c1cec5602d7f9d767.getCollectionData(nftType: Type<@EVMVMBridgedNFT_0xd69e40309a188ee9007da49c1cec5602d7f9d767.NFT>())
             case Type<MetadataViews.NFTCollectionDisplay>():
-                return CONTRACT_NAME.getCollectionDisplay(nftType: Type<@CONTRACT_NAME.NFT>())
+                return EVMVMBridgedNFT_0xd69e40309a188ee9007da49c1cec5602d7f9d767.getCollectionDisplay(nftType: Type<@EVMVMBridgedNFT_0xd69e40309a188ee9007da49c1cec5602d7f9d767.NFT>())
         }
         return nil
     }
@@ -304,19 +271,17 @@ access(all) contract CONTRACT_NAME: ICrossVM, IFlowEVMNFTBridge, IEVMBridgeNFTLo
     /// Returns `nil` if no collection type exists for the specified NFT type
     access(all) view fun getCollectionData(nftType: Type): MetadataViews.NFTCollectionData? {
         switch nftType {
-            case Type<@CONTRACT_NAME.NFT>():
-                let collectionRef = self.account.storage.borrow<&CONTRACT_NAME.Collection>(
-                        from: /storage/CONTRACT_NAMECollection
-                    ) ?? panic("Could not borrow a reference to the stored collection")
+            case Type<@EVMVMBridgedNFT_0xd69e40309a188ee9007da49c1cec5602d7f9d767.NFT>():
+                let collectionRef: &Collection = &self.collection
                 let collectionData = MetadataViews.NFTCollectionData(
                     storagePath: collectionRef.getDefaultStoragePath()!,
                     publicPath: collectionRef.getDefaultPublicPath()!,
-                    providerPath: /private/CONTRACT_NAMECollection,
-                    publicCollection: Type<&CONTRACT_NAME.Collection>(),
-                    publicLinkedType: Type<&CONTRACT_NAME.Collection>(),
-                    providerLinkedType: Type<auth(NonFungibleToken.Withdrawable) &CONTRACT_NAME.Collection>(),
+                    providerPath: /private/EVMVMBridgedNFT_0xd69e40309a188ee9007da49c1cec5602d7f9d767Collection,
+                    publicCollection: Type<&EVMVMBridgedNFT_0xd69e40309a188ee9007da49c1cec5602d7f9d767.Collection>(),
+                    publicLinkedType: Type<&EVMVMBridgedNFT_0xd69e40309a188ee9007da49c1cec5602d7f9d767.Collection>(),
+                    providerLinkedType: Type<auth(NonFungibleToken.Withdrawable) &EVMVMBridgedNFT_0xd69e40309a188ee9007da49c1cec5602d7f9d767.Collection>(),
                     createEmptyCollectionFunction: (fun(): @{NonFungibleToken.Collection} {
-                        return <-CONTRACT_NAME.createEmptyCollection()
+                        return <-EVMVMBridgedNFT_0xd69e40309a188ee9007da49c1cec5602d7f9d767.createEmptyCollection()
                     })
                 )
                 return collectionData
@@ -329,7 +294,7 @@ access(all) contract CONTRACT_NAME: ICrossVM, IFlowEVMNFTBridge, IEVMBridgeNFTLo
     // TODO: Replace with generalized bridge collection display
     access(all) view fun getCollectionDisplay(nftType: Type): MetadataViews.NFTCollectionDisplay? {
         switch nftType {
-            case Type<@CONTRACT_NAME.NFT>():
+            case Type<@EVMVMBridgedNFT_0xd69e40309a188ee9007da49c1cec5602d7f9d767.NFT>():
                 let media = MetadataViews.Media(
                     file: MetadataViews.HTTPFile(
                         url: "https://assets.website-files.com/5f6294c0c7a8cdd643b1c820/5f6294c0c7a8cda55cb1c936_Flow_Wordmark.svg"
@@ -355,129 +320,9 @@ access(all) contract CONTRACT_NAME: ICrossVM, IFlowEVMNFTBridge, IEVMBridgeNFTLo
         return self.evmNFTContractAddress
     }
 
-    /// Returns the amount of FLOW required to bridge an NFT
-    ///
-    access(all) view fun getFeeAmount(): UFix64 {
-        return FlowEVMBridgeConfig.bridgeFee
-    }
-
-    /// Returns the type of fungible tokens the bridge accepts for fees
-    ///
-    access(all) view fun getFeeVaultType(): Type {
-        return Type<@{FungibleToken.Vault}>()
-    }
-
-    /// Returns the count of NFTs locked by this contract
-    ///
-    access(all) view fun getLockedNFTCount(): Int {
-        return self.locker.getLength()
-    }
-
-    /// Returns a reference to the given NFT locked by this contract with the specified ID
-    ///
-    access(all) view fun borrowLockedNFT(id: UInt64): &{NonFungibleToken.NFT}? {
-        return self.locker.borrowNFT(id)
-    }
-
-    /// Returns whether the NFT with the specified ID is locked by this contract
-    ///
-    access(all) view fun isLocked(id: UInt64): Bool {
-        return self.locker.borrowNFT(id) != nil
-    }
-
-    /************************************
-        Auxiliary Bridge Entrypoints
-    *************************************/
-
-    /// Completes the bridge of this contract's NFT from Flow to Flow EVM
-    ///
-    access(all) fun bridgeNFTToEVM(token: @{NonFungibleToken.NFT}, to: EVM.EVMAddress, tollFee: @{FungibleToken.Vault}) {
-        pre {
-            FlowEVMBridgeUtils.validateFee(&tollFee, onboarding: false): "Invalid fee paid"
-        }
-        FlowEVMBridgeUtils.depositTollFee(<-tollFee)
-        let cast <- token as! @CONTRACT_NAME.NFT
-        assert(
-            FlowEVMBridgeUtils.isOwnerOrApproved(
-                ofNFT: cast.evmID,
-                owner: FlowEVMBridge.getBridgeCOAEVMAddress(),
-                evmContractAddress: self.getEVMContractAddress()
-            ), message: "The requested NFT is not owned by the bridge COA account"
-        )
-
-        FlowEVMBridgeUtils.call(
-            signature: "safeTransferFrom(address,address,uint256)",
-            targetEVMAddress: self.evmNFTContractAddress,
-            args: [FlowEVMBridge.getBridgeCOAEVMAddress(), to, cast.evmID],
-            gasLimit: 15000000,
-            value: 0.0
-        )
-
-        // self.burnNFT(nft: <-cast)
-        self.locker.deposit(token: <-cast)
-    }
-
-    /// Completes the bridge of this contract's NFT from Flow EVM to Flow
-    ///
-    access(all) fun bridgeNFTFromEVM(
-        caller: &EVM.BridgedAccount,
-        calldata: [UInt8],
-        id: UInt256,
-        evmContractAddress: EVM.EVMAddress,
-        tollFee: @{FungibleToken.Vault}
-    ): @{NonFungibleToken.NFT} {
-        pre {
-            self.evmNFTContractAddress.bytes == evmContractAddress.bytes: "Invalid EVM contract address"
-            FlowEVMBridgeUtils.validateFee(&tollFee, onboarding: false): "Invalid fee paid"
-        }
-        FlowEVMBridgeUtils.depositTollFee(<-tollFee)
-        assert(
-            FlowEVMBridgeUtils.isOwnerOrApproved(
-                ofNFT: id,
-                owner: caller.address(),
-                evmContractAddress: evmContractAddress
-            ), message: "Caller does not own the NFT"
-        )
-        caller.call(
-            to: evmContractAddress,
-            data: calldata,
-            gasLimit: 15000000,
-            value: EVM.Balance(flow: 0.0)
-        )
-        FlowEVMBridgeUtils.call(
-            signature: "safeTransferFrom(address,address,uint256)",
-            targetEVMAddress: self.evmNFTContractAddress,
-            args: [caller.address(), FlowEVMBridge.getBridgeCOAEVMAddress(), id],
-            gasLimit: 15000000,
-            value: 0.0
-        )
-        assert(
-            FlowEVMBridgeUtils.isOwnerOrApproved(
-                ofNFT: id,
-                owner: FlowEVMBridge.getBridgeCOAEVMAddress(),
-                evmContractAddress: evmContractAddress
-            ), message: "Transfer to Bridge COA was not successful"
-        )
-        // NFT has already been minted and was locked on bridging back to EVM - withdraw & return
-        if let flowID = self.locker.getFlowID(from: id) {
-            return <- self.locker.withdraw(withdrawID: flowID)
-        }
-        // Otherwise, this is the first time the NFT has been bridged to Flow - mint & return
-        let tokenURIResponse: [AnyStruct] = (
-            EVM.decodeABI(
-                types: [Type<String>()],
-                data: FlowEVMBridgeUtils.call(
-                    signature: "tokenURI(uint256)",
-                    targetEVMAddress: self.getEVMContractAddress(),
-                    args: [id],
-                    gasLimit: 15000000,
-                    value: 0.0
-                )
-            ) as! [AnyStruct]
-        )
-        assert(tokenURIResponse.length == 1, message: "Invalid response length")
-        let tokenURI: String = tokenURIResponse[0] as! String
-        let bridgedNFT <- create NFT(
+    access(account)
+    fun mintNFT(id: UInt256, tokenURI: String): @NFT {
+        return <-create NFT(
             name: self.name,
             symbol: self.symbol,
             evmID: id,
@@ -487,11 +332,10 @@ access(all) contract CONTRACT_NAME: ICrossVM, IFlowEVMNFTBridge, IEVMBridgeNFTLo
                 "Bridged Timestamp": getCurrentBlock().timestamp
             }
         )
-        return <- bridgedNFT
     }
 
-    // TODO: Replace with v2 standard burning mechanism & event
-    access(self) fun burnNFT(nft: @CONTRACT_NAME.NFT) {
+    // TODO: Revisit once NFT v2 standards are available locally
+    access(self) fun burnNFT(nft: @EVMVMBridgedNFT_0xd69e40309a188ee9007da49c1cec5602d7f9d767.NFT) {
         destroy nft
     }
 
@@ -500,14 +344,12 @@ access(all) contract CONTRACT_NAME: ICrossVM, IFlowEVMNFTBridge, IEVMBridgeNFTLo
         self.flowNFTContractAddress = self.account.address
         self.name = name
         self.symbol = symbol
+        self.collection <- create Collection()
 
-        // Create a Collection resource and save it to storage
-        let collection <- create Collection()
-        let defaultStoragePath = collection.getDefaultStoragePath()!
-        let defaultPublicPath = collection.getDefaultPublicPath()!
-        self.account.storage.save(<-collection, to: defaultStoragePath)
-
-        self.lockedNFTType = Type<@CONTRACT_NAME.NFT>()
-        self.locker <- self.createEmptyCollection()
+        FlowEVMBridgeConfig.associateType(Type<@EVMVMBridgedNFT_0xd69e40309a188ee9007da49c1cec5602d7f9d767.NFT>(), with: self.evmNFTContractAddress)
+        FlowEVMBridgeNFTEscrow.initializeEscrow(
+            forType: Type<@EVMVMBridgedNFT_0xd69e40309a188ee9007da49c1cec5602d7f9d767.NFT>(),
+            erc721Address: self.evmNFTContractAddress
+        )
     }
 }
