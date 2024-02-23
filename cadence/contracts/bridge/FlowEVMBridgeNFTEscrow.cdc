@@ -155,8 +155,11 @@ access(all) contract FlowEVMBridgeNFTEscrow : IEVMBridgeNFTEscrow {
         /// Returns the Flow NFT ID associated with the EVM NFT ID if the locked token implements CrossVMNFT.EVMNFT
         ///
         access(all)
-        view fun getCadenceID(from evmID: UInt256): UInt64 {
-            return self.evmIDToFlowID[evmID] ?? UInt64(evmID)
+        view fun getCadenceID(from evmID: UInt256): UInt64? {
+            if self.evmIDToFlowID[evmID] == nil && self.borrowNFT(UInt64(evmID)) != nil {
+                return UInt64(evmID)
+            }
+            return self.evmIDToFlowID[evmID]
         }
 
         /// Returns a reference to the NFT if it is locked
