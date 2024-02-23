@@ -138,6 +138,12 @@ contract EVM {
         fun depositNFT(nft: @{NonFungibleToken.NFT}, to: EVM.EVMAddress, fee: @FlowToken.Vault) {
             EVM.borrowBridgeAccessor().depositNFT(nft: <-nft, to: to, fee: <-fee)
         }
+
+        /// Bridges the given NFT to the EVM environment
+        access(all)
+        fun withdrawNFT(type: Type, id: UInt256, fee: @FlowToken.Vault): @{NonFungibleToken.NFT} {
+            return <- EVM.borrowBridgeAccessor().withdrawNFT(caller: &self, type: type, id: id, fee: <-fee)
+        }
     }
 
     /// Creates a new bridged account
@@ -180,5 +186,7 @@ contract EVM {
     access(all) resource interface BridgeAccessor {
         access(Bridge)
         fun depositNFT(nft: @{NonFungibleToken.NFT}, to: EVM.EVMAddress, fee: @{FungibleToken.Vault})
+        access(Bridge)
+        fun withdrawNFT(caller: &BridgedAccount, type: Type, id: UInt256, fee: @{FungibleToken.Vault}): @{NonFungibleToken.NFT}
     }
 }

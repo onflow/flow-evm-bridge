@@ -44,6 +44,13 @@ contract EVMBridgeRouter {
             self.borrowBridgeAccessor().depositNFT(nft: <-nft, to: to, fee: <-fee)
         }
 
+        /// Passes along the bridge request to the designated bridge address, returning the bridged NFT
+        ///
+        access(EVM.Bridge)
+        fun withdrawNFT(caller: &EVM.BridgedAccount, type: Type, id: UInt256, fee: @{FungibleToken.Vault}): @{NonFungibleToken.NFT} {
+            return <-self.borrowBridgeAccessor().withdrawNFT(caller: caller, type: type, id: id, fee: <-fee)
+        }
+
         /// Updates the designated bridge Capability
         ///
         access(Admin)
