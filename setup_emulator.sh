@@ -8,13 +8,14 @@ flow accounts update-contract ./cadence/contracts/standards/EVM.cdc
 # Create COA in emulator-account
 flow evm create-account 100.0
 
+# Deploy the Factory contract
+flow transactions send ./cadence/transactions/evm/deploy.cdc --args-json "$(cat deploy-factory-args.json)"
+
 # Deploy initial bridge contracts
 flow accounts add-contract ./cadence/contracts/bridge/ICrossVM.cdc
 flow accounts add-contract ./cadence/contracts/bridge/CrossVMAsset.cdc
 flow accounts add-contract ./cadence/contracts/bridge/CrossVMNFT.cdc
 flow accounts add-contract ./cadence/contracts/bridge/FlowEVMBridgeConfig.cdc
-# Deploy the Factory contract
-flow transactions send ./cadence/transactions/evm/deploy.cdc --args-json "$(cat deploy-factory-args.json)"
 # Provided address is the address of the Factory contract deployed in the previous txn
 flow accounts add-contract ./cadence/contracts/bridge/FlowEVMBridgeUtils.cdc 9ca416871ee388c7a41e0b7886dfcc47e08bbdef
 flow accounts add-contract ./cadence/contracts/bridge/IEVMBridgeNFTEscrow.cdc
