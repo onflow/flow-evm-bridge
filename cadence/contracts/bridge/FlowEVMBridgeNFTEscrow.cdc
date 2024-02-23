@@ -6,7 +6,6 @@ import "FlowToken"
 
 import "EVM"
 
-import "IEVMBridgeNFTEscrow"
 import "FlowEVMBridgeConfig"
 import "FlowEVMBridgeUtils"
 import "CrossVMNFT"
@@ -14,7 +13,7 @@ import "CrossVMNFT"
 /// This escrow contract handles the locking of assets that are bridged from Flow to EVM and retrieval of locked
 /// assets in escrow when they are bridged back to Flow.
 ///
-access(all) contract FlowEVMBridgeNFTEscrow : IEVMBridgeNFTEscrow {
+access(all) contract FlowEVMBridgeNFTEscrow {
 
     /**********************
             Getters

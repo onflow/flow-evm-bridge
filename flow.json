@@ -84,12 +84,6 @@
 				"emulator": "f8d6e0586b0a20c7"
 			}
 		},
-		"IEVMBridgeNFTEscrow": {
-			"source": "./cadence/contracts/bridge/IEVMBridgeNFTEscrow.cdc",
-			"aliases": {
-				"emulator": "f8d6e0586b0a20c7"
-			}
-		},
 		"IEVMBridgeNFTMinter": {
 			"source": "./cadence/contracts/bridge/IEVMBridgeNFTMinter.cdc",
 			"aliases": {
