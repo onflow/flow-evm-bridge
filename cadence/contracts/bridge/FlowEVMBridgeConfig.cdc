@@ -33,6 +33,15 @@ access(all) contract FlowEVMBridgeConfig {
     access(all)
     event BridgeFeeUpdated(old: UFix64, new: UFix64, isOnboarding: Bool)
 
+    /* Getters */
+    //
+    /// Retrieves the EVMAddress associated with a given Type if it has been onboarded to the bridge
+    ///
+    access(all)
+    fun getEVMAddressAssociated(with type: Type): EVM.EVMAddress? {
+        return self.typeToEVMAddress[type]
+    }
+
     /* Bridge Account Methods */
     //
     /// Enables bridge contracts to update the typeToEVMAddress mapping
