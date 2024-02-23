@@ -225,6 +225,14 @@ access(all) contract FlowEVMBridge {
             ), gasLimit: 15000000,
             value: EVM.Balance(flow: 0.0)
         )
+
+        // Ensure caller is current NFT owner or approved
+        let isEscrowed: Bool = FlowEVMBridgeUtils.isOwner(
+            ofNFT: id,
+            owner: self.getBridgeCOAEVMAddress(),
+            evmContractAddress: associatedAddress
+        )
+        assert(isEscrowed, message: "Transfer to bridge COA failed - cannot bridge NFT without bridge escrow")
         // NFT is locked - unlock
         if let cadenceID = FlowEVMBridgeNFTEscrow.getLockedCadenceID(type: type, evmID: id) {
             emit BridgedNFTFromEVM(
