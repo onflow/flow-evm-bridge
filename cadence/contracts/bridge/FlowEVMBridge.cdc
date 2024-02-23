@@ -26,13 +26,8 @@ access(all) contract FlowEVMBridge {
 
     /* --- Events --- */
     //
+    /// Emitted any time a new asset type is onboarded to the bridge
     access(all) event Onboarded(type: Type, cadenceContractAddress: Address, evmContractAddress: String)
-
-    access(all) event BridgeLockerContractDeployed(
-        lockedType: Type,
-        contractName: String,
-        evmContractAddress: EVM.EVMAddress
-    )
     /// Denotes a defining contract was deployed to the bridge accountcode
     access(all) event BridgeDefiningContractDeployed(
         contractName: String,
