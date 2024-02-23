@@ -275,38 +275,6 @@ access(all) contract FlowEVMBridgeUtils {
         return nil
     }
 
-    /// Derives the Cadence contract name for a given Type of the form
-    /// (EVMVMBridgeNFTLocker|EVMVMBridgeTokenLocker)_<0xCONTRACT_ADDRESS>_<CONTRACT_NAME>_<RESOURCE_NAME>
-    access(all) view fun deriveLockerContractName(fromType: Type): String? {
-        // Bridge-defined assets are not locked
-        if self.getContractAddress(fromType: fromType) == self.account.address {
-            return nil
-        }
-
-        if let splitIdentifier: [String] = self.splitObjectIdentifier(identifier: fromType.identifier) {
-            let sourceContractAddress: Address = Address.fromString("0x".concat(splitIdentifier[1]))!
-            let sourceContractName: String = splitIdentifier[2]
-            let resourceName: String = splitIdentifier[3]
-
-            var prefix: String? = nil
-            if fromType.isSubtype(of: Type<@{NonFungibleToken.NFT}>()) &&
-                !fromType.isSubtype(of: Type<@{FungibleToken.Vault}>()) {
-                prefix = self.contractNamePrefixes[Type<@{NonFungibleToken.NFT}>()]!["locker"]!
-
-            } else if fromType.isSubtype(of: Type<@{FungibleToken.Vault}>()) &&
-                !fromType.isSubtype(of: Type<@{NonFungibleToken.NFT}>()) {
-                prefix = self.contractNamePrefixes[Type<@{FungibleToken.Vault}>()]!["locker"]!
-            }
-
-            if prefix != nil {
-                return prefix!.concat(self.delimiter)
-                    .concat(sourceContractAddress.toString()).concat(self.delimiter)
-                    .concat(sourceContractName).concat(self.delimiter)
-                    .concat(resourceName)
-            }
-        }
-        return nil
-    }
     /// Derives the Cadence contract name for a given EVM NFT of the form
     /// EVMVMBridgedNFT_<0xCONTRACT_ADDRESS>
     access(all) view fun deriveBridgedNFTContractName(from evmContract: EVM.EVMAddress): String {
@@ -482,11 +450,9 @@ access(all) contract FlowEVMBridgeUtils {
         self.delimiter = "_"
         self.contractNamePrefixes = {
             Type<@{NonFungibleToken.NFT}>(): {
-                "locker": "EVMVMBridgeNFTLocker",
                 "bridged": "EVMVMBridgedNFT"
             },
             Type<@{FungibleToken.Vault}>(): {
-                "locker": "EVMVMBridgeTokenLocker",
                 "bridged": "EVMVMBridgedToken"
             }
         }
