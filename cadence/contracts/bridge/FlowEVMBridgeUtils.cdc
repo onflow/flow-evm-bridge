@@ -163,6 +163,20 @@ access(all) contract FlowEVMBridgeUtils {
         return decodedResponse[0] as! String
     }
 
+    /// Retrieves the NFT/FT symbol from the given EVM contract address - applies for both ERC20 & ERC721
+    access(all) fun getTokenURI(evmContractAddress: EVM.EVMAddress, id: UInt256): String {
+        let response: [UInt8] = self.call(
+            signature: "tokenURI(uint256)",
+            targetEVMAddress: evmContractAddress,
+            args: [id],
+            gasLimit: 60000,
+            value: 0.0
+        )
+        let decodedResponse = EVM.decodeABI(types: [Type<String>()], data: response) as! [AnyStruct]
+        assert(decodedResponse.length == 1, message: "Invalid response length")
+        return decodedResponse[0] as! String
+    }
+
     /// Retrieves the number of decimals for a given ERC20 contract address
     access(all) fun getTokenDecimals(evmContractAddress: EVM.EVMAddress): UInt8 {
         let response: [UInt8] = self.call(
