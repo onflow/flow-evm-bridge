@@ -64,7 +64,7 @@ access(all) contract CrossVMNFT {
     ///
     access(all) resource interface EVMNFTCollection {
         access(all) view fun getEVMIDs(): [UInt256]
-        access(all) view fun getFlowID(from evmID: UInt256): UInt64?
+        access(all) view fun getCadenceID(from evmID: UInt256): UInt64?
     }
 
     /// Enables a bridging entrypoint on an implementing Collection, bridging an owned NFT to EVM

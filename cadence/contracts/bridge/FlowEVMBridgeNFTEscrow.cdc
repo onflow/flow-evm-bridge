@@ -58,6 +58,16 @@ access(all) contract FlowEVMBridgeNFTEscrow : IEVMBridgeNFTEscrow {
         return self.borrowLockedNFT(type: type, id: id) != nil
     }
 
+    access(all)
+    view fun getLockedCadenceID(type: Type, evmID: UInt256): UInt64? {
+        if let lockerPath = FlowEVMBridgeUtils.deriveEscrowStoragePath(fromType: type) {
+            if let locker = self.account.storage.borrow<&Locker>(from: lockerPath) {
+                return locker.getCadenceID(from: evmID)
+            }
+        }
+        return nil
+    }
+
     /**********************
         Bridge Methods
     ***********************/
@@ -174,7 +184,7 @@ access(all) contract FlowEVMBridgeNFTEscrow : IEVMBridgeNFTEscrow {
 
     //     // Cover the case where Cadence NFT ID is not the same as EVM NFT ID
     //     var convertedID: UInt64? = nil
-    //     if let flowID = self.locker.getFlowID(from: id) {
+    //     if let flowID = self.locker.getCadenceID(from: id) {
     //         convertedID = flowID
     //     } else {
     //         convertedID = FlowEVMBridgeUtils.uint256ToUInt64(value: id)
@@ -242,8 +252,8 @@ access(all) contract FlowEVMBridgeNFTEscrow : IEVMBridgeNFTEscrow {
         /// Returns the Flow NFT ID associated with the EVM NFT ID if the locked token implements CrossVMNFT.EVMNFT
         ///
         access(all)
-        view fun getFlowID(from evmID: UInt256): UInt64? {
-            return self.evmIDToFlowID[evmID]
+        view fun getCadenceID(from evmID: UInt256): UInt64 {
+            return self.evmIDToFlowID[evmID] ?? UInt64(evmID)
         }
 
         /// Returns a reference to the NFT if it is locked
