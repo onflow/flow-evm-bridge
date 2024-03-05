@@ -1,7 +1,5 @@
 #!/bin/bash
 
-sh pass_precompiles.sh
-
 # Update the emulator deployed EVM contract
 flow accounts update-contract ./cadence/contracts/standards/EVM.cdc
 
