@@ -25,11 +25,12 @@ transaction(evmContractAddressHex: String, calldata: String, gasLimit: UInt64, v
     execute {
         let valueBalance = EVM.Balance(attoflow: 0)
         valueBalance.setFLOW(flow: value)
-        self.coa.call(
+        let callResult = self.coa.call(
             to: self.evmAddress,
             data: calldata.decodeHex(),
             gasLimit: gasLimit,
             value: valueBalance
         )
+        assert(callResult.status == EVM.Status.successful, message: "Call failed")
     }
 }
