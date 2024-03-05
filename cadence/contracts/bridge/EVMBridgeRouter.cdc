@@ -48,7 +48,7 @@ contract EVMBridgeRouter {
         ///
         access(EVM.Bridge)
         fun withdrawNFT(
-            caller: &EVM.BridgedAccount,
+            caller: auth(EVM.Call) &EVM.CadenceOwnedAccount,
             type: Type,
             id: UInt256,
             fee: @{FungibleToken.Vault}
