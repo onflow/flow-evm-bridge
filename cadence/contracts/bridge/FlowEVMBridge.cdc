@@ -117,6 +117,7 @@ access(all) contract FlowEVMBridge {
         let tokenID = token.getID()
         let evmID = CrossVMNFT.getEVMID(from: &token) ?? UInt256(token.getID())
         // TODO: Enhance metadata handling on briding - URI should provide serialized JSON metadata when requested
+        //      Consider serialization util to handle this
         // Grab the URI from the NFT
         var uri: String = ""
         if let display = token.resolveView(Type<MetadataViews.Display>()) as! MetadataViews.Display? {
@@ -246,22 +247,20 @@ access(all) contract FlowEVMBridge {
         }
         // NFT is not locked but has been onboarded - mint
         let contractAddress = FlowEVMBridgeUtils.getContractAddress(fromType: type)!
-        if self.account.address == contractAddress {
-            let contractName = FlowEVMBridgeUtils.getContractName(fromType: type)!
-            let nftContract = self.account.contracts.borrow<&IEVMBridgeNFTMinter>(name: contractName)!
-            let uri = FlowEVMBridgeUtils.getTokenURI(evmContractAddress: associatedAddress, id: id)
-            let nft <- nftContract.mintNFT(id: id, tokenURI: uri)
-            emit BridgedNFTFromEVM(
-                    type: type,
-                    id: nft.getID(),
-                    evmID: id,
-                    caller: FlowEVMBridgeUtils.getEVMAddressAsHexString(address: caller.address()),
-                    evmContractAddress: FlowEVMBridgeUtils.getEVMAddressAsHexString(address: associatedAddress)
-                )
-            return <-nft
-        }
-        // Should not get to this point assuming Type was onboarded
-        panic("Unexpected error bridging NFT from EVM")
+        assert(self.account.address == contractAddress, message: "Unexpected error bridging NFT from EVM")
+
+        let contractName = FlowEVMBridgeUtils.getContractName(fromType: type)!
+        let nftContract = self.account.contracts.borrow<&IEVMBridgeNFTMinter>(name: contractName)!
+        let uri = FlowEVMBridgeUtils.getTokenURI(evmContractAddress: associatedAddress, id: id)
+        let nft <- nftContract.mintNFT(id: id, tokenURI: uri)
+        emit BridgedNFTFromEVM(
+                type: type,
+                id: nft.getID(),
+                evmID: id,
+                caller: FlowEVMBridgeUtils.getEVMAddressAsHexString(address: caller.address()),
+                evmContractAddress: FlowEVMBridgeUtils.getEVMAddressAsHexString(address: associatedAddress)
+            )
+        return <-nft
     }
 
     /**************************
