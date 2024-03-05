@@ -10,18 +10,18 @@ import "FlowEVMBridgeUtils"
 ///
 transaction(recipientEVMAddressHex: String, amount: UFix64, gasLimit: UInt64) {
 
-    let coa: &EVM.BridgedAccount
+    let coa: auth(EVM.Withdraw) &EVM.CadenceOwnedAccount
     let recipientEVMAddress: EVM.EVMAddress
     var sentVault: @FlowToken.Vault
 
     prepare(signer: auth(BorrowValue, SaveValue) &Account) {
         if signer.storage.type(at: /storage/evm) == nil {
-            signer.storage.save(<-EVM.createBridgedAccount(), to: /storage/evm)
+            signer.storage.save(<-EVM.createCadenceOwnedAccount(), to: /storage/evm)
         }
-        self.coa = signer.storage.borrow<&EVM.BridgedAccount>(from: /storage/evm)
+        self.coa = signer.storage.borrow<auth(EVM.Withdraw) &EVM.CadenceOwnedAccount>(from: /storage/evm)
             ?? panic("Could not borrow reference to the signer's bridged account")
 
-        let vaultRef = signer.storage.borrow<auth(FungibleToken.Withdrawable) &FlowToken.Vault>(
+        let vaultRef = signer.storage.borrow<auth(FungibleToken.Withdraw) &FlowToken.Vault>(
                 from: /storage/flowTokenVault
             ) ?? panic("Could not borrow reference to the owner's Vault!")
         self.sentVault <- vaultRef.withdraw(amount: amount) as! @FlowToken.Vault
@@ -35,11 +35,13 @@ transaction(recipientEVMAddressHex: String, amount: UFix64, gasLimit: UInt64) {
         if self.recipientEVMAddress.bytes == self.coa.address().bytes {
             return
         }
+        let valueBalance = EVM.Balance(attoflow: 0)
+        valueBalance.setFLOW(flow: amount)
         self.coa.call(
             to: self.recipientEVMAddress,
             data: [],
             gasLimit: gasLimit,
-            value: EVM.Balance(flow: amount)
+            value: valueBalance
         )
     }
 }
