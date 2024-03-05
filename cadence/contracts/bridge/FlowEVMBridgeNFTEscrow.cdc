@@ -94,7 +94,7 @@ access(all) contract FlowEVMBridgeNFTEscrow {
     fun unlockNFT(type: Type, id: UInt64): @{NonFungibleToken.NFT} {
         let lockerPath = FlowEVMBridgeUtils.deriveEscrowStoragePath(fromType: type)
             ?? panic("Problem deriving locker path")
-        let locker = self.account.storage.borrow<auth(NonFungibleToken.Withdrawable) &Locker>(from: lockerPath)
+        let locker = self.account.storage.borrow<auth(NonFungibleToken.Withdraw) &Locker>(from: lockerPath)
             ?? panic("Locker doesn't exist")
         return <- locker.withdraw(withdrawID: id)
     }
@@ -197,41 +197,27 @@ access(all) contract FlowEVMBridgeNFTEscrow {
         access(all)
         fun deposit(token: @{NonFungibleToken.NFT}) {
             pre {
-                self.borrowNFT(token.getID()) == nil: "NFT with this ID already exists in the Locker"
+                self.borrowNFT(token.id) == nil: "NFT with this ID already exists in the Locker"
             }
-            if let evmID = CrossVMNFT.getEVMID(from: &token) {
-                self.evmIDToFlowID[evmID] = token.getID()
+            if let evmID = CrossVMNFT.getEVMID(from: &token as &{NonFungibleToken.NFT}) {
+                self.evmIDToFlowID[evmID] = token.id
             }
             self.lockedNFTCount = self.lockedNFTCount + 1
-            self.lockedNFTs[token.getID()] <-! token
+            self.lockedNFTs[token.id] <-! token
         }
 
         /// Withdraws the NFT from this locker, removing it from the collection and returning it
         ///
-        access(NonFungibleToken.Withdrawable)
+        access(NonFungibleToken.Withdraw | NonFungibleToken.Owner)
         fun withdraw(withdrawID: UInt64): @{NonFungibleToken.NFT} {
             // Should not happen, but prevent potential underflow
             assert(self.lockedNFTCount > 0, message: "No NFTs to withdraw")
             self.lockedNFTCount = self.lockedNFTCount - 1
             let token <- self.lockedNFTs.remove(key: withdrawID)!
-            if let evmID = CrossVMNFT.getEVMID(from: &token) {
+            if let evmID = CrossVMNFT.getEVMID(from: &token as &{NonFungibleToken.NFT}) {
                 self.evmIDToFlowID.remove(key: evmID)
             }
             return <- token
-        }
-
-        /// No default storage path for this Locker as it's contract-owned - added for NFT.Collection conformance
-        ///
-        access(all)
-        view fun getDefaultStoragePath(): StoragePath? {
-            return nil
-        }
-
-        /// No default public path for this Locker as it's contract-owned - added for NFT.Collection conformance
-        ///
-        access(all)
-        view fun getDefaultPublicPath(): PublicPath? {
-            return nil
         }
 
         /// Creates an empty Collection - added here for NFT.Collection conformance
