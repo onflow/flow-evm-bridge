@@ -4,7 +4,7 @@ import "EVM"
 ///
 access(all) fun main(flowAddress: Address): String? {
     if let address: EVM.EVMAddress = getAuthAccount<auth(BorrowValue) &Account>(flowAddress)
-        .storage.borrow<&EVM.BridgedAccount>(from: /storage/evm)?.address() {
+        .storage.borrow<&EVM.CadenceOwnedAccount>(from: /storage/evm)?.address() {
         let bytes: [UInt8] = []
         for byte in address.bytes {
             bytes.append(byte)

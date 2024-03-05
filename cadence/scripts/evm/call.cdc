@@ -32,7 +32,8 @@ access(all) fun main(
 
     let data: [UInt8] = calldata.decodeHex()
 
-    let gatewayCOA = getAuthAccount<auth(BorrowValue) &Account>(gatewayAddress).storage.borrow<&EVM.BridgedAccount>(
+    let gatewayCOA = getAuthAccount<auth(BorrowValue) &Account>(gatewayAddress)
+        .storage.borrow<auth(EVM.Call) &EVM.CadenceOwnedAccount>(
             from: /storage/evm
         ) ?? panic("Could not borrow COA from provided gateway address")
 
@@ -40,8 +41,8 @@ access(all) fun main(
         to: evmAddress,
         data: data,
         gasLimit: gasLimit,
-        value: EVM.Balance(flow: 0.0)
+        value: EVM.Balance(attoflow: 0)
     )
 
-    return EVM.decodeABI(types: getTypeArray(typeIdentifiers), data: evmResult)
+    return EVM.decodeABI(types: getTypeArray(typeIdentifiers), data: evmResult.data)
 }

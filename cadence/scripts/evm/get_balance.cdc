@@ -10,5 +10,5 @@ access(all) fun main(address: String): UFix64 {
         bytes[10], bytes[11], bytes[12], bytes[13], bytes[14],
         bytes[15], bytes[16], bytes[17], bytes[18], bytes[19]
     ]
-    return EVM.EVMAddress(bytes: addressBytes).balance().flow
+    return EVM.EVMAddress(bytes: addressBytes).balance().inFLOW()
 }
