@@ -477,13 +477,6 @@ access(all) contract FlowEVMBridgeUtils {
             }
         }
         let bridgeFactoryEVMAddressBytes: [UInt8] = bridgeFactoryEVMAddress.decodeHex()
-        // self.bridgeFactoryEVMAddress = EVM.EVMAddress(bytes: [
-        //     bridgeFactoryEVMAddressBytes[0], bridgeFactoryEVMAddressBytes[1], bridgeFactoryEVMAddressBytes[2], bridgeFactoryEVMAddressBytes[3],
-        //     bridgeFactoryEVMAddressBytes[4], bridgeFactoryEVMAddressBytes[5], bridgeFactoryEVMAddressBytes[6], bridgeFactoryEVMAddressBytes[7],
-        //     bridgeFactoryEVMAddressBytes[8], bridgeFactoryEVMAddressBytes[9], bridgeFactoryEVMAddressBytes[10], bridgeFactoryEVMAddressBytes[11],
-        //     bridgeFactoryEVMAddressBytes[12], bridgeFactoryEVMAddressBytes[13], bridgeFactoryEVMAddressBytes[14], bridgeFactoryEVMAddressBytes[15],
-        //     bridgeFactoryEVMAddressBytes[16], bridgeFactoryEVMAddressBytes[17], bridgeFactoryEVMAddressBytes[18], bridgeFactoryEVMAddressBytes[19]
-        // ])
         self.bridgeFactoryEVMAddress = self.getEVMAddressFromHexString(address: bridgeFactoryEVMAddress)
             ?? panic("Invalid bridge factory EVM address")
     }

@@ -19,7 +19,7 @@ transaction(nftContractAddress: Address, nftContractName: String, id: UInt256) {
     let nftType: Type
     let collection: &{NonFungibleToken.Collection}
     let fee: @FlowToken.Vault
-    let coa: &EVM.BridgedAccount
+    let coa: auth(EVM.Bridge) &EVM.CadenceOwnedAccount
     
     prepare(signer: auth(BorrowValue, IssueStorageCapabilityController, PublishCapability, SaveValue, UnpublishCapability) &Account) {
 
@@ -31,10 +31,12 @@ transaction(nftContractAddress: Address, nftContractName: String, id: UInt256) {
             ) ?? panic("Could not construct NFT type")
 
         // Borrow a reference to the NFT collection, configuring if necessary
-        let viewResolver = getAccount(nftContractAddress).contracts.borrow<&ViewResolver>(name: nftContractName)
+        let viewResolver = getAccount(nftContractAddress).contracts.borrow<&{ViewResolver}>(name: nftContractName)
             ?? panic("Could not borrow ViewResolver from NFT contract")
-        let collectionData = viewResolver.resolveView(Type<MetadataViews.NFTCollectionData>()) as! MetadataViews.NFTCollectionData?
-            ?? panic("Could not resolve NFTCollectionData view")
+        let collectionData = viewResolver.resolveContractView(
+                resourceType: self.nftType,
+                viewType: Type<MetadataViews.NFTCollectionData>()
+            ) as! MetadataViews.NFTCollectionData? ?? panic("Could not resolve NFTCollectionData view")
         if signer.storage.borrow<&{NonFungibleToken.Collection}>(from: collectionData.storagePath) == nil {
             signer.storage.save(<-collectionData.createEmptyCollection(), to: collectionData.storagePath)
             signer.capabilities.unpublish(collectionData.publicPath)
@@ -45,14 +47,14 @@ transaction(nftContractAddress: Address, nftContractName: String, id: UInt256) {
             ?? panic("Could not borrow collection from storage path")
 
         // Get the funds to pay the bridging fee from the signer's FlowToken Vault
-        let vault = signer.storage.borrow<auth(FungibleToken.Withdrawable) &FlowToken.Vault>(
+        let vault = signer.storage.borrow<auth(FungibleToken.Withdraw) &FlowToken.Vault>(
                 from: /storage/flowTokenVault
             ) ?? panic("Could not access signer's FlowToken Vault")
         self.fee <- vault.withdraw(amount: FlowEVMBridgeConfig.bridgeFee) as! @FlowToken.Vault
 
         // Borrow a reference to the signer's COA
         // NOTE: This should also be the ERC721 owner of the requested NFT in FlowEVM
-        self.coa = signer.storage.borrow<&EVM.BridgedAccount>(from: /storage/evm)
+        self.coa = signer.storage.borrow<auth(EVM.Bridge) &EVM.CadenceOwnedAccount>(from: /storage/evm)
             ?? panic("Could not borrow COA from provided gateway address")
     }
 

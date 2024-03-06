@@ -20,7 +20,7 @@ transaction(contractAddressHex: String) {
         self.contractAddress = FlowEVMBridgeUtils.getEVMAddressFromHexString(address: contractAddressHex)
             ?? panic("Invalid EVM address string provided")
         // Pay the bridge toll
-        let vault = signer.storage.borrow<auth(FungibleToken.Withdrawable) &FlowToken.Vault>(
+        let vault = signer.storage.borrow<auth(FungibleToken.Withdraw) &FlowToken.Vault>(
                 from: /storage/flowTokenVault
             ) ?? panic("Could not access signer's FlowToken Vault")
         self.tollFee <- vault.withdraw(amount: FlowEVMBridgeConfig.onboardFee)

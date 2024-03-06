@@ -18,7 +18,7 @@ transaction(identifier: String) {
         // Construct the type from the identifier
         self.type = CompositeType(identifier) ?? panic("Invalid type identifier")
         // Pay the bridge toll
-        let vault = signer.storage.borrow<auth(FungibleToken.Withdrawable) &FlowToken.Vault>(
+        let vault = signer.storage.borrow<auth(FungibleToken.Withdraw) &FlowToken.Vault>(
                 from: /storage/flowTokenVault
             ) ?? panic("Could not access signer's FlowToken Vault")
         self.tollFee <- vault.withdraw(amount: FlowEVMBridgeConfig.onboardFee)
