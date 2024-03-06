@@ -13,7 +13,7 @@ flow-c1 accounts add-contract ./cadence/contracts/bridge/ICrossVM.cdc
 flow-c1 accounts add-contract ./cadence/contracts/bridge/CrossVMNFT.cdc
 flow-c1 accounts add-contract ./cadence/contracts/bridge/FlowEVMBridgeConfig.cdc
 # Provided address is the address of the Factory contract deployed in the previous txn
-flow-c1 accounts add-contract ./cadence/contracts/bridge/FlowEVMBridgeUtils.cdc 7b6f5940fab67943fd32e41e57114450ec29d9c5
+flow-c1 accounts add-contract ./cadence/contracts/bridge/FlowEVMBridgeUtils.cdc a3c8d221ad218f0d61a3987469dc1c7dfa4a1515
 flow-c1 accounts add-contract ./cadence/contracts/bridge/FlowEVMBridgeNFTEscrow.cdc
 flow-c1 accounts add-contract ./cadence/contracts/bridge/FlowEVMBridgeTemplates.cdc
 flow-c1 accounts add-contract ./cadence/contracts/bridge/IEVMBridgeNFTMinter.cdc
