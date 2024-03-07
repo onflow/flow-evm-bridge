@@ -264,6 +264,17 @@ contract EVM {
                 fee: <-fee
             )
         }
+
+        /// Enables the COA owner to borrow a locked NFT from escrow if the COA is also the owner of the corresponding
+        /// ERC721 token in EVM.
+        access(all)
+        fun borrowNFT(type: Type, id: UInt256): &{NonFungibleToken.NFT}? {
+            return EVM.borrowEscrowAccessor().borrowLockedNFT(
+                owner: &self as auth(Validate) &CadenceOwnedAccount,
+                type: type,
+                id: id
+            )
+        }
     }
 
     /// Creates a new cadence owned account
@@ -443,8 +454,16 @@ contract EVM {
     /// Returns a reference to the BridgeAccessor designated for internal bridge requests
     ///
     access(self)
-    fun borrowBridgeAccessor(): auth(Bridge) &{BridgeAccessor} {
+    view fun borrowBridgeAccessor(): auth(Bridge) &{BridgeAccessor} {
         return self.account.storage.borrow<auth(Bridge) &{BridgeAccessor}>(from: /storage/evmBridgeRouter)
+            ?? panic("Could not borrow reference to the EVM bridge")
+    }
+
+    /// Returns a reference to the EscrowAccessor designated for internal escrow requests
+    ///
+    access(self)
+    view fun borrowEscrowAccessor(): auth(Bridge) &{EscrowAccessor} {
+        return self.account.storage.borrow<auth(Bridge) &{EscrowAccessor}>(from: /storage/evmBridgeRouter)
             ?? panic("Could not borrow reference to the EVM bridge")
     }
 
@@ -464,5 +483,11 @@ contract EVM {
             id: UInt256,
             fee: @FlowToken.Vault
         ): @{NonFungibleToken.NFT}
+    }
+
+    access(all)
+    resource interface EscrowAccessor {
+        access(Bridge)
+        fun borrowLockedNFT(owner: auth(Validate) &CadenceOwnedAccount, type: Type, id: UInt256): &{NonFungibleToken.NFT}?
     }
 }

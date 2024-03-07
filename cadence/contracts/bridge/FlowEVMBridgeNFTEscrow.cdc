@@ -29,23 +29,6 @@ access(all) contract FlowEVMBridgeNFTEscrow {
         return false
     }
 
-
-    /// Retrieves a reference to the NFT with the given ID
-    ///
-    /// @param id ID of the NFT to retrieve
-    ///
-    /// @returns Reference to the NFT if it exists
-    ///
-    access(all)
-    view fun borrowLockedNFT(type: Type, id: UInt64): &{NonFungibleToken.NFT}? {
-        if let lockerPath = FlowEVMBridgeUtils.deriveEscrowStoragePath(fromType: type) {
-            if let locker = self.account.storage.borrow<&Locker>(from: lockerPath) {
-                return locker.borrowNFT(id)
-            }
-        }
-        return nil
-    }
-
     /// Returns whether an NFT with the given ID is locked
     ///
     /// @param id ID of the NFT to check
@@ -74,7 +57,7 @@ access(all) contract FlowEVMBridgeNFTEscrow {
         return nil
     }
 
-    /// Returns the EVM NFT ID associated with the Cadence NFT ID. The goal is to retrieve the ERC721 ID value 
+    /// Returns the EVM NFT ID associated with the Cadence NFT ID. The goal is to retrieve the ERC721 ID value
     /// corresponding to the Cadence NFT.
     /// As far as the bridge is concerned, a bridge-deployed ERC721 assigns IDs based on NFT.id value at the time of
     /// bridging unless it implements the CrossVMNFT.EVMNFT in such case .evmID is used.
@@ -92,6 +75,53 @@ access(all) contract FlowEVMBridgeNFTEscrow {
         if let lockerPath = FlowEVMBridgeUtils.deriveEscrowStoragePath(fromType: type) {
             if let locker = self.account.storage.borrow<&Locker>(from: lockerPath) {
                 return locker.getEVMID(from: cadenceID)
+            }
+        }
+        return nil
+    }
+
+
+    /// Retrieves a reference to the NFT with the given ID as long as the named owner is the actual owner of the NFT
+    ///
+    /// @param id ID of the NFT to retrieve
+    ///
+    /// @returns Reference to the NFT if it exists
+    ///
+    access(all)
+    fun borrowLockedNFT(owner: auth(EVM.Validate) &EVM.CadenceOwnedAccount, type: Type, id: UInt256): &{NonFungibleToken.NFT}? {
+        if let evmContractAddress = FlowEVMBridgeConfig.getEVMAddressAssociated(with: type) {
+            if !FlowEVMBridgeUtils.isOwnerOrApproved(
+                ofNFT: id,
+                owner: owner.protectedAddress(),
+                evmContractAddress: evmContractAddress
+            ) {
+                return nil
+            }
+            if let lockerPath = FlowEVMBridgeUtils.deriveEscrowStoragePath(fromType: type) {
+                if let locker = self.account.storage.borrow<&Locker>(from: lockerPath) {
+                    let cadenceID = locker.getCadenceID(from: id) ?? panic("Problem locating NFT by provided EVM ID")
+                    return locker.borrowNFT(cadenceID)
+                }
+            }
+        }
+        return nil
+    }
+
+    /// Resolves the requested view type for the given NFT type if it is locked and supports the requested view type
+    ///
+    /// @param nftType: Type of the locked NFT
+    /// @param viewType: Type of the view to resolve
+    /// @param id: ID of the locked NFT
+    ///
+    /// @returns The resolved view as AnyStruct if the NFT is locked and the view is supported, otherwise returns nil
+    ///
+    access(all)
+    fun resolveLockedNFTView(nftType: Type, id: UInt256, viewType: Type): AnyStruct? {
+        if let lockerPath = FlowEVMBridgeUtils.deriveEscrowStoragePath(fromType: nftType) {
+            if let locker = self.account.storage.borrow<&Locker>(from: lockerPath) {
+                if let cadenceID = locker.getCadenceID(from: id) {
+                    return locker.borrowViewResolver(id: cadenceID)?.resolveView(viewType) ?? nil
+                }
             }
         }
         return nil

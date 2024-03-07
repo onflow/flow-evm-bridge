@@ -45,7 +45,7 @@ access(all) contract FlowEVMBridgeConfig {
     /// Retrieves the EVMAddress associated with a given Type if it has been onboarded to the bridge
     ///
     access(all)
-    fun getEVMAddressAssociated(with type: Type): EVM.EVMAddress? {
+    view fun getEVMAddressAssociated(with type: Type): EVM.EVMAddress? {
         return self.typeToEVMAddress[type]
     }
 
