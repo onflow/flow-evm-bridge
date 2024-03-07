@@ -418,7 +418,7 @@ access(all) contract FlowEVMBridgeUtils {
     }
 
     /// Deposits fees to the bridge account's FlowToken Vault - helps fund asset storage
-    access(account) fun depositTollFee(_ tollFee: @FlowToken.Vault {
+    access(account) fun depositTollFee(_ tollFee: @FlowToken.Vault) {
         let vault = self.account.storage.borrow<&FlowToken.Vault>(from: /storage/flowTokenVault)
             ?? panic("Could not borrow FlowToken.Vault reference")
         vault.deposit(from: <-tollFee)
