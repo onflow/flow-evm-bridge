@@ -70,6 +70,11 @@ access(all) contract FlowEVMBridge {
             self.typeRequiresOnboarding(type) == true: "Onboarding is not needed for this type"
             FlowEVMBridgeUtils.isCadenceNative(type: type): "Only Cadence-native assets can be onboarded by Type"
         }
+        // Ensure the project has not opted out of bridge support
+        assert(
+            !type.getType().isSubtype(of: Type<@{FlowEVMBridgeOptOut.Asset}>()),
+            message: "This type is not supported as defined by the project development team"
+        )
         FlowEVMBridgeUtils.depositTollFee(<-tollFee)
         let erc721Address = self.deployEVMContract(forAssetType: type)
         emit Onboarded(
