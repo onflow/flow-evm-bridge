@@ -439,13 +439,4 @@ access(all) contract FlowEVMBridge {
             evmContractAddress: FlowEVMBridgeUtils.getEVMAddressAsHexString(address: evmContractAddress)
         )
     }
-
-    init(evmBridgeRouterAddress: Address) {
-        // Create Accessor & publish private Capability for use by the EVM contract
-        self.account.storage.save(<-create Accessor(), to: /storage/flowEVMBridgeAccessor)
-        let accessorCap = self.account.capabilities.storage.issue<auth(EVM.Bridge) &{EVM.BridgeAccessor}>(
-                FlowEVMBridgeConfig.bridgeAccessorStoragePath
-            )
-        self.account.inbox.publish(accessorCap, name: "EVMBridgeAccessor", recipient: evmBridgeRouterAddress)
-    }
 }
