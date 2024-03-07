@@ -236,7 +236,7 @@ access(all) contract FlowEVMBridgeUtils {
     }
 
     access(all) fun isOwner(ofNFT: UInt256, owner: EVM.EVMAddress, evmContractAddress: EVM.EVMAddress): Bool {
-        let calldata: [UInt8] = FlowEVMBridgeUtils.encodeABIWithSignature("ownerOf(uint256)", [ofNFT])
+        let calldata: [UInt8] = EVM.encodeABIWithSignature("ownerOf(uint256)", [ofNFT])
         let callResult: EVM.Result = self.borrowCOA().call(
                 to: evmContractAddress,
                 data: calldata,
@@ -408,38 +408,6 @@ access(all) contract FlowEVMBridgeUtils {
         return CompositeType(identifier)
     }
 
-    /* --- ABI Utils --- */
-    // TODO: Remove once available in EVM contract
-    access(all) fun encodeABIWithSignature(
-        _ signature: String,
-        _ values: [AnyStruct]
-    ): [UInt8] {
-        let methodID = HashAlgorithm.KECCAK_256.hash(
-            signature.utf8
-        ).slice(from: 0, upTo: 4)
-        let arguments = EVM.encodeABI(values)
-
-        return methodID.concat(arguments)
-    }
-
-    access(all) fun decodeABIWithSignature(
-        _ signature: String,
-        types: [Type],
-        data: [UInt8]
-    ): [AnyStruct] {
-        let methodID = HashAlgorithm.KECCAK_256.hash(
-            signature.utf8
-        ).slice(from: 0, upTo: 4)
-
-        for byte in methodID {
-            if byte != data.removeFirst() {
-                panic("signature mismatch")
-            }
-        }
-
-        return EVM.decodeABI(types: types, data: data)
-    }
-
     /* --- Bridge-Access Only Utils --- */
     // TODO: Embed these methods into an Admin resource
 
@@ -471,7 +439,7 @@ access(all) contract FlowEVMBridgeUtils {
         gasLimit: UInt64,
         value: UFix64
     ): EVM.Result {
-        let calldata: [UInt8] = self.encodeABIWithSignature(signature, args)
+        let calldata: [UInt8] = EVM.encodeABIWithSignature(signature, args)
         let valueBalance = EVM.Balance(attoflow: 0)
         valueBalance.setFLOW(flow: value)
         return self.borrowCOA().call(

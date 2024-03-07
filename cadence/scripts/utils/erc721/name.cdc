@@ -9,7 +9,7 @@ access(all) fun main(coaHost: Address, contractAddressHex: String): String {
         .storage.borrow<auth(EVM.Call) &EVM.CadenceOwnedAccount>(
             from: /storage/evm
         )!
-    let calldata: [UInt8] = FlowEVMBridgeUtils.encodeABIWithSignature("name()", [])
+    let calldata: [UInt8] = EVM.encodeABIWithSignature("name()", [])
     let response: [UInt8] = coa.call(
             to: FlowEVMBridgeUtils.getEVMAddressFromHexString(address: contractAddressHex)!,
             data: calldata,
