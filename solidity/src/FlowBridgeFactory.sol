@@ -3,6 +3,7 @@ pragma solidity ^0.8.17;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./FlowBridgedERC721.sol";
+import "./IFlowBridgeOptOut.sol";
 
 contract FlowBridgeFactory is Ownable {
     mapping(string => address) public flowIdentifierToContract;
@@ -46,5 +47,9 @@ contract FlowBridgeFactory is Ownable {
 
     function isERC721(address contractAddr) public view returns (bool) {
         return ERC165(contractAddr).supportsInterface(0x80ac58cd);
+    }
+
+    function addressAllowsBridging(address contractAddr) public view returns (bool) {
+        return ERC165(contractAddr).supportsInterface(0xba210b2a) == false;
     }
 }
