@@ -7,9 +7,12 @@ access(all) contract FlowEVMBridgeConfig {
     /// Amount of FLOW paid to onboard a Type or EVMAddress to the bridge
     access(all)
     var onboardFee: UFix64
-    /// Amount of FLOW paid to bridge
+    /// Flat rate fee for all bridge requests
     access(all)
-    var bridgeFee: UFix64
+    var baseFee: UFix64
+    /// Rate per storage unit consumed by bridged assets
+    access(all)
+    var storageRate: UFix64
     /// Mapping of Type to EVMAddress
     access(self)
     let typeToEVMAddress: {Type: EVM.EVMAddress}
@@ -28,10 +31,14 @@ access(all) contract FlowEVMBridgeConfig {
 
     /* Events */
     //
-    /// Emitted whenever the bridge fee is updated. The isOnboarding flag identifies which fee was updated
+    /// Emitted whenever the onboarding fee is updated
     ///
     access(all)
     event BridgeFeeUpdated(old: UFix64, new: UFix64, isOnboarding: Bool)
+    /// Emitted whenever baseFee or storageRate is updated
+    ///
+    access(all)
+    event StorageRateUpdated(old: UFix64, new: UFix64)
 
     /* Getters */
     //
@@ -63,15 +70,21 @@ access(all) contract FlowEVMBridgeConfig {
             FlowEVMBridgeConfig.onboardFee = new
         }
         access(all)
-        fun updateBridgeFee(_ new: UFix64) {
-            emit BridgeFeeUpdated(old: FlowEVMBridgeConfig.bridgeFee, new: new, isOnboarding: false)
-            FlowEVMBridgeConfig.bridgeFee = new
+        fun updateBaseFee(_ new: UFix64) {
+            emit BridgeFeeUpdated(old: FlowEVMBridgeConfig.baseFee, new: new, isOnboarding: false)
+            FlowEVMBridgeConfig.baseFee = new
+        }
+        access(all)
+        fun updateStorageRate(_ new: UFix64) {
+            emit StorageRateUpdated(old: FlowEVMBridgeConfig.baseFee, new: new)
+            FlowEVMBridgeConfig.baseFee = new
         }
     }
 
     init() {
         self.onboardFee = 0.0
-        self.bridgeFee = 0.0
+        self.baseFee = 0.0
+        self.storageRate = 0.0
         self.typeToEVMAddress = {}
         self.adminStoragePath = /storage/flowEVMBridgeConfigAdmin
         self.coaStoragePath = /storage/evm

@@ -421,20 +421,13 @@ access(all) contract FlowEVMBridgeUtils {
     // TODO: Embed these methods into an Admin resource
 
     /// Validates the Vault used to pay the bridging fee
-    access(all) view fun validateFee(_ tollFee: &{FungibleToken.Vault}, onboarding: Bool): Bool {
-        pre {
-            tollFee.getType() == Type<@FlowToken.Vault>(): "Fee paid in invalid token type"
-            onboarding ? tollFee.balance == FlowEVMBridgeConfig.onboardFee : tollFee.balance == FlowEVMBridgeConfig.bridgeFee:
-                "Incorrect fee amount paid"
-        }
-        return true
+    access(all) view fun calculateBridgeFee(used: UInt64, includeBase: Bool): UFix64 {
+        let storageFee = UFix64(used) * FlowEVMBridgeConfig.storageRate
+        return includeBase ? FlowEVMBridgeConfig.baseFee + storageFee : storageFee
     }
 
     /// Deposits fees to the bridge account's FlowToken Vault - helps fund asset storage
-    access(account) fun depositTollFee(_ tollFee: @{FungibleToken.Vault}) {
-        pre {
-            tollFee.getType() == Type<@FlowToken.Vault>(): "Fee paid in invalid token type"
-        }
+    access(account) fun depositTollFee(_ tollFee: @FlowToken.Vault {
         let vault = self.account.storage.borrow<&FlowToken.Vault>(from: /storage/flowTokenVault)
             ?? panic("Could not borrow FlowToken.Vault reference")
         vault.deposit(from: <-tollFee)

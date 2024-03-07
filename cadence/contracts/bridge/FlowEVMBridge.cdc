@@ -64,9 +64,9 @@ access(all) contract FlowEVMBridge {
     /// @param type: The Cadence Type of the NFT to be onboarded
     /// @param tollFee: Fee paid for onboarding
     ///
-    access(all) fun onboardByType(_ type: Type, tollFee: @{FungibleToken.Vault}) {
+    access(all) fun onboardByType(_ type: Type, tollFee: @FlowToken.Vault) {
         pre {
-            FlowEVMBridgeUtils.validateFee(&tollFee as &{FungibleToken.Vault}, onboarding: true): "Invalid fee paid"
+            tollFee.balance == FlowEVMBridgeConfig.onboardFee: "Insufficient fee paid"
             self.typeRequiresOnboarding(type) == true: "Onboarding is not needed for this type"
             FlowEVMBridgeUtils.isCadenceNative(type: type): "Only Cadence-native assets can be onboarded by Type"
         }
@@ -87,9 +87,9 @@ access(all) contract FlowEVMBridge {
     /// @param address: The EVMAddress of the ERC721 or ERC20 to be onboarded
     /// @param tollFee: Fee paid for onboarding
     ///
-    access(all) fun onboardByEVMAddress(_ address: EVM.EVMAddress, tollFee: @{FungibleToken.Vault}) {
+    access(all) fun onboardByEVMAddress(_ address: EVM.EVMAddress, tollFee: @FlowToken.Vault) {
         pre {
-            FlowEVMBridgeUtils.validateFee(&tollFee as &{FungibleToken.Vault}, onboarding: true): "Invalid fee paid"
+            tollFee.balance == FlowEVMBridgeConfig.onboardFee: "Insufficient fee paid"
         }
         // TODO: Add bridge association check once tryCall is implemented, until then we can't check if the EVM contract
         //      is associated with a self-rolled bridge without reverting on failure
@@ -107,9 +107,12 @@ access(all) contract FlowEVMBridge {
     /// @param to: The NFT recipient in FlowEVM
     /// @param tollFee: The fee paid for bridging
     ///
-    access(contract) fun bridgeNFTToEVM(token: @{NonFungibleToken.NFT}, to: EVM.EVMAddress, tollFee: @{FungibleToken.Vault}) {
+    access(all) fun bridgeNFTToEVM(
+        token: @{NonFungibleToken.NFT},
+        to: EVM.EVMAddress,
+        tollFee: @FlowToken.Vault
+    ): @FlowToken.Vault {
         pre {
-            FlowEVMBridgeUtils.validateFee(&tollFee as &{FungibleToken.Vault}, onboarding: false): "Invalid fee paid"
             !token.isInstance(Type<@{FungibleToken.Vault}>()): "Mixed asset types are not yet supported"
             self.typeRequiresOnboarding(token.getType()) == false: "NFT must first be onboarded"
         }
@@ -123,8 +126,13 @@ access(all) contract FlowEVMBridge {
         if let display = token.resolveView(Type<MetadataViews.Display>()) as! MetadataViews.Display? {
             uri = display.thumbnail.uri()
         }
-        FlowEVMBridgeUtils.depositTollFee(<-tollFee)
-        FlowEVMBridgeNFTEscrow.lockNFT(<-token)
+
+        // Lock the NFT & calculate the storage used by the NFT
+        let storageUsed = FlowEVMBridgeNFTEscrow.lockNFT(<-token)
+        // Calculate the bridge fee on current rates, withdraw from provided Vault and deposit to self
+        let feeAmount = FlowEVMUtils.calculateBridgeFee(used: storageUsed, includeBase: true)
+        assert(tollFee.balance >= feeAmount, message: "Insufficient fee paid to bridge this NFT")
+        FlowEVMBridgeUtils.depositTollFee(<-tollFee.withdraw(amount: feeAmount))
 
         // Does the bridge control the EVM contract associated with this type?
         let associatedAddress = FlowEVMBridgeConfig.getEVMAddressAssociated(with: tokenType)
@@ -184,6 +192,8 @@ access(all) contract FlowEVMBridge {
             to: FlowEVMBridgeUtils.getEVMAddressAsHexString(address: to),
             evmContractAddress: FlowEVMBridgeUtils.getEVMAddressAsHexString(address:associatedAddress)
         )
+        // Return any surplus fee
+        return <-tollFee
     }
 
     /// Public entrypoint to bridge NFTs from EVM to Cadence
@@ -196,11 +206,11 @@ access(all) contract FlowEVMBridge {
     ///
     /// @returns The bridged NFT
     ///
-    access(contract) fun bridgeNFTFromEVM(
+    access(all) fun bridgeNFTFromEVM(
         caller: auth(EVM.Call) &EVM.CadenceOwnedAccount,
         type: Type,
         id: UInt256,
-        tollFee: @{FungibleToken.Vault}
+        tollFee: @FlowToken.Vault
     ): @{NonFungibleToken.NFT} {
         pre {
             FlowEVMBridgeUtils.validateFee(&tollFee as &{FungibleToken.Vault}, onboarding: false): "Invalid fee paid"
@@ -335,8 +345,8 @@ access(all) contract FlowEVMBridge {
         /// Endpoint enabling NFT bridging to EVM
         ///
         access(EVM.Bridge)
-        fun depositNFT(nft: @{NonFungibleToken.NFT}, to: EVM.EVMAddress, fee: @{FungibleToken.Vault}) {
-            FlowEVMBridge.bridgeNFTToEVM(token: <-nft, to: to, tollFee: <-fee)
+        fun depositNFT(nft: @{NonFungibleToken.NFT}, to: EVM.EVMAddress, fee: @{FungibleToken.Vault}): @FlowToken.Vault {
+            return <-FlowEVMBridge.bridgeNFTToEVM(token: <-nft, to: to, tollFee: <-fee)
         }
 
         /// Endpoint enabling NFT from EVM

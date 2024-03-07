@@ -82,12 +82,15 @@ access(all) contract FlowEVMBridgeNFTEscrow {
         self.account.storage.save(<-locker, to: lockerPath)
     }
 
-    access(account) fun lockNFT(_ nft: @{NonFungibleToken.NFT}) {
+    access(account) fun lockNFT(_ nft: @{NonFungibleToken.NFT}): UInt64 {
         let lockerPath = FlowEVMBridgeUtils.deriveEscrowStoragePath(fromType: nft.getType())
             ?? panic("Problem deriving locker path")
         let locker = self.account.storage.borrow<&Locker>(from: lockerPath)
             ?? panic("Locker doesn't exist")
+        let preStorageSnapshot = self.account.storage.used
         locker.deposit(token: <-nft)
+        let postStorageSnapshot = self.account.storage.used
+        return postStorageSnapshot - preStorageSnapshot
     }
 
     access(account)

@@ -40,8 +40,8 @@ contract EVMBridgeRouter {
         /// Passes along the bridge request to the designated bridge address
         ///
         access(EVM.Bridge)
-        fun depositNFT(nft: @{NonFungibleToken.NFT}, to: EVM.EVMAddress, fee: @{FungibleToken.Vault}) {
-            self.borrowBridgeAccessor().depositNFT(nft: <-nft, to: to, fee: <-fee)
+        fun depositNFT(nft: @{NonFungibleToken.NFT}, to: EVM.EVMAddress, fee: @FlowToken.Vault): @FlowToken.Vault {
+            return <-self.borrowBridgeAccessor().depositNFT(nft: <-nft, to: to, fee: <-fee)
         }
 
         /// Passes along the bridge request to the designated bridge address, returning the bridged NFT
@@ -51,7 +51,7 @@ contract EVMBridgeRouter {
             caller: auth(EVM.Call) &EVM.CadenceOwnedAccount,
             type: Type,
             id: UInt256,
-            fee: @{FungibleToken.Vault}
+            fee: @FlowToken.Vault
         ): @{NonFungibleToken.NFT} {
             return <-self.borrowBridgeAccessor().withdrawNFT(caller: caller, type: type, id: id, fee: <-fee)
         }

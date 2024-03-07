@@ -250,8 +250,8 @@ contract EVM {
 
         /// Bridges the given NFT to the EVM environment
         access(all)
-        fun depositNFT(nft: @{NonFungibleToken.NFT}, to: EVM.EVMAddress, fee: @FlowToken.Vault) {
-            EVM.borrowBridgeAccessor().depositNFT(nft: <-nft, to: to, fee: <-fee)
+        fun depositNFT(nft: @{NonFungibleToken.NFT}, fee: @FlowToken.Vault): @FlowToken.Vault {
+            return <-EVM.borrowBridgeAccessor().depositNFT(nft: <-nft, to: self.address(), fee: <-fee)
         }
 
         /// Bridges the given NFT to the EVM environment
@@ -454,7 +454,7 @@ contract EVM {
 
         /// Endpoint enabling NFT to EVM
         access(Bridge)
-        fun depositNFT(nft: @{NonFungibleToken.NFT}, to: EVM.EVMAddress, fee: @{FungibleToken.Vault})
+        fun depositNFT(nft: @{NonFungibleToken.NFT}, to: EVM.EVMAddress, fee: @FlowToken.Vault): @FlowToken.Vault
 
         /// Endpoint enabling NFT from EVM
         access(Bridge)
@@ -462,7 +462,7 @@ contract EVM {
             caller: auth(Call) &CadenceOwnedAccount,
             type: Type,
             id: UInt256,
-            fee: @{FungibleToken.Vault}
+            fee: @FlowToken.Vault
         ): @{NonFungibleToken.NFT}
     }
 }
