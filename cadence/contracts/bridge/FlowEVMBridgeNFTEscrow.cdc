@@ -57,11 +57,41 @@ access(all) contract FlowEVMBridgeNFTEscrow {
         return self.borrowLockedNFT(type: type, id: id) != nil
     }
 
+    /// Retrieves the locked NFT's Cadence ID as defined in the NFT standard's NFT.id value if it is locked
+    ///
+    /// @param type: Type of the locked NFT
+    /// @param evmID: EVM ID of the locked NFT
+    ///
+    /// @returns Cadence ID of the locked NFT if it exists
+    ///
     access(all)
     view fun getLockedCadenceID(type: Type, evmID: UInt256): UInt64? {
         if let lockerPath = FlowEVMBridgeUtils.deriveEscrowStoragePath(fromType: type) {
             if let locker = self.account.storage.borrow<&Locker>(from: lockerPath) {
                 return locker.getCadenceID(from: evmID)
+            }
+        }
+        return nil
+    }
+
+    /// Returns the EVM NFT ID associated with the Cadence NFT ID. The goal is to retrieve the ERC721 ID value 
+    /// corresponding to the Cadence NFT.
+    /// As far as the bridge is concerned, a bridge-deployed ERC721 assigns IDs based on NFT.id value at the time of
+    /// bridging unless it implements the CrossVMNFT.EVMNFT in such case .evmID is used.
+    /// Following this pattern, if locked, the NFT is checked for EVMNFT conformance returning .evmID,
+    /// otherwise the NFT's ID is returned as a UInt256 as this is how the bridge would handle minting in the
+    /// corresponding ERC721 contract.
+    ///
+    /// @param type: Type of the locked NFT
+    /// @param cadenceID: Cadence ID of the locked NFT
+    ///
+    /// @returns EVM ID of the locked NFT if it exists
+    ///
+    access(all)
+    view fun getLockedEVMID(type: Type, cadenceID: UInt64): UInt256? {
+        if let lockerPath = FlowEVMBridgeUtils.deriveEscrowStoragePath(fromType: type) {
+            if let locker = self.account.storage.borrow<&Locker>(from: lockerPath) {
+                return locker.getEVMID(from: cadenceID)
             }
         }
         return nil
@@ -162,6 +192,24 @@ access(all) contract FlowEVMBridgeNFTEscrow {
                 return UInt64(evmID)
             }
             return self.evmIDToFlowID[evmID]
+        }
+
+        /// Returns the EVM NFT ID associated with the Cadence NFT ID. The goal is to retrieve the ERC721 ID value.
+        /// As far as the bridge is concerned, an ERC721 defined by the bridge is the NFT's ID at the time of bridging
+        /// or the value of the NFT.evmID if it implements the CrossVMNFT.EVMNFT interface when bridged.
+        /// Following this pattern, if locked, the NFT is checked for EVMNFT conformance returning .evmID if so,
+        /// otherwise the NFT's ID is returned as a UInt256 since that's how the bridge would handle minting in the
+        /// corresponding ERC721 contract.
+        ///
+        access(all)
+        view fun getEVMID(from cadenceID: UInt64): UInt256? {
+            if let nft = self.borrowNFT(cadenceID) {
+                if let evmNFT = CrossVMNFT.getEVMID(from: nft) {
+                    return evmNFT
+                }
+                return UInt256(nft.id)
+            }
+            return nil
         }
 
         /// Returns a reference to the NFT if it is locked
