@@ -60,6 +60,29 @@ access(all) contract FlowEVMBridgeUtils {
         ])
     }
 
+    /// Returns whether the given address has opted out of enabling bridging for its defined assets
+    ///
+    /// @param address: The EVM contract address to check
+    ///
+    /// @return false if the address has opted out of enabling bridging, true otherwise
+    ///
+    access(all) fun evmAddressAllowsBridging(_ address: EVM.EVMAddress): Bool {
+        let callResult = self.call(
+            signature: "addressAllowsBridging(address)",
+            targetEVMAddress: FlowEVMBridgeUtils.fa,
+            args: [address],
+            gasLimit: 60000,
+            value: 0.0
+        )
+        // IERC165 is not implemented, implies bridging is allowed
+        if callResult.status != EVM.Status.successful {
+            return true
+        }
+        // Return whether FlowBridgeOptOut is implemented
+        let decodedResult: [AnyStruct] = EVM.decodeABI(types: [Type<Bool>()], data: callResult.data)
+        return (decodedResult.length == 1 && decodedResult[0] as! Bool) == true ? true : false
+    }
+
     /// Identifies if an asset is Cadence- or EVM-native, defined by whether a bridge contract defines it or not
     ///
     /// @param: type The Type of the asset to check
