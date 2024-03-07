@@ -12,6 +12,7 @@ import "FlowEVMBridgeConfig"
 import "FlowEVMBridgeUtils"
 import "FlowEVMBridgeNFTEscrow"
 import "FlowEVMBridgeTemplates"
+import "FlowEVMBridgeCOAWrapper"
 
 /// The FlowEVMBridge contract is the main entrypoint for bridging NFT & FT assets between Flow & FlowEVM.
 ///
@@ -73,7 +74,7 @@ access(all) contract FlowEVMBridge {
         // Ensure the project has not opted out of bridge support
         assert(
             !type.getType().isSubtype(of: Type<@{FlowEVMBridgeOptOut.Asset}>()),
-            message: "This type is not supported as defined by the project development team"
+            message: "This type is not supported as defined by the project's development team"
         )
         FlowEVMBridgeUtils.depositTollFee(<-tollFee)
         let erc721Address = self.deployEVMContract(forAssetType: type)
@@ -96,9 +97,11 @@ access(all) contract FlowEVMBridge {
         pre {
             tollFee.balance == FlowEVMBridgeConfig.onboardFee: "Insufficient fee paid"
         }
-        // TODO: Add bridge association check once tryCall is implemented, until then we can't check if the EVM contract
-        //      is associated with a self-rolled bridge without reverting on failure
-        FlowEVMBridgeUtils.depositTollFee(<-tollFee)
+        // Ensure the project has not opted out of bridge support
+        assert(
+            FlowEVMBridgeUtils.evmAddressAllowsBridging(address),
+            message: "This contract is not supported as defined by the project's development team"
+        )
         assert(
             self.evmAddressRequiresOnboarding(address) == true,
             message: "Onboarding is not needed for this contract"
@@ -227,7 +230,7 @@ access(all) contract FlowEVMBridge {
         let associatedAddress = FlowEVMBridgeConfig.getEVMAddressAssociated(with: type)
             ?? panic("No EVMAddress found for token type")
         
-        // Ensure caller is current NFT owner or approved
+        // Ensure caller is current NFT owner or approved to act on requested NFT
         let isAuthorized: Bool = FlowEVMBridgeUtils.isOwnerOrApproved(
             ofNFT: id,
             owner: caller.address(),
