@@ -133,12 +133,6 @@ access(all) contract FlowEVMBridge {
         if let metadata = token.resolveView(Type<CrossVMNFT.EVMBridgedMetadata>()) as! CrossVMNFT.EVMBridgedMetadata? {
             uri = metadata.uri.uri()
         }
-        // If we don't yet have a URI, attempt to serialize the NFT
-        // TODO: We may want to do either/both - enable syncing metadata while in escrow and/or update the URI if
-        //      already exists in ERC721 & the EVM contract is bridge-owned
-        if uri.length == 0 {
-            uri = FlowEVMBridgeUtils.serializeNFTMetadata(&token as &{NonFungibleToken.NFT})
-        }
 
         // Lock the NFT & calculate the storage used by the NFT
         let storageUsed = FlowEVMBridgeNFTEscrow.lockNFT(<-token)
@@ -418,7 +412,6 @@ access(all) contract FlowEVMBridge {
             symbol = bridgedMetadata.symbol
             contractURI = bridgedMetadata.uri.uri()
         }
-        // let contractURI = FlowEVMBridgeUtils.serializeContractMetadata(fromType: viewResolver, forType: forNFTType)
 
         let callResult: EVM.Result = FlowEVMBridgeUtils.call(
             signature: "deployERC721(string,string,string,string)",
