@@ -9,6 +9,7 @@ flow-c1 transactions send ./cadence/transactions/evm/create_account.cdc 100.0
 flow-c1 transactions send ./cadence/transactions/evm/deploy.cdc --args-json "$(cat deploy-factory-args.json)"
 
 # Deploy initial bridge contracts
+flow-c1 accounts add-contract ./cadence/contracts/utils/Serialize.cdc
 flow-c1 accounts add-contract ./cadence/contracts/bridge/FlowEVMBridgeOptOut.cdc
 flow-c1 accounts add-contract ./cadence/contracts/bridge/ICrossVM.cdc
 flow-c1 accounts add-contract ./cadence/contracts/bridge/CrossVMNFT.cdc
