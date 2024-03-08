@@ -413,49 +413,62 @@ access(all) contract FlowEVMBridgeUtils {
     }
 
     /* --- Serialization Helpers --- */
-    // TODO: Implement
-    // REF: https://github.com/ethereum/ercs/blob/master/ERCS/erc-721.md
-    // REF: https://github.com/ethereum/ercs/blob/master/ERCS/erc-1155.md#erc-1155-metadata-uri-json-schema
-    // REF: https://docs.opensea.io/docs/metadata-standards
+
+    /// Serializes the metadata (as a JSON compatible String) for a given NFT according to formats expected by EVM
+    /// platforms like OpenSea. If you are a project owner seeking to expose custom traits on bridged NFTs and your
+    /// Trait.value is not natively serializable, you can implement a custom serialization method with the
+    /// `{Serialize.SerializableStruct}` interface's `serialize` method.
+    ///
+    /// REF: https://github.com/ethereum/ercs/blob/master/ERCS/erc-721.md
+    /// REF: https://github.com/ethereum/ercs/blob/master/ERCS/erc-1155.md#erc-1155-metadata-uri-json-schema
+    /// REF: https://docs.opensea.io/docs/metadata-standards
+    ///
     access(all)
     fun serializeNFTMetadata(_ nft: &{NonFungibleToken.NFT}): String {
-        let serializedDisplay = self.serializeNFTDisplay(nft)
-        let serializedAttributes = self.serializeNFTTraitsAsAttributes(nft)
-        if serializedDisplay == nil && serializedAttributes == nil {
+        let display = self.serializeNFTDisplay(nft)
+        let attributes = self.serializeNFTTraitsAsAttributes(nft)
+        if display == nil && attributes == nil {
             return ""
         }
         var serializedMetadata= "data:application/json;ascii,{"
-        if serializedDisplay != nil {
-            serializedMetadata = serializedMetadata.concat(serializedDisplay!)
+        if display != nil {
+            serializedMetadata = serializedMetadata.concat(display!)
         }
-        if serializedDisplay != nil && serializedAttributes != nil {
+        if display != nil && attributes != nil {
             serializedMetadata = serializedMetadata.concat(", ")
         }
-        if serializedAttributes != nil {
-            serializedMetadata = serializedMetadata.concat(serializedAttributes!)
+        if attributes != nil {
+            serializedMetadata = serializedMetadata.concat(attributes!)
         }
         return serializedMetadata.concat("}")
     }
 
+    /// Serializes the display & collection display views of a given NFT as a JSON compatible string
+    ///
     access(all)
     fun serializeNFTDisplay(_ nft: &{NonFungibleToken.NFT}): String? {
+        // Resolve Display & NFTCollection Display view, returning early if neither are found
         let nftDisplay = nft.resolveView(Type<MetadataViews.Display>()) as? MetadataViews.Display
         let collectionDisplay = nft.resolveView(Type<MetadataViews.NFTCollectionDisplay>()) as? MetadataViews.NFTCollectionDisplay
         if nftDisplay == nil && collectionDisplay == nil {
             return nil
         }
+        // Initialize the JSON fields
         let name = "\"name\": "
         let description = "\"description\": "
         let image = "\"image\": "
         var serializedResult = ""
+        // Append results from the Display view to the serialized JSON compatible string
         if nftDisplay != nil {
             serializedResult = serializedResult.concat(name).concat(nftDisplay!.name).concat(", ")
                 .concat(description).concat(nftDisplay!.description).concat(", ")
                 .concat(image).concat(nftDisplay!.thumbnail.uri())
         }
+        // Append a comma if both Display & NFTCollection Display views are present
         if nftDisplay != nil && collectionDisplay != nil {
             serializedResult = serializedResult.concat(", ")
         }
+        // Serialize the external URL from the NFTCollection Display view & return
         let externalURL = "\"external_url\": "
         if collectionDisplay != nil {
             serializedResult = serializedResult.concat(externalURL).concat(collectionDisplay!.externalURL.url)
@@ -463,6 +476,11 @@ access(all) contract FlowEVMBridgeUtils {
         return serializedResult
     }
 
+    /// Serializes a given NFT's Traits view as a JSON compatible string. If a given Trait is not serializable, it is
+    /// skipped and not included in the serialized result. If you are a project owner seeking to expose custom traits
+    /// on bridged NFTs and your Trait.value is not natively serializable, you can implement a custom serialization
+    /// method with the `{Serialize.SerializableStruct}` interface's `serialize` method.
+    ///
     access(all)
     fun serializeNFTTraitsAsAttributes(_ nft: &{NonFungibleToken.NFT}): String? {
         // Get the Traits view from the NFT, returning early if no traits are found
@@ -472,21 +490,21 @@ access(all) contract FlowEVMBridgeUtils {
         }
 
         // Serialize each trait as an attribute, building the serialized JSON compatible string
-        var serialized = "\"attributes\": ["
+        var serializedResult = "\"attributes\": ["
         for i, trait in traits!.traits {
             let value = Serialize.tryToString(trait.value)
             if value == nil {
                 continue
             }
-            serialized = serialized.concat("{")
+            serializedResult = serializedResult.concat("{")
                 .concat("\"trait_type\": \"").concat(trait.name)
                 .concat("\", \"value\": \"").concat(value!)
                 .concat("\"}")
             if i < traits!.traits.length - 1 {
-                serialized = serialized.concat(",")
+                serializedResult = serializedResult.concat(",")
             }
         }
-        return serialized.concat("]")
+        return serializedResult.concat("]")
     }
 
 

@@ -129,7 +129,8 @@ contract Serialize {
     }
 
     /// Method that returns a serialized representation of the given String-indexed mapping or nil if the value is not
-    /// serializable
+    /// serializable. The interface here is largely the same as as the `MetadataViews.dictToTraits` method, though here
+    /// a JSON-compatible String is returned instead of a `Traits` array.
     ///
     access(all)
     fun dictToString(dict: {String: AnyStruct}, excludedNames: [String]?): String? {
