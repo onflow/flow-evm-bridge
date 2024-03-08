@@ -16,7 +16,7 @@ import CrossVMNFT from 0xf8d6e0586b0a20c7
 
 /// This contract is a template used by FlowEVMBridge to define EVM-native NFTs bridged from Flow EVM to Flow.
 /// Upon deployment of this contract, the contract name is derived as a function of the asset type (here an ERC721 aka
-/// an NFT) and the contract's EVM address. The derived contract name is then joined with this contract's code, 
+/// an NFT) and the contract's EVM address. The derived contract name is then joined with this contract's code,
 /// prepared as chunks in FlowEVMBridgeTemplates before being deployed to the Flow EVM Bridge account.
 ///
 /// On bridging, the ERC721 is transferred to the bridge's CadenceOwnedAccount EVM address and a new NFT is minted from
@@ -38,19 +38,25 @@ access(all) contract {{CONTRACT_NAME}} : ICrossVM, IEVMBridgeNFTMinter, NonFungi
     access(all) let name: String
     /// Symbol of the NFT collection defined in the corresponding ERC721 contract
     access(all) let symbol: String
+    /// URI of the contract, if available as a var in case the bridge enables cross-VM Metadata syncing in the future
+    access(all) var contractURI: String?
     /// Retain a Collection to reference when resolving Collection Metadata
     access(self) let collection: @Collection
 
-    /// We choose the name NFT here, but this type can have any name now
-    /// because the interface does not require it to have a specific name any more
+    /// The NFT resource representing the bridged ERC721 token
+    ///
     access(all) resource NFT: CrossVMNFT.EVMNFT {
-
+        /// The Cadence ID of the NFT
         access(all) let id: UInt64
+        /// The ERC721 ID of the NFT
         access(all) let evmID: UInt256
+        /// The name of the NFT as defined in the ERC721 contract
         access(all) let name: String
+        /// The symbol of the NFT as defined in the ERC721 contract
         access(all) let symbol: String
-
+        /// The URI of the NFT as defined in the ERC721 contract
         access(all) let uri: String
+        /// Additional onchain metadata
         access(all) let metadata: {String: AnyStruct}
 
         init(
@@ -71,7 +77,7 @@ access(all) contract {{CONTRACT_NAME}} : ICrossVM, IEVMBridgeNFTMinter, NonFungi
         /// Returns the metadata view types supported by this NFT
         access(all) view fun getViews(): [Type] {
             return [
-                Type<CrossVMNFT.BridgedMetadata>(),
+                Type<CrossVMNFT.EVMBridgedMetadata>(),
                 Type<MetadataViews.Serial>(),
                 Type<MetadataViews.NFTCollectionData>(),
                 Type<MetadataViews.NFTCollectionDisplay>()
@@ -83,21 +89,26 @@ access(all) contract {{CONTRACT_NAME}} : ICrossVM, IEVMBridgeNFTMinter, NonFungi
             switch view {
                 // We don't know what kind of file the URI represents (IPFS v HTTP), so we can't resolve Display view
                 // with the URI as thumbnail - we may a new standard view for EVM NFTs - this is interim
-                case Type<CrossVMNFT.BridgedMetadata>():
-                    return CrossVMNFT.BridgedMetadata(
+                case Type<CrossVMNFT.EVMBridgedMetadata>():
+                    return CrossVMNFT.EVMBridgedMetadata(
                         name: self.name,
                         symbol: self.symbol,
-                        uri: CrossVMNFT.URI(self.uri),
-                        evmContractAddress: self.getEVMContractAddress()
+                        uri: CrossVMNFT.URI(self.tokenURI())
                     )
                 case Type<MetadataViews.Serial>():
                     return MetadataViews.Serial(
                         self.id
                     )
                 case Type<MetadataViews.NFTCollectionData>():
-                    return {{CONTRACT_NAME}}.resolveContractView(resourceType: self.getType(), viewType: Type<MetadataViews.NFTCollectionData>())
+                    return {{CONTRACT_NAME}}.resolveContractView(
+                        resourceType: self.getType(),
+                        viewType: Type<MetadataViews.NFTCollectionData>()
+                    )
                 case Type<MetadataViews.NFTCollectionDisplay>():
-                    return {{CONTRACT_NAME}}.resolveContractView(resourceType: self.getType(), viewType: Type<MetadataViews.NFTCollectionDisplay>())
+                    return {{CONTRACT_NAME}}.resolveContractView(
+                        resourceType: self.getType(),
+                        viewType: Type<MetadataViews.NFTCollectionDisplay>()
+                    )
             }
             return nil
         }
@@ -120,6 +131,7 @@ access(all) contract {{CONTRACT_NAME}} : ICrossVM, IEVMBridgeNFTMinter, NonFungi
         }
     }
 
+    /// This resource holds associated NFTs, and serves queries about stored NFTs
     access(all) resource Collection: NonFungibleToken.Collection, CrossVMNFT.EVMNFTCollection {
         /// dictionary of NFT conforming tokens indexed on their ID
         access(contract) var ownedNFTs: @{UInt64: {{CONTRACT_NAME}}.NFT}
@@ -188,9 +200,15 @@ access(all) contract {{CONTRACT_NAME}} : ICrossVM, IEVMBridgeNFTMinter, NonFungi
             return self.evmIDToFlowID.keys
         }
 
-        /// Returns the Cadence NFT.id for the given EVM NFT ID if 
+        /// Returns the Cadence NFT.id for the given EVM NFT ID if
         access(all) view fun getCadenceID(from evmID: UInt256): UInt64? {
             return self.evmIDToFlowID[evmID] ?? UInt64(evmID)
+        }
+
+        /// Returns the contractURI for the NFT collection as defined in the source ERC721 contract. If none was
+        /// defined at the time of bridging, an empty string is returned.
+        access(all) view fun contractURI(): String {
+            return {{CONTRACT_NAME}}.contractURI ?? ""
         }
 
         /// Gets the amount of NFTs stored in the collection
@@ -241,7 +259,8 @@ access(all) contract {{CONTRACT_NAME}} : ICrossVM, IEVMBridgeNFTMinter, NonFungi
     access(all) view fun getContractViews(resourceType: Type?): [Type] {
         return [
             Type<MetadataViews.NFTCollectionData>(),
-            Type<MetadataViews.NFTCollectionDisplay>()
+            Type<MetadataViews.NFTCollectionDisplay>(),
+            Type<CrossVMNFT.EVMBridgedMetadata>()
         ]
     }
 
@@ -250,7 +269,6 @@ access(all) contract {{CONTRACT_NAME}} : ICrossVM, IEVMBridgeNFTMinter, NonFungi
     /// @param view: The Type of the desired view.
     /// @return A structure representing the requested view.
     ///
-    // TODO: Enable assignment from contractURI() value if accessible in ERC721 contract
     access(all) fun resolveContractView(resourceType: Type?, viewType: Type): AnyStruct? {
         switch viewType {
             case Type<MetadataViews.NFTCollectionData>():
@@ -280,6 +298,12 @@ access(all) contract {{CONTRACT_NAME}} : ICrossVM, IEVMBridgeNFTMinter, NonFungi
                     bannerImage: media,
                     socials: {}
                 )
+            case Type<CrossVMNFT.EVMBridgedMetadata>():
+                return CrossVMNFT.EVMBridgedMetadata(
+                    name: self.name,
+                    symbol: self.symbol,
+                    uri: self.contractURI != nil ? CrossVMNFT.URI(self.contractURI!) : CrossVMNFT.URI("")
+                )
         }
         return nil
     }
@@ -288,7 +312,7 @@ access(all) contract {{CONTRACT_NAME}} : ICrossVM, IEVMBridgeNFTMinter, NonFungi
         Internal Methods
     ***********************/
 
-    /// Allows the bridge to 
+    /// Allows the bridge to
     access(account)
     fun mintNFT(id: UInt256, tokenURI: String): @NFT {
         return <-create NFT(
@@ -303,7 +327,7 @@ access(all) contract {{CONTRACT_NAME}} : ICrossVM, IEVMBridgeNFTMinter, NonFungi
         )
     }
 
-    init(name: String, symbol: String, evmContractAddress: EVM.EVMAddress) {
+    init(name: String, symbol: String, evmContractAddress: EVM.EVMAddress, contractURI: String?) {
         self.evmNFTContractAddress = evmContractAddress
         self.flowNFTContractAddress = self.account.address
         self.name = name

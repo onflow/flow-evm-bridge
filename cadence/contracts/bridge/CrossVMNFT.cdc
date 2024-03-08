@@ -11,12 +11,10 @@ access(all) contract CrossVMNFT {
     /// A struct to represent a general case URI, used to represent the URI of the NFT where the type of URI is not
     /// able to be determined (i.e. HTTP, IPFS, etc.)
     ///
-    // TODO: Consider TokenURI & ContractURI or share them
-    // ?? - What if URI is updated in EVM? - this should inform us of where the URI is set & stored - maybe consider a "sync" method
     access(all) struct URI : MetadataViews.File {
+        /// The URI value
         access(self) let value: String
 
-        // TODO: rename to tokenURI
         access(all) view fun uri(): String {
             return self.value
         }
@@ -28,17 +26,20 @@ access(all) contract CrossVMNFT {
 
     /// Proof of concept metadata to represent the ERC721 values of the NFT
     ///
-    access(all) struct BridgedMetadata {
+    access(all) struct EVMBridgedMetadata {
+        /// The name of the NFT
         access(all) let name: String
+        /// The symbol of the NFT
         access(all) let symbol: String
-        access(all) let uri: URI
-        access(all) let evmContractAddress: EVM.EVMAddress
+        /// The URI of the NFT - this can either be contract-level or token-level URI depending on where the metadata
+        /// is requested. See the ViewResolver contract interface to discover how contract & resource-level metadata
+        /// requests are handled.
+        access(all) let uri: {MetadataViews.File}
 
-        init(name: String, symbol: String, uri: URI, evmContractAddress: EVM.EVMAddress) {
+        init(name: String, symbol: String, uri: {MetadataViews.File}) {
             self.name = name
             self.symbol = symbol
             self.uri = uri
-            self.evmContractAddress = evmContractAddress
         }
     }
 
@@ -64,7 +65,7 @@ access(all) contract CrossVMNFT {
         access(all) view fun getEVMIDs(): [UInt256]
         access(all) view fun getCadenceID(from evmID: UInt256): UInt64?
         access(all) view fun getEVMID(from cadenceID: UInt64): UInt256?
-        // TODO: contractURI() method?
+        access(all) view fun contractURI(): String
     }
 
     /// Retrieves the EVM ID of an NFT if it implements the EVMNFT interface, returning nil if not

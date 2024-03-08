@@ -217,6 +217,21 @@ access(all) contract FlowEVMBridgeUtils {
         return decodedResult[0] as! String
     }
 
+    access(all) fun getContractURI(evmContractAddress: EVM.EVMAddress): String? {
+        let callResult: EVM.Result = self.call(
+            signature: "contractURI()",
+            targetEVMAddress: evmContractAddress,
+            args: [],
+            gasLimit: 60000,
+            value: 0.0
+        )
+        if callResult.status != EVM.Status.successful {
+            return nil
+        }
+        let decodedResult = EVM.decodeABI(types: [Type<String>()], data: callResult.data) as! [AnyStruct]
+        return decodedResult.length == 1 ? decodedResult[0] as! String : nil
+    }
+
     /// Retrieves the number of decimals for a given ERC20 contract address
     access(all) fun getTokenDecimals(evmContractAddress: EVM.EVMAddress): UInt8 {
         let callResult: EVM.Result = self.call(

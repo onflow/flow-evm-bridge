@@ -130,7 +130,7 @@ access(all) contract FlowEVMBridge {
         let evmID = CrossVMNFT.getEVMID(from: &token as &{NonFungibleToken.NFT}) ?? UInt256(token.id)
         // Grab the URI from the NFT if available
         var uri: String = ""
-        if let metadata = token.resolveView(Type<CrossVMNFT.BridgedMetadata>()) as! CrossVMNFT.BridgedMetadata? {
+        if let metadata = token.resolveView(Type<CrossVMNFT.EVMBridgedMetadata>()) as! CrossVMNFT.EVMBridgedMetadata? {
             uri = metadata.uri.uri()
         }
         // If we don't yet have a URI, attempt to serialize the NFT
@@ -402,18 +402,28 @@ access(all) contract FlowEVMBridge {
     /// @returns The EVMAddress of the deployed contract
     ///
     access(self) fun deployERC721(_ forNFTType: Type): EVM.EVMAddress {
-        let name = FlowEVMBridgeUtils.getContractName(fromType: forNFTType)
+        var name = FlowEVMBridgeUtils.getContractName(fromType: forNFTType)
             ?? panic("Could not contract name from type: ".concat(forNFTType.identifier))
+        var symbol = "BRDG"
         let identifier = forNFTType.identifier
         let cadenceAddress = FlowEVMBridgeUtils.getContractAddress(fromType: forNFTType)
             ?? panic("Could not derive contract address for token type: ".concat(identifier))
         let viewResolver = getAccount(cadenceAddress).contracts.borrow<&{ViewResolver}>(name: name)!
-        let contractURI = FlowEVMBridgeUtils.serializeContractMetadata(fromType: viewResolver, forType: forNFTType)
+        var contractURI = ""
+        if let bridgedMetadata = viewResolver.resolveContractView(
+                resourceType: forNFTType,
+                viewType: Type<CrossVMNFT.EVMBridgedMetadata>()
+            ) as! CrossVMNFT.EVMBridgedMetadata? {
+            name = bridgedMetadata.name
+            symbol = bridgedMetadata.symbol
+            contractURI = bridgedMetadata.uri.uri()
+        }
+        // let contractURI = FlowEVMBridgeUtils.serializeContractMetadata(fromType: viewResolver, forType: forNFTType)
 
         let callResult: EVM.Result = FlowEVMBridgeUtils.call(
             signature: "deployERC721(string,string,string,string)",
             targetEVMAddress: FlowEVMBridgeUtils.bridgeFactoryEVMAddress,
-            args: [name, "BRDG", cadenceAddress.toString(), identifier, contractURI], // TODO: Decide on and update symbol
+            args: [name, symbol, cadenceAddress.toString(), identifier, contractURI], // TODO: Decide on and update symbol
             gasLimit: 15000000,
             value: 0.0
         )
@@ -440,6 +450,7 @@ access(all) contract FlowEVMBridge {
         // Derive contract name
         let isERC721: Bool = FlowEVMBridgeUtils.isEVMNFT(evmContractAddress: evmContractAddress)
         let cadenceContractName: String = FlowEVMBridgeUtils.deriveBridgedNFTContractName(from: evmContractAddress)
+        let contractURI = FlowEVMBridgeUtils.getContractURI(evmContractAddress: evmContractAddress)
         // Get code
         let cadenceCode: [UInt8] = FlowEVMBridgeTemplates.getBridgedAssetContractCode(
                 evmContractAddress: evmContractAddress,
