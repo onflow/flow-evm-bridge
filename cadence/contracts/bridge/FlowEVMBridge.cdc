@@ -127,12 +127,16 @@ access(all) contract FlowEVMBridge {
         let tokenType = token.getType()
         let tokenID = token.id
         let evmID = CrossVMNFT.getEVMID(from: &token as &{NonFungibleToken.NFT}) ?? UInt256(token.id)
-        // TODO: Enhance metadata handling on briding - URI should provide serialized JSON metadata when requested
-        //      Consider serialization util to handle this
-        // Grab the URI from the NFT
+        // Grab the URI from the NFT if available
         var uri: String = ""
-        if let display = token.resolveView(Type<MetadataViews.Display>()) as! MetadataViews.Display? {
-            uri = display.thumbnail.uri()
+        if let metadata = token.resolveView(Type<CrossVMNFT.BridgedMetadata>()) as! CrossVMNFT.BridgedMetadata? {
+            uri = metadata.uri.uri()
+        }
+        // If we don't yet have a URI, attempt to serialize the NFT
+        // TODO: We may want to do either/both - enable syncing metadata while in escrow and/or update the URI if
+        //      already exists in ERC721 & bridge-owned
+        if uri.length == 0 {
+            uri = FlowEVMBridgeUtils.serializeNFTMetadata(&token as &{NonFungibleToken.NFT})
         }
 
         // Lock the NFT & calculate the storage used by the NFT
@@ -158,9 +162,9 @@ access(all) contract FlowEVMBridge {
                         gasLimit: 12000000,
                         value: 0.0
                     ).data,
-                ) as! [AnyStruct]
+                ) as! [Bool]
             assert(existsResponse.length == 1, message: "Invalid response length")
-            let exists = existsResponse[0] as! Bool
+            let exists = existsResponse[0]
             if exists {
                 // if so transfer
                 let callResult: EVM.Result = FlowEVMBridgeUtils.call(
@@ -230,7 +234,7 @@ access(all) contract FlowEVMBridge {
         let associatedAddress = FlowEVMBridgeConfig.getEVMAddressAssociated(with: type)
             ?? panic("No EVMAddress found for token type")
         
-        // Ensure caller is current NFT owner or approved to act on requested NFT
+        // Ensure the caller is either the current owner or approved for the NFT
         let isAuthorized: Bool = FlowEVMBridgeUtils.isOwnerOrApproved(
             ofNFT: id,
             owner: caller.address(),
@@ -238,24 +242,24 @@ access(all) contract FlowEVMBridge {
         )
         assert(isAuthorized, message: "Caller is not the owner of or approved for requested NFT")
 
-        // Execute the transfer from the calling owner to the bridge COA
+        // Execute the transfer from the calling owner to the bridge's COA, escrowing the NFT in EVM
         caller.call(
             to: associatedAddress,
-            data: FlowEVMBridgeUtils.encodeABIWithSignature(
+            data: EVM.encodeABIWithSignature(
                 "safeTransferFrom(address,address,uint256)",
                 [caller.address(), self.getBridgeCOAEVMAddress(), id]
             ), gasLimit: 15000000,
             value: EVM.Balance(attoflow: 0)
         )
 
-        // Ensure caller is current NFT owner or approved
+        // Ensure the bridge is now the owner of the NFT after the preceding transfer
         let isEscrowed: Bool = FlowEVMBridgeUtils.isOwner(
             ofNFT: id,
             owner: self.getBridgeCOAEVMAddress(),
             evmContractAddress: associatedAddress
         )
         assert(isEscrowed, message: "Transfer to bridge COA failed - cannot bridge NFT without bridge escrow")
-        // NFT is locked - unlock
+        // If the NFT is currently lock, unlock and return
         if let cadenceID = FlowEVMBridgeNFTEscrow.getLockedCadenceID(type: type, evmID: id) {
             emit BridgedNFTFromEVM(
                 type: type,
@@ -266,7 +270,7 @@ access(all) contract FlowEVMBridge {
             )
             return <-FlowEVMBridgeNFTEscrow.unlockNFT(type: type, id: cadenceID)
         }
-        // NFT is not locked but has been onboarded - mint
+        // Otherwise, we expect the NFT to be minted in Cadence
         let contractAddress = FlowEVMBridgeUtils.getContractAddress(fromType: type)!
         assert(self.account.address == contractAddress, message: "Unexpected error bridging NFT from EVM")
 

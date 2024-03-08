@@ -1,8 +1,12 @@
 import "NonFungibleToken"
 import "FungibleToken"
+import "MetadataViews"
 import "FlowToken"
 
 import "EVM"
+
+import "Serialize"
+
 import "FlowEVMBridgeConfig"
 
 /// This contract serves as a source of utility methods leveraged by FlowEVMBridge contracts
@@ -138,7 +142,7 @@ access(all) contract FlowEVMBridgeUtils {
         assert(callResult.status == EVM.Status.successful, message: "Call to bridge factory failed")
         let decodedResult: [AnyStruct] = EVM.decodeABI(types: [Type<Bool>()], data: callResult.data)
         assert(decodedResult.length == 1, message: "Invalid response length")
-        
+
         return decodedResult[0] as! Bool
     }
     /// Identifies if an asset is ERC20
@@ -204,11 +208,11 @@ access(all) contract FlowEVMBridgeUtils {
             gasLimit: 60000,
             value: 0.0
         )
-        
+
         assert(callResult.status == EVM.Status.successful, message: "Call for EVM asset symbol failed")
         let decodedResult = EVM.decodeABI(types: [Type<String>()], data: callResult.data) as! [AnyStruct]
         assert(decodedResult.length == 1, message: "Invalid response length")
-        
+
         return decodedResult[0] as! String
     }
 
@@ -221,7 +225,7 @@ access(all) contract FlowEVMBridgeUtils {
                 gasLimit: 60000,
                 value: 0.0
             )
-        
+
         assert(callResult.status == EVM.Status.successful, message: "Call for EVM asset decimals failed")
         let decodedResult = EVM.decodeABI(types: [Type<UInt8>()], data: callResult.data) as! [AnyStruct]
         assert(decodedResult.length == 1, message: "Invalid response length")
@@ -260,7 +264,7 @@ access(all) contract FlowEVMBridgeUtils {
             gasLimit: 12000000,
             value: 0.0
         )
-        
+
         assert(callResult.status == EVM.Status.successful, message: "Call to ERC721.getApproved(uint256) failed")
         let decodedCallResult: [AnyStruct] = EVM.decodeABI(types: [Type<EVM.EVMAddress>()], data: callResult.data)
         if decodedCallResult.length == 1 {
@@ -279,7 +283,7 @@ access(all) contract FlowEVMBridgeUtils {
             gasLimit: 60000,
             value: 0.0
         )
-        
+
         assert(callResult.status == EVM.Status.successful, message: "Call to ERC20.balanceOf(address) failed")
         let decodedResult: [UInt256] = EVM.decodeABI(types: [Type<UInt256>()], data: callResult.data) as! [UInt256]
         assert(decodedResult.length == 1, message: "Invalid response length")
@@ -407,6 +411,84 @@ access(all) contract FlowEVMBridgeUtils {
         let identifier = "A".concat(".").concat(subtract0x).concat(".").concat(contractName).concat(".").concat(resourceName)
         return CompositeType(identifier)
     }
+
+    /* --- Serialization Helpers --- */
+    // TODO: Implement
+    // REF: https://github.com/ethereum/ercs/blob/master/ERCS/erc-721.md
+    // REF: https://github.com/ethereum/ercs/blob/master/ERCS/erc-1155.md#erc-1155-metadata-uri-json-schema
+    // REF: https://docs.opensea.io/docs/metadata-standards
+    access(all)
+    fun serializeNFTMetadata(_ nft: &{NonFungibleToken.NFT}): String {
+        let serializedDisplay = self.serializeNFTDisplay(nft)
+        let serializedAttributes = self.serializeNFTTraitsAsAttributes(nft)
+        if serializedDisplay == nil && serializedAttributes == nil {
+            return ""
+        }
+        var serializedMetadata= "data:application/json;ascii,{"
+        if serializedDisplay != nil {
+            serializedMetadata = serializedMetadata.concat(serializedDisplay!)
+        }
+        if serializedDisplay != nil && serializedAttributes != nil {
+            serializedMetadata = serializedMetadata.concat(", ")
+        }
+        if serializedAttributes != nil {
+            serializedMetadata = serializedMetadata.concat(serializedAttributes!)
+        }
+        return serializedMetadata.concat("}")
+    }
+
+    access(all)
+    fun serializeNFTDisplay(_ nft: &{NonFungibleToken.NFT}): String? {
+        let nftDisplay = nft.resolveView(Type<MetadataViews.Display>()) as? MetadataViews.Display
+        let collectionDisplay = nft.resolveView(Type<MetadataViews.NFTCollectionDisplay>()) as? MetadataViews.NFTCollectionDisplay
+        if nftDisplay == nil && collectionDisplay == nil {
+            return nil
+        }
+        let name = "\"name\": "
+        let description = "\"description\": "
+        let image = "\"image\": "
+        var serializedResult = ""
+        if nftDisplay != nil {
+            serializedResult = serializedResult.concat(name).concat(nftDisplay!.name).concat(", ")
+                .concat(description).concat(nftDisplay!.description).concat(", ")
+                .concat(image).concat(nftDisplay!.thumbnail.uri())
+        }
+        if nftDisplay != nil && collectionDisplay != nil {
+            serializedResult = serializedResult.concat(", ")
+        }
+        let externalURL = "\"external_url\": "
+        if collectionDisplay != nil {
+            serializedResult = serializedResult.concat(externalURL).concat(collectionDisplay!.externalURL.url)
+        }
+        return serializedResult
+    }
+
+    access(all)
+    fun serializeNFTTraitsAsAttributes(_ nft: &{NonFungibleToken.NFT}): String? {
+        // Get the Traits view from the NFT, returning early if no traits are found
+        let traits = nft.resolveView(Type<MetadataViews.Traits>()) as? MetadataViews.Traits
+        if traits == nil {
+            return nil
+        }
+
+        // Serialize each trait as an attribute, building the serialized JSON compatible string
+        var serialized = "\"attributes\": ["
+        for i, trait in traits!.traits {
+            let value = Serialize.tryToString(trait.value)
+            if value == nil {
+                continue
+            }
+            serialized = serialized.concat("{")
+                .concat("\"trait_type\": \"").concat(trait.name)
+                .concat("\", \"value\": \"").concat(value!)
+                .concat("\"}")
+            if i < traits!.traits.length - 1 {
+                serialized = serialized.concat(",")
+            }
+        }
+        return serialized.concat("]")
+    }
+
 
     /* --- Bridge-Access Only Utils --- */
     // TODO: Embed these methods into an Admin resource
