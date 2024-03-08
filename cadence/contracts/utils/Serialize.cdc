@@ -34,7 +34,7 @@ contract Serialize {
         }
         // Recursively serialize map & return
         if value.getType().isSubtype(of: Type<{String: AnyStruct}>()) {
-            return self.mapToString(value as! {String: AnyStruct})
+            return self.dictToString(dict: value as! {String: AnyStruct}, excludedNames: nil)
         }
         // Handle primitive types & their respective optionals
         switch value.getType() {
@@ -132,19 +132,24 @@ contract Serialize {
     /// serializable
     ///
     access(all)
-    fun mapToString(_ map: {String: AnyStruct}): String? {
-        var serializedMap = "{"
-        for i, key in map.keys {
-            let serializedValue = self.tryToString(map[key]!)
+    fun dictToString(dict: {String: AnyStruct}, excludedNames: [String]?): String? {
+        if excludedNames != nil {
+            for k in excludedNames! {
+                dict.remove(key: k)
+            }
+        }
+        var serializedDict = "{"
+        for i, key in dict.keys {
+            let serializedValue = self.tryToString(dict[key]!)
             if serializedValue == nil {
                 return nil
             }
-            serializedMap = serializedMap.concat("\"").concat(key).concat("\": \"").concat(serializedValue!).concat("\"}")
-            if i < map.length - 1 {
-                serializedMap = serializedMap.concat(", ")
+            serializedDict = serializedDict.concat("\"").concat(key).concat("\": \"").concat(serializedValue!).concat("\"}")
+            if i < dict.length - 1 {
+                serializedDict = serializedDict.concat(", ")
             }
         }
-        serializedMap.concat("}")
-        return serializedMap
+        serializedDict.concat("}")
+        return serializedDict
     }
 }
