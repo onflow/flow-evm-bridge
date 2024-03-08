@@ -1,6 +1,7 @@
 import "NonFungibleToken"
 import "FungibleToken"
 import "MetadataViews"
+import "ViewResolver"
 import "FlowToken"
 
 import "EVM"
@@ -430,7 +431,7 @@ access(all) contract FlowEVMBridgeUtils {
         if display == nil && attributes == nil {
             return ""
         }
-        var serializedMetadata= "data:application/json;ascii,{"
+        var serializedMetadata= "data:application/json;utf8,{"
         if display != nil {
             serializedMetadata = serializedMetadata.concat(display!)
         }
@@ -507,6 +508,53 @@ access(all) contract FlowEVMBridgeUtils {
         return serializedResult.concat("]")
     }
 
+    /// Serializes contract-level metadata (as a JSON compatible String) for a given ViewResolver according to formats
+    /// expected by EVM platforms like OpenSea. If you are a project owner seeking to expose custom metadata on bridged
+    /// contracts and your metadata is not natively serializable, you can implement a custom serialization method with
+    /// the `{Serialize.SerializableStruct}` interface's `serialize` method.
+    ///
+    access(all)
+    fun serializeContractMetadata(viewResolver: &{ViewResolver}, forType: Type): String {
+        if forType.isSubtype(of: Type<@{NonFungibleToken.NFT}>()) {
+            return self.serializeNFTContractMetadata(viewResolver: viewResolver, forType: forType)
+        } else if forType.isSubtype(of: Type<@{FungibleToken.Vault}>()) {
+            // TODO
+            // return self.serializeFTContractMetadata(viewResolver: viewResolver, forType: forType)
+            return ""
+        } else {
+            return ""
+        }
+    }
+
+    /// Serializes contract-level metadata (as a JSON compatible String) for a given NFT according to formats expected
+    /// by EVM platforms like OpenSea.
+    ///
+    access(all)
+    fun serializeNFTContractMetadata(viewResolver: &{ViewResolver}, forType: Type): String {
+        // Get the Traits view from the NFT, returning early if no traits are found
+        let display = viewResolver.resolveContractView(
+                resourceType: forType, viewType: Type<MetadataViews.NFTCollectionDisplay>()
+            ) as? MetadataViews.NFTCollectionDisplay
+        if display == nil {
+            return ""
+        }
+
+        // Initialize the JSON fields
+        let prefix = "data:application/json;utf8,"
+        let name = "\"name\": "
+        let description = "\"description\": "
+        let image = "\"image\": "
+        let external_link = "\"external_link\": "
+
+        // Serialize the contract-level metadata as a JSON compatible string & return
+        let json = "{"
+            .concat(name).concat("\"").concat(display!.name).concat("\"").concat(", ")
+            .concat(description).concat("\"").concat(display!.description).concat("\"").concat(", ")
+            .concat(image).concat("\"").concat(display!.bannerImage.file.uri()).concat("\"").concat(", ")
+            .concat(external_link).concat("\"").concat(display!.externalURL.url).concat("\"")
+            .concat("}")
+        return prefix.concat(json)
+    }
 
     /* --- Bridge-Access Only Utils --- */
     // TODO: Embed these methods into an Admin resource

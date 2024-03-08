@@ -1,6 +1,7 @@
 import "FungibleToken"
 import "NonFungibleToken"
 import "MetadataViews"
+import "ViewResolver"
 import "FlowToken"
 
 import "EVM"
@@ -401,16 +402,18 @@ access(all) contract FlowEVMBridge {
     /// @returns The EVMAddress of the deployed contract
     ///
     access(self) fun deployERC721(_ forNFTType: Type): EVM.EVMAddress {
-        let name: String = FlowEVMBridgeUtils.getContractName(fromType: forNFTType)
+        let name = FlowEVMBridgeUtils.getContractName(fromType: forNFTType)
             ?? panic("Could not contract name from type: ".concat(forNFTType.identifier))
-        let identifier: String = forNFTType.identifier
-        let cadenceAddressStr: String = FlowEVMBridgeUtils.getContractAddress(fromType: forNFTType)?.toString()
+        let identifier = forNFTType.identifier
+        let cadenceAddress = FlowEVMBridgeUtils.getContractAddress(fromType: forNFTType)
             ?? panic("Could not derive contract address for token type: ".concat(identifier))
+        let viewResolver = getAccount(cadenceAddress).contracts.borrow<&{ViewResolver}>(name: name)!
+        let contractURI = FlowEVMBridgeUtils.serializeContractMetadata(fromType: viewResolver, forType: forNFTType)
 
         let callResult: EVM.Result = FlowEVMBridgeUtils.call(
             signature: "deployERC721(string,string,string,string)",
             targetEVMAddress: FlowEVMBridgeUtils.bridgeFactoryEVMAddress,
-            args: [name, "BRDG", cadenceAddressStr, identifier], // TODO: Decide on and update symbol
+            args: [name, "BRDG", cadenceAddress.toString(), identifier, contractURI], // TODO: Decide on and update symbol
             gasLimit: 15000000,
             value: 0.0
         )
@@ -418,7 +421,7 @@ access(all) contract FlowEVMBridge {
         let decodedResult: [AnyStruct] = EVM.decodeABI(types: [Type<EVM.EVMAddress>()], data: callResult.data)
         assert(decodedResult.length == 1, message: "Invalid response length")
 
-        let erc721Address: EVM.EVMAddress = decodedResult[0] as! EVM.EVMAddress
+        let erc721Address = decodedResult[0] as! EVM.EVMAddress
 
         FlowEVMBridgeConfig.associateType(forNFTType, with: erc721Address)
         return erc721Address

@@ -10,16 +10,19 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 contract FlowBridgedERC721 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     string public flowNFTAddress;
     string public flowNFTIdentifier;
+    string public contractMetadata;
 
     constructor(
         address owner,
         string memory name,
         string memory symbol,
         string memory _flowNFTAddress,
-        string memory _flowNFTIdentifier
+        string memory _flowNFTIdentifier,
+        string memory _contractMetadata
     ) ERC721(name, symbol) Ownable(owner) {
         flowNFTAddress = _flowNFTAddress;
         flowNFTIdentifier = _flowNFTIdentifier;
+        contractMetadata = _contractMetadata;
     }
 
     function safeMint(address to, uint256 tokenId, string memory uri) public onlyOwner {
@@ -29,6 +32,10 @@ contract FlowBridgedERC721 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable 
 
     function tokenURI(uint256 tokenId) public view override(ERC721, ERC721URIStorage) returns (string memory) {
         return super.tokenURI(tokenId);
+    }
+
+    function contractURI() public view returns (string memory) {
+        return contractMetadata;
     }
 
     function supportsInterface(bytes4 interfaceId) public view override(ERC721, ERC721URIStorage) returns (bool) {
