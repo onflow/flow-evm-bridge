@@ -134,7 +134,7 @@ access(all) contract FlowEVMBridge {
         }
         // If we don't yet have a URI, attempt to serialize the NFT
         // TODO: We may want to do either/both - enable syncing metadata while in escrow and/or update the URI if
-        //      already exists in ERC721 & bridge-owned
+        //      already exists in ERC721 & the EVM contract is bridge-owned
         if uri.length == 0 {
             uri = FlowEVMBridgeUtils.serializeNFTMetadata(&token as &{NonFungibleToken.NFT})
         }
