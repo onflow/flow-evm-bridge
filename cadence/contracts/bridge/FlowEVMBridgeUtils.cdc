@@ -63,6 +63,13 @@ access(all) contract FlowEVMBridgeUtils {
         ])
     }
 
+    /// Validates the Vault used to pay the bridging fee
+    /// NOTE: Currently fees are calculated at a flat base fee, but may be dynamically calculated based on storage
+    ///       used by escrowed assets in the future
+    access(all) view fun calculateBridgeFee(used: UInt64, includeBase: Bool): UFix64 {
+        return FlowEVMBridgeConfig.baseFee
+    }
+
     /// Returns whether the given address has opted out of enabling bridging for its defined assets
     ///
     /// @param address: The EVM contract address to check
@@ -427,13 +434,6 @@ access(all) contract FlowEVMBridgeUtils {
     }
 
     /* --- Bridge-Access Only Utils --- */
-    // TODO: Embed these methods into an Admin resource
-
-    /// Validates the Vault used to pay the bridging fee
-    access(all) view fun calculateBridgeFee(used: UInt64, includeBase: Bool): UFix64 {
-        let storageFee = UFix64(used) * FlowEVMBridgeConfig.storageRate
-        return includeBase ? FlowEVMBridgeConfig.baseFee + storageFee : storageFee
-    }
 
     /// Deposits fees to the bridge account's FlowToken Vault - helps fund asset storage
     access(account) fun depositTollFee(_ tollFee: @FlowToken.Vault) {
