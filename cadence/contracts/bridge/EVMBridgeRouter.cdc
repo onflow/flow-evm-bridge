@@ -43,4 +43,8 @@ contract EVMBridgeRouter {
             return FlowEVMBridgeNFTEscrow.borrowLockedNFT(owner: owner, type: type, id: id)
         }
     }
+
+    init() {
+        self.account.storage.save(<-create Router(), to: /storage/evmBridgeRouter)
+    }
 }
