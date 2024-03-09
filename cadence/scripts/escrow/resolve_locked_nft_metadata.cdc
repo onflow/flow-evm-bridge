@@ -8,10 +8,7 @@ import "FlowEVMBridge"
 ///
 access(all) fun main(nftTypeIdentifier: String, id: UInt64, viewIdentifier: String): AnyStruct? {
     let nftType: Type = CompositeType(nftTypeIdentifier) ?? panic("Malformed nft type identifier")
+    let view: Type = CompositeType(viewIdentifier) ?? panic("Malformed view type identifier")
 
-    if let nft: &{NonFungibleToken.NFT} = FlowEVMBridgeNFTEscrow.borrowLockedNFT(type: nftType, id: id) {
-        let view: Type = CompositeType(viewIdentifier) ?? panic("Malformed view type identifier")
-        return nft.resolveView(view)
-    }
-    return nil
+    return FlowEVMBridgeNFTEscrow.resolveLockedNFTView(nftType: nftType, id: id, viewType: view)
 }
