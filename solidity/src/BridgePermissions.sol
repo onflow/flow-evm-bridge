@@ -36,7 +36,7 @@ abstract contract BridgePermissions is ERC165, IBridgePermissions {
      *     between Cadence & EVM. Implementing this contract opts out by default but can be
      *     overridden to opt-in or used in conjunction with a switch to enable opting in.
      */
-    function allowsBridging() public view virtual returns (bool) {
+    function allowsBridging() external view virtual returns (bool) {
         return _permissions;
     }
 
