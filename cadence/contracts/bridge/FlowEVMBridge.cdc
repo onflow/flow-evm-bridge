@@ -6,6 +6,7 @@ import "FlowToken"
 
 import "EVM"
 
+import "BridgePermissions"
 import "ICrossVM"
 import "IEVMBridgeNFTMinter"
 import "CrossVMNFT"
@@ -74,7 +75,7 @@ access(all) contract FlowEVMBridge {
         }
         // Ensure the project has not opted out of bridge support
         assert(
-            !type.getType().isSubtype(of: Type<@{FlowEVMBridgeOptOut.Asset}>()),
+            FlowEVMBridgeUtils.typeAllowsBridging(type),
             message: "This type is not supported as defined by the project's development team"
         )
         FlowEVMBridgeUtils.depositTollFee(<-tollFee)

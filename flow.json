@@ -50,8 +50,8 @@
 				"emulator": "f8d6e0586b0a20c7"
 			}
 		},
-		"FlowEVMBridgeOptOut": {
-			"source": "./cadence/contracts/bridge/FlowEVMBridgeOptOut.cdc",
+		"BridgePermissions": {
+			"source": "./cadence/contracts/bridge/BridgePermissions.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7"
 			}

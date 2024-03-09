@@ -7,6 +7,7 @@ import "FlowToken"
 import "EVM"
 
 import "FlowEVMBridgeConfig"
+import "BridgePermissions"
 
 /// This contract serves as a source of utility methods leveraged by FlowEVMBridge contracts
 //
@@ -70,6 +71,25 @@ access(all) contract FlowEVMBridgeUtils {
         return FlowEVMBridgeConfig.baseFee
     }
 
+    /// Returns whether the given type is allowed to be bridged as defined by the BridgePermissions contract interface.
+    /// If the type's defining contract does not implement BridgePermissions, the method returns true as the bridge
+    /// operates permissionlessly by default. Otherwise, the result of {BridgePermissions}.allowsBridging() is returned
+    ///
+    /// @param type: The Type of the asset to check
+    ///
+    /// @return true if the type is allowed to be bridged, false otherwise
+    ///
+    access(all) view fun typeAllowsBridging(_ type: Type): Bool {
+        let contractAddress = self.getContractAddress(fromType: type)
+            ?? panic("Could not construct contract address from type identifier: ".concat(type.identifier))
+        let contractName = self.getContractName(fromType: type)
+            ?? panic("Could not construct contract name from type identifier: ".concat(type.identifier))
+        if let bridgePermissions = getAccount(contractAddress).contracts.borrow<&{BridgePermissions}>(name: contractName) {
+            return bridgePermissions.allowsBridging()
+        }
+        return true
+    }
+
     /// Returns whether the given address has opted out of enabling bridging for its defined assets
     ///
     /// @param address: The EVM contract address to check
@@ -78,18 +98,18 @@ access(all) contract FlowEVMBridgeUtils {
     ///
     access(all) fun evmAddressAllowsBridging(_ address: EVM.EVMAddress): Bool {
         let callResult = self.call(
-            signature: "addressAllowsBridging(address)",
-            targetEVMAddress: FlowEVMBridgeUtils.fa,
-            args: [address],
+            signature: "allowsBridging()",
+            targetEVMAddress: address,
+            args: [],
             gasLimit: 60000,
             value: 0.0
         )
-        // IERC165 is not implemented, implies bridging is allowed
+        // Contract doesn't support the method - proceed permissionlessly
         if callResult.status != EVM.Status.successful {
             return true
         }
-        // Return whether FlowBridgeOptOut is implemented
-        let decodedResult: [AnyStruct] = EVM.decodeABI(types: [Type<Bool>()], data: callResult.data)
+        // Contract is BridgePermissions - return the result
+        let decodedResult = EVM.decodeABI(types: [Type<Bool>()], data: callResult.data) as! [AnyStruct]
         return (decodedResult.length == 1 && decodedResult[0] as! Bool) == true ? true : false
     }
 
