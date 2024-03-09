@@ -67,6 +67,12 @@ access(all) contract FlowEVMBridgeUtils {
     /// Validates the Vault used to pay the bridging fee
     /// NOTE: Currently fees are calculated at a flat base fee, but may be dynamically calculated based on storage
     ///       used by escrowed assets in the future
+    ///
+    /// @param used: The amount of storage used by the asset
+    /// @param includeBase: Whether to include the base fee in the calculation
+    ///
+    /// @return The calculated fee
+    ///
     access(all) view fun calculateBridgeFee(used: UInt64, includeBase: Bool): UFix64 {
         return FlowEVMBridgeConfig.baseFee
     }
