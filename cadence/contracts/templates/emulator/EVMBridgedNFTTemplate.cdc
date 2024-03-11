@@ -121,12 +121,12 @@ access(all) contract {{CONTRACT_NAME}} : ICrossVM, IEVMBridgeNFTMinter, NonFungi
         /* --- CrossVMNFT conformance --- */
         //
         /// Returns the EVM contract address of the NFT
-        access(all) fun getEVMContractAddress(): EVM.EVMAddress {
+        access(all) view fun getEVMContractAddress(): EVM.EVMAddress {
             return {{CONTRACT_NAME}}.getEVMContractAddress()
         }
 
         /// Similar to ERC721.tokenURI method, returns the URI of the NFT with self.evmID at time of bridging
-        access(all) fun tokenURI(): String {
+        access(all) view fun tokenURI(): String {
             return self.uri
         }
     }
@@ -265,7 +265,7 @@ access(all) contract {{CONTRACT_NAME}} : ICrossVM, IEVMBridgeNFTMinter, NonFungi
 
     /// Returns the EVM contract address of the NFT this contract represents
     ///
-    access(all) fun getEVMContractAddress(): EVM.EVMAddress {
+    access(all) view fun getEVMContractAddress(): EVM.EVMAddress {
         return self.evmNFTContractAddress
     }
 

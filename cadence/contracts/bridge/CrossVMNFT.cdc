@@ -55,8 +55,8 @@ access(all) contract CrossVMNFT {
         access(all) let evmID: UInt256
         access(all) let name: String
         access(all) let symbol: String
-        access(all) fun tokenURI(): String
-        access(all) fun getEVMContractAddress(): EVM.EVMAddress
+        access(all) view fun tokenURI(): String
+        access(all) view fun getEVMContractAddress(): EVM.EVMAddress
     }
 
     /// A simple interface for a collection of EVMNFTs
