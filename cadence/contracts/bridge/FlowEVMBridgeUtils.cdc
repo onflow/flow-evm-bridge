@@ -469,7 +469,7 @@ access(all) contract FlowEVMBridgeUtils {
     }
 
     /// Enables other bridge contracts to orchestrate bridge operations from contract-owned COA
-    access(account) fun borrowCOA(): auth(EVM.Owner) &EVM.CadenceOwnedAccount {
+    access(account) view fun borrowCOA(): auth(EVM.Owner) &EVM.CadenceOwnedAccount {
         return self.account.storage.borrow<auth(EVM.Owner) &EVM.CadenceOwnedAccount>(
             from: FlowEVMBridgeConfig.coaStoragePath
         ) ?? panic("Could not borrow COA reference")

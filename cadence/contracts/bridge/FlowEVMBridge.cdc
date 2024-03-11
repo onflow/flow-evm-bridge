@@ -297,8 +297,7 @@ access(all) contract FlowEVMBridge {
     ///
     /// @returns The EVMAddress of the bridge contract's COA orchestrating actions in FlowEVM
     ///
-    // TODO: Can be made `view` when CadenceOwnedAccount.address() is `view`
-    access(all) fun getBridgeCOAEVMAddress(): EVM.EVMAddress {
+    access(all) view fun getBridgeCOAEVMAddress(): EVM.EVMAddress {
         return FlowEVMBridgeUtils.borrowCOA().address()
     }
 
