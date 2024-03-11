@@ -1,5 +1,6 @@
-import "FungibleToken"
 import "NonFungibleToken"
+import "FungibleToken"
+import "FlowToken"
 
 import "EVM"
 
@@ -21,7 +22,7 @@ contract EVMBridgeRouter {
         ///
         access(EVM.Bridge)
         fun depositNFT(nft: @{NonFungibleToken.NFT}, to: EVM.EVMAddress, fee: @FlowToken.Vault): @FlowToken.Vault {
-            return <-FlowEVMBridge.bridgeNFTToEVM(nft: <-nft, to: to, tollfee: <-fee)
+            return <-FlowEVMBridge.bridgeNFTToEVM(token: <-nft, to: to, tollFee: <-fee)
         }
 
         /// Passes along the bridge request to the dedicated bridge contract, returning the bridged NFT
@@ -33,7 +34,7 @@ contract EVMBridgeRouter {
             id: UInt256,
             fee: @FlowToken.Vault
         ): @{NonFungibleToken.NFT} {
-            return <-FlowEVMBridge.bridgeNFTFromEVM(caller: caller, type: type, id: id, tollfee: <-fee)
+            return <-FlowEVMBridge.bridgeNFTFromEVM(caller: caller, type: type, id: id, tollFee: <-fee)
         }
     }
 
