@@ -2,22 +2,25 @@ import "EVM"
 
 /// This contract is used to store configuration information shared by FlowEVMBridge contracts
 ///
-access(all) contract FlowEVMBridgeConfig {
+access(all)
+contract FlowEVMBridgeConfig {
 
+    /* --- Contract values --- */
+    //
     /// Amount of FLOW paid to onboard a Type or EVMAddress to the bridge
     access(all)
     var onboardFee: UFix64
     /// Flat rate fee for all bridge requests
     access(all)
     var baseFee: UFix64
-    /// Rate per storage unit consumed by bridged assets
+    /// Fee rate per storage unit consumed by bridged assets
     access(all)
     var storageRate: UFix64
-    /// Mapping of Type to EVMAddress
+    /// Mapping of Type to its associated EVMAddress as relevant to the bridge
     access(self)
     let typeToEVMAddress: {Type: EVM.EVMAddress}
 
-    /* Path Constants */
+    /* --- Path Constants --- */
     //
     /// StoragePath where bridge Cadence Owned Account is stored
     access(all)
@@ -29,7 +32,7 @@ access(all) contract FlowEVMBridgeConfig {
     access(all)
     let bridgeAccessorStoragePath: StoragePath
 
-    /* Events */
+    /* --- Events --- */
     //
     /// Emitted whenever the onboarding fee is updated
     ///
@@ -40,8 +43,10 @@ access(all) contract FlowEVMBridgeConfig {
     access(all)
     event StorageRateUpdated(old: UFix64, new: UFix64)
 
-    /* Getters */
-    //
+    /*************
+        Getters
+     *************/
+
     /// Retrieves the EVMAddress associated with a given Type if it has been onboarded to the bridge
     ///
     access(all)
@@ -49,8 +54,10 @@ access(all) contract FlowEVMBridgeConfig {
         return self.typeToEVMAddress[type]
     }
 
-    /* Bridge Account Methods */
-    //
+    /****************************
+        Bridge Account Methods
+     ****************************/
+
     /// Enables bridge contracts to update the typeToEVMAddress mapping
     ///
     access(account)
@@ -58,22 +65,44 @@ access(all) contract FlowEVMBridgeConfig {
         self.typeToEVMAddress[type] = evmAddress
     }
 
-    /* Config Admin */
-    //
+    /*****************
+        Config Admin
+     *****************/
+
     /// Admin resource enables updates to the bridge fees
     ///
     access(all)
     resource Admin {
+
+        /// Updates the onboarding fee
+        ///
+        /// @param new: UFix64 - new onboarding fee
+        ///
+        /// @emits BridgeFeeUpdated with the old and new rates and isOnboarding set to true
         access(all)
         fun updateOnboardingFee(_ new: UFix64) {
             emit BridgeFeeUpdated(old: FlowEVMBridgeConfig.onboardFee, new: new, isOnboarding: true)
             FlowEVMBridgeConfig.onboardFee = new
         }
+
+        /// Updates the base fee
+        ///
+        /// @param new: UFix64 - new base fee
+        ///
+        /// @emits BridgeFeeUpdated with the old and new rates and isOnboarding set to false
+        ///
         access(all)
         fun updateBaseFee(_ new: UFix64) {
             emit BridgeFeeUpdated(old: FlowEVMBridgeConfig.baseFee, new: new, isOnboarding: false)
             FlowEVMBridgeConfig.baseFee = new
         }
+
+        /// Updates the storage rate
+        ///
+        /// @param new: UFix64 - new storage rate
+        ///
+        /// @emits StorageRateUpdated with the old and new rates
+        /// 
         access(all)
         fun updateStorageRate(_ new: UFix64) {
             emit StorageRateUpdated(old: FlowEVMBridgeConfig.baseFee, new: new)
