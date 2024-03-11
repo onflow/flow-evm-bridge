@@ -14,7 +14,6 @@ import "FlowEVMBridgeConfig"
 import "FlowEVMBridgeUtils"
 import "FlowEVMBridgeNFTEscrow"
 import "FlowEVMBridgeTemplates"
-import "FlowEVMBridgeCOAWrapper"
 
 /// The FlowEVMBridge contract is the main entrypoint for bridging NFT & FT assets between Flow & FlowEVM.
 ///
@@ -108,6 +107,7 @@ access(all) contract FlowEVMBridge {
             self.evmAddressRequiresOnboarding(address) == true,
             message: "Onboarding is not needed for this contract"
         )
+        FlowEVMBridgeUtils.depositTollFee(<-tollFee)
         self.deployDefiningContract(evmContractAddress: address)
     }
 
@@ -138,9 +138,9 @@ access(all) contract FlowEVMBridge {
         // Lock the NFT & calculate the storage used by the NFT
         let storageUsed = FlowEVMBridgeNFTEscrow.lockNFT(<-token)
         // Calculate the bridge fee on current rates, withdraw from provided Vault and deposit to self
-        let feeAmount = FlowEVMUtils.calculateBridgeFee(used: storageUsed, includeBase: true)
+        let feeAmount = FlowEVMBridgeUtils.calculateBridgeFee(used: storageUsed, includeBase: true)
         assert(tollFee.balance >= feeAmount, message: "Insufficient fee paid to bridge this NFT")
-        FlowEVMBridgeUtils.depositTollFee(<-tollFee.withdraw(amount: feeAmount))
+        FlowEVMBridgeUtils.depositTollFee(<-(tollFee.withdraw(amount: feeAmount) as! @FlowToken.Vault))
 
         // Does the bridge control the EVM contract associated with this type?
         let associatedAddress = FlowEVMBridgeConfig.getEVMAddressAssociated(with: tokenType)
@@ -221,7 +221,7 @@ access(all) contract FlowEVMBridge {
         tollFee: @FlowToken.Vault
     ): @{NonFungibleToken.NFT} {
         pre {
-            FlowEVMBridgeUtils.validateFee(&tollFee as &{FungibleToken.Vault}, onboarding: false): "Invalid fee paid"
+            tollFee.balance == FlowEVMBridgeUtils.calculateBridgeFee(used: 0, includeBase: true): "Insufficient fee paid"
             !type.isSubtype(of: Type<@{FungibleToken.Vault}>()): "Mixed asset types are not yet supported"
             self.typeRequiresOnboarding(type) == false: "NFT must first be onboarded"
         }
@@ -344,29 +344,6 @@ access(all) contract FlowEVMBridge {
             return true
         }
         return nil
-    }
-
-    /// Entrypoint for the bridging between VMs using this bridge contract
-    ///
-    access(all) resource Accessor : EVM.BridgeAccessor {
-        /// Endpoint enabling NFT bridging to EVM
-        ///
-        access(EVM.Bridge)
-        fun depositNFT(nft: @{NonFungibleToken.NFT}, to: EVM.EVMAddress, fee: @{FungibleToken.Vault}): @FlowToken.Vault {
-            return <-FlowEVMBridge.bridgeNFTToEVM(token: <-nft, to: to, tollFee: <-fee)
-        }
-
-        /// Endpoint enabling NFT from EVM
-        ///
-        access(EVM.Bridge)
-        fun withdrawNFT(
-            caller: auth(EVM.Call) &EVM.CadenceOwnedAccount,
-            type: Type,
-            id: UInt256,
-            fee: @{FungibleToken.Vault}
-        ): @{NonFungibleToken.NFT} {
-            return <-FlowEVMBridge.bridgeNFTFromEVM(caller: caller, type: type, id: id, tollFee: <-fee)
-        }
     }
 
     /**************************
