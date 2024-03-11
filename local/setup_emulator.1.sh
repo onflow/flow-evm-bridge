@@ -14,9 +14,12 @@ flow-c1 accounts add-contract ./cadence/contracts/bridge/ICrossVM.cdc
 flow-c1 accounts add-contract ./cadence/contracts/bridge/CrossVMNFT.cdc
 flow-c1 accounts add-contract ./cadence/contracts/bridge/FlowEVMBridgeConfig.cdc
 # Provided address is the address of the Factory contract deployed in the previous txn
-flow-c1 accounts add-contract ./cadence/contracts/bridge/FlowEVMBridgeUtils.cdc a3c8d221ad218f0d61a3987469dc1c7dfa4a1515
+flow-c1 accounts add-contract ./cadence/contracts/bridge/FlowEVMBridgeUtils.cdc 8573d223ca2b9ec87d5efd69649c264afdac6c0e
 flow-c1 accounts add-contract ./cadence/contracts/bridge/FlowEVMBridgeNFTEscrow.cdc
 flow-c1 accounts add-contract ./cadence/contracts/bridge/FlowEVMBridgeTemplates.cdc
+# Add the templated contract code chunks for FlowEVMBridgedNFTTemplate.cdc contents
+low-c1 transactions send ./cadence/transactions/bridge/admin/upsert_contract_code_chunks.cdc --args-json "$(cat ./bridged-nft-code-chunks-args.json)" --gas-limit 1600
+
 flow-c1 accounts add-contract ./cadence/contracts/bridge/IEVMBridgeNFTMinter.cdc
 
 
