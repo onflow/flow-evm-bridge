@@ -207,8 +207,8 @@ access(all) contract {{CONTRACT_NAME}} : ICrossVM, IEVMBridgeNFTMinter, NonFungi
 
         /// Returns the contractURI for the NFT collection as defined in the source ERC721 contract. If none was
         /// defined at the time of bridging, an empty string is returned.
-        access(all) view fun contractURI(): String {
-            return {{CONTRACT_NAME}}.contractURI ?? ""
+        access(all) view fun contractURI(): String? {
+            return {{CONTRACT_NAME}}.contractURI
         }
 
         /// Gets the amount of NFTs stored in the collection

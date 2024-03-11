@@ -65,7 +65,7 @@ access(all) contract CrossVMNFT {
         access(all) view fun getEVMIDs(): [UInt256]
         access(all) view fun getCadenceID(from evmID: UInt256): UInt64?
         access(all) view fun getEVMID(from cadenceID: UInt64): UInt256?
-        access(all) view fun contractURI(): String
+        access(all) view fun contractURI(): String?
     }
 
     /// Retrieves the EVM ID of an NFT if it implements the EVMNFT interface, returning nil if not

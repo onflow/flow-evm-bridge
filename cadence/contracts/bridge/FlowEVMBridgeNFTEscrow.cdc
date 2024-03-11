@@ -233,6 +233,10 @@ access(all) contract FlowEVMBridgeNFTEscrow {
             return nil
         }
 
+        access(all) view fun contractURI(): String? {
+            return nil
+        }
+
         /// Returns a reference to the NFT if it is locked
         ///
         access(all)
