@@ -147,7 +147,8 @@ access(all) contract {{CONTRACT_NAME}} : ICrossVM, IEVMBridgeNFTMinter, NonFungi
             let collectionData = {{CONTRACT_NAME}}.resolveContractView(
                     resourceType: Type<@{{CONTRACT_NAME}}.NFT>(),
                     viewType: Type<MetadataViews.NFTCollectionData>()
-                ) as! MetadataViews.NFTCollectionData
+                ) as! MetadataViews.NFTCollectionData?
+                ?? panic("Could not resolve the collection data view for the NFT collection")
             self.storagePath = collectionData.storagePath
             self.publicPath = collectionData.publicPath
         }
@@ -203,6 +204,23 @@ access(all) contract {{CONTRACT_NAME}} : ICrossVM, IEVMBridgeNFTMinter, NonFungi
         /// Returns the Cadence NFT.id for the given EVM NFT ID if
         access(all) view fun getCadenceID(from evmID: UInt256): UInt64? {
             return self.evmIDToFlowID[evmID] ?? UInt64(evmID)
+        }
+
+        /// Returns the EVM NFT ID associated with the Cadence NFT ID. The goal is to retrieve the ERC721 ID value.
+        /// As far as the bridge is concerned, an ERC721 defined by the bridge is the NFT's ID at the time of bridging
+        /// or the value of the NFT.evmID if it implements the CrossVMNFT.EVMNFT interface when bridged.
+        /// Following this pattern, if locked, the NFT is checked for EVMNFT conformance returning .evmID if so,
+        /// otherwise the NFT's ID is returned as a UInt256 since that's how the bridge would handle minting in the
+        /// corresponding ERC721 contract.
+        ///
+        access(all) view fun getEVMID(from cadenceID: UInt64): UInt256? {
+            if let nft = self.borrowNFT(cadenceID) {
+                if let evmNFT = CrossVMNFT.getEVMID(from: nft) {
+                    return evmNFT
+                }
+                return UInt256(nft.id)
+            }
+            return nil
         }
 
         /// Returns the contractURI for the NFT collection as defined in the source ERC721 contract. If none was
@@ -332,6 +350,7 @@ access(all) contract {{CONTRACT_NAME}} : ICrossVM, IEVMBridgeNFTMinter, NonFungi
         self.flowNFTContractAddress = self.account.address
         self.name = name
         self.symbol = symbol
+        self.contractURI = contractURI
         self.collection <- create Collection()
 
         FlowEVMBridgeConfig.associateType(Type<@{{CONTRACT_NAME}}.NFT>(), with: self.evmNFTContractAddress)

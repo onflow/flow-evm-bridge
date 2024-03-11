@@ -426,7 +426,7 @@ access(all) contract FlowEVMBridge {
                 evmContractAddress: evmContractAddress,
                 isERC721: isERC721
             ) ?? panic("Problem retrieving code for Cadence-defining contract")
-        self.account.contracts.add(name: cadenceContractName, code: cadenceCode, name, symbol, evmContractAddress)
+        self.account.contracts.add(name: cadenceContractName, code: cadenceCode, name, symbol, evmContractAddress, contractURI)
         emit BridgeDefiningContractDeployed(
             contractName: cadenceContractName,
             assetName: name,
