@@ -18,7 +18,12 @@ contract EVMBridgeRouter {
     ///
     access(all)
     resource Router : EVM.BridgeAccessor {
+
         /// Passes along the bridge request to dedicated bridge contract, returning any surplus fee
+        ///
+        /// @param nft: The NFT to be bridged to EVM
+        /// @param to: The address of the EVM account to receive the bridged NFT
+        /// @param fee: The fee to be paid for the bridge request
         ///
         access(EVM.Bridge)
         fun depositNFT(nft: @{NonFungibleToken.NFT}, to: EVM.EVMAddress, fee: @FlowToken.Vault): @FlowToken.Vault {
@@ -26,6 +31,11 @@ contract EVMBridgeRouter {
         }
 
         /// Passes along the bridge request to the dedicated bridge contract, returning the bridged NFT
+        ///
+        /// @param caller: A reference to the COA which currently owns the NFT in EVM
+        /// @param type: The Cadence type of the NFT to be bridged from EVM
+        /// @param id: The ID of the NFT to be bridged from EVM
+        /// @param fee: The fee to be paid for the bridge request
         ///
         access(EVM.Bridge)
         fun withdrawNFT(
