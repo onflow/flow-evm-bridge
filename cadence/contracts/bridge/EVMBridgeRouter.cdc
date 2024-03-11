@@ -17,7 +17,6 @@ contract EVMBridgeRouter {
     ///
     access(all)
     resource Router : EVM.BridgeAccessor {
-        access(all) let bridgeAddress: Address
         /// Passes along the bridge request to dedicated bridge contract, returning any surplus fee
         ///
         access(EVM.Bridge)
