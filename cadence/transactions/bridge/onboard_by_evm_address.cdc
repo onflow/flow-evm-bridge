@@ -12,6 +12,9 @@ import "FlowEVMBridgeConfig"
 /// This transaction onboards the NFT type to the bridge, configuring the bridge to move NFTs between environments
 /// NOTE: This must be done before bridging a Cadence-native NFT to EVM
 ///
+/// @param contractAddressHex: The EVM address of the contract (as hex string without 0x prefix) defining the 
+///     bridgeable asset to be onboarded
+///
 transaction(contractAddressHex: String) {
 
     let contractAddress: EVM.EVMAddress

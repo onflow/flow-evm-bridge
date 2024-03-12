@@ -16,6 +16,10 @@ import "FlowEVMBridgeUtils"
 /// NOTE: The NFT being bridged must have first been onboarded to the bridge. This can be checked for with the method
 ///     FlowEVMBridge.typeRequiresOnboarding(type): Bool?
 ///
+/// @param nftContractAddress: The Flow account address hosting the NFT-defining Cadence contract
+/// @param nftContractName: The name of the NFT-defining Cadence contract
+/// @param id: The Cadence NFT.id of the NFT to bridge to EVM
+///
 transaction(nftContractAddress: Address, nftContractName: String, id: UInt64) {
     
     let nft: @{NonFungibleToken.NFT}

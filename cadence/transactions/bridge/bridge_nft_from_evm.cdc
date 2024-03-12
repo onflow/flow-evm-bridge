@@ -16,6 +16,10 @@ import "FlowEVMBridgeUtils"
 /// NOTE: The ERC721 must have first been onboarded to the bridge. This can be checked via the method
 ///     FlowEVMBridge.evmAddressRequiresOnboarding(address: self.evmContractAddress)
 ///
+/// @param nftContractAddress: The Flow account address hosting the NFT-defining Cadence contract
+/// @param nftContractName: The name of the NFT-defining Cadence contract
+/// @param id: The ERC721 id of the NFT to bridge to Cadence from EVM
+///
 transaction(nftContractAddress: Address, nftContractName: String, id: UInt256) {
 
     let nftType: Type
