@@ -250,18 +250,25 @@ contract EVM {
 
         /// Bridges the given NFT to the EVM environment
         access(all)
-        fun depositNFT(nft: @{NonFungibleToken.NFT}, fee: @FlowToken.Vault): @FlowToken.Vault {
-            return <-EVM.borrowBridgeAccessor().depositNFT(nft: <-nft, to: self.address(), fee: <-fee)
+        fun depositNFT(
+            nft: @{NonFungibleToken.NFT},
+            feeProvider: auth(FungibleToken.Withdraw) &{FungibleToken.Provider}
+        ) {
+            EVM.borrowBridgeAccessor().depositNFT(nft: <-nft, to: self.address(), feeProvider: feeProvider)
         }
 
         /// Bridges the given NFT to the EVM environment
         access(Owner | Bridge)
-        fun withdrawNFT(type: Type, id: UInt256, fee: @FlowToken.Vault): @{NonFungibleToken.NFT} {
+        fun withdrawNFT(
+            type: Type,
+            id: UInt256,
+            feeProvider: auth(FungibleToken.Withdraw) &{FungibleToken.Provider}
+        ): @{NonFungibleToken.NFT} {
             return <- EVM.borrowBridgeAccessor().withdrawNFT(
                 caller: &self as auth(Call) &CadenceOwnedAccount,
                 type: type,
                 id: id,
-                fee: <-fee
+                feeProvider: feeProvider
             )
         }
     }
@@ -454,7 +461,11 @@ contract EVM {
 
         /// Endpoint enabling NFT to EVM
         access(Bridge)
-        fun depositNFT(nft: @{NonFungibleToken.NFT}, to: EVM.EVMAddress, fee: @FlowToken.Vault): @FlowToken.Vault
+        fun depositNFT(
+            nft: @{NonFungibleToken.NFT},
+            to: EVM.EVMAddress,
+            feeProvider: auth(FungibleToken.Withdraw) &{FungibleToken.Provider}
+        )
 
         /// Endpoint enabling NFT from EVM
         access(Bridge)
@@ -462,7 +473,7 @@ contract EVM {
             caller: auth(Call) &CadenceOwnedAccount,
             type: Type,
             id: UInt256,
-            fee: @FlowToken.Vault
+            feeProvider: auth(FungibleToken.Withdraw) &{FungibleToken.Provider}
         ): @{NonFungibleToken.NFT}
     }
 }

@@ -28,9 +28,8 @@ contract FlowEVMBridgeConfig {
     /// StoragePath where bridge config Admin is stored
     access(all)
     let adminStoragePath: StoragePath
-    /// StoragePath where bridge EVM.BridgeAccessor is stored
     access(all)
-    let bridgeAccessorStoragePath: StoragePath
+    let providerCapabilityStoragePath: StoragePath
 
     /* --- Events --- */
     //
@@ -117,7 +116,7 @@ contract FlowEVMBridgeConfig {
         self.typeToEVMAddress = {}
         self.adminStoragePath = /storage/flowEVMBridgeConfigAdmin
         self.coaStoragePath = /storage/evm
-        self.bridgeAccessorStoragePath = /storage/flowEVMBridgeAccessor
+        self.providerCapabilityStoragePath = /storage/bridgeFlowVaultProvider
 
         self.account.storage.save(<-create Admin(), to: self.adminStoragePath)
     }

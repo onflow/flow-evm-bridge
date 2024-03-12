@@ -120,8 +120,8 @@ access(all) contract FlowEVMBridge {
     access(all) fun bridgeNFTToEVM(
         token: @{NonFungibleToken.NFT},
         to: EVM.EVMAddress,
-        tollFee: @FlowToken.Vault
-    ): @FlowToken.Vault {
+        feeProvider: auth(FungibleToken.Withdraw) &{FungibleToken.Provider}
+    ) {
         pre {
             !token.isInstance(Type<@{FungibleToken.Vault}>()): "Mixed asset types are not yet supported"
             self.typeRequiresOnboarding(token.getType()) == false: "NFT must first be onboarded"
@@ -137,10 +137,15 @@ access(all) contract FlowEVMBridge {
 
         // Lock the NFT & calculate the storage used by the NFT
         let storageUsed = FlowEVMBridgeNFTEscrow.lockNFT(<-token)
-        // Calculate the bridge fee on current rates, withdraw from provided Vault and deposit to self
+        // Calculate the bridge fee on current rates
         let feeAmount = FlowEVMBridgeUtils.calculateBridgeFee(used: storageUsed, includeBase: true)
-        assert(tollFee.balance >= feeAmount, message: "Insufficient fee paid to bridge this NFT")
-        FlowEVMBridgeUtils.depositTollFee(<-(tollFee.withdraw(amount: feeAmount) as! @FlowToken.Vault))
+        assert(
+            feeProvider.isAvailableToWithdraw(amount: feeAmount),
+            message: "Fee provider does not have balance to cover the bridge fee of".concat(feeAmount.toString())
+        )
+        // Withdraw from feeProvider and deposit to self
+        let feeVault <-feeProvider.withdraw(amount: feeAmount) as! @FlowToken.Vault
+        FlowEVMBridgeUtils.depositTollFee(<-feeVault)
 
         // Does the bridge control the EVM contract associated with this type?
         let associatedAddress = FlowEVMBridgeConfig.getEVMAddressAssociated(with: tokenType)
@@ -200,8 +205,6 @@ access(all) contract FlowEVMBridge {
             to: FlowEVMBridgeUtils.getEVMAddressAsHexString(address: to),
             evmContractAddress: FlowEVMBridgeUtils.getEVMAddressAsHexString(address:associatedAddress)
         )
-        // Return any surplus fee
-        return <-tollFee
     }
 
     /// Public entrypoint to bridge NFTs from EVM to Cadence
@@ -218,14 +221,19 @@ access(all) contract FlowEVMBridge {
         caller: auth(EVM.Call) &EVM.CadenceOwnedAccount,
         type: Type,
         id: UInt256,
-        tollFee: @FlowToken.Vault
+        feeProvider: auth(FungibleToken.Withdraw) &{FungibleToken.Provider}
     ): @{NonFungibleToken.NFT} {
         pre {
-            tollFee.balance == FlowEVMBridgeUtils.calculateBridgeFee(used: 0, includeBase: true): "Insufficient fee paid"
+            feeProvider.isAvailableToWithdraw(amount: FlowEVMBridgeUtils.calculateBridgeFee(used: 0, includeBase: true)):
+                "Insufficient fee paid"
             !type.isSubtype(of: Type<@{FungibleToken.Vault}>()): "Mixed asset types are not yet supported"
             self.typeRequiresOnboarding(type) == false: "NFT must first be onboarded"
         }
-        FlowEVMBridgeUtils.depositTollFee(<-tollFee)
+        // Withdraw from feeProvider and deposit to self
+        let feeAmount = FlowEVMBridgeUtils.calculateBridgeFee(used: 0, includeBase: true)
+        let feeVault <-feeProvider.withdraw(amount: feeAmount) as! @FlowToken.Vault
+        FlowEVMBridgeUtils.depositTollFee(<-feeVault)
+
         // Get the EVMAddress of the ERC721 contract associated with the type
         let associatedAddress = FlowEVMBridgeConfig.getEVMAddressAssociated(with: type)
             ?? panic("No EVMAddress found for token type")
