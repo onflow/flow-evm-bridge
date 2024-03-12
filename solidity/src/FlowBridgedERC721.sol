@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-// TODO: Implement extensions ERC721Upgradable, Pausable, Metadata, Enumerable, URIStorage, Royalty etc.
+// TODO: Implement extensions ERC721Upgradable, Metadata, Enumerable, URIStorage, Royalty etc.
 contract FlowBridgedERC721 is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
     string public flowNFTAddress;
     string public flowNFTIdentifier;

@@ -66,9 +66,11 @@ access(all) contract FlowEVMBridge {
     /// @param type: The Cadence Type of the NFT to be onboarded
     /// @param tollFee: Fee paid for onboarding
     ///
-    access(all) fun onboardByType(_ type: Type, tollFee: @FlowToken.Vault) {
+    access(all)
+    fun onboardByType(_ type: Type, feeProvider: auth(FungibleToken.Withdraw) &{FungibleToken.Provider}) {
         pre {
-            tollFee.balance == FlowEVMBridgeConfig.onboardFee: "Insufficient fee paid"
+            feeProvider.isAvailableToWithdraw(amount: FlowEVMBridgeConfig.onboardFee):
+                "Insufficient fee available via feeProvider"
             self.typeRequiresOnboarding(type) == true: "Onboarding is not needed for this type"
             FlowEVMBridgeUtils.isCadenceNative(type: type): "Only Cadence-native assets can be onboarded by Type"
         }
@@ -77,14 +79,19 @@ access(all) contract FlowEVMBridge {
             FlowEVMBridgeUtils.typeAllowsBridging(type),
             message: "This type is not supported as defined by the project's development team"
         )
-        FlowEVMBridgeUtils.depositTollFee(<-tollFee)
+        // Withdraw from feeProvider and deposit to self
+        let feeVault <-feeProvider.withdraw(amount: FlowEVMBridgeConfig.onboardFee) as! @FlowToken.Vault
+        FlowEVMBridgeUtils.depositTollFee(<-feeVault)
+        // Deploy an EVM defining contract via the FlowBridgeFactory.sol contract
         let erc721Address = self.deployEVMContract(forAssetType: type)
+        // Initialize bridge escrow for the asset
+        FlowEVMBridgeNFTEscrow.initializeEscrow(forType: type, erc721Address: erc721Address)
+
         emit Onboarded(
             type: type,
             cadenceContractAddress: FlowEVMBridgeUtils.getContractAddress(fromType: type)!,
             evmContractAddress: FlowEVMBridgeUtils.getEVMAddressAsHexString(address: erc721Address)
         )
-        FlowEVMBridgeNFTEscrow.initializeEscrow(forType: type, erc721Address: erc721Address)
     }
 
     /// Onboards a given ERC721 to the bridge. Since we're onboarding by EVM Address, the asset must be defined in a
@@ -94,9 +101,14 @@ access(all) contract FlowEVMBridge {
     /// @param address: The EVMAddress of the ERC721 or ERC20 to be onboarded
     /// @param tollFee: Fee paid for onboarding
     ///
-    access(all) fun onboardByEVMAddress(_ address: EVM.EVMAddress, tollFee: @FlowToken.Vault) {
+    access(all)
+    fun onboardByEVMAddress(
+        _ address: EVM.EVMAddress,
+        feeProvider: auth(FungibleToken.Withdraw) &{FungibleToken.Provider}
+    ) {
         pre {
-            tollFee.balance == FlowEVMBridgeConfig.onboardFee: "Insufficient fee paid"
+            feeProvider.isAvailableToWithdraw(amount: FlowEVMBridgeConfig.onboardFee):
+                "Insufficient fee available via feeProvider"
         }
         // Ensure the project has not opted out of bridge support
         assert(
@@ -107,7 +119,10 @@ access(all) contract FlowEVMBridge {
             self.evmAddressRequiresOnboarding(address) == true,
             message: "Onboarding is not needed for this contract"
         )
-        FlowEVMBridgeUtils.depositTollFee(<-tollFee)
+        // Withdraw from feeProvider and deposit to self
+        let feeVault <-feeProvider.withdraw(amount: FlowEVMBridgeConfig.onboardFee) as! @FlowToken.Vault
+        FlowEVMBridgeUtils.depositTollFee(<-feeVault)
+        // Deploy a defining Cadence contract to the bridge account
         self.deployDefiningContract(evmContractAddress: address)
     }
 
@@ -381,12 +396,15 @@ access(all) contract FlowEVMBridge {
     /// @returns The EVMAddress of the deployed contract
     ///
     access(self) fun deployERC721(_ forNFTType: Type): EVM.EVMAddress {
+        // Retrieve the Cadence type's defining contract name, address, & its identifier
         var name = FlowEVMBridgeUtils.getContractName(fromType: forNFTType)
             ?? panic("Could not contract name from type: ".concat(forNFTType.identifier))
-        var symbol = "BRDG"
         let identifier = forNFTType.identifier
         let cadenceAddress = FlowEVMBridgeUtils.getContractAddress(fromType: forNFTType)
             ?? panic("Could not derive contract address for token type: ".concat(identifier))
+        // Assign a default symbol
+        var symbol = "BRDG"
+        // Borrow the ViewResolver to attempt to resolve the EVMBridgedMetadata view
         let viewResolver = getAccount(cadenceAddress).contracts.borrow<&{ViewResolver}>(name: name)!
         var contractURI = ""
         if let bridgedMetadata = viewResolver.resolveContractView(
@@ -398,6 +416,7 @@ access(all) contract FlowEVMBridge {
             contractURI = bridgedMetadata.uri.uri()
         }
 
+        // Call to the factory contract to deploy an ERC721
         let callResult: EVM.Result = FlowEVMBridgeUtils.call(
             signature: "deployERC721(string,string,string,string,string)",
             targetEVMAddress: FlowEVMBridgeUtils.bridgeFactoryEVMAddress,
@@ -409,8 +428,8 @@ access(all) contract FlowEVMBridge {
         let decodedResult: [AnyStruct] = EVM.decodeABI(types: [Type<EVM.EVMAddress>()], data: callResult.data)
         assert(decodedResult.length == 1, message: "Invalid response length")
 
+        // Associate the deployed contract with the given type & return the deployed address
         let erc721Address = decodedResult[0] as! EVM.EVMAddress
-
         FlowEVMBridgeConfig.associateType(forNFTType, with: erc721Address)
         return erc721Address
     }
@@ -425,16 +444,19 @@ access(all) contract FlowEVMBridge {
         // Treat as NFT if ERC721, otherwise FT
         let name: String = FlowEVMBridgeUtils.getName(evmContractAddress: evmContractAddress)
         let symbol: String = FlowEVMBridgeUtils.getSymbol(evmContractAddress: evmContractAddress)
+
         // Derive contract name
         let isERC721: Bool = FlowEVMBridgeUtils.isEVMNFT(evmContractAddress: evmContractAddress)
         let cadenceContractName: String = FlowEVMBridgeUtils.deriveBridgedNFTContractName(from: evmContractAddress)
         let contractURI = FlowEVMBridgeUtils.getContractURI(evmContractAddress: evmContractAddress)
-        // Get code
+
+        // Get Cadence code from template
         let cadenceCode: [UInt8] = FlowEVMBridgeTemplates.getBridgedAssetContractCode(
                 evmContractAddress: evmContractAddress,
                 isERC721: isERC721
             ) ?? panic("Problem retrieving code for Cadence-defining contract")
         self.account.contracts.add(name: cadenceContractName, code: cadenceCode, name, symbol, evmContractAddress, contractURI)
+
         emit BridgeDefiningContractDeployed(
             contractName: cadenceContractName,
             assetName: name,

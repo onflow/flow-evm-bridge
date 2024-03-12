@@ -248,7 +248,8 @@ contract EVM {
             ) as! Result
         }
 
-        /// Bridges the given NFT to the EVM environment
+        /// Bridges the given NFT to the EVM environment, requiring a Provider from which to withdraw a fee to fulfill
+        /// the bridge request
         access(all)
         fun depositNFT(
             nft: @{NonFungibleToken.NFT},
@@ -257,7 +258,8 @@ contract EVM {
             EVM.borrowBridgeAccessor().depositNFT(nft: <-nft, to: self.address(), feeProvider: feeProvider)
         }
 
-        /// Bridges the given NFT to the EVM environment
+        /// Bridges the given NFT to the EVM environment, requiring a Provider from which to withdraw a fee to fulfill
+        /// the bridge request
         access(Owner | Bridge)
         fun withdrawNFT(
             type: Type,
