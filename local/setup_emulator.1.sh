@@ -1,5 +1,9 @@
 #!/bin/bash
 
+flow-c1 accounts add-contract ./cadence/contracts/utils/ArrayUtils.cdc
+flow-c1 accounts add-contract ./cadence/contracts/utils/StringUtils.cdc
+flow-c1 accounts add-contract ./cadence/contracts/utils/ScopedFTProviders.cdc
+
 flow-c1 accounts update-contract ./cadence/contracts/standards/EVM.cdc
 
 # Create COA in emulator-account

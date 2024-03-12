@@ -6,5 +6,5 @@ flow-c1 transactions send ./cadence/transactions/evm/deploy.cdc --args-json "$(c
 
 # Mint an ERC721 with ID 42 to the user's COA
 flow-c1 transactions send ./cadence/transactions/example-assets/safe_mint_erc721.cdc \
-    0000000000000000000000024b74bbccbbaa9977 42 "URI" 01509126e3f350ddab5ca5fb104b5c1c4423cb58 200000 \
+    0000000000000000000000024b74bbccbbaa9977 42 "URI" 50215a38d89c385841f50602c5af2e0acfd30319 200000 \
     --signer erc721
