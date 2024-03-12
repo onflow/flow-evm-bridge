@@ -27,8 +27,10 @@ import "FlowEVMBridgeTemplates"
 access(all)
 contract FlowEVMBridge {
 
-    /* --- Events --- */
-    //
+    /*************
+        Events
+    **************/
+
     /// Emitted any time a new asset type is onboarded to the bridge
     access(all)
     event Onboarded(type: Type, cadenceContractAddress: Address, evmContractAddress: String)
@@ -301,7 +303,7 @@ contract FlowEVMBridge {
         assert(self.account.address == contractAddress, message: "Unexpected error bridging NFT from EVM")
 
         let contractName = FlowEVMBridgeUtils.getContractName(fromType: type)!
-        let nftContract = self.account.contracts.borrow<&{IEVMBridgeNFTMinter}>(name: contractName)!
+        let nftContract = getAccount(contractAddress).contracts.borrow<&{IEVMBridgeNFTMinter}>(name: contractName)!
         let uri = FlowEVMBridgeUtils.getTokenURI(evmContractAddress: associatedAddress, id: id)
         let nft <- nftContract.mintNFT(id: id, tokenURI: uri)
         emit BridgedNFTFromEVM(
