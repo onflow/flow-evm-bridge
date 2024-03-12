@@ -1,6 +1,7 @@
 import "ArrayUtils"
 
 // Copied from https://github.com/green-goo-dao/flow-utils/blob/crescendo/contracts/StringUtils.cdc
+// Special thanks to the Green Goo Dao contributors for creating this contract
 access(all) contract StringUtils {
 
     access(all) fun format(_ s: String, _ args: {String:String}): String{

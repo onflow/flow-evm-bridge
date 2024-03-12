@@ -2,6 +2,7 @@ import "FungibleToken"
 import "StringUtils"
 
 // Copied from https://github.com/green-goo-dao/flow-utils/blob/crescendo/contracts/ScopedFTProviders.cdc with minor changes
+// Special thanks to the Green Goo Dao contributors for creating this contract
 //
 // ScopedFTProviders
 //
