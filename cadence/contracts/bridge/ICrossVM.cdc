@@ -1,6 +1,7 @@
 import "EVM"
 
 /// Contract interface denoting a cross-VM implementation, exposing methods to query EVM-associated addresses
+///
 access(all)
 contract interface ICrossVM {
 
