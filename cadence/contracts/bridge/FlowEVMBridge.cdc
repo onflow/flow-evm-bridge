@@ -163,9 +163,9 @@ access(all) contract FlowEVMBridge {
                         gasLimit: 12000000,
                         value: 0.0
                     ).data,
-                ) as! [Bool]
+                )
             assert(existsResponse.length == 1, message: "Invalid response length")
-            let exists = existsResponse[0]
+            let exists = existsResponse[0] as! Bool
             if exists {
                 // if so transfer
                 let callResult: EVM.Result = FlowEVMBridgeUtils.call(
@@ -399,7 +399,7 @@ access(all) contract FlowEVMBridge {
         }
 
         let callResult: EVM.Result = FlowEVMBridgeUtils.call(
-            signature: "deployERC721(string,string,string,string)",
+            signature: "deployERC721(string,string,string,string,string)",
             targetEVMAddress: FlowEVMBridgeUtils.bridgeFactoryEVMAddress,
             args: [name, symbol, cadenceAddress.toString(), identifier, contractURI], // TODO: Decide on and update symbol
             gasLimit: 15000000,
