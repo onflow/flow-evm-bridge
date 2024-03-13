@@ -67,11 +67,11 @@ contract FlowEVMBridge {
     **************************/
 
     /// Onboards a given asset by type to the bridge. Since we're onboarding by Cadence Type, the asset must be defined
-    /// in a third-party contract. Attempting to onboard a bridge-defined asset will result in an error as onboarding
-    /// is not required
+    /// in a third-party contract. Attempting to onboard a bridge-defined asset will result in an error as the asset has
+    /// already been onboarded to the bridge.
     ///
     /// @param type: The Cadence Type of the NFT to be onboarded
-    /// @param tollFee: Fee paid for onboarding
+    /// @param feeProvider: A reference to a FungibleToken Provider from which the bridging fee is withdrawn in $FLOW
     ///
     access(all)
     fun onboardByType(_ type: Type, feeProvider: auth(FungibleToken.Withdraw) &{FungibleToken.Provider}) {
@@ -88,7 +88,7 @@ contract FlowEVMBridge {
         )
         // Withdraw from feeProvider and deposit to self
         let feeVault <-feeProvider.withdraw(amount: FlowEVMBridgeConfig.onboardFee) as! @FlowToken.Vault
-        FlowEVMBridgeUtils.depositTollFee(<-feeVault)
+        FlowEVMBridgeUtils.deposit(<-feeVault)
         // Deploy an EVM defining contract via the FlowBridgeFactory.sol contract
         let erc721Address = self.deployEVMContract(forAssetType: type)
         // Initialize bridge escrow for the asset
@@ -101,12 +101,12 @@ contract FlowEVMBridge {
         )
     }
 
-    /// Onboards a given ERC721 to the bridge. Since we're onboarding by EVM Address, the asset must be defined in a
-    /// third-party EVM contract. Attempting to onboard a bridge-defined asset will result in an error as onboarding is
-    /// not required
+    /// Onboards a given EVM contract to the bridge. Since we're onboarding by EVM Address, the asset must be defined in
+    /// a third-party EVM contract. Attempting to onboard a bridge-defined asset will result in an error as onboarding
+    /// is not required.
     ///
     /// @param address: The EVMAddress of the ERC721 or ERC20 to be onboarded
-    /// @param tollFee: Fee paid for onboarding
+    /// @param feeProvider: A reference to a FungibleToken Provider from which the bridging fee is withdrawn in $FLOW
     ///
     access(all)
     fun onboardByEVMAddress(
@@ -128,16 +128,16 @@ contract FlowEVMBridge {
         )
         // Withdraw from feeProvider and deposit to self
         let feeVault <-feeProvider.withdraw(amount: FlowEVMBridgeConfig.onboardFee) as! @FlowToken.Vault
-        FlowEVMBridgeUtils.depositTollFee(<-feeVault)
+        FlowEVMBridgeUtils.deposit(<-feeVault)
         // Deploy a defining Cadence contract to the bridge account
         self.deployDefiningContract(evmContractAddress: address)
     }
 
-    /// Public entrypoint to bridge NFTs from Cadence to EVM - cross-account bridging supported (e.g. straight to EOA)
+    /// Public entrypoint to bridge NFTs from Cadence to EVM.
     ///
     /// @param token: The NFT to be bridged
     /// @param to: The NFT recipient in FlowEVM
-    /// @param tollFee: The fee paid for bridging
+    /// @param feeProvider: A reference to a FungibleToken Provider from which the bridging fee is withdrawn in $FLOW
     ///
     access(all)
     fun bridgeNFTToEVM(
@@ -168,7 +168,7 @@ contract FlowEVMBridge {
         )
         // Withdraw from feeProvider and deposit to self
         let feeVault <-feeProvider.withdraw(amount: feeAmount) as! @FlowToken.Vault
-        FlowEVMBridgeUtils.depositTollFee(<-feeVault)
+        FlowEVMBridgeUtils.deposit(<-feeVault)
 
         // Does the bridge control the EVM contract associated with this type?
         let associatedAddress = FlowEVMBridgeConfig.getEVMAddressAssociated(with: tokenType)
@@ -236,7 +236,7 @@ contract FlowEVMBridge {
     /// @param calldata: Caller-provided approve() call, enabling contract COA to operate on NFT in EVM contract
     /// @param id: The NFT ID to bridged
     /// @param evmContractAddress: Address of the EVM address defining the NFT being bridged - also call target
-    /// @param tollFee: The fee paid for bridging
+    /// @param feeProvider: A reference to a FungibleToken Provider from which the bridging fee is withdrawn in $FLOW
     ///
     /// @returns The bridged NFT
     ///
@@ -256,7 +256,7 @@ contract FlowEVMBridge {
         // Withdraw from feeProvider and deposit to self
         let feeAmount = FlowEVMBridgeUtils.calculateBridgeFee(used: 0, includeBase: true)
         let feeVault <-feeProvider.withdraw(amount: feeAmount) as! @FlowToken.Vault
-        FlowEVMBridgeUtils.depositTollFee(<-feeVault)
+        FlowEVMBridgeUtils.deposit(<-feeVault)
 
         // Get the EVMAddress of the ERC721 contract associated with the type
         let associatedAddress = FlowEVMBridgeConfig.getEVMAddressAssociated(with: type)
