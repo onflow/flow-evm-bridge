@@ -4,7 +4,7 @@ import "FlowEVMBridge"
 ///
 /// @param identifier: The identifier of the Cadence Type in question
 ///
-/// @return: Whether the type requires onboarding to the FlowEVMBridge if the type is bridgeable, otherwise nil
+/// @return Whether the type requires onboarding to the FlowEVMBridge if the type is bridgeable, otherwise nil
 ///
 access(all) fun main(identifier: String): Bool? {
     if let type = CompositeType(identifier) {

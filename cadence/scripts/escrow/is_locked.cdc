@@ -8,7 +8,7 @@ import "FlowEVMBridge"
 /// @param nftTypeIdentifier: The type identifier of the NFT
 /// @param id: The ID of the NFT
 ///
-/// @return: true if the NFT is locked in escrow and false otherwise
+/// @return true if the NFT is locked in escrow and false otherwise
 ///
 access(all) fun main(nftTypeIdentifier: String, id: UInt64): Bool {
     let type = CompositeType(nftTypeIdentifier) ?? panic("Malformed type identifier")
