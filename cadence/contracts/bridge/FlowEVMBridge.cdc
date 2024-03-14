@@ -232,20 +232,24 @@ contract FlowEVMBridge {
 
     /// Public entrypoint to bridge NFTs from EVM to Cadence
     ///
-    /// @param caller: The caller executing the bridge - must be passed to check EVM state pre- & post-call in scope
+    /// @param owner: The EVM address of the NFT owner. Current ownership and successful transfer (via 
+    ///     `protectedTransferCall`) is validated before the bridge request is executed.
     /// @param calldata: Caller-provided approve() call, enabling contract COA to operate on NFT in EVM contract
     /// @param id: The NFT ID to bridged
     /// @param evmContractAddress: Address of the EVM address defining the NFT being bridged - also call target
     /// @param feeProvider: A reference to a FungibleToken Provider from which the bridging fee is withdrawn in $FLOW
+    /// @param protectedTransferCall: A function that executes the transfer of the NFT from the named owner to the
+    ///     bridge's COA. This function is expected to return a Result indicating the status of the transfer call.
     ///
     /// @returns The bridged NFT
     ///
     access(all)
     fun bridgeNFTFromEVM(
-        caller: auth(EVM.Call) &EVM.CadenceOwnedAccount,
+        owner: EVM.EVMAddress,
         type: Type,
         id: UInt256,
-        feeProvider: auth(FungibleToken.Withdraw) &{FungibleToken.Provider}
+        feeProvider: auth(FungibleToken.Withdraw) &{FungibleToken.Provider},
+        protectedTransferCall: fun (): EVM.Result
     ): @{NonFungibleToken.NFT} {
         pre {
             feeProvider.isAvailableToWithdraw(amount: FlowEVMBridgeUtils.calculateBridgeFee(used: 0, includeBase: true)):
@@ -265,20 +269,14 @@ contract FlowEVMBridge {
         // Ensure the caller is either the current owner or approved for the NFT
         let isAuthorized: Bool = FlowEVMBridgeUtils.isOwnerOrApproved(
             ofNFT: id,
-            owner: caller.address(),
+            owner: owner,
             evmContractAddress: associatedAddress
         )
         assert(isAuthorized, message: "Caller is not the owner of or approved for requested NFT")
 
         // Execute the transfer from the calling owner to the bridge's COA, escrowing the NFT in EVM
-        caller.call(
-            to: associatedAddress,
-            data: EVM.encodeABIWithSignature(
-                "safeTransferFrom(address,address,uint256)",
-                [caller.address(), self.getBridgeCOAEVMAddress(), id]
-            ), gasLimit: 15000000,
-            value: EVM.Balance(attoflow: 0)
-        )
+        let callResult = protectedTransferCall()
+        assert(callResult.status == EVM.Status.successful, message: "Transfer to bridge COA failed")
 
         // Ensure the bridge is now the owner of the NFT after the preceding transfer
         let isEscrowed: Bool = FlowEVMBridgeUtils.isOwner(
@@ -293,7 +291,7 @@ contract FlowEVMBridge {
                 type: type,
                 id: cadenceID,
                 evmID: id,
-                caller: FlowEVMBridgeUtils.getEVMAddressAsHexString(address: caller.address()),
+                caller: FlowEVMBridgeUtils.getEVMAddressAsHexString(address: owner),
                 evmContractAddress: FlowEVMBridgeUtils.getEVMAddressAsHexString(address: associatedAddress)
             )
             return <-FlowEVMBridgeNFTEscrow.unlockNFT(type: type, id: cadenceID)
@@ -310,7 +308,7 @@ contract FlowEVMBridge {
                 type: type,
                 id: nft.id,
                 evmID: id,
-                caller: FlowEVMBridgeUtils.getEVMAddressAsHexString(address: caller.address()),
+                caller: FlowEVMBridgeUtils.getEVMAddressAsHexString(address: owner),
                 evmContractAddress: FlowEVMBridgeUtils.getEVMAddressAsHexString(address: associatedAddress)
             )
         return <-nft

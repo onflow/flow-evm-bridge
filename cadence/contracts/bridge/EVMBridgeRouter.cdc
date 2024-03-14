@@ -50,7 +50,35 @@ contract EVMBridgeRouter {
             id: UInt256,
             feeProvider: auth(FungibleToken.Withdraw) &{FungibleToken.Provider}
         ): @{NonFungibleToken.NFT} {
-            return <-FlowEVMBridge.bridgeNFTFromEVM(caller: caller, type: type, id: id, feeProvider: feeProvider)
+            // Define a callback function, enabling the bridge to act on the ephemeral COA reference in scope
+            var executed = false
+            fun callback(): EVM.Result {
+                pre {
+                    !executed: "Callback can only be executed once"
+                }
+                post {
+                    executed: "Callback must be executed"
+                }
+                executed = true
+                return caller.call(
+                    to: FlowEVMBridgeConfig.getEVMAddressAssociated(with: type)
+                        ?? panic("No EVM address associated with type"),
+                    data: EVM.encodeABIWithSignature(
+                        "safeTransferFrom(address,address,uint256)",
+                        [caller.address(), FlowEVMBridge.getBridgeCOAEVMAddress(), id]
+                    ),
+                    gasLimit: 15000000,
+                    value: EVM.Balance(attoflow: 0)
+                )
+            }
+            // Execute the bridge request
+            return <- FlowEVMBridge.bridgeNFTFromEVM(
+                owner: caller.address(),
+                type: type,
+                id: id,
+                feeProvider: feeProvider,
+                protectedTransferCall: callback
+            )
         }
     }
 
