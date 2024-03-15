@@ -9,6 +9,7 @@ import "EVM"
 import "BridgePermissions"
 import "ICrossVM"
 import "IEVMBridgeNFTMinter"
+import "IFlowEVMNFTBridge"
 import "CrossVMNFT"
 import "FlowEVMBridgeConfig"
 import "FlowEVMBridgeUtils"
@@ -25,7 +26,7 @@ import "FlowEVMBridgeTemplates"
 /// - FLIP #237: https://github.com/onflow/flips/pull/233
 ///
 access(all)
-contract FlowEVMBridge {
+contract FlowEVMBridge : IFlowEVMNFTBridge {
 
     /*************
         Events
@@ -322,6 +323,13 @@ contract FlowEVMBridge {
     /**************************
         Public Getters
     **************************/
+
+    /// Returns the EVM address associated with the provided type
+    ///
+    access(all)
+    view fun getAssociatedEVMAddress(with type: Type): EVM.EVMAddress? {
+        return FlowEVMBridgeConfig.getEVMAddressAssociated(with: type)
+    }
 
     /// Retrieves the bridge contract's COA EVMAddress
     ///
