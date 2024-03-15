@@ -42,6 +42,11 @@ access(all) contract interface IFlowEVMNFTBridge {
     access(all)
     view fun getAssociatedEVMAddress(with type: Type): EVM.EVMAddress?
 
+    /// Returns the EVM address of the bridge coordinating COA
+    ///
+    access(all)
+    view fun getBridgeCOAEVMAddress(): EVM.EVMAddress
+
     /********************************
         Public Bridge Entrypoints
     *********************************/
