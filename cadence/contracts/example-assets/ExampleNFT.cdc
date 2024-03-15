@@ -109,10 +109,6 @@ access(all) contract ExampleNFT: NonFungibleToken {
                     let excludedTraits = ["mintedTime", "foo"]
                     let traitsView = MetadataViews.dictToTraits(dict: self.metadata, excludedNames: excludedTraits)
 
-                    // mintedTime is a unix timestamp, we should mark it with a displayType so platforms know how to show it.
-                    let mintedTimeTrait = MetadataViews.Trait(name: "mintedTime", value: self.metadata["mintedTime"]!, displayType: "Date", rarity: nil)
-                    traitsView.addTrait(mintedTimeTrait)
-
                     // foo is a trait with its own rarity
                     let fooTraitRarity = MetadataViews.Rarity(score: 10.0, max: 100.0, description: "Common")
                     let fooTrait = MetadataViews.Trait(name: "foo", value: self.metadata["foo"], displayType: nil, rarity: fooTraitRarity)
