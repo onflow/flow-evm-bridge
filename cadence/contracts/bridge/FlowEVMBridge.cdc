@@ -44,24 +44,6 @@ contract FlowEVMBridge : IFlowEVMNFTBridge {
         isERC721: Bool,
         evmContractAddress: String
     )
-    /// Broadcasts an NFT was bridged from Cadence to EVM
-    access(all)
-    event BridgedNFTToEVM(
-        type: Type,
-        id: UInt64,
-        evmID: UInt256,
-        to: String,
-        evmContractAddress: String
-    )
-    /// Broadcasts an NFT was bridged from EVM to Cadence
-    access(all)
-    event BridgedNFTFromEVM(
-        type: Type,
-        id: UInt64,
-        evmID: UInt256,
-        caller: String,
-        evmContractAddress: String
-    )
 
     /**************************
         Public NFT Handling
@@ -222,13 +204,6 @@ contract FlowEVMBridge : IFlowEVMNFTBridge {
             )
             assert(callResult.status == EVM.Status.successful, message: "Tranfer to bridge recipient failed")
         }
-        emit BridgedNFTToEVM(
-            type: tokenType,
-            id: tokenID,
-            evmID: evmID,
-            to: FlowEVMBridgeUtils.getEVMAddressAsHexString(address: to),
-            evmContractAddress: FlowEVMBridgeUtils.getEVMAddressAsHexString(address:associatedAddress)
-        )
     }
 
     /// Public entrypoint to bridge NFTs from EVM to Cadence
@@ -288,13 +263,6 @@ contract FlowEVMBridge : IFlowEVMNFTBridge {
         assert(isEscrowed, message: "Transfer to bridge COA failed - cannot bridge NFT without bridge escrow")
         // If the NFT is currently locked, unlock and return
         if let cadenceID = FlowEVMBridgeNFTEscrow.getLockedCadenceID(type: type, evmID: id) {
-            emit BridgedNFTFromEVM(
-                type: type,
-                id: cadenceID,
-                evmID: id,
-                caller: FlowEVMBridgeUtils.getEVMAddressAsHexString(address: owner),
-                evmContractAddress: FlowEVMBridgeUtils.getEVMAddressAsHexString(address: associatedAddress)
-            )
             return <-FlowEVMBridgeNFTEscrow.unlockNFT(type: type, id: cadenceID)
         }
         // Otherwise, we expect the NFT to be minted in Cadence
@@ -305,13 +273,6 @@ contract FlowEVMBridge : IFlowEVMNFTBridge {
         let nftContract = getAccount(contractAddress).contracts.borrow<&{IEVMBridgeNFTMinter}>(name: contractName)!
         let uri = FlowEVMBridgeUtils.getTokenURI(evmContractAddress: associatedAddress, id: id)
         let nft <- nftContract.mintNFT(id: id, tokenURI: uri)
-        emit BridgedNFTFromEVM(
-                type: type,
-                id: nft.id,
-                evmID: id,
-                caller: FlowEVMBridgeUtils.getEVMAddressAsHexString(address: owner),
-                evmContractAddress: FlowEVMBridgeUtils.getEVMAddressAsHexString(address: associatedAddress)
-            )
         return <-nft
     }
 
