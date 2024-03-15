@@ -38,6 +38,8 @@ contract Serialize {
         }
         // Handle primitive types & their respective optionals
         switch value.getType() {
+            case Type<Never?>():
+                return "nil"
             case Type<String>():
                 return value as! String
             case Type<String?>():
@@ -83,6 +85,8 @@ contract Serialize {
                 return (value as! UInt128).toString()
             case Type<UInt256>():
                 return (value as! UInt256).toString()
+            case Type<UInt>():
+                return (value as! UInt).toString()
             case Type<Word8>():
                 return (value as! Word8).toString()
             case Type<Word16>():
@@ -100,6 +104,11 @@ contract Serialize {
             default:
                 return nil
         }
+    }
+
+    access(all)
+    fun tryToJSONString(_ value: AnyStruct): String? {
+        return "\"".concat(self.tryToString(value) ?? "nil").concat("\"")
     }
 
     /// Method that returns a serialized representation of a provided boolean
@@ -129,7 +138,8 @@ contract Serialize {
     }
 
     /// Method that returns a serialized representation of the given String-indexed mapping or nil if the value is not
-    /// serializable
+    /// serializable. The interface here is largely the same as as the `MetadataViews.dictToTraits` method, though here
+    /// a JSON-compatible String is returned instead of a `Traits` array.
     ///
     access(all)
     fun dictToString(dict: {String: AnyStruct}, excludedNames: [String]?): String? {
