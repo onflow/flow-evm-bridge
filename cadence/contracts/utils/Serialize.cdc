@@ -133,8 +133,7 @@ contract Serialize {
                 serializedArr = serializedArr.concat(", ")
             }
         }
-        serializedArr.concat("]")
-        return serializedArr
+        return serializedArr.concat("]")
     }
 
     /// Method that returns a serialized representation of the given String-indexed mapping or nil if the value is not
