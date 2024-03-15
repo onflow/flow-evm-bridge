@@ -199,14 +199,22 @@ fun testBoolToStringSucceeds() {
     Test.assertEqual(expectedFalse, actualFalse)
 }
 
-// access(all)
-// fun testArrayToStringSucceeds() {
-//     let arr: [AnyStruct] = 
+access(all)
+fun testArrayToJSONStringSucceeds() {
+    let arr: [AnyStruct] = [
+        127,
+        255,
+        "Hello, World!",
+        "c",
+        Address(0x0000000000000007),
+        UFix64.max,
+        true
+    ]
 
-//     let expected = "\"true\""
+    let expected = "[\"127\", \"255\", \"Hello, World!\", \"c\", \"0x0000000000000007\", \"184467440737.09551615\", \"true\"]"
     
-//     var actual = Serialize.tryToJSONString(t)
-    
-//     Test.assertEqual(expectedTrue, actualTrue!)
-//     Test.assertEqual(expectedFalse, actualFalse!)
-// }
+    var actual = Serialize.arrayToString(arr)
+
+    Test.assertEqual(expected, actual!)
+}
+
