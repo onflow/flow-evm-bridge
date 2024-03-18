@@ -30,6 +30,10 @@ contract FlowBridgedERC721 is ERC721, ERC721URIStorage, ERC721Burnable, ERC721En
         _setTokenURI(tokenId, uri);
     }
 
+    function updateTokenURI(uint256 tokenId, string memory uri) public onlyOwner {
+        _setTokenURI(tokenId, uri);
+    }
+
     function contractURI() public view returns (string memory) {
         return contractMetadata;
     }
