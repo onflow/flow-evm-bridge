@@ -15,6 +15,7 @@ import "FlowEVMBridgeConfig"
 import "FlowEVMBridgeUtils"
 import "FlowEVMBridgeNFTEscrow"
 import "FlowEVMBridgeTemplates"
+import "SerializeNFT"
 
 /// The FlowEVMBridge contract is the main entrypoint for bridging NFT & FT assets between Flow & FlowEVM.
 ///
@@ -135,11 +136,6 @@ contract FlowEVMBridge : IFlowEVMNFTBridge {
         let tokenType = token.getType()
         let tokenID = token.id
         let evmID = CrossVMNFT.getEVMID(from: &token as &{NonFungibleToken.NFT}) ?? UInt256(token.id)
-        // Grab the URI from the NFT if available
-        var uri: String = ""
-        if let metadata = token.resolveView(Type<CrossVMNFT.EVMBridgedMetadata>()) as! CrossVMNFT.EVMBridgedMetadata? {
-            uri = metadata.uri.uri()
-        }
 
         // Lock the NFT & calculate the storage used by the NFT
         let storageUsed = FlowEVMBridgeNFTEscrow.lockNFT(<-token)
@@ -159,6 +155,16 @@ contract FlowEVMBridge : IFlowEVMNFTBridge {
         let isFactoryDeployed = FlowEVMBridgeUtils.isEVMContractBridgeOwned(evmContractAddress: associatedAddress)
         // Controlled by the bridge - mint or transfer based on existence
         if isFactoryDeployed {
+            // Grab the URI from the NFT if available
+            var uri: String = ""
+            // Default to project-specified URI
+            if let metadata = token.resolveView(Type<CrossVMNFT.EVMBridgedMetadata>()) as! CrossVMNFT.EVMBridgedMetadata? {
+                uri = metadata.uri.uri()
+            } else {
+                // Otherwise, serialize the NFT using OpenSea Metadata strategy
+                uri = SerializeNFT.serializeNFTMetadataAsURI(&token as &{NonFungibleToken.NFT})
+            }
+
             // Check if the ERC721 exists
             let existsResponse = EVM.decodeABI(
                     types: [Type<Bool>()],
@@ -173,17 +179,27 @@ contract FlowEVMBridge : IFlowEVMNFTBridge {
             assert(existsResponse.length == 1, message: "Invalid response length")
             let exists = existsResponse[0] as! Bool
             if exists {
-                // if so transfer
-                let callResult: EVM.Result = FlowEVMBridgeUtils.call(
+                // If so transfer
+                let transferResult: EVM.Result = FlowEVMBridgeUtils.call(
                     signature: "safeTransferFrom(address,address,uint256)",
                     targetEVMAddress: associatedAddress,
                     args: [self.getBridgeCOAEVMAddress(), to, evmID],
                     gasLimit: 15000000,
                     value: 0.0
                 )
-                assert(callResult.status == EVM.Status.successful, message: "Tranfer to bridge recipient failed")
+                assert(transferResult.status == EVM.Status.successful, message: "Tranfer to bridge recipient failed")
+                
+                // And update the URI to reflect current metadata
+                let updateURIResult: EVM.Result = FlowEVMBridgeUtils.call(
+                    signature: "updateTokenURI(uint256,string)",
+                    targetEVMAddress: associatedAddress,
+                    args: [evmID, uri],
+                    gasLimit: 15000000,
+                    value: 0.0
+                )
+                assert(updateURIResult.status == EVM.Status.successful, message: "Tranfer to bridge recipient failed")
             } else {
-                // Otherwise mint
+                // Otherwise mint with current URI
                 let callResult: EVM.Result = FlowEVMBridgeUtils.call(
                     signature: "safeMint(address,uint256,string)",
                     targetEVMAddress: associatedAddress,
