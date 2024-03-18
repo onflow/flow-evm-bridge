@@ -14,7 +14,12 @@ contract CrossVMNFT {
     ///
     access(all)
     struct URI : MetadataViews.File {
+        /// The base URI prefix, if any. Not needed for all URIs, but helpful for some use cases
+        /// For example, updating a whole NFT collection's image host easily
+        access(all)
+        let baseURI: String?
         /// The URI value
+        /// NOTE: this is set on init as a concatenation of the baseURI and the value if baseURI != nil
         access(self)
         let value: String
 
@@ -23,8 +28,9 @@ contract CrossVMNFT {
             return self.value
         }
 
-        init(_ value: String) {
-            self.value = value
+        init(baseURI: String?, value: String) {
+            self.baseURI = baseURI
+            self.value = baseURI != nil ? baseURI!.concat(value) : value
         }
     }
 
