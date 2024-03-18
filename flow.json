@@ -16,7 +16,8 @@
 			"source": "./cadence/contracts/standards/Burner.cdc",
 			"aliases": {
 				"emulator": "ee82856bf20e2aa6",
-				"previewnet": "b6763b4399a888c8"
+				"previewnet": "b6763b4399a888c8",
+				"testing": "0000000000000007"
 			}
 		},
 		"CrossVMNFT": {
@@ -41,7 +42,8 @@
 		"ExampleNFT": {
 			"source": "./cadence/contracts/example-assets/ExampleNFT.cdc",
 			"aliases": {
-				"emulator": "179b6b1cb6755e31"
+				"emulator": "179b6b1cb6755e31",
+				"testing": "0000000000000007"
 			}
 		},
 		"FlowEVMBridge": {
@@ -89,6 +91,7 @@
 				"emulator": "ee82856bf20e2aa6",
 				"mainnet": "f233dcee88fe0abe",
 				"previewnet": "a0225e7000ac82a9",
+				"testing": "0000000000000007",
 				"testnet": "9a0766d93b6608b7"
 			}
 		},
@@ -98,6 +101,7 @@
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "f233dcee88fe0abe",
 				"previewnet": "a0225e7000ac82a9",
+				"testing": "0000000000000007",
 				"testnet": "9a0766d93b6608b7"
 			}
 		},
@@ -125,6 +129,7 @@
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "1d7e57aa55817448",
 				"previewnet": "b6763b4399a888c8",
+				"testing": "0000000000000007",
 				"testnet": "631e88ae7f1d7c20"
 			}
 		},
@@ -134,6 +139,7 @@
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "1d7e57aa55817448",
 				"previewnet": "b6763b4399a888c8",
+				"testing": "0000000000000007",
 				"testnet": "631e88ae7f1d7c20"
 			}
 		},
@@ -145,6 +151,20 @@
 		},
 		"Serialize": {
 			"source": "./cadence/contracts/utils/Serialize.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"testing": "0000000000000007"
+			}
+		},
+		"SerializeNFT": {
+			"source": "./cadence/contracts/utils/SerializeNFT.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"testing": "0000000000000007"
+			}
+		},
+		"SerializationInterfaces": {
+			"source": "./cadence/contracts/utils/SerializationInterfaces.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"testing": "0000000000000007"
@@ -162,6 +182,7 @@
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "1d7e57aa55817448",
 				"previewnet": "b6763b4399a888c8",
+				"testing": "0000000000000007",
 				"testnet": "631e88ae7f1d7c20"
 			}
 		}

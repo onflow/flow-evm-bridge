@@ -1,14 +1,67 @@
 import Test
 import BlockchainHelpers
 
+import "NonFungibleToken"
+import "ViewResolver"
+import "MetadataViews"
+
 import "Serialize"
+import "SerializationInterfaces"
 
 access(all)
-let serializeAccount = Test.getAccount(0x0000000000000007)
+let admin = Test.getAccount(0x0000000000000007)
+access(all)
+let alice = Test.createAccount()
+
+// access(all)
+// let testSerializableStructOutput = "{\"trait_type\": \"Name\", \"value\": \"TestSerializableStruct\"}"
+
+// access(all)
+// struct TestSerializableStruct : SerializationInterfaces.SerializableStruct {
+//     access(all)
+//     fun serialize(): String {
+//         return testSerializableStructOutput
+//     }
+// }
 
 access(all)
 fun setup() {
     var err = Test.deployContract(
+        name: "ViewResolver",
+        path: "../contracts/standards/ViewResolver.cdc",
+        arguments: []
+    )
+    Test.expect(err, Test.beNil())
+    err = Test.deployContract(
+        name: "Burner",
+        path: "../contracts/standards/Burner.cdc",
+        arguments: []
+    )
+    err = Test.deployContract(
+        name: "FungibleToken",
+        path: "../contracts/standards/FungibleToken.cdc",
+        arguments: []
+    )
+    Test.expect(err, Test.beNil())
+    err = Test.deployContract(
+        name: "NonFungibleToken",
+        path: "../contracts/standards/NonFungibleToken.cdc",
+        arguments: []
+    )
+    Test.expect(err, Test.beNil())
+    err = Test.deployContract(
+        name: "MetadataViews",
+        path: "../contracts/standards/MetadataViews.cdc",
+        arguments: []
+    )
+    Test.expect(err, Test.beNil())
+    err = Test.deployContract(
+        name: "SerializationInterfaces",
+        path: "../contracts/utils/SerializationInterfaces.cdc",
+        arguments: []
+    )
+    Test.expect(err, Test.beNil())
+    err = Test.deployContract(
         name: "Serialize",
         path: "../contracts/utils/Serialize.cdc",
         arguments: []
@@ -185,36 +238,42 @@ fun testBoolTryToJSONStringSucceeds() {
 }
 
 access(all)
-fun testBoolToStringSucceeds() {
-    let t: Bool = true
-    let f: Bool = false
-
-    let expectedTrue = "true"
-    let expectedFalse = "false"
-    
-    var actualTrue = Serialize.boolToString(t)
-    var actualFalse = Serialize.boolToString(f)
-    
-    Test.assertEqual(expectedTrue, actualTrue)
-    Test.assertEqual(expectedFalse, actualFalse)
-}
-
-access(all)
 fun testArrayToJSONStringSucceeds() {
     let arr: [AnyStruct] = [
-        127,
-        255,
-        "Hello, World!",
-        "c",
-        Address(0x0000000000000007),
-        UFix64.max,
-        true
-    ]
+            127,
+            255,
+            "Hello, World!",
+            "c",
+            Address(0x0000000000000007),
+            UFix64.max,
+            true
+        ]
 
     let expected = "[\"127\", \"255\", \"Hello, World!\", \"c\", \"0x0000000000000007\", \"184467440737.09551615\", \"true\"]"
     
-    var actual = Serialize.arrayToString(arr)
+    var actual = Serialize.arrayToJSONString(arr)
 
     Test.assertEqual(expected, actual!)
 }
 
+access(all)
+fun testDictToJSONStringSucceeds() {
+    let dict: {String: AnyStruct} = {
+            "bool": true,
+            "arr": [ 127, "Hello, World!" ]
+        }
+
+    // Mapping values can be indexed in arbitrary order, so we need to check for all possible outputs
+    var expectedOne: String = "{\"bool\": \"true\", \"arr\": [\"127\", \"Hello, World!\"]}"
+    var expectedTwo: String = "{\"arr\": [\"127\", \"Hello, World!\"], \"bool\": \"true\"}"
+    
+    var actual: String? = Serialize.dictToJSONString(dict: dict, excludedNames: nil)
+    Test.assertEqual(true, expectedOne == actual! || expectedTwo == actual!)
+    
+    actual = Serialize.tryToJSONString(dict)
+    Test.assertEqual(true, expectedOne == actual! || expectedTwo == actual!)
+
+    actual = Serialize.dictToJSONString(dict: dict, excludedNames: ["bool"])
+    expectedOne = "{\"arr\": [\"127\", \"Hello, World!\"]}"
+    Test.assertEqual(true, expectedOne == actual!)
+}
