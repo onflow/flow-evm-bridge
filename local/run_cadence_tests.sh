@@ -1,1 +1,1 @@
-flow-c1 test --cover --covercode="contracts" --coverprofile="coverage.lcov" cadence/tests/*_tests.cdc
+flow test --cover --covercode="contracts" --coverprofile="coverage.lcov" cadence/tests/*_tests.cdc
