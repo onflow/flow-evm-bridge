@@ -13,4 +13,9 @@ docs/
 # Dotenv file
 .env
 
+# flow-evm-gateway db/ files
 db/
+
+# Cadence test framework coverage
+coverage.json
+coverage.lcov
