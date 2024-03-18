@@ -13,17 +13,6 @@ let admin = Test.getAccount(0x0000000000000007)
 access(all)
 let alice = Test.createAccount()
 
-// access(all)
-// let testSerializableStructOutput = "{\"trait_type\": \"Name\", \"value\": \"TestSerializableStruct\"}"
-
-// access(all)
-// struct TestSerializableStruct : SerializationInterfaces.SerializableStruct {
-//     access(all)
-//     fun serialize(): String {
-//         return testSerializableStructOutput
-//     }
-// }
-
 access(all)
 fun setup() {
     var err = Test.deployContract(
