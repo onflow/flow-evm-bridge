@@ -164,7 +164,7 @@ contract FlowEVMBridge {
         let feeAmount = FlowEVMBridgeUtils.calculateBridgeFee(used: storageUsed, includeBase: true)
         assert(
             feeProvider.isAvailableToWithdraw(amount: feeAmount),
-            message: "Fee provider does not have balance to cover the bridge fee of".concat(feeAmount.toString())
+            message: "Fee provider does not have balance to cover the bridge fee of ".concat(feeAmount.toString())
         )
         // Withdraw from feeProvider and deposit to self
         let feeVault <-feeProvider.withdraw(amount: feeAmount) as! @FlowToken.Vault
@@ -285,7 +285,7 @@ contract FlowEVMBridge {
             evmContractAddress: associatedAddress
         )
         assert(isEscrowed, message: "Transfer to bridge COA failed - cannot bridge NFT without bridge escrow")
-        // If the NFT is currently lock, unlock and return
+        // If the NFT is currently locked, unlock and return
         if let cadenceID = FlowEVMBridgeNFTEscrow.getLockedCadenceID(type: type, evmID: id) {
             emit BridgedNFTFromEVM(
                 type: type,
