@@ -1,3 +1,9 @@
+import "ViewResolver"
+import "MetadataViews"
+import "NonFungibleToken"
+
+import "SerializationInterfaces"
+
 /// This contract is a utility for serializing primitive types, arrays, and common metadata mapping formats to JSON
 /// compatible strings. Also included are interfaces enabling custom serialization for structs and resources.
 ///
@@ -6,129 +12,115 @@
 access(all)
 contract Serialize {
 
-    /// Defines the interface for a struct that returns a serialized representation of itself
+    /// A basic serialization strategy that supports serializing resources and structs to JSON-compatible strings.
     ///
     access(all)
-    struct interface SerializableStruct {
-        access(all) fun serialize(): String
-    }
-
-    /// Defines the interface for a resource that returns a serialized representation of itself
-    ///
-    access(all)
-    resource interface SerializableResource {
-        access(all) fun serialize(): String
+    struct JSONStringStrategy : SerializationInterfaces.SerializationStrategy {
+        /// Returns the types this stategy will attempt to serialize
+        ///
+        access(all) view fun getSupportedTypes(): [Type] {
+            return [Type<@AnyResource>(), Type<AnyStruct>()]
+        }
+        /// Returns the resource serialized on its identifier as an escaped JSON string
+        ///
+        access(all) fun serializeResource(_ r: &AnyResource): String? {
+            return Serialize.tryToJSONString(r.getType().identifier)
+        }
+        /// Returns the an escaped JSON string of the provided struct, calling through to Serialize.tryToJSONString
+        /// with the provided value
+        ///
+        access(all) fun serializeStruct(_ s: AnyStruct): String? {
+            return Serialize.tryToJSONString(s)
+        }
     }
 
     /// Method that returns a serialized representation of the given value or nil if the value is not serializable
     ///
     access(all)
-    fun tryToString(_ value: AnyStruct): String? {
-        // Call serialize on the value if available
-        if value.getType().isSubtype(of: Type<{SerializableStruct}>()) {
-            return (value as! {SerializableStruct}).serialize()
-        }
+    fun tryToJSONString(_ value: AnyStruct): String? {
         // Recursively serialize array & return
         if value.getType().isSubtype(of: Type<[AnyStruct]>()) {
-            return self.arrayToString(value as! [AnyStruct])
+            return self.arrayToJSONString(value as! [AnyStruct])
         }
         // Recursively serialize map & return
         if value.getType().isSubtype(of: Type<{String: AnyStruct}>()) {
-            return self.dictToString(dict: value as! {String: AnyStruct}, excludedNames: nil)
+            return self.dictToJSONString(dict: value as! {String: AnyStruct}, excludedNames: nil)
         }
-        // Handle primitive types & their respective optionals
+        // Handle primitive types & optionals
         switch value.getType() {
             case Type<Never?>():
-                return "nil"
+                return "\"nil\""
             case Type<String>():
-                return value as! String
+                return "\"".concat(value as! String).concat("\"")
             case Type<String?>():
-                return value as? String ?? "nil"
+                return "\"".concat(value as? String ?? "nil").concat("\"")
             case Type<Character>():
-                return (value as! Character).toString()
-            case Type<Character?>():
-                return (value as? Character)?.toString() ?? "nil"
+                return "\"".concat((value as! Character).toString()).concat("\"")
             case Type<Bool>():
-                return self.boolToString(value as! Bool)
-            case Type<Bool?>():
-                if value as? Bool == nil {
-                    return "nil"
-                }
-                return self.boolToString(value as! Bool)
+                return "\"".concat(value as! Bool ? "true" : "false").concat("\"")
             case Type<Address>():
-                return (value as! Address).toString()
+                return "\"".concat((value as! Address).toString()).concat("\"")
             case Type<Address?>():
-                return (value as? Address)?.toString() ?? "nil"
+                return "\"".concat((value as? Address)?.toString() ?? "nil").concat("\"")
             case Type<Int8>():
-                return (value as! Int8).toString()
+                return "\"".concat((value as! Int8).toString()).concat("\"")
             case Type<Int16>():
-                return (value as! Int16).toString()
+                return "\"".concat((value as! Int16).toString()).concat("\"")
             case Type<Int32>():
-                return (value as! Int32).toString()
+                return "\"".concat((value as! Int32).toString()).concat("\"")
             case Type<Int64>():
-                return (value as! Int64).toString()
+                return "\"".concat((value as! Int64).toString()).concat("\"")
             case Type<Int128>():
-                return (value as! Int128).toString()
+                return "\"".concat((value as! Int128).toString()).concat("\"")
             case Type<Int256>():
-                return (value as! Int256).toString()
+                return "\"".concat((value as! Int256).toString()).concat("\"")
             case Type<Int>():
-                return (value as! Int).toString()
+                return "\"".concat((value as! Int).toString()).concat("\"")
             case Type<UInt8>():
-                return (value as! UInt8).toString()
+                return "\"".concat((value as! UInt8).toString()).concat("\"")
             case Type<UInt16>():
-                return (value as! UInt16).toString()
+                return "\"".concat((value as! UInt16).toString()).concat("\"")
             case Type<UInt32>():
-                return (value as! UInt32).toString()
+                return "\"".concat((value as! UInt32).toString()).concat("\"")
             case Type<UInt64>():
-                return (value as! UInt64).toString()
+                return "\"".concat((value as! UInt64).toString()).concat("\"")
             case Type<UInt128>():
-                return (value as! UInt128).toString()
+                return "\"".concat((value as! UInt128).toString()).concat("\"")
             case Type<UInt256>():
-                return (value as! UInt256).toString()
+                return "\"".concat((value as! UInt256).toString()).concat("\"")
             case Type<UInt>():
-                return (value as! UInt).toString()
+                return "\"".concat((value as! UInt).toString()).concat("\"")
             case Type<Word8>():
-                return (value as! Word8).toString()
+                return "\"".concat((value as! Word8).toString()).concat("\"")
             case Type<Word16>():
-                return (value as! Word16).toString()
+                return "\"".concat((value as! Word16).toString()).concat("\"")
             case Type<Word32>():
-                return (value as! Word32).toString()
+                return "\"".concat((value as! Word32).toString()).concat("\"")
             case Type<Word64>():
-                return (value as! Word64).toString()
+                return "\"".concat((value as! Word64).toString()).concat("\"")
             case Type<Word128>():
-                return (value as! Word128).toString()
+                return "\"".concat((value as! Word128).toString()).concat("\"")
             case Type<Word256>():
-                return (value as! Word256).toString()
+                return "\"".concat((value as! Word256).toString()).concat("\"")
             case Type<UFix64>():
-                return (value as! UFix64).toString()
+                return "\"".concat((value as! UFix64).toString()).concat("\"")
             default:
                 return nil
         }
+
     }
 
-    access(all)
-    fun tryToJSONString(_ value: AnyStruct): String? {
-        return "\"".concat(self.tryToString(value) ?? "nil").concat("\"")
-    }
-
-    /// Method that returns a serialized representation of a provided boolean
+    /// Returns a serialized representation of the given array or nil if the value is not serializable
     ///
     access(all)
-    fun boolToString(_ value: Bool): String {
-        return value ? "true" : "false"
-    }
-
-    /// Method that returns a serialized representation of the given array or nil if the value is not serializable
-    ///
-    access(all)
-    fun arrayToString(_ arr: [AnyStruct]): String? {
+    fun arrayToJSONString(_ arr: [AnyStruct]): String? {
         var serializedArr = "["
         for i, element in arr {
-            let serializedElement = self.tryToString(element)
+            let serializedElement = self.tryToJSONString(element)
             if serializedElement == nil {
                 return nil
             }
-            serializedArr = serializedArr.concat("\"").concat(serializedElement!).concat("\"")
+            serializedArr = serializedArr.concat(serializedElement!)
             if i < arr.length - 1 {
                 serializedArr = serializedArr.concat(", ")
             }
@@ -136,12 +128,12 @@ contract Serialize {
         return serializedArr.concat("]")
     }
 
-    /// Method that returns a serialized representation of the given String-indexed mapping or nil if the value is not
-    /// serializable. The interface here is largely the same as as the `MetadataViews.dictToTraits` method, though here
+    /// Returns a serialized representation of the given String-indexed mapping or nil if the value is not serializable.
+    /// The interface here is largely the same as as the `MetadataViews.dictToTraits` method, though here
     /// a JSON-compatible String is returned instead of a `Traits` array.
     ///
     access(all)
-    fun dictToString(dict: {String: AnyStruct}, excludedNames: [String]?): String? {
+    fun dictToJSONString(dict: {String: AnyStruct}, excludedNames: [String]?): String? {
         if excludedNames != nil {
             for k in excludedNames! {
                 dict.remove(key: k)
@@ -149,16 +141,15 @@ contract Serialize {
         }
         var serializedDict = "{"
         for i, key in dict.keys {
-            let serializedValue = self.tryToString(dict[key]!)
+            let serializedValue = self.tryToJSONString(dict[key]!)
             if serializedValue == nil {
                 return nil
             }
-            serializedDict = serializedDict.concat("\"").concat(key).concat("\": \"").concat(serializedValue!).concat("\"}")
+            serializedDict = serializedDict.concat(self.tryToJSONString(key)!).concat(": ").concat(serializedValue!)
             if i < dict.length - 1 {
                 serializedDict = serializedDict.concat(", ")
             }
         }
-        serializedDict.concat("}")
-        return serializedDict
+        return serializedDict.concat("}")
     }
 }
