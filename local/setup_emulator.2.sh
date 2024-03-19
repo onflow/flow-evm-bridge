@@ -11,7 +11,6 @@ flow transactions send ./cadence/transactions/bridge/admin/upsert_contract_code_
 flow accounts add-contract ./cadence/contracts/bridge/IEVMBridgeNFTMinter.cdc
 
 # Deploy Serialization Utils
-flow accounts add-contract ./cadence/contracts/utils/SerializationInterfaces.cdc
 flow accounts add-contract ./cadence/contracts/utils/Serialize.cdc
 flow accounts add-contract ./cadence/contracts/utils/SerializeNFT.cdc
 
