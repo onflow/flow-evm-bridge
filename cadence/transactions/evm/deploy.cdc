@@ -7,20 +7,20 @@ import "EVM"
 ///
 transaction(bytecode: String, gasLimit: UInt64, value: UFix64) {
 
-    let bridgedAccount: &EVM.BridgedAccount
+    let coa: auth(EVM.Deploy) &EVM.CadenceOwnedAccount
     var sentVault: @FlowToken.Vault?
 
     prepare(signer: auth(BorrowValue) &Account) {
 
         let storagePath = StoragePath(identifier: "evm")!
-        self.bridgedAccount = signer.storage.borrow<&EVM.BridgedAccount>(from: storagePath)
+        self.coa = signer.storage.borrow<auth(EVM.Deploy) &EVM.CadenceOwnedAccount>(from: storagePath)
             ?? panic("Could not borrow reference to the signer's bridged account")
 
         // Rebalance Flow across VMs if there is not enough Flow in the EVM account to cover the value
-        let evmFlowBalance: UFix64 = self.bridgedAccount.balance().flow
-        if self.bridgedAccount.balance().flow < value {
+        let evmFlowBalance: UFix64 = self.coa.balance().inFLOW()
+        if self.coa.balance().inFLOW() < value {
             let withdrawAmount: UFix64 = value - evmFlowBalance
-            let vaultRef = signer.storage.borrow<auth(FungibleToken.Withdrawable) &FlowToken.Vault>(
+            let vaultRef = signer.storage.borrow<auth(FungibleToken.Withdraw) &FlowToken.Vault>(
                     from: /storage/flowTokenVault
                 ) ?? panic("Could not borrow reference to the owner's Vault!")
 
@@ -34,16 +34,18 @@ transaction(bytecode: String, gasLimit: UInt64, value: UFix64) {
 
         // Deposit Flow into the EVM account if necessary otherwise destroy the sent Vault
         if self.sentVault != nil {
-            self.bridgedAccount.address().deposit(from: <-self.sentVault!)
+            self.coa.deposit(from: <-self.sentVault!)
         } else {
             destroy self.sentVault
         }
 
+        let valueBalance = EVM.Balance(attoflow: 0)
+        valueBalance.setFLOW(flow: value)
         // Finally deploy the contract
-        let address: EVM.EVMAddress = self.bridgedAccount.deploy(
+        let address: EVM.EVMAddress = self.coa.deploy(
            code: bytecode.decodeHex(),
            gasLimit: gasLimit,
-           value: EVM.Balance(flow: value)
+           value: valueBalance
         )
     }
 }
