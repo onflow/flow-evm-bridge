@@ -93,7 +93,7 @@ access(all) contract {{CONTRACT_NAME}} : ICrossVM, IEVMBridgeNFTMinter, NonFungi
                     return CrossVMNFT.EVMBridgedMetadata(
                         name: self.name,
                         symbol: self.symbol,
-                        uri: CrossVMNFT.URI(self.tokenURI())
+                        uri: CrossVMNFT.URI(baseURI: nil, value: self.tokenURI())
                     )
                 case Type<MetadataViews.Serial>():
                     return MetadataViews.Serial(
@@ -128,14 +128,6 @@ access(all) contract {{CONTRACT_NAME}} : ICrossVM, IEVMBridgeNFTMinter, NonFungi
         /// Similar to ERC721.tokenURI method, returns the URI of the NFT with self.evmID at time of bridging
         access(all) view fun tokenURI(): String {
             return {{CONTRACT_NAME}}.tokenURIs[self.evmID] ?? ""
-        }
-
-        /* --- Bridge only method --- */
-        //
-        /// Allows the bridge to update the URI against the source ERC721 contract on bridging back to Cadence
-        access(account)
-        fun updateURI(_ new: String) {
-            {{CONTRACT_NAME}}.updateTokenURI(id: self.evmID, newURI: new)
         }
     }
 
@@ -328,7 +320,7 @@ access(all) contract {{CONTRACT_NAME}} : ICrossVM, IEVMBridgeNFTMinter, NonFungi
                 return CrossVMNFT.EVMBridgedMetadata(
                     name: self.name,
                     symbol: self.symbol,
-                    uri: self.contractURI != nil ? CrossVMNFT.URI(self.contractURI!) : CrossVMNFT.URI("")
+                    uri: self.contractURI != nil ? CrossVMNFT.URI(baseURI: nil, value: self.contractURI!) : CrossVMNFT.URI(baseURI: nil, value: "")
                 )
         }
         return nil
@@ -350,7 +342,6 @@ access(all) contract {{CONTRACT_NAME}} : ICrossVM, IEVMBridgeNFTMinter, NonFungi
             name: self.name,
             symbol: self.symbol,
             evmID: id,
-            uri: tokenURI,
             metadata: {
                 "Bridged Block": getCurrentBlock().height,
                 "Bridged Timestamp": getCurrentBlock().timestamp
@@ -363,11 +354,13 @@ access(all) contract {{CONTRACT_NAME}} : ICrossVM, IEVMBridgeNFTMinter, NonFungi
     /// then be updated in this contract to reflect the source ERC721 contract's metadata.
     ///
     access(account)
-    fun updateURI(id: UInt256, newURI: String) {
+    fun updateTokenURI(evmID: UInt256, newURI: String) {
         pre {
-            self.tokenURIs[id] != nil: "No token with the given ERC721 ID exists"
+            self.tokenURIs[evmID] != nil: "No token with the given ERC721 ID exists"
         }
-        self.tokenURIs[id] = newURI
+        if self.tokenURIs[evmID] != newURI {
+            self.tokenURIs[evmID] = newURI
+        }
     }
 
     init(name: String, symbol: String, evmContractAddress: EVM.EVMAddress, contractURI: String?) {
