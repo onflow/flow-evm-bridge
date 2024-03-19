@@ -137,6 +137,16 @@ contract FlowEVMBridge : IFlowEVMNFTBridge {
         let tokenID = token.id
         let evmID = CrossVMNFT.getEVMID(from: &token as &{NonFungibleToken.NFT}) ?? UInt256(token.id)
 
+        // Grab the URI from the NFT if available
+        var uri: String = ""
+        // Default to project-specified URI
+        if let metadata = token.resolveView(Type<CrossVMNFT.EVMBridgedMetadata>()) as! CrossVMNFT.EVMBridgedMetadata? {
+            uri = metadata.uri.uri()
+        } else {
+            // Otherwise, serialize the NFT using OpenSea Metadata strategy
+            uri = SerializeNFT.serializeNFTMetadataAsURI(&token as &{NonFungibleToken.NFT})
+        }
+        
         // Lock the NFT & calculate the storage used by the NFT
         let storageUsed = FlowEVMBridgeNFTEscrow.lockNFT(<-token)
         // Calculate the bridge fee on current rates
@@ -155,15 +165,6 @@ contract FlowEVMBridge : IFlowEVMNFTBridge {
         let isFactoryDeployed = FlowEVMBridgeUtils.isEVMContractBridgeOwned(evmContractAddress: associatedAddress)
         // Controlled by the bridge - mint or transfer based on existence
         if isFactoryDeployed {
-            // Grab the URI from the NFT if available
-            var uri: String = ""
-            // Default to project-specified URI
-            if let metadata = token.resolveView(Type<CrossVMNFT.EVMBridgedMetadata>()) as! CrossVMNFT.EVMBridgedMetadata? {
-                uri = metadata.uri.uri()
-            } else {
-                // Otherwise, serialize the NFT using OpenSea Metadata strategy
-                uri = SerializeNFT.serializeNFTMetadataAsURI(&token as &{NonFungibleToken.NFT})
-            }
 
             // Check if the ERC721 exists
             let existsResponse = EVM.decodeABI(
@@ -277,6 +278,11 @@ contract FlowEVMBridge : IFlowEVMNFTBridge {
             evmContractAddress: associatedAddress
         )
         assert(isEscrowed, message: "Transfer to bridge COA failed - cannot bridge NFT without bridge escrow")
+
+        // Derive the defining Cadence contract name & address & attempt to borrow it as IEVMBridgeNFTMinter
+        let contractName = FlowEVMBridgeUtils.getContractName(fromType: type)!
+        let contractAddress = FlowEVMBridgeUtils.getContractAddress(fromType: type)!
+        let nftContract = getAccount(contractAddress).contracts.borrow<&{IEVMBridgeNFTMinter}>(name: contractName)
         // Get the token URI from the ERC721 contract
         let uri = FlowEVMBridgeUtils.getTokenURI(evmContractAddress: associatedAddress, id: id)
         // If the NFT is currently locked, unlock and return
@@ -285,18 +291,15 @@ contract FlowEVMBridge : IFlowEVMNFTBridge {
 
             // If the NFT is bridge-defined, update the URI from the source ERC721 contract
             if self.account.address == FlowEVMBridgeUtils.getContractAddress(fromType: type) {
-                nft.updateTokenURI(uri)
+                nftContract!.updateTokenURI(evmID: id, newURI: uri)
             }
 
             return <-nft
         }
         // Otherwise, we expect the NFT to be minted in Cadence
-        let contractAddress = FlowEVMBridgeUtils.getContractAddress(fromType: type)!
         assert(self.account.address == contractAddress, message: "Unexpected error bridging NFT from EVM")
 
-        let contractName = FlowEVMBridgeUtils.getContractName(fromType: type)!
-        let nftContract = getAccount(contractAddress).contracts.borrow<&{IEVMBridgeNFTMinter}>(name: contractName)!
-        let nft <- nftContract.mintNFT(id: id, tokenURI: uri)
+        let nft <- nftContract!.mintNFT(id: id, tokenURI: uri)
         return <-nft
     }
 
