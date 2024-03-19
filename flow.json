@@ -1,56 +1,160 @@
 {
 	"contracts": {
+		"ArrayUtils": {
+			"source": "./cadence/contracts/utils/ArrayUtils.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7"
+			}
+		},
+		"BridgePermissions": {
+			"source": "./cadence/contracts/bridge/BridgePermissions.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7"
+			}
+		},
+		"Burner": {
+			"source": "./cadence/contracts/standards/Burner.cdc",
+			"aliases": {
+				"emulator": "ee82856bf20e2aa6",
+				"previewnet": "b6763b4399a888c8"
+			}
+		},
+		"CrossVMNFT": {
+			"source": "./cadence/contracts/bridge/CrossVMNFT.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7"
+			}
+		},
 		"EVM": {
-			"source": "./contracts/EVM.cdc",
+			"source": "./cadence/contracts/standards/EVM.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"previewnet": "b6763b4399a888c8"
+			}
+		},
+		"EVMBridgeRouter": {
+			"source": "./cadence/contracts/bridge/EVMBridgeRouter.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7"
+			}
+		},
+		"ExampleNFT": {
+			"source": "./cadence/contracts/example-assets/ExampleNFT.cdc",
+			"aliases": {
+				"emulator": "179b6b1cb6755e31"
+			}
+		},
+		"FlowEVMBridge": {
+			"source": "./cadence/contracts/bridge/FlowEVMBridge.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7"
+			}
+		},
+		"FlowEVMBridgeConfig": {
+			"source": "./cadence/contracts/bridge/FlowEVMBridgeConfig.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7"
+			}
+		},
+		"FlowEVMBridgeNFTEscrow": {
+			"source": "./cadence/contracts/bridge/FlowEVMBridgeNFTEscrow.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7"
+			}
+		},
+		"FlowEVMBridgeTemplates": {
+			"source": "./cadence/contracts/bridge/FlowEVMBridgeTemplates.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7"
+			}
+		},
+		"FlowEVMBridgeUtils": {
+			"source": "./cadence/contracts/bridge/FlowEVMBridgeUtils.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7"
 			}
 		},
 		"FlowToken": {
-			"source": "./contracts/standards/FlowToken.cdc",
+			"source": "./cadence/contracts/standards/FlowToken.cdc",
 			"aliases": {
 				"emulator": "0ae53cb6e3f42a79",
 				"mainnet": "1654653399040a61",
+				"previewnet": "4445e7ad11568276",
 				"testnet": "7e60df042a9c0868"
 			}
 		},
 		"FungibleToken": {
-			"source": "./contracts/standards/FungibleToken.cdc",
+			"source": "./cadence/contracts/standards/FungibleToken.cdc",
 			"aliases": {
 				"emulator": "ee82856bf20e2aa6",
 				"mainnet": "f233dcee88fe0abe",
+				"previewnet": "a0225e7000ac82a9",
 				"testnet": "9a0766d93b6608b7"
 			}
 		},
 		"FungibleTokenMetadataViews": {
-			"source": "./contracts/standards/FungibleTokenMetadataViews.cdc",
+			"source": "./cadence/contracts/standards/FungibleTokenMetadataViews.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "f233dcee88fe0abe",
+				"previewnet": "a0225e7000ac82a9",
 				"testnet": "9a0766d93b6608b7"
 			}
 		},
+		"ICrossVM": {
+			"source": "./cadence/contracts/bridge/ICrossVM.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7"
+			}
+		},
+		"IEVMBridgeNFTMinter": {
+			"source": "./cadence/contracts/bridge/IEVMBridgeNFTMinter.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7"
+			}
+		},
+		"IFlowEVMNFTBridge": {
+			"source": "./cadence/contracts/bridge/IFlowEVMNFTBridge.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7"
+			}
+		},
 		"MetadataViews": {
-			"source": "./contracts/standards/MetadataViews.cdc",
+			"source": "./cadence/contracts/standards/MetadataViews.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "1d7e57aa55817448",
+				"previewnet": "b6763b4399a888c8",
 				"testnet": "631e88ae7f1d7c20"
 			}
 		},
 		"NonFungibleToken": {
-			"source": "./contracts/standards/NonFungibleToken.cdc",
+			"source": "./cadence/contracts/standards/NonFungibleToken.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "1d7e57aa55817448",
+				"previewnet": "b6763b4399a888c8",
 				"testnet": "631e88ae7f1d7c20"
 			}
 		},
+		"ScopedFTProviders": {
+			"source": "./cadence/contracts/utils/ScopedFTProviders.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7"
+			}
+		},
+		"StringUtils": {
+			"source": "./cadence/contracts/utils/StringUtils.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7"
+			}
+		},
 		"ViewResolver": {
-			"source": "./contracts/standards/ViewResolver.cdc",
+			"source": "./cadence/contracts/standards/ViewResolver.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "1d7e57aa55817448",
+				"previewnet": "b6763b4399a888c8",
 				"testnet": "631e88ae7f1d7c20"
 			}
 		}
@@ -58,6 +162,7 @@
 	"networks": {
 		"emulator": "127.0.0.1:3569",
 		"mainnet": "access.mainnet.nodes.onflow.org:9000",
+		"previewnet": "access.previewnet.nodes.onflow.org:9000",
 		"testing": "127.0.0.1:3569",
 		"testnet": "access.devnet.nodes.onflow.org:9000"
 	},
@@ -73,20 +178,23 @@
 		"emulator-ft": {
 			"address": "ee82856bf20e2aa6",
 			"key": "686779d775e5fcbf8d2f4a85cb4c53525d02b7ef53230d180fc16f35d9b7d025"
+		},
+		"erc721": {
+			"address": "e03daebed8ca0615",
+			"key": "bf602a4cdffb5610a008622f6601ba7059f8a6f533d7489457deb3d45875acb0"
+		},
+		"example-nft": {
+			"address": "179b6b1cb6755e31",
+			"key": "96dfbadf086daa187100a24b1fd2b709b702954bbd030a394148e11bcbb799ef"
+		},
+		"user": {
+			"address": "f3fcd2c1a78f5eee",
+			"key": "bce84aae316aec618888e5bdd24a3c8b8af46896c1ebe457e2f202a4a9c43075"
 		}
 	},
 	"deployments": {
 		"emulator": {
-			"emulator-account": [
-				"EVM",
-				"NonFungibleToken",
-				"MetadataViews",
-				"ViewResolver",
-				"FungibleTokenMetadataViews"
-			],
-			"emulator-ft": [
-				"FungibleToken"
-			]
+			"emulator-account": []
 		}
 	}
 }

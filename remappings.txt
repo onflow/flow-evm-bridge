@@ -1,0 +1,5 @@
+@openzeppelin/contracts/=solidity/lib/openzeppelin-contracts/contracts/
+ds-test/=solidity/lib/forge-std/lib/ds-test/src/
+erc4626-tests/=solidity/lib/openzeppelin-contracts/lib/erc4626-tests/
+forge-std/=solidity/lib/forge-std/src/
+openzeppelin-contracts/=solidity/lib/openzeppelin-contracts/
