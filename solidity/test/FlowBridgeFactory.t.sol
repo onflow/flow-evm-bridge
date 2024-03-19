@@ -13,6 +13,7 @@ contract FlowBridgeFactoryTest is Test {
     string symbol;
     string flowNFTAddress;
     string flowNFTIdentifier;
+    string contractURI;
     address deployedERC721Address;
 
     function setUp() public {
@@ -21,8 +22,9 @@ contract FlowBridgeFactoryTest is Test {
         symbol = "symbol";
         flowNFTAddress = "flowNFTAddress";
         flowNFTIdentifier = "flowNFTIdentifier";
+        contractURI = "contractURI";
 
-        deployedERC721Address = factory.deployERC721("name", "symbol", "flowNFTAddress", "flowNFTIdentifier");
+        deployedERC721Address = factory.deployERC721(name, symbol, flowNFTAddress, flowNFTIdentifier, contractURI);
         deployedERC721Contract = FlowBridgedERC721(deployedERC721Address);
     }
 
@@ -36,11 +38,13 @@ contract FlowBridgeFactoryTest is Test {
         string memory _symbol = deployedERC721Contract.symbol();
         string memory _flowNFTAddress = deployedERC721Contract.flowNFTAddress();
         string memory _flowNFTIdentifier = deployedERC721Contract.flowNFTIdentifier();
+        string memory _contractURI = deployedERC721Contract.contractURI();
 
         assertEq(actualName, name);
         assertEq(_symbol, symbol);
         assertEq(_flowNFTAddress, flowNFTAddress);
         assertEq(_flowNFTIdentifier, flowNFTIdentifier);
+        assertEq(_contractURI, contractURI);
 
         address factoryOwner = factory.owner();
         address erc721Owner = deployedERC721Contract.owner();

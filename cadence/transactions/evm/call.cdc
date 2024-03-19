@@ -5,7 +5,7 @@ import "EVM"
 transaction(evmContractAddressHex: String, calldata: String, gasLimit: UInt64, value: UFix64) {
 
     let evmAddress: EVM.EVMAddress
-    let coa: &EVM.BridgedAccount
+    let coa: auth(EVM.Call) &EVM.CadenceOwnedAccount
 
     prepare(signer: auth(BorrowValue) &Account) {
         let evmAddressBytes: [UInt8] = evmContractAddressHex.decodeHex()
@@ -18,16 +18,19 @@ transaction(evmContractAddressHex: String, calldata: String, gasLimit: UInt64, v
                 ]
             )
         
-        self.coa = signer.storage.borrow<&EVM.BridgedAccount>(from: /storage/evm)
+        self.coa = signer.storage.borrow<auth(EVM.Call) &EVM.CadenceOwnedAccount>(from: /storage/evm)
             ?? panic("Could not borrow COA from provided gateway address")
     }
 
     execute {
-        self.coa.call(
+        let valueBalance = EVM.Balance(attoflow: 0)
+        valueBalance.setFLOW(flow: value)
+        let callResult = self.coa.call(
             to: self.evmAddress,
             data: calldata.decodeHex(),
             gasLimit: gasLimit,
-            value: EVM.Balance(flow: value)
+            value: valueBalance
         )
+        assert(callResult.status == EVM.Status.successful, message: "Call failed")
     }
 }

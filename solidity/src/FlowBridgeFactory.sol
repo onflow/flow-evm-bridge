@@ -3,6 +3,7 @@ pragma solidity ^0.8.17;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./FlowBridgedERC721.sol";
+import "./IBridgePermissions.sol";
 
 contract FlowBridgeFactory is Ownable {
     mapping(string => address) public flowIdentifierToContract;
@@ -19,10 +20,11 @@ contract FlowBridgeFactory is Ownable {
         string memory name,
         string memory symbol,
         string memory flowNFTAddress,
-        string memory flowNFTIdentifier
+        string memory flowNFTIdentifier,
+        string memory contractURI
     ) public onlyOwner returns (address) {
         FlowBridgedERC721 newERC721 =
-            new FlowBridgedERC721(super.owner(), name, symbol, flowNFTAddress, flowNFTIdentifier);
+            new FlowBridgedERC721(super.owner(), name, symbol, flowNFTAddress, flowNFTIdentifier, contractURI);
 
         flowIdentifierToContract[flowNFTIdentifier] = address(newERC721);
         contractToflowIdentifier[address(newERC721)] = flowNFTIdentifier;

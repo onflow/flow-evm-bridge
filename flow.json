@@ -1,5 +1,24 @@
 {
 	"contracts": {
+		"ArrayUtils": {
+			"source": "./cadence/contracts/utils/ArrayUtils.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7"
+			}
+		},
+		"BridgePermissions": {
+			"source": "./cadence/contracts/bridge/BridgePermissions.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7"
+			}
+		},
+		"Burner": {
+			"source": "./cadence/contracts/standards/Burner.cdc",
+			"aliases": {
+				"emulator": "ee82856bf20e2aa6",
+				"previewnet": "b6763b4399a888c8"
+			}
+		},
 		"CrossVMNFT": {
 			"source": "./cadence/contracts/bridge/CrossVMNFT.cdc",
 			"aliases": {
@@ -9,7 +28,8 @@
 		"EVM": {
 			"source": "./cadence/contracts/standards/EVM.cdc",
 			"aliases": {
-				"emulator": "f8d6e0586b0a20c7"
+				"emulator": "f8d6e0586b0a20c7",
+				"previewnet": "b6763b4399a888c8"
 			}
 		},
 		"EVMBridgeRouter": {
@@ -59,6 +79,7 @@
 			"aliases": {
 				"emulator": "0ae53cb6e3f42a79",
 				"mainnet": "1654653399040a61",
+				"previewnet": "4445e7ad11568276",
 				"testnet": "7e60df042a9c0868"
 			}
 		},
@@ -67,6 +88,7 @@
 			"aliases": {
 				"emulator": "ee82856bf20e2aa6",
 				"mainnet": "f233dcee88fe0abe",
+				"previewnet": "a0225e7000ac82a9",
 				"testnet": "9a0766d93b6608b7"
 			}
 		},
@@ -75,6 +97,7 @@
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "f233dcee88fe0abe",
+				"previewnet": "a0225e7000ac82a9",
 				"testnet": "9a0766d93b6608b7"
 			}
 		},
@@ -101,6 +124,7 @@
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "1d7e57aa55817448",
+				"previewnet": "b6763b4399a888c8",
 				"testnet": "631e88ae7f1d7c20"
 			}
 		},
@@ -109,7 +133,20 @@
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "1d7e57aa55817448",
+				"previewnet": "b6763b4399a888c8",
 				"testnet": "631e88ae7f1d7c20"
+			}
+		},
+		"ScopedFTProviders": {
+			"source": "./cadence/contracts/utils/ScopedFTProviders.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7"
+			}
+		},
+		"StringUtils": {
+			"source": "./cadence/contracts/utils/StringUtils.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7"
 			}
 		},
 		"ViewResolver": {
@@ -117,6 +154,7 @@
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "1d7e57aa55817448",
+				"previewnet": "b6763b4399a888c8",
 				"testnet": "631e88ae7f1d7c20"
 			}
 		}
@@ -124,6 +162,7 @@
 	"networks": {
 		"emulator": "127.0.0.1:3569",
 		"mainnet": "access.mainnet.nodes.onflow.org:9000",
+		"previewnet": "access.previewnet.nodes.onflow.org:9000",
 		"testing": "127.0.0.1:3569",
 		"testnet": "access.devnet.nodes.onflow.org:9000"
 	},

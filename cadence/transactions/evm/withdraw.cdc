@@ -7,21 +7,23 @@ import "EVM"
 ///
 transaction(amount: UFix64) {
 
-    let coa: &EVM.BridgedAccount
-    let vault: auth(FungibleToken.Withdrawable) &FlowToken.Vault
+    let coa: auth(EVM.Withdraw) &EVM.CadenceOwnedAccount
+    let vault: auth(FungibleToken.Withdraw) &FlowToken.Vault
     let preBalance: UFix64
 
     prepare(signer: auth(BorrowValue) &Account) {
-        self.coa = signer.storage.borrow<&EVM.BridgedAccount>(from: /storage/evm)
+        self.coa = signer.storage.borrow<auth(EVM.Withdraw) &EVM.CadenceOwnedAccount>(from: /storage/evm)
             ?? panic("Could not borrow reference to the signer's bridged account")
         
-        self.vault = signer.storage.borrow<auth(FungibleToken.Withdrawable) &FlowToken.Vault>(from: /storage/flowTokenVault)
+        self.vault = signer.storage.borrow<auth(FungibleToken.Withdraw) &FlowToken.Vault>(from: /storage/flowTokenVault)
             ?? panic("Could not borrow reference to the owner's vault")
         self.preBalance = self.vault.balance
     }
 
     execute {
-        let bridgedVault <- self.coa.withdraw(balance: EVM.Balance(flow: amount)) as! @{FungibleToken.Vault}
+        let withdrawBalance = EVM.Balance(attoflow: 0)
+        withdrawBalance.setFLOW(flow: amount)
+        let bridgedVault <- self.coa.withdraw(balance: withdrawBalance) as! @{FungibleToken.Vault}
         self.vault.deposit(from: <-bridgedVault)
     }
 

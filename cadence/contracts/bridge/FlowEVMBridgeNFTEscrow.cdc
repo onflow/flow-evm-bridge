@@ -29,23 +29,6 @@ access(all) contract FlowEVMBridgeNFTEscrow {
         return false
     }
 
-
-    /// Retrieves a reference to the NFT with the given ID
-    ///
-    /// @param id ID of the NFT to retrieve
-    ///
-    /// @returns Reference to the NFT if it exists
-    ///
-    access(all)
-    view fun borrowLockedNFT(type: Type, id: UInt64): &{NonFungibleToken.NFT}? {
-        if let lockerPath = FlowEVMBridgeUtils.deriveEscrowStoragePath(fromType: type) {
-            if let locker = self.account.storage.borrow<&Locker>(from: lockerPath) {
-                return locker.borrowNFT(id)
-            }
-        }
-        return nil
-    }
-
     /// Returns whether an NFT with the given ID is locked
     ///
     /// @param id ID of the NFT to check
@@ -57,6 +40,13 @@ access(all) contract FlowEVMBridgeNFTEscrow {
         return self.borrowLockedNFT(type: type, id: id) != nil
     }
 
+    /// Retrieves the locked NFT's Cadence ID as defined in the NFT standard's NFT.id value if it is locked
+    ///
+    /// @param type: Type of the locked NFT
+    /// @param evmID: EVM ID of the locked NFT
+    ///
+    /// @returns Cadence ID of the locked NFT if it exists
+    ///
     access(all)
     view fun getLockedCadenceID(type: Type, evmID: UInt256): UInt64? {
         if let lockerPath = FlowEVMBridgeUtils.deriveEscrowStoragePath(fromType: type) {
@@ -67,10 +57,55 @@ access(all) contract FlowEVMBridgeNFTEscrow {
         return nil
     }
 
+    /// Returns the EVM NFT ID associated with the Cadence NFT ID. The goal is to retrieve the ERC721 ID value
+    /// corresponding to the Cadence NFT.
+    /// As far as the bridge is concerned, a bridge-deployed ERC721 assigns IDs based on NFT.id value at the time of
+    /// bridging unless it implements the CrossVMNFT.EVMNFT in such case .evmID is used.
+    /// Following this pattern, if locked, the NFT is checked for EVMNFT conformance returning .evmID,
+    /// otherwise the NFT's ID is returned as a UInt256 as this is how the bridge would handle minting in the
+    /// corresponding ERC721 contract.
+    ///
+    /// @param type: Type of the locked NFT
+    /// @param cadenceID: Cadence ID of the locked NFT
+    ///
+    /// @returns EVM ID of the locked NFT if it exists
+    ///
+    access(all)
+    view fun getLockedEVMID(type: Type, cadenceID: UInt64): UInt256? {
+        if let lockerPath = FlowEVMBridgeUtils.deriveEscrowStoragePath(fromType: type) {
+            if let locker = self.account.storage.borrow<&Locker>(from: lockerPath) {
+                return locker.getEVMID(from: cadenceID)
+            }
+        }
+        return nil
+    }
+
+    /// Resolves the requested view type for the given NFT type if it is locked and supports the requested view type
+    ///
+    /// @param nftType: Type of the locked NFT
+    /// @param viewType: Type of the view to resolve
+    /// @param id: ID of the locked NFT
+    ///
+    /// @returns The resolved view as AnyStruct if the NFT is locked and the view is supported, otherwise returns nil
+    ///
+    access(all)
+    fun resolveLockedNFTView(nftType: Type, id: UInt256, viewType: Type): AnyStruct? {
+        if let lockerPath = FlowEVMBridgeUtils.deriveEscrowStoragePath(fromType: nftType) {
+            if let locker = self.account.storage.borrow<&Locker>(from: lockerPath) {
+                if let cadenceID = locker.getCadenceID(from: id) {
+                    return locker.borrowViewResolver(id: cadenceID)?.resolveView(viewType) ?? nil
+                }
+            }
+        }
+        return nil
+    }
+
     /**********************
         Bridge Methods
     ***********************/
 
+    /// Initializes the Locker for the given NFT type if it hasn't been initialized yet
+    ///
     access(account)
     fun initializeEscrow(forType: Type, erc721Address: EVM.EVMAddress) {
         let lockerPath = FlowEVMBridgeUtils.deriveEscrowStoragePath(fromType: forType)
@@ -82,21 +117,40 @@ access(all) contract FlowEVMBridgeNFTEscrow {
         self.account.storage.save(<-locker, to: lockerPath)
     }
 
-    access(account) fun lockNFT(_ nft: @{NonFungibleToken.NFT}) {
+    /// Locks the NFT in escrow, returning the amount of storage used by the locker after storing
+    ///
+    access(account)
+    fun lockNFT(_ nft: @{NonFungibleToken.NFT}): UInt64 {
         let lockerPath = FlowEVMBridgeUtils.deriveEscrowStoragePath(fromType: nft.getType())
             ?? panic("Problem deriving locker path")
         let locker = self.account.storage.borrow<&Locker>(from: lockerPath)
             ?? panic("Locker doesn't exist")
+        let preStorageSnapshot = self.account.storage.used
         locker.deposit(token: <-nft)
+        let postStorageSnapshot = self.account.storage.used
+        return postStorageSnapshot - preStorageSnapshot
     }
 
+    /// Unlocks the NFT of the given type and ID, reverting if it isn't in escrow
+    ///
     access(account)
     fun unlockNFT(type: Type, id: UInt64): @{NonFungibleToken.NFT} {
         let lockerPath = FlowEVMBridgeUtils.deriveEscrowStoragePath(fromType: type)
             ?? panic("Problem deriving locker path")
-        let locker = self.account.storage.borrow<auth(NonFungibleToken.Withdrawable) &Locker>(from: lockerPath)
+        let locker = self.account.storage.borrow<auth(NonFungibleToken.Withdraw) &Locker>(from: lockerPath)
             ?? panic("Locker doesn't exist")
         return <- locker.withdraw(withdrawID: id)
+    }
+
+
+    /// Retrieves a reference to the NFT of the given type and ID if it is locked, otherwise returns nil
+    ///
+    access(account)
+    view fun borrowLockedNFT(type: Type, id: UInt64): &{NonFungibleToken.NFT}? {
+        if let lockerPath = FlowEVMBridgeUtils.deriveEscrowStoragePath(fromType: type) {
+            return self.account.storage.borrow<&Locker>(from: lockerPath)?.borrowNFT(id) ?? nil
+        }
+        return nil
     }
 
     /*********************
@@ -161,6 +215,28 @@ access(all) contract FlowEVMBridgeNFTEscrow {
             return self.evmIDToFlowID[evmID]
         }
 
+        /// Returns the EVM NFT ID associated with the Cadence NFT ID. The goal is to retrieve the ERC721 ID value.
+        /// As far as the bridge is concerned, an ERC721 defined by the bridge is the NFT's ID at the time of bridging
+        /// or the value of the NFT.evmID if it implements the CrossVMNFT.EVMNFT interface when bridged.
+        /// Following this pattern, if locked, the NFT is checked for EVMNFT conformance returning .evmID if so,
+        /// otherwise the NFT's ID is returned as a UInt256 since that's how the bridge would handle minting in the
+        /// corresponding ERC721 contract.
+        ///
+        access(all)
+        view fun getEVMID(from cadenceID: UInt64): UInt256? {
+            if let nft = self.borrowNFT(cadenceID) {
+                if let evmNFT = CrossVMNFT.getEVMID(from: nft) {
+                    return evmNFT
+                }
+                return UInt256(nft.id)
+            }
+            return nil
+        }
+
+        access(all) view fun contractURI(): String? {
+            return nil
+        }
+
         /// Returns a reference to the NFT if it is locked
         ///
         access(all)
@@ -197,41 +273,27 @@ access(all) contract FlowEVMBridgeNFTEscrow {
         access(all)
         fun deposit(token: @{NonFungibleToken.NFT}) {
             pre {
-                self.borrowNFT(token.getID()) == nil: "NFT with this ID already exists in the Locker"
+                self.borrowNFT(token.id) == nil: "NFT with this ID already exists in the Locker"
             }
-            if let evmID = CrossVMNFT.getEVMID(from: &token) {
-                self.evmIDToFlowID[evmID] = token.getID()
+            if let evmID = CrossVMNFT.getEVMID(from: &token as &{NonFungibleToken.NFT}) {
+                self.evmIDToFlowID[evmID] = token.id
             }
             self.lockedNFTCount = self.lockedNFTCount + 1
-            self.lockedNFTs[token.getID()] <-! token
+            self.lockedNFTs[token.id] <-! token
         }
 
         /// Withdraws the NFT from this locker, removing it from the collection and returning it
         ///
-        access(NonFungibleToken.Withdrawable)
+        access(NonFungibleToken.Withdraw | NonFungibleToken.Owner)
         fun withdraw(withdrawID: UInt64): @{NonFungibleToken.NFT} {
             // Should not happen, but prevent potential underflow
             assert(self.lockedNFTCount > 0, message: "No NFTs to withdraw")
             self.lockedNFTCount = self.lockedNFTCount - 1
             let token <- self.lockedNFTs.remove(key: withdrawID)!
-            if let evmID = CrossVMNFT.getEVMID(from: &token) {
+            if let evmID = CrossVMNFT.getEVMID(from: &token as &{NonFungibleToken.NFT}) {
                 self.evmIDToFlowID.remove(key: evmID)
             }
             return <- token
-        }
-
-        /// No default storage path for this Locker as it's contract-owned - added for NFT.Collection conformance
-        ///
-        access(all)
-        view fun getDefaultStoragePath(): StoragePath? {
-            return nil
-        }
-
-        /// No default public path for this Locker as it's contract-owned - added for NFT.Collection conformance
-        ///
-        access(all)
-        view fun getDefaultPublicPath(): PublicPath? {
-            return nil
         }
 
         /// Creates an empty Collection - added here for NFT.Collection conformance

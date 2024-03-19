@@ -10,11 +10,11 @@
 *   
 */
 
-import NonFungibleToken from "NonFungibleToken"
-import ViewResolver from "ViewResolver"
-import MetadataViews from "MetadataViews"
+import "NonFungibleToken"
+import "ViewResolver"
+import "MetadataViews"
 
-access(all) contract ExampleNFT: ViewResolver {
+access(all) contract ExampleNFT: NonFungibleToken {
 
     /// Path where the minter should be stored
     /// The standard paths for the collection are stored in the collection resource type
@@ -24,9 +24,7 @@ access(all) contract ExampleNFT: ViewResolver {
     /// because the interface does not require it to have a specific name any more
     access(all) resource NFT: NonFungibleToken.NFT, ViewResolver.Resolver {
 
-        access(all) view fun getID(): UInt64 {
-            return self.uuid
-        }
+        access(all) let id: UInt64
 
         /// From the Display metadata view
         access(all) let name: String
@@ -46,11 +44,19 @@ access(all) contract ExampleNFT: ViewResolver {
             royalties: [MetadataViews.Royalty],
             metadata: {String: AnyStruct},
         ) {
+            self.id = self.uuid
             self.name = name
             self.description = description
             self.thumbnail = thumbnail
             self.royalties = royalties
             self.metadata = metadata
+        }
+
+        /// createEmptyCollection creates an empty Collection
+        /// and returns it to the caller so that they can own NFTs
+        /// @{NonFungibleToken.Collection}
+        access(all) fun createEmptyCollection(): @{NonFungibleToken.Collection} {
+            return <-ExampleNFT.createEmptyCollection(nftType: Type<@ExampleNFT.NFT>())
         }
     
         access(all) view fun getViews(): [Type] {
@@ -79,25 +85,25 @@ access(all) contract ExampleNFT: ViewResolver {
                 case Type<MetadataViews.Editions>():
                     // There is no max number of NFTs that can be minted from this contract
                     // so the max edition field value is set to nil
-                    let editionInfo = MetadataViews.Edition(name: "Example NFT Edition", number: self.getID(), max: nil)
+                    let editionInfo = MetadataViews.Edition(name: "Example NFT Edition", number: self.id, max: nil)
                     let editionList: [MetadataViews.Edition] = [editionInfo]
                     return MetadataViews.Editions(
                         editionList
                     )
                 case Type<MetadataViews.Serial>():
                     return MetadataViews.Serial(
-                        self.getID()
+                        self.id
                     )
                 case Type<MetadataViews.Royalties>():
                     return MetadataViews.Royalties(
                         self.royalties
                     )
                 case Type<MetadataViews.ExternalURL>():
-                    return MetadataViews.ExternalURL("https://example-nft.onflow.org/".concat(self.getID().toString()))
+                    return MetadataViews.ExternalURL("https://example-nft.onflow.org/".concat(self.id.toString()))
                 case Type<MetadataViews.NFTCollectionData>():
-                    return ExampleNFT.getCollectionData(nftType: Type<@ExampleNFT.NFT>())
+                    return ExampleNFT.resolveContractView(resourceType: Type<@ExampleNFT.NFT>(), viewType: Type<MetadataViews.NFTCollectionData>())
                 case Type<MetadataViews.NFTCollectionDisplay>():
-                    return ExampleNFT.getCollectionDisplay(nftType: Type<@ExampleNFT.NFT>())
+                    return ExampleNFT.resolveContractView(resourceType: Type<@ExampleNFT.NFT>(), viewType: Type<MetadataViews.NFTCollectionDisplay>())
                 case Type<MetadataViews.Traits>():
                     // exclude mintedTime and foo to show other uses of Traits
                     let excludedTraits = ["mintedTime", "foo"]
@@ -113,7 +119,6 @@ access(all) contract ExampleNFT: ViewResolver {
                     traitsView.addTrait(fooTrait)
                     
                     return traitsView
-
             }
             return nil
         }
@@ -124,18 +129,8 @@ access(all) contract ExampleNFT: ViewResolver {
         /// NFT is a resource type with an `UInt64` ID field
         access(contract) var ownedNFTs: @{UInt64: ExampleNFT.NFT}
 
-        access(self) var storagePath: StoragePath
-        access(self) var publicPath: PublicPath
-
-        /// Return the default storage path for the collection
-        access(all) view fun getDefaultStoragePath(): StoragePath? {
-            return self.storagePath
-        }
-
-        /// Return the default public path for the collection
-        access(all) view fun getDefaultPublicPath(): PublicPath? {
-            return self.publicPath
-        }
+        access(all) var storagePath: StoragePath
+        access(all) var publicPath: PublicPath
 
         init () {
             self.ownedNFTs <- {}
@@ -162,7 +157,7 @@ access(all) contract ExampleNFT: ViewResolver {
         }
 
         /// withdraw removes an NFT from the collection and moves it to the caller
-        access(NonFungibleToken.Withdrawable) fun withdraw(withdrawID: UInt64): @{NonFungibleToken.NFT} {
+        access(NonFungibleToken.Withdraw | NonFungibleToken.Owner) fun withdraw(withdrawID: UInt64): @{NonFungibleToken.NFT} {
             let token <- self.ownedNFTs.remove(key: withdrawID)
                 ?? panic("Could not withdraw an NFT with the provided ID from the collection")
 
@@ -175,7 +170,7 @@ access(all) contract ExampleNFT: ViewResolver {
             let token <- token as! @ExampleNFT.NFT
 
             // add the new token to the dictionary which removes the old one
-            let oldToken <- self.ownedNFTs[token.getID()] <- token
+            let oldToken <- self.ownedNFTs[token.id] <- token
 
             destroy oldToken
         }
@@ -202,16 +197,17 @@ access(all) contract ExampleNFT: ViewResolver {
             return nil
         }
 
-        /// public function that anyone can call to create a new empty collection
+        /// createEmptyCollection creates an empty Collection of the same type
+        /// and returns it to the caller
+        /// @return A an empty collection of the same type
         access(all) fun createEmptyCollection(): @{NonFungibleToken.Collection} {
-            return <- create ExampleNFT.Collection()
+            return <-ExampleNFT.createEmptyCollection(nftType: Type<@ExampleNFT.NFT>())
         }
     }
 
-    /// public function that anyone can call to create a new empty collection
-    /// Since multiple collection types can be defined in a contract,
-    /// The caller needs to specify which one they want to create
-    access(all) fun createEmptyCollection(): @ExampleNFT.Collection {
+    /// createEmptyCollection creates an empty Collection for the specified NFT type
+    /// and returns it to the caller so that they can own NFTs
+    access(all) fun createEmptyCollection(nftType: Type): @{NonFungibleToken.Collection} {
         return <- create Collection()
     }
 
@@ -220,7 +216,7 @@ access(all) contract ExampleNFT: ViewResolver {
     /// @return An array of Types defining the implemented views. This value will be used by
     ///         developers to know which parameter to pass to the resolveView() method.
     ///
-    access(all) view fun getViews(): [Type] {
+    access(all) view fun getContractViews(resourceType: Type?): [Type] {
         return [
             Type<MetadataViews.NFTCollectionData>(),
             Type<MetadataViews.NFTCollectionDisplay>()
@@ -232,45 +228,20 @@ access(all) contract ExampleNFT: ViewResolver {
     /// @param view: The Type of the desired view.
     /// @return A structure representing the requested view.
     ///
-    access(all) fun resolveView(_ view: Type): AnyStruct? {
-        switch view {
+    access(all) fun resolveContractView(resourceType: Type?, viewType: Type): AnyStruct? {
+        switch viewType {
             case Type<MetadataViews.NFTCollectionData>():
-                return ExampleNFT.getCollectionData(nftType: Type<@ExampleNFT.NFT>())
-            case Type<MetadataViews.NFTCollectionDisplay>():
-                return ExampleNFT.getCollectionDisplay(nftType: Type<@ExampleNFT.NFT>())
-        }
-        return nil
-    }
-
-    /// resolve a type to its CollectionData so you know where to store it
-    /// Returns `nil` if no collection type exists for the specified NFT type
-    access(all) view fun getCollectionData(nftType: Type): MetadataViews.NFTCollectionData? {
-        switch nftType {
-            case Type<@ExampleNFT.NFT>():
-                let collectionRef = self.account.storage.borrow<&ExampleNFT.Collection>(
-                        from: /storage/cadenceExampleNFTCollection
-                    ) ?? panic("Could not borrow a reference to the stored collection")
                 let collectionData = MetadataViews.NFTCollectionData(
-                    storagePath: collectionRef.getDefaultStoragePath()!,
-                    publicPath: collectionRef.getDefaultPublicPath()!,
-                    providerPath: /private/cadenceExampleNFTCollection,
+                    storagePath: /storage/cadenceExampleNFTCollection,
+                    publicPath: /public/cadenceExampleNFTCollection,
                     publicCollection: Type<&ExampleNFT.Collection>(),
                     publicLinkedType: Type<&ExampleNFT.Collection>(),
-                    providerLinkedType: Type<auth(NonFungibleToken.Withdrawable) &ExampleNFT.Collection>(),
                     createEmptyCollectionFunction: (fun(): @{NonFungibleToken.Collection} {
-                        return <-collectionRef.createEmptyCollection()
+                        return <-ExampleNFT.createEmptyCollection(nftType: Type<@ExampleNFT.NFT>())
                     })
                 )
                 return collectionData
-            default:
-                return nil
-        }
-    }
-
-    /// Returns the CollectionDisplay view for the NFT type that is specified 
-    access(all) view fun getCollectionDisplay(nftType: Type): MetadataViews.NFTCollectionDisplay? {
-        switch nftType {
-            case Type<@ExampleNFT.NFT>():
+            case Type<MetadataViews.NFTCollectionDisplay>():
                 let media = MetadataViews.Media(
                     file: MetadataViews.HTTPFile(
                         url: "https://assets.website-files.com/5f6294c0c7a8cdd643b1c820/5f6294c0c7a8cda55cb1c936_Flow_Wordmark.svg"
@@ -287,9 +258,8 @@ access(all) contract ExampleNFT: ViewResolver {
                         "twitter": MetadataViews.ExternalURL("https://twitter.com/flow_blockchain")
                     }
                 )
-            default:
-                return nil
         }
+        return nil
     }
 
     /// Resource that an admin or something similar would own to be
@@ -334,8 +304,8 @@ access(all) contract ExampleNFT: ViewResolver {
 
         // Create a Collection resource and save it to storage
         let collection <- create Collection()
-        let defaultStoragePath = collection.getDefaultStoragePath()!
-        let defaultPublicPath = collection.getDefaultPublicPath()!
+        let defaultStoragePath = collection.storagePath
+        let defaultPublicPath = collection.publicPath
         self.account.storage.save(<-collection, to: defaultStoragePath)
 
         // create a public capability for the collection
