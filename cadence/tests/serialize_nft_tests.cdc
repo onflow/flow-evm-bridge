@@ -2,7 +2,6 @@ import Test
 import BlockchainHelpers
 
 import "Serialize"
-import "SerializationInterfaces"
 
 access(all) let admin = Test.getAccount(0x0000000000000007)
 access(all) let alice = Test.createAccount()
@@ -49,12 +48,6 @@ fun setup() {
     err = Test.deployContract(
         name: "ExampleNFT",
         path: "../contracts/example-assets/ExampleNFT.cdc",
-        arguments: []
-    )
-    Test.expect(err, Test.beNil())
-    err = Test.deployContract(
-        name: "SerializationInterfaces",
-        path: "../contracts/utils/SerializationInterfaces.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
@@ -116,26 +109,4 @@ fun testSerializeNFTSucceeds() {
 
     // Test.assertEqual(true, serializedMetadata == expectedPrefix.concat(altSuffix1) || serializedMetadata == expectedPrefix.concat(altSuffix2))
     Test.assertEqual(serializedMetadata, expectedPrefix.concat(altSuffix1))
-}
-
-access(all)
-fun testOpenSeaMetadataSerializationStrategySucceeds() {
-    let heightString = mintedBlockHeight.toString()
-
-    let expectedPrefix = "data:application/json;ascii,{\"name\": \"ExampleNFT\", \"description\": \"Example NFT Collection\", \"image\": \"https://flow.com/examplenft.jpg\", \"external_url\": \"https://example-nft.onflow.org\", "
-    let altSuffix1 = "\"attributes\": [{\"trait_type\": \"mintedBlock\", \"value\": \"".concat(heightString).concat("\"},{\"trait_type\": \"foo\", \"value\": \"nil\"}]}")
-    let altSuffix2 = "\"attributes\": [{\"trait_type\": \"foo\", \"value\": \"nil\"}]}, {\"trait_type\": \"mintedBlock\", \"value\": \"".concat(heightString).concat("\"}")
-
-    let idsResult = executeScript(
-        "../scripts/nft/get_ids.cdc",
-        [alice.address, "cadenceExampleNFTCollection"]
-    )
-    Test.expect(idsResult, Test.beSucceeded())
-    let ids = idsResult.returnValue! as! [UInt64]
-
-    let serializeMetadataResult = executeScript(
-        "../scripts/serialize/serialize_nft_from_open_sea_strategy.cdc",
-        [alice.address, "cadenceExampleNFTCollection", ids[0]]
-    )
-    Test.expect(serializeMetadataResult, Test.beSucceeded())
 }

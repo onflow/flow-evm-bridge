@@ -2,7 +2,6 @@ import Test
 import BlockchainHelpers
 
 import "Serialize"
-import "SerializationInterfaces"
 
 access(all)
 let admin = Test.getAccount(0x0000000000000007)
@@ -37,12 +36,6 @@ fun setup() {
     err = Test.deployContract(
         name: "MetadataViews",
         path: "../contracts/standards/MetadataViews.cdc",
-        arguments: []
-    )
-    Test.expect(err, Test.beNil())
-    err = Test.deployContract(
-        name: "SerializationInterfaces",
-        path: "../contracts/utils/SerializationInterfaces.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())

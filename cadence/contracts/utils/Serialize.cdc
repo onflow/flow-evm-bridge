@@ -2,8 +2,6 @@ import "ViewResolver"
 import "MetadataViews"
 import "NonFungibleToken"
 
-import "SerializationInterfaces"
-
 /// This contract is a utility for serializing primitive types, arrays, and common metadata mapping formats to JSON
 /// compatible strings. Also included are interfaces enabling custom serialization for structs and resources.
 ///
@@ -11,28 +9,6 @@ import "SerializationInterfaces"
 ///
 access(all)
 contract Serialize {
-
-    /// A basic serialization strategy that supports serializing resources and structs to JSON-compatible strings.
-    ///
-    access(all)
-    struct JSONStringStrategy : SerializationInterfaces.SerializationStrategy {
-        /// Returns the types this stategy will attempt to serialize
-        ///
-        access(all) view fun getSupportedTypes(): [Type] {
-            return [Type<@AnyResource>(), Type<AnyStruct>()]
-        }
-        /// Returns the resource serialized on its identifier as an escaped JSON string
-        ///
-        access(all) fun serializeResource(_ r: &AnyResource): String? {
-            return Serialize.tryToJSONString(r.getType().identifier)
-        }
-        /// Returns the an escaped JSON string of the provided struct, calling through to Serialize.tryToJSONString
-        /// with the provided value
-        ///
-        access(all) fun serializeStruct(_ s: AnyStruct): String? {
-            return Serialize.tryToJSONString(s)
-        }
-    }
 
     /// Method that returns a serialized representation of the given value or nil if the value is not serializable
     ///
