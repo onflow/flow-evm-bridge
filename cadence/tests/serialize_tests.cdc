@@ -1,10 +1,6 @@
 import Test
 import BlockchainHelpers
 
-import "NonFungibleToken"
-import "ViewResolver"
-import "MetadataViews"
-
 import "Serialize"
 import "SerializationInterfaces"
 
