@@ -1,17 +1,13 @@
 import Test
 import BlockchainHelpers
 
-import "NonFungibleToken"
-import "ViewResolver"
-import "MetadataViews"
-
 import "Serialize"
 import "SerializationInterfaces"
 
-access(all)
-let admin = Test.getAccount(0x0000000000000007)
-access(all)
-let alice = Test.createAccount()
+access(all) let admin = Test.getAccount(0x0000000000000007)
+access(all) let alice = Test.createAccount()
+
+access(all) var mintedBlockHeight: UInt64 = 0
 
 access(all)
 fun setup() {
@@ -41,6 +37,12 @@ fun setup() {
     err = Test.deployContract(
         name: "MetadataViews",
         path: "../contracts/standards/MetadataViews.cdc",
+        arguments: []
+    )
+    Test.expect(err, Test.beNil())
+    err = Test.deployContract(
+        name: "FungibleTokenMetadataViews",
+        path: "../contracts/standards/FungibleTokenMetadataViews.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
@@ -86,9 +88,16 @@ fun testSerializeNFTSucceeds() {
     )
     Test.expect(mintResult, Test.beSucceeded())
 
+    let heightResult = executeScript(
+        "../scripts/test/get_block_height.cdc",
+        []
+    )
+    mintedBlockHeight = heightResult.returnValue! as! UInt64
+    let heightString = mintedBlockHeight.toString()
+
     let expectedPrefix = "data:application/json;ascii,{\"name\": \"ExampleNFT\", \"description\": \"Example NFT Collection\", \"image\": \"https://flow.com/examplenft.jpg\", \"external_url\": \"https://example-nft.onflow.org\", "
-    let altSuffix1 = "\"attributes\": [{\"trait_type\": \"mintedBlock\", \"value\": \"54\"},{\"trait_type\": \"foo\", \"value\": \"nil\"}]}"
-    let altSuffix2 = "\"attributes\": [{\"trait_type\": \"foo\", \"value\": \"nil\"}]}, {\"trait_type\": \"mintedBlock\", \"value\": \"54\"}"
+    let altSuffix1 = "\"attributes\": [{\"trait_type\": \"mintedBlock\", \"value\": \"".concat(heightString).concat("\"},{\"trait_type\": \"foo\", \"value\": \"nil\"}]}")
+    let altSuffix2 = "\"attributes\": [{\"trait_type\": \"foo\", \"value\": \"nil\"}]}, {\"trait_type\": \"mintedBlock\", \"value\": \"".concat(heightString).concat("\"}")
 
     let idsResult = executeScript(
         "../scripts/nft/get_ids.cdc",
@@ -105,15 +114,17 @@ fun testSerializeNFTSucceeds() {
 
     let serializedMetadata = serializeMetadataResult.returnValue! as! String
 
-    Test.assertEqual(true, serializedMetadata == expectedPrefix.concat(altSuffix1) || serializedMetadata == expectedPrefix.concat(altSuffix2))
-    // Test.assertEqual(serializedMetadata, expectedPrefix.concat(altSuffix1))
+    // Test.assertEqual(true, serializedMetadata == expectedPrefix.concat(altSuffix1) || serializedMetadata == expectedPrefix.concat(altSuffix2))
+    Test.assertEqual(serializedMetadata, expectedPrefix.concat(altSuffix1))
 }
 
 access(all)
 fun testOpenSeaMetadataSerializationStrategySucceeds() {
+    let heightString = mintedBlockHeight.toString()
+
     let expectedPrefix = "data:application/json;ascii,{\"name\": \"ExampleNFT\", \"description\": \"Example NFT Collection\", \"image\": \"https://flow.com/examplenft.jpg\", \"external_url\": \"https://example-nft.onflow.org\", "
-    let altSuffix1 = "\"attributes\": [{\"trait_type\": \"mintedBlock\", \"value\": \"54\"},{\"trait_type\": \"foo\", \"value\": \"nil\"}]}"
-    let altSuffix2 = "\"attributes\": [{\"trait_type\": \"foo\", \"value\": \"nil\"}]}, {\"trait_type\": \"mintedBlock\", \"value\": \"54\"}"
+    let altSuffix1 = "\"attributes\": [{\"trait_type\": \"mintedBlock\", \"value\": \"".concat(heightString).concat("\"},{\"trait_type\": \"foo\", \"value\": \"nil\"}]}")
+    let altSuffix2 = "\"attributes\": [{\"trait_type\": \"foo\", \"value\": \"nil\"}]}, {\"trait_type\": \"mintedBlock\", \"value\": \"".concat(heightString).concat("\"}")
 
     let idsResult = executeScript(
         "../scripts/nft/get_ids.cdc",
