@@ -149,6 +149,13 @@
 				"emulator": "f8d6e0586b0a20c7"
 			}
 		},
+		"SerializationInterfaces": {
+			"source": "./cadence/contracts/utils/SerializationInterfaces.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"testing": "0000000000000007"
+			}
+		},
 		"Serialize": {
 			"source": "./cadence/contracts/utils/Serialize.cdc",
 			"aliases": {
@@ -158,13 +165,6 @@
 		},
 		"SerializeNFT": {
 			"source": "./cadence/contracts/utils/SerializeNFT.cdc",
-			"aliases": {
-				"emulator": "f8d6e0586b0a20c7",
-				"testing": "0000000000000007"
-			}
-		},
-		"SerializationInterfaces": {
-			"source": "./cadence/contracts/utils/SerializationInterfaces.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"testing": "0000000000000007"
