@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.17;
 
-import {Test, console2} from "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
+
 import {FlowBridgeFactory} from "../src/FlowBridgeFactory.sol";
 import {FlowBridgedERC721} from "../src/FlowBridgedERC721.sol";
 
 contract FlowBridgeFactoryTest is Test {
-    FlowBridgeFactory public factory;
-    FlowBridgedERC721 public deployedERC721Contract;
+    FlowBridgeFactory internal factory;
+    FlowBridgedERC721 internal deployedERC721Contract;
 
     string name;
     string symbol;
@@ -16,7 +17,7 @@ contract FlowBridgeFactoryTest is Test {
     string contractURI;
     address deployedERC721Address;
 
-    function setUp() public {
+    function setUp() public virtual {
         factory = new FlowBridgeFactory();
         name = "name";
         symbol = "symbol";

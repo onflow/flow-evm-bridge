@@ -146,7 +146,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge {
             // Otherwise, serialize the NFT
             uri = SerializeNFT.serializeNFTMetadataAsURI(&token as &{NonFungibleToken.NFT})
         }
-        
+
         // Lock the NFT & calculate the storage used by the NFT
         let storageUsed = FlowEVMBridgeNFTEscrow.lockNFT(<-token)
         // Calculate the bridge fee on current rates
