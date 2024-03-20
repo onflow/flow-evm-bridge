@@ -6,7 +6,7 @@ import "MetadataViews"
 import "Serialize"
 import "SerializeNFT"
 
-access(all) let admin = Test.getAccount(0x0000000000000007)
+access(all) let admin = Test.getAccount(0x0000000000000008)
 access(all) let alice = Test.createAccount()
 
 access(all) var mintedBlockHeight: UInt64 = 0
