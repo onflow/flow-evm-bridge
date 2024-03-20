@@ -143,7 +143,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge {
         if let metadata = token.resolveView(Type<CrossVMNFT.EVMBridgedMetadata>()) as! CrossVMNFT.EVMBridgedMetadata? {
             uri = metadata.uri.uri()
         } else {
-            // Otherwise, serialize the NFT using OpenSea Metadata strategy
+            // Otherwise, serialize the NFT
             uri = SerializeNFT.serializeNFTMetadataAsURI(&token as &{NonFungibleToken.NFT})
         }
         
@@ -416,13 +416,26 @@ contract FlowEVMBridge : IFlowEVMNFTBridge {
         // Borrow the ViewResolver to attempt to resolve the EVMBridgedMetadata view
         let viewResolver = getAccount(cadenceAddress).contracts.borrow<&{ViewResolver}>(name: name)!
         var contractURI = ""
-        if let bridgedMetadata = viewResolver.resolveContractView(
+        // Try to resolve the EVMBridgedMetadata
+        let bridgedMetadata = viewResolver.resolveContractView(
                 resourceType: forNFTType,
                 viewType: Type<CrossVMNFT.EVMBridgedMetadata>()
-            ) as! CrossVMNFT.EVMBridgedMetadata? {
-            name = bridgedMetadata.name
-            symbol = bridgedMetadata.symbol
-            contractURI = bridgedMetadata.uri.uri()
+            ) as! CrossVMNFT.EVMBridgedMetadata?
+        // Default to project-defined URI if available
+        if bridgedMetadata != nil {
+            name = bridgedMetadata!.name
+            symbol = bridgedMetadata!.symbol
+            contractURI = bridgedMetadata!.uri.uri()
+        } else {
+            // Otherwise, serialize collection-level NFTCollectionDisplay
+            if let collectionDisplay = viewResolver.resolveContractView(
+                resourceType: forNFTType,
+                viewType: Type<MetadataViews.NFTCollectionDisplay>()
+            ) as! MetadataViews.NFTCollectionDisplay? {
+                name = collectionDisplay.name
+                let serializedDisplay = SerializeNFT.serializeFromDisplays(nftDisplay: nil, collectionDisplay: collectionDisplay)!
+                contractURI = "data:application/json;ascii,{".concat(serializedDisplay).concat("}")
+            }
         }
 
         // Call to the factory contract to deploy an ERC721
