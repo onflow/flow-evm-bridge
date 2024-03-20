@@ -91,7 +91,7 @@ fun testSerializeNFTSucceeds() {
     mintedBlockHeight = heightResult.returnValue! as! UInt64
     let heightString = mintedBlockHeight.toString()
 
-    let expectedPrefix = "data:application/json;ascii,{\"name\": \"ExampleNFT\", \"description\": \"Example NFT Collection\", \"image\": \"https://flow.com/examplenft.jpg\", \"external_url\": \"https://example-nft.onflow.org\", "
+    let expectedPrefix = "data:application/json;utf8,{\"name\": \"ExampleNFT\", \"description\": \"Example NFT Collection\", \"image\": \"https://flow.com/examplenft.jpg\", \"external_url\": \"https://example-nft.onflow.org\", "
     let altSuffix1 = "\"attributes\": [{\"trait_type\": \"mintedBlock\", \"value\": \"".concat(heightString).concat("\"},{\"trait_type\": \"foo\", \"value\": \"nil\"}]}")
     let altSuffix2 = "\"attributes\": [{\"trait_type\": \"foo\", \"value\": \"nil\"}]}, {\"trait_type\": \"mintedBlock\", \"value\": \"".concat(heightString).concat("\"}")
 
