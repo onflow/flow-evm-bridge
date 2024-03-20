@@ -1,7 +1,10 @@
 import Test
 import BlockchainHelpers
 
+import "MetadataViews"
+
 import "Serialize"
+import "SerializeNFT"
 
 access(all) let admin = Test.getAccount(0x0000000000000007)
 access(all) let alice = Test.createAccount()
@@ -107,6 +110,69 @@ fun testSerializeNFTSucceeds() {
 
     let serializedMetadata = serializeMetadataResult.returnValue! as! String
 
-    // Test.assertEqual(true, serializedMetadata == expectedPrefix.concat(altSuffix1) || serializedMetadata == expectedPrefix.concat(altSuffix2))
-    Test.assertEqual(serializedMetadata, expectedPrefix.concat(altSuffix1))
+    Test.assertEqual(true, serializedMetadata == expectedPrefix.concat(altSuffix1) || serializedMetadata == expectedPrefix.concat(altSuffix2))
+}
+
+// Returns nil when no displays are provided
+access(all)
+fun testSerializeNilDisplaysReturnsNil() {
+    let serializedResult = SerializeNFT.serializeFromDisplays(nftDisplay: nil, collectionDisplay: nil)
+    Test.assertEqual(nil, serializedResult)
+}
+
+// Given just token-level Display, serialize as tokenURI format
+access(all)
+fun testSerializeNFTDisplaySucceeds() {
+    let display = MetadataViews.Display(
+        name: "NAME",
+        description: "NFT Description",
+        thumbnail: MetadataViews.HTTPFile(url: "https://flow.com/examplenft.jpg"),
+    )
+
+    let expected = "\"name\": \"NAME\", \"description\": \"NFT Description\", \"image\": \"https://flow.com/examplenft.jpg\""
+
+    let serializedResult = SerializeNFT.serializeFromDisplays(nftDisplay: display, collectionDisplay: nil)
+    Test.assertEqual(expected, serializedResult!)
+}
+
+// Given just token-level Display, serialize as contractURI format
+access(all)
+fun testSerializeNFTCollectionDisplaySucceeds() {
+    let collectionDisplay = MetadataViews.NFTCollectionDisplay(
+        name: "NAME",
+        description: "NFT Description",
+        externalURL: MetadataViews.ExternalURL("https://flow.com"),
+        squareImage: MetadataViews.Media(file: MetadataViews.HTTPFile(url: "https://flow.com/square_image.jpg"), mediaType: "image"),
+        bannerImage: MetadataViews.Media(file: MetadataViews.HTTPFile(url: "https://flow.com/square_image.jpg"), mediaType: "image"),
+        socials: {}
+    )
+
+    let expected = "\"name\": \"NAME\", \"description\": \"NFT Description\", \"image\": \"https://flow.com/square_image.jpg\", \"external_link\": \"https://flow.com\""
+
+    let serializedResult = SerializeNFT.serializeFromDisplays(nftDisplay: nil, collectionDisplay: collectionDisplay)
+    Test.assertEqual(expected, serializedResult!)
+}
+
+// Given bol token- & contract-level Displays, serialize as tokenURI format
+access(all)
+fun testSerializeBothDisplaysSucceeds() {
+    let nftDisplay = MetadataViews.Display(
+        name: "NAME",
+        description: "NFT Description",
+        thumbnail: MetadataViews.HTTPFile(url: "https://flow.com/examplenft.jpg"),
+    )
+
+    let collectionDisplay = MetadataViews.NFTCollectionDisplay(
+        name: "NAME",
+        description: "NFT Description",
+        externalURL: MetadataViews.ExternalURL("https://flow.com"),
+        squareImage: MetadataViews.Media(file: MetadataViews.HTTPFile(url: "https://flow.com/square_image.jpg"), mediaType: "image"),
+        bannerImage: MetadataViews.Media(file: MetadataViews.HTTPFile(url: "https://flow.com/square_image.jpg"), mediaType: "image"),
+        socials: {}
+    )
+
+    let expected = "\"name\": \"NAME\", \"description\": \"NFT Description\", \"image\": \"https://flow.com/examplenft.jpg\", \"external_url\": \"https://flow.com\""
+
+    let serializedResult = SerializeNFT.serializeFromDisplays(nftDisplay: nftDisplay, collectionDisplay: collectionDisplay)
+    Test.assertEqual(expected, serializedResult!)
 }
