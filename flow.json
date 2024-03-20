@@ -42,6 +42,13 @@
 				"testing": "0000000000000007"
 			}
 		},
+		"EVMDeployer": {
+			"source": "./cadence/contracts/test/EVMDeployer.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"testing": "0000000000000009"
+			}
+		},
 		"ExampleNFT": {
 			"source": "./cadence/contracts/example-assets/ExampleNFT.cdc",
 			"aliases": {

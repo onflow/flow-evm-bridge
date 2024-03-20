@@ -6,8 +6,10 @@ import "test_helpers.cdc"
 access(all) let serviceAccount = Test.serviceAccount()
 access(all) let bridgeAccount = Test.getAccount(0x0000000000000007)
 access(all) let exampleNFTAccount = Test.getAccount(0x0000000000000008)
-access(all) let exampleERC721Account = Test.createAccount()
+access(all) let exampleERC721Account = Test.getAccount(0x0000000000000009)
 access(all) let alice = Test.createAccount()
+access(all) let erc721ID: UInt256 = 42
+access(all) let erc721URI = "ipfs://QmXf1Z6z5Y"
 
 access(all)
 fun setup() {
@@ -139,6 +141,30 @@ fun setup() {
         arguments: [serviceAccount.address, "FlowEVMBridge"]
     )
     Test.expect(err, Test.beNil())
+
+    // Transfer ERC721 deployer some $FLOW
+    let fundERC721AccountResult = executeTransaction(
+        "../transactions/flow-token/transfer_flow.cdc",
+        [exampleERC721Account.address, 100.0],
+        serviceAccount
+    )
+    Test.expect(fundERC721AccountResult, Test.beSucceeded())
+    // Configure bridge account with a COA
+    let createERC721COAResult = executeTransaction(
+        "../transactions/evm/create_account.cdc",
+        [10.0],
+        exampleERC721Account
+    )
+    Test.expect(createERC721COAResult, Test.beSucceeded())
+    // Deploy the ERC721 from EVMDeployer (simply to capture deploye EVM contract address)
+    // TODO: Replace this contract with the `deployedContractAddress` value emitted on deployment
+    //      once `evm` events Types are available
+    err = Test.deployContract(
+        name: "EVMDeployer",
+        path: "../contracts/test/EVMDeployer.cdc",
+        arguments: [getCompiledERC721Bytecode(), UInt(0)]
+    )
+    Test.expect(err, Test.beNil())
 }
 
 access(all)
@@ -164,4 +190,29 @@ fun testCreateCOASucceeds() {
     Test.expect(coaAddressResult, Test.beSucceeded())
     let stringAddress = coaAddressResult.returnValue as! String?
     Test.assertEqual(40, stringAddress!.length)
+}
+
+access(all)
+fun testMintERC721Succeeds() {
+    let aliceCOAAddressResult = executeScript(
+        "../scripts/evm/get_evm_address_string.cdc",
+        [alice.address]
+    )
+    Test.expect(aliceCOAAddressResult, Test.beSucceeded())
+    let aliceCOAAddressString = aliceCOAAddressResult.returnValue as! String? ?? panic("Problem getting COA address as String")
+    Test.assertEqual(40, aliceCOAAddressString.length)
+    let erc721AddressResult = executeScript(
+        "../scripts/test/get_deployed_erc721_address_string.cdc",
+        []
+    )
+    Test.expect(erc721AddressResult, Test.beSucceeded())
+    let erc721AddressString = erc721AddressResult.returnValue as! String? ?? panic("Problem getting COA address as String")
+    Test.assertEqual(40, erc721AddressString.length)
+
+    let mintERC721Result = executeTransaction(
+        "../transactions/example-assets/safe_mint_erc721.cdc",
+        [aliceCOAAddressString, erc721ID, erc721URI, erc721AddressString, UInt64(150_000)],
+        exampleERC721Account
+    )
+    Test.expect(mintERC721Result, Test.beSucceeded())
 }
