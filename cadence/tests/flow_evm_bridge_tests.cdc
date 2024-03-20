@@ -8,8 +8,18 @@ access(all) let bridgeAccount = Test.getAccount(0x0000000000000007)
 access(all) let exampleNFTAccount = Test.getAccount(0x0000000000000008)
 access(all) let exampleERC721Account = Test.getAccount(0x0000000000000009)
 access(all) let alice = Test.createAccount()
+
+// ExampleNFT values
+access(all) let exampleNFTIdentifier = "A.0000000000000008.ExampleNFT.NFT"
+access(all) let exampleNFTTokenName = "Example NFT"
+access(all) let exampleNFTTokenDescription = "Example NFT token description"
+access(all) let exampleNFTTokenThumbnail = "https://examplenft.com/thumbnail.png"
+
+// ERC721 values
+access(all) let erc721Name = "NAME"
+access(all) let erc721Symbol = "SYMBOL"
 access(all) let erc721ID: UInt256 = 42
-access(all) let erc721URI = "ipfs://QmXf1Z6z5Y"
+access(all) let erc721URI = "URI"
 
 access(all)
 fun setup() {
@@ -165,6 +175,12 @@ fun setup() {
         arguments: [getCompiledERC721Bytecode(), UInt(0)]
     )
     Test.expect(err, Test.beNil())
+    err = Test.deployContract(
+        name: "ExampleNFT",
+        path: "../contracts/example-assets/ExampleNFT.cdc",
+        arguments: []
+    )
+    Test.expect(err, Test.beNil())
 }
 
 access(all)
@@ -193,6 +209,31 @@ fun testCreateCOASucceeds() {
 }
 
 access(all)
+fun testMintExampleNFTSucceeds() {
+    let setupCollectionResult = executeTransaction(
+        "../transactions/example-assets/setup_collection.cdc",
+        [],
+        alice
+    )
+    Test.expect(setupCollectionResult, Test.beSucceeded())
+
+    let mintExampleNFTResult = executeTransaction(
+        "../transactions/example-assets/mint_nft.cdc",
+        [alice.address, exampleNFTTokenName, exampleNFTTokenDescription, exampleNFTTokenThumbnail, [], [], []],
+        exampleNFTAccount
+    )
+    Test.expect(mintExampleNFTResult, Test.beSucceeded())
+
+    let aliceIDResult = executeScript(
+        "../scripts/nft/get_ids.cdc",
+        [alice.address, "cadenceExampleNFTCollection"]
+    )
+    Test.expect(aliceIDResult, Test.beSucceeded())
+    let aliceOwnedIDs = aliceIDResult.returnValue as! [UInt64]? ?? panic("Problem getting ExampleNFT IDs")
+    Test.assertEqual(1, aliceOwnedIDs.length)
+}
+
+access(all)
 fun testMintERC721Succeeds() {
     let aliceCOAAddressResult = executeScript(
         "../scripts/evm/get_evm_address_string.cdc",
@@ -211,8 +252,82 @@ fun testMintERC721Succeeds() {
 
     let mintERC721Result = executeTransaction(
         "../transactions/example-assets/safe_mint_erc721.cdc",
-        [aliceCOAAddressString, erc721ID, erc721URI, erc721AddressString, UInt64(150_000)],
+        [aliceCOAAddressString, erc721ID, erc721URI, erc721AddressString, UInt64(200_000)],
         exampleERC721Account
     )
     Test.expect(mintERC721Result, Test.beSucceeded())
+}
+
+access(all)
+fun testOnboardByTypeSucceeds() {
+    var onboaringRequiredResult = executeScript(
+        "../scripts/bridge/type_requires_onboarding.cdc",
+        [exampleNFTIdentifier]
+    )
+    Test.expect(onboaringRequiredResult, Test.beSucceeded())
+    var requiresOnboarding = onboaringRequiredResult.returnValue as! Bool? ?? panic("Problem getting onboarding requirement")
+    Test.assertEqual(true, requiresOnboarding)
+
+    var onboardingResult = executeTransaction(
+        "../transactions/bridge/onboard_by_type.cdc",
+        [exampleNFTIdentifier],
+        alice
+    )
+    Test.expect(onboardingResult, Test.beSucceeded())
+    
+    onboaringRequiredResult = executeScript(
+        "../scripts/bridge/type_requires_onboarding.cdc",
+        [exampleNFTIdentifier]
+    )
+    Test.expect(onboaringRequiredResult, Test.beSucceeded())
+    requiresOnboarding = onboaringRequiredResult.returnValue as! Bool? ?? panic("Problem getting onboarding requirement")
+    Test.assertEqual(false, requiresOnboarding)
+
+    onboardingResult = executeTransaction(
+        "../transactions/bridge/onboard_by_type.cdc",
+        [exampleNFTIdentifier],
+        alice
+    )
+    Test.expect(onboardingResult, Test.beFailed())
+}
+
+access(all)
+fun testOnboardByEVMAddressSucceeds() {
+    let erc721AddressResult = executeScript(
+        "../scripts/test/get_deployed_erc721_address_string.cdc",
+        []
+    )
+    Test.expect(erc721AddressResult, Test.beSucceeded())
+    let erc721AddressString = erc721AddressResult.returnValue as! String? ?? panic("Problem getting COA address as String")
+    Test.assertEqual(40, erc721AddressString.length)
+
+    var onboaringRequiredResult = executeScript(
+        "../scripts/bridge/evm_address_requires_onboarding.cdc",
+        [erc721AddressString]
+    )
+    Test.expect(onboaringRequiredResult, Test.beSucceeded())
+    var requiresOnboarding = onboaringRequiredResult.returnValue as! Bool? ?? panic("Problem getting onboarding requirement")
+    Test.assertEqual(true, requiresOnboarding)
+
+    var onboardingResult = executeTransaction(
+        "../transactions/bridge/onboard_by_evm_address.cdc",
+        [erc721AddressString],
+        alice
+    )
+    Test.expect(onboardingResult, Test.beSucceeded())
+    
+    onboaringRequiredResult = executeScript(
+        "../scripts/bridge/evm_address_requires_onboarding.cdc",
+        [erc721AddressString]
+    )
+    Test.expect(onboaringRequiredResult, Test.beSucceeded())
+    requiresOnboarding = onboaringRequiredResult.returnValue as! Bool? ?? panic("Problem getting onboarding requirement")
+    Test.assertEqual(false, requiresOnboarding)
+
+    onboardingResult = executeTransaction(
+        "../transactions/bridge/onboard_by_evm_address.cdc",
+        [erc721AddressString],
+        alice
+    )
+    Test.expect(onboardingResult, Test.beFailed())
 }
