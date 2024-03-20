@@ -30,7 +30,7 @@ access(all) contract SerializeNFT {
         // Serialize the display values from the NFT's Display & NFTCollectionDisplay views
         let nftDisplay = nft.resolveView(Type<MetadataViews.Display>()) as! MetadataViews.Display?
         let collectionDisplay = nft.resolveView(Type<MetadataViews.NFTCollectionDisplay>()) as! MetadataViews.NFTCollectionDisplay?
-        let display = self.serializeNFTDisplay(nftDisplay: nftDisplay, collectionDisplay: collectionDisplay)
+        let display = self.serializeFromDisplays(nftDisplay: nftDisplay, collectionDisplay: collectionDisplay)
 
         // Get the Traits view from the NFT, returning early if no traits are found
         let traits = nft.resolveView(Type<MetadataViews.Traits>()) as! MetadataViews.Traits?
@@ -41,7 +41,7 @@ access(all) contract SerializeNFT {
             return ""
         }
         // Init the data format prefix & concatenate the serialized display & attributes
-        var serializedMetadata= "data:application/json;ascii,{"
+        var serializedMetadata = "data:application/json;ascii,{"
         if display != nil {
             serializedMetadata = serializedMetadata.concat(display!)
         }
@@ -49,21 +49,24 @@ access(all) contract SerializeNFT {
             serializedMetadata = serializedMetadata.concat(", ")
         }
         if attributes != nil {
-            serializedMetadata = serializedMetadata.concat(attributes!)
+            serializedMetadata = serializedMetadata.concat(attributes)
         }
         return serializedMetadata.concat("}")
     }
 
-    /// Serializes the display & collection display views of a given NFT as a JSON compatible string
+    /// Serializes the display & collection display views of a given NFT as a JSON compatible string. If nftDisplay is 
+    /// present, the value is returned as token-level metadata. If nftDisplay is nil and collectionDisplay is present,
+    /// the value is returned as contract-level metadata. If both values are nil, nil is returned.
     ///
     /// @param nftDisplay: The NFT's Display view from which values `name`, `description`, and `thumbnail` are serialized
     /// @param collectionDisplay: The NFT's NFTCollectionDisplay view from which the `externalURL` is serialized
     ///
-    /// @returns: A JSON compatible string containing the serialized display & collection display views as:
-    ///         \"name\": \"<display.name>\", \"description\": \"<display.description>\", \"image\": \"<display.thumbnail.uri()>\", \"external_url\": \"<nftCollectionDisplay.externalURL.url>\",
+    /// @returns: A JSON compatible string containing the serialized display & collection display views as either:
+    ///         \"name\": \"<nftDisplay.name>\", \"description\": \"<nftDisplay.description>\", \"image\": \"<nftDisplay.thumbnail.uri()>\", \"external_url\": \"<collectionDisplay.externalURL.url>\",
+    ///         \"name\": \"<collectionDisplay.name>\", \"description\": \"<collectionDisplay.description>\", \"image\": \"<collectionDisplay.squareImage.file.uri()>\", \"external_link\": \"<collectionDisplay.externalURL.url>\",
     ///
     access(all)
-    fun serializeNFTDisplay(nftDisplay: MetadataViews.Display?, collectionDisplay: MetadataViews.NFTCollectionDisplay?, ): String? {
+    fun serializeFromDisplays(nftDisplay: MetadataViews.Display?, collectionDisplay: MetadataViews.NFTCollectionDisplay?): String? {
         // Return early if both values are nil
         if nftDisplay == nil && collectionDisplay == nil {
             return nil
@@ -74,33 +77,32 @@ access(all) contract SerializeNFT {
         let description = "\"description\": "
         let image = "\"image\": "
         let externalURL = "\"external_url\": "
+        let externalLink = "\"external_link\": "
         var serializedResult = ""
 
-        // Append results from the Display view to the serialized JSON compatible string
+        // Append results from the token-level Display view to the serialized JSON compatible string
         if nftDisplay != nil {
             serializedResult = serializedResult
                 .concat(name).concat(Serialize.tryToJSONString(nftDisplay!.name)!).concat(", ")
                 .concat(description).concat(Serialize.tryToJSONString(nftDisplay!.description)!).concat(", ")
                 .concat(image).concat(Serialize.tryToJSONString(nftDisplay!.thumbnail.uri())!)
-            // Return here if collectionDisplay is not present
-            if collectionDisplay == nil {
-                return serializedResult
+            // Append the `externa_url` value from NFTCollectionDisplay view if present
+            if collectionDisplay != nil {
+                return serializedResult.concat(", ")
+                    .concat(externalURL).concat(Serialize.tryToJSONString(collectionDisplay!.externalURL.url)!)
             }
         }
 
-        // Append a comma if both Display & NFTCollection Display views are present
-        if nftDisplay != nil {
-            serializedResult = serializedResult.concat(", ")
-        } else {
-            // Otherwise, append the name & description fields from the NFTCollectionDisplay view, foregoing image
-            serializedResult = serializedResult
-                .concat(name).concat(Serialize.tryToJSONString(collectionDisplay!.name)!).concat(", ")
-                .concat(description).concat(Serialize.tryToJSONString(collectionDisplay!.description)!).concat(", ")
+        if collectionDisplay == nil {
+            return serializedResult
         }
 
+        // Without token-level view, serialize as contract-level metadata
         return serializedResult
-            .concat(externalURL)
-            .concat(Serialize.tryToJSONString(collectionDisplay!.externalURL.url)!)
+            .concat(name).concat(Serialize.tryToJSONString(collectionDisplay!.name)!).concat(", ")
+            .concat(description).concat(Serialize.tryToJSONString(collectionDisplay!.description)!).concat(", ")
+            .concat(image).concat(Serialize.tryToJSONString(collectionDisplay!.squareImage.file.uri())!).concat(", ")
+            .concat(externalLink).concat(Serialize.tryToJSONString(collectionDisplay!.externalURL.url)!)
     }
 
     /// Serializes given Traits view as a JSON compatible string. If a given Trait is not serializable, it is skipped
