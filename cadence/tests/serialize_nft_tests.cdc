@@ -135,7 +135,7 @@ fun testSerializeNFTDisplaySucceeds() {
     Test.assertEqual(expected, serializedResult!)
 }
 
-// Given just token-level Display, serialize as contractURI format
+// Given just contract-level Display, serialize as contractURI format
 access(all)
 fun testSerializeNFTCollectionDisplaySucceeds() {
     let collectionDisplay = MetadataViews.NFTCollectionDisplay(
