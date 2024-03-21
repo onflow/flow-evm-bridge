@@ -153,7 +153,15 @@ fun setup() {
         serviceAccount
     )
     Test.expect(updateResult, Test.beSucceeded())
+    // TODO: Remove once issue is address - added here for validation
     Test.assertEqual(true, getAccount(serviceAccount.address).contracts.names.contains("EVMBridgeRouter"))
+    // This also fails with  I.Test.Test.Error(message: "could not find an account with address: 0000000000000001")
+    // err = Test.deployContract(
+    //     name: "EVMBridgeRouter",
+    //     path: "../contracts/bridge/EVMBridgeRouter.cdc",
+    //     arguments: []
+    // )
+    // Test.expect(err, Test.beNil())
 
     // Transfer ERC721 deployer some $FLOW
     let fundERC721AccountResult = executeTransaction(
