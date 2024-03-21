@@ -54,7 +54,7 @@ fun setup() {
         arguments: []
     )
     Test.expect(err, Test.beNil())
-    
+
     // Update EVM contract with proposed bridge-supporting COA integration
     let updateResult = executeTransaction(
         "../transactions/test/update_contract.cdc",
@@ -145,12 +145,15 @@ fun setup() {
         arguments: []
     )
     Test.expect(err, Test.beNil())
-    err = Test.deployContract(
-        name: "EVMBridgeRouter",
-        path: "../contracts/bridge/EVMBridgeRouter.cdc",
-        arguments: [serviceAccount.address, "FlowEVMBridge"]
+
+    // Deploy EVMBridgeRouter manually to service account for COA -> bridge integration
+    let deployResult = executeTransaction(
+        "../transactions/test/add_contract.cdc",
+        ["EVMBridgeRouter", getEVMBridgeRouterCode(), bridgeAccount.address, "FlowEVMBridge"],
+        serviceAccount
     )
-    Test.expect(err, Test.beNil())
+    Test.expect(updateResult, Test.beSucceeded())
+    Test.assertEqual(true, getAccount(serviceAccount.address).contracts.names.contains("EVMBridgeRouter"))
 
     // Transfer ERC721 deployer some $FLOW
     let fundERC721AccountResult = executeTransaction(
@@ -181,6 +184,18 @@ fun setup() {
         arguments: []
     )
     Test.expect(err, Test.beNil())
+}
+
+// TODO: Figure out how to test EVMBridgeRouter given it needs to be deployed to the service account
+//      and we can't seem to alter service account storage from the test suite
+access(all)
+fun testIsBridgeRouterConfiguredSucceeds() {
+    let isConfiguredResult = executeScript(
+        "../scripts/test/is_bridge_router_configured.cdc",
+        []
+    )
+    Test.expect(isConfiguredResult, Test.beSucceeded())
+    Test.assertEqual(true, isConfiguredResult.returnValue as! Bool? ?? panic("Problem getting Router"))
 }
 
 access(all)
@@ -274,7 +289,7 @@ fun testOnboardByTypeSucceeds() {
         alice
     )
     Test.expect(onboardingResult, Test.beSucceeded())
-    
+
     onboaringRequiredResult = executeScript(
         "../scripts/bridge/type_requires_onboarding.cdc",
         [exampleNFTIdentifier]
@@ -315,7 +330,7 @@ fun testOnboardByEVMAddressSucceeds() {
         alice
     )
     Test.expect(onboardingResult, Test.beSucceeded())
-    
+
     onboaringRequiredResult = executeScript(
         "../scripts/bridge/evm_address_requires_onboarding.cdc",
         [erc721AddressString]
@@ -330,4 +345,46 @@ fun testOnboardByEVMAddressSucceeds() {
         alice
     )
     Test.expect(onboardingResult, Test.beFailed())
+}
+
+access(all)
+fun testBridgeCadenceNativeNFTToEVMSucceeds() {
+    let aliceIDResult = executeScript(
+        "../scripts/nft/get_ids.cdc",
+        [alice.address, "cadenceExampleNFTCollection"]
+    )
+    Test.expect(aliceIDResult, Test.beSucceeded())
+    let aliceOwnedIDs = aliceIDResult.returnValue as! [UInt64]? ?? panic("Problem getting ExampleNFT IDs")
+    Test.assertEqual(1, aliceOwnedIDs.length)
+
+    let aliceCOAAddressResult = executeScript(
+        "../scripts/evm/get_evm_address_string.cdc",
+        [alice.address]
+    )
+    Test.expect(aliceCOAAddressResult, Test.beSucceeded())
+    let aliceCOAAddressString = aliceCOAAddressResult.returnValue as! String? ?? panic("Problem getting COA address as String")
+    Test.assertEqual(40, aliceCOAAddressString.length)
+
+    // TODO: This fails because EVMBridgeRouter.Router does not configure a resource in the service account
+    let bridgeToEVMResult = executeTransaction(
+        "../transactions/bridge/bridge_nft_to_evm.cdc",
+        [exampleNFTAccount.address, "ExampleNFT", aliceOwnedIDs[0]],
+        alice
+    )
+    Test.expect(bridgeToEVMResult, Test.beSucceeded())
+
+    var associatedEVMAddressResult = executeScript(
+        "../scripts/bridge/get_associated_evm_address.cdc",
+        [exampleNFTIdentifier]
+    )
+    Test.expect(associatedEVMAddressResult, Test.beSucceeded())
+    let associatedEVMAddressString = associatedEVMAddressResult.returnValue as! String? ?? panic("Problem getting EVM Address as String")
+    Test.assertEqual(40, associatedEVMAddressString.length)
+
+    var isOwnerResult = executeScript(
+        "../scripts/utils/is_owner.cdc",
+        [UInt256(aliceOwnedIDs[0]), aliceCOAAddressString, associatedEVMAddressString]
+    )
+    Test.expect(isOwnerResult, Test.beSucceeded())
+    Test.assertEqual(true, isOwnerResult.returnValue as! Bool? ?? panic("Problem getting owner status"))
 }
