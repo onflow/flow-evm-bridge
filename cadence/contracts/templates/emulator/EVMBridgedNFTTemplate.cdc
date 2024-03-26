@@ -42,6 +42,10 @@ access(all) contract {{CONTRACT_NAME}} : ICrossVM, IEVMBridgeNFTMinter, NonFungi
     access(all) var contractURI: String?
     /// Retain a Collection to reference when resolving Collection Metadata
     access(self) let collection: @Collection
+    /// Mapping of token URIs indexed on their ERC721 ID. This would not normally be retained within a Cadence NFT
+    /// contract, but since NFT metadata may be updated in EVM, it's retained here so that the bridge can update
+    /// it against the source ERC721 contract which is treated as the NFT's source of truth.
+    access(all) let tokenURIs: {UInt256: String}
 
     /// The NFT resource representing the bridged ERC721 token
     ///
@@ -54,8 +58,6 @@ access(all) contract {{CONTRACT_NAME}} : ICrossVM, IEVMBridgeNFTMinter, NonFungi
         access(all) let name: String
         /// The symbol of the NFT as defined in the ERC721 contract
         access(all) let symbol: String
-        /// The URI of the NFT as defined in the ERC721 contract
-        access(all) let uri: String
         /// Additional onchain metadata
         access(all) let metadata: {String: AnyStruct}
 
@@ -63,14 +65,12 @@ access(all) contract {{CONTRACT_NAME}} : ICrossVM, IEVMBridgeNFTMinter, NonFungi
             name: String,
             symbol: String,
             evmID: UInt256,
-            uri: String,
             metadata: {String: AnyStruct}
         ) {
             self.name = name
             self.symbol = symbol
             self.id = self.uuid
             self.evmID = evmID
-            self.uri = uri
             self.metadata = metadata
         }
 
@@ -93,7 +93,7 @@ access(all) contract {{CONTRACT_NAME}} : ICrossVM, IEVMBridgeNFTMinter, NonFungi
                     return CrossVMNFT.EVMBridgedMetadata(
                         name: self.name,
                         symbol: self.symbol,
-                        uri: CrossVMNFT.URI(self.tokenURI())
+                        uri: CrossVMNFT.URI(baseURI: nil, value: self.tokenURI())
                     )
                 case Type<MetadataViews.Serial>():
                     return MetadataViews.Serial(
@@ -127,7 +127,7 @@ access(all) contract {{CONTRACT_NAME}} : ICrossVM, IEVMBridgeNFTMinter, NonFungi
 
         /// Similar to ERC721.tokenURI method, returns the URI of the NFT with self.evmID at time of bridging
         access(all) view fun tokenURI(): String {
-            return self.uri
+            return {{CONTRACT_NAME}}.tokenURIs[self.evmID] ?? ""
         }
     }
 
@@ -320,7 +320,7 @@ access(all) contract {{CONTRACT_NAME}} : ICrossVM, IEVMBridgeNFTMinter, NonFungi
                 return CrossVMNFT.EVMBridgedMetadata(
                     name: self.name,
                     symbol: self.symbol,
-                    uri: self.contractURI != nil ? CrossVMNFT.URI(self.contractURI!) : CrossVMNFT.URI("")
+                    uri: self.contractURI != nil ? CrossVMNFT.URI(baseURI: nil, value: self.contractURI!) : CrossVMNFT.URI(baseURI: nil, value: "")
                 )
         }
         return nil
@@ -330,19 +330,37 @@ access(all) contract {{CONTRACT_NAME}} : ICrossVM, IEVMBridgeNFTMinter, NonFungi
         Internal Methods
     ***********************/
 
-    /// Allows the bridge to
+    /// Allows the bridge to mint NFTs from bridge-defined NFT contracts
+    ///
     access(account)
     fun mintNFT(id: UInt256, tokenURI: String): @NFT {
+        pre {
+            self.tokenURIs[id] == nil: "A token with the given ERC721 ID already exists"
+        }
+        self.tokenURIs[id] = tokenURI
         return <-create NFT(
             name: self.name,
             symbol: self.symbol,
             evmID: id,
-            uri: tokenURI,
             metadata: {
                 "Bridged Block": getCurrentBlock().height,
                 "Bridged Timestamp": getCurrentBlock().timestamp
             }
         )
+    }
+
+    /// Allows the bridge to update the URI of bridged NFTs. This assumes that the EVM-defining project may contain
+    /// logic (onchain or offchain) which updates NFT metadata in the source ERC721 contract. On bridging, the URI can
+    /// then be updated in this contract to reflect the source ERC721 contract's metadata.
+    ///
+    access(account)
+    fun updateTokenURI(evmID: UInt256, newURI: String) {
+        pre {
+            self.tokenURIs[evmID] != nil: "No token with the given ERC721 ID exists"
+        }
+        if self.tokenURIs[evmID] != newURI {
+            self.tokenURIs[evmID] = newURI
+        }
     }
 
     init(name: String, symbol: String, evmContractAddress: EVM.EVMAddress, contractURI: String?) {
@@ -351,6 +369,7 @@ access(all) contract {{CONTRACT_NAME}} : ICrossVM, IEVMBridgeNFTMinter, NonFungi
         self.name = name
         self.symbol = symbol
         self.contractURI = contractURI
+        self.tokenURIs = {}
         self.collection <- create Collection()
 
         FlowEVMBridgeConfig.associateType(Type<@{{CONTRACT_NAME}}.NFT>(), with: self.evmNFTContractAddress)
