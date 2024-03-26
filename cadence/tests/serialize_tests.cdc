@@ -11,35 +11,6 @@ let alice = Test.createAccount()
 access(all)
 fun setup() {
     var err = Test.deployContract(
-        name: "ViewResolver",
-        path: "../contracts/standards/ViewResolver.cdc",
-        arguments: []
-    )
-    Test.expect(err, Test.beNil())
-    err = Test.deployContract(
-        name: "Burner",
-        path: "../contracts/standards/Burner.cdc",
-        arguments: []
-    )
-    err = Test.deployContract(
-        name: "FungibleToken",
-        path: "../contracts/standards/FungibleToken.cdc",
-        arguments: []
-    )
-    Test.expect(err, Test.beNil())
-    err = Test.deployContract(
-        name: "NonFungibleToken",
-        path: "../contracts/standards/NonFungibleToken.cdc",
-        arguments: []
-    )
-    Test.expect(err, Test.beNil())
-    err = Test.deployContract(
-        name: "MetadataViews",
-        path: "../contracts/standards/MetadataViews.cdc",
-        arguments: []
-    )
-    Test.expect(err, Test.beNil())
-    err = Test.deployContract(
         name: "Serialize",
         path: "../contracts/utils/Serialize.cdc",
         arguments: []
