@@ -3,13 +3,15 @@
 		"ArrayUtils": {
 			"source": "./cadence/contracts/utils/ArrayUtils.cdc",
 			"aliases": {
-				"emulator": "f8d6e0586b0a20c7"
+				"emulator": "f8d6e0586b0a20c7",
+				"testing": "0000000000000007"
 			}
 		},
 		"BridgePermissions": {
 			"source": "./cadence/contracts/bridge/BridgePermissions.cdc",
 			"aliases": {
-				"emulator": "f8d6e0586b0a20c7"
+				"emulator": "f8d6e0586b0a20c7",
+				"testing": "0000000000000007"
 			}
 		},
 		"Burner": {
@@ -22,7 +24,8 @@
 		"CrossVMNFT": {
 			"source": "./cadence/contracts/bridge/CrossVMNFT.cdc",
 			"aliases": {
-				"emulator": "f8d6e0586b0a20c7"
+				"emulator": "f8d6e0586b0a20c7",
+				"testing": "0000000000000007"
 			}
 		},
 		"EVM": {
@@ -42,37 +45,42 @@
 			"source": "./cadence/contracts/example-assets/ExampleNFT.cdc",
 			"aliases": {
 				"emulator": "179b6b1cb6755e31",
-				"testing": "0000000000000007"
+				"testing": "0000000000000008"
 			}
 		},
 		"FlowEVMBridge": {
 			"source": "./cadence/contracts/bridge/FlowEVMBridge.cdc",
 			"aliases": {
-				"emulator": "f8d6e0586b0a20c7"
+				"emulator": "f8d6e0586b0a20c7",
+				"testing": "0000000000000007"
 			}
 		},
 		"FlowEVMBridgeConfig": {
 			"source": "./cadence/contracts/bridge/FlowEVMBridgeConfig.cdc",
 			"aliases": {
-				"emulator": "f8d6e0586b0a20c7"
+				"emulator": "f8d6e0586b0a20c7",
+				"testing": "0000000000000007"
 			}
 		},
 		"FlowEVMBridgeNFTEscrow": {
 			"source": "./cadence/contracts/bridge/FlowEVMBridgeNFTEscrow.cdc",
 			"aliases": {
-				"emulator": "f8d6e0586b0a20c7"
+				"emulator": "f8d6e0586b0a20c7",
+				"testing": "0000000000000007"
 			}
 		},
 		"FlowEVMBridgeTemplates": {
 			"source": "./cadence/contracts/bridge/FlowEVMBridgeTemplates.cdc",
 			"aliases": {
-				"emulator": "f8d6e0586b0a20c7"
+				"emulator": "f8d6e0586b0a20c7",
+				"testing": "0000000000000007"
 			}
 		},
 		"FlowEVMBridgeUtils": {
 			"source": "./cadence/contracts/bridge/FlowEVMBridgeUtils.cdc",
 			"aliases": {
-				"emulator": "f8d6e0586b0a20c7"
+				"emulator": "f8d6e0586b0a20c7",
+				"testing": "0000000000000007"
 			}
 		},
 		"FlowToken": {
@@ -105,19 +113,22 @@
 		"ICrossVM": {
 			"source": "./cadence/contracts/bridge/ICrossVM.cdc",
 			"aliases": {
-				"emulator": "f8d6e0586b0a20c7"
+				"emulator": "f8d6e0586b0a20c7",
+				"testing": "0000000000000007"
 			}
 		},
 		"IEVMBridgeNFTMinter": {
 			"source": "./cadence/contracts/bridge/IEVMBridgeNFTMinter.cdc",
 			"aliases": {
-				"emulator": "f8d6e0586b0a20c7"
+				"emulator": "f8d6e0586b0a20c7",
+				"testing": "0000000000000007"
 			}
 		},
 		"IFlowEVMNFTBridge": {
 			"source": "./cadence/contracts/bridge/IFlowEVMNFTBridge.cdc",
 			"aliases": {
-				"emulator": "f8d6e0586b0a20c7"
+				"emulator": "f8d6e0586b0a20c7",
+				"testing": "0000000000000007"
 			}
 		},
 		"MetadataViews": {
@@ -141,7 +152,8 @@
 		"ScopedFTProviders": {
 			"source": "./cadence/contracts/utils/ScopedFTProviders.cdc",
 			"aliases": {
-				"emulator": "f8d6e0586b0a20c7"
+				"emulator": "f8d6e0586b0a20c7",
+				"testing": "0000000000000007"
 			}
 		},
 		"Serialize": {
@@ -161,7 +173,8 @@
 		"StringUtils": {
 			"source": "./cadence/contracts/utils/StringUtils.cdc",
 			"aliases": {
-				"emulator": "f8d6e0586b0a20c7"
+				"emulator": "f8d6e0586b0a20c7",
+				"testing": "0000000000000007"
 			}
 		},
 		"ViewResolver": {
