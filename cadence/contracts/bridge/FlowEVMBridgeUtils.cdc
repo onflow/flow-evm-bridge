@@ -690,7 +690,7 @@ contract FlowEVMBridgeUtils {
         )
     }
 
-    init(bridgeFactoryEVMAddress: String) {
+    init(bridgeFactoryBytecode: String) {
         self.delimiter = "_"
         self.contractNamePrefixes = {
             Type<@{NonFungibleToken.NFT}>(): {
@@ -700,8 +700,10 @@ contract FlowEVMBridgeUtils {
                 "bridged": "EVMVMBridgedToken"
             }
         }
-        let bridgeFactoryEVMAddressBytes: [UInt8] = bridgeFactoryEVMAddress.decodeHex()
-        self.bridgeFactoryEVMAddress = self.getEVMAddressFromHexString(address: bridgeFactoryEVMAddress)
-            ?? panic("Invalid bridge factory EVM address")
+        self.bridgeFactoryEVMAddress = self.borrowCOA().deploy(
+            code: bridgeFactoryBytecode.decodeHex(),
+            gasLimit: 12_000_000,
+            value: EVM.Balance(attoflow: 0)
+        )
     }
 }

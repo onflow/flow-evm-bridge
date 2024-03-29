@@ -4,7 +4,7 @@ import "FlowEVMBridgeUtils"
 
 transaction(
     recipientHexAddress: String,
-    tokenId: UInt64,
+    tokenId: UInt256,
     uri: String,
     erc721HexAddress: String,
     gasLimit: UInt64

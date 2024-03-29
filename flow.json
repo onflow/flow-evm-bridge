@@ -38,7 +38,15 @@
 		"EVMBridgeRouter": {
 			"source": "./cadence/contracts/bridge/EVMBridgeRouter.cdc",
 			"aliases": {
-				"emulator": "f8d6e0586b0a20c7"
+				"emulator": "f8d6e0586b0a20c7",
+				"testing": "0000000000000001"
+			}
+		},
+		"EVMDeployer": {
+			"source": "./cadence/contracts/test/EVMDeployer.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"testing": "0000000000000009"
 			}
 		},
 		"ExampleNFT": {
