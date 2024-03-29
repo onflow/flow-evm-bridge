@@ -5,6 +5,7 @@ import "EVM"
 
 import "FlowEVMBridgeConfig"
 import "FlowEVMBridgeUtils"
+import "CrossVMNFT"
 
 access(all) contract interface IFlowEVMNFTBridge {
     
@@ -67,7 +68,7 @@ access(all) contract interface IFlowEVMNFTBridge {
             emit BridgedNFTToEVM(
                 type: token.getType(),
                 id: token.id,
-                evmID: 0,
+                evmID: CrossVMNFT.getEVMID(from: &token as &{NonFungibleToken.NFT}) ?? UInt256(token.id),
                 to: FlowEVMBridgeUtils.getEVMAddressAsHexString(address: to),
                 evmContractAddress: FlowEVMBridgeUtils.getEVMAddressAsHexString(
                     address: self.getAssociatedEVMAddress(with: token.getType())
