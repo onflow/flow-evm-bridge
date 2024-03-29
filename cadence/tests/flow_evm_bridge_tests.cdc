@@ -219,3 +219,38 @@ access(all) fun setup() {
     )
     Test.expect(mintAliceERC721Result, Test.beSucceeded())
 }
+
+access(all)
+fun testExampleNFTBridgeOnboardingSucceeds() {
+    // TODO
+}
+
+access(all)
+fun testExampleERC721BridgeOnboardingSucceeds() {
+    // TODO
+}
+
+access(all)
+fun testBridgeNFTToEVMSucceeds() {
+    // TODO
+}
+
+access(all)
+fun testBridgeNFTFromEVMSucceeds() {
+    // TODO
+}
+
+access(all)
+fun testSetBridgeFeeSucceeds() {
+    // TODO
+}
+
+access(all)
+fun testBridgeToEVMWithFeeSucceeds() {
+    // TODO
+}
+
+access(all)
+fun testBridgeFromEVMWithFeeSucceeds() {
+    // TODO
+}
