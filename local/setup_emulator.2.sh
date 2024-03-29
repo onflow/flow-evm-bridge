@@ -1,22 +1,3 @@
-# Provided address is the address of the Factory contract deployed in the previous txn
-flow accounts add-contract ./cadence/contracts/bridge/FlowEVMBridgeUtils.cdc \
-    <REPLACE WITH DEPLOYED FACTORY EVM ADDRESS>
-
-flow accounts add-contract ./cadence/contracts/bridge/FlowEVMBridgeNFTEscrow.cdc
-flow accounts add-contract ./cadence/contracts/bridge/FlowEVMBridgeTemplates.cdc
-# Add the templated contract code chunks for FlowEVMBridgedNFTTemplate.cdc contents
-flow transactions send ./cadence/transactions/bridge/admin/upsert_contract_code_chunks.cdc \
-    --args-json "$(cat ./cadence/args/bridged-nft-code-chunks-args.json)" --gas-limit 1600
-
-flow accounts add-contract ./cadence/contracts/bridge/IEVMBridgeNFTMinter.cdc
-
-# Deploy Serialization Utils
-flow accounts add-contract ./cadence/contracts/utils/Serialize.cdc
-flow accounts add-contract ./cadence/contracts/utils/SerializeNFT.cdc
-
-# Deploy main bridge interface & contract
-flow accounts add-contract ./cadence/contracts/bridge/IFlowEVMNFTBridge.cdc
-flow accounts add-contract ./cadence/contracts/bridge/FlowEVMBridge.cdc
 
 # Deploy the bridge router directing calls from COAs to the dedicated bridge
 flow accounts add-contract ./cadence/contracts/bridge/EVMBridgeRouter.cdc 0xf8d6e0586b0a20c7 FlowEVMBridge
