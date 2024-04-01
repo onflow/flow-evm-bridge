@@ -29,6 +29,13 @@
 				"testing": "0000000000000007"
 			}
 		},
+		"CrossVMToken": {
+			"source": "./cadence/contracts/bridge/CrossVMToken.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"testing": "0000000000000007"
+			}
+		},
 		"EVM": {
 			"source": "./cadence/contracts/standards/EVM.cdc",
 			"aliases": {

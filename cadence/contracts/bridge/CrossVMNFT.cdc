@@ -4,7 +4,7 @@ import "MetadataViews"
 
 import "EVM"
 
-/// Contract defining cross-VM NFT & Collection interfaces
+/// Contract defining cross-VM NFT-related interfaces & Metadata views
 ///
 access(all)
 contract CrossVMNFT {
@@ -44,7 +44,7 @@ contract CrossVMNFT {
         /// The symbol of the NFT
         access(all)
         let symbol: String
-        /// The URI of the NFT - this can either be contract-level or token-level URI depending on where the metadata
+        /// The URI of the asset - this can either be contract-level or token-level URI depending on where the metadata
         /// is requested. See the ViewResolver contract interface to discover how contract & resource-level metadata
         /// requests are handled.
         access(all)
