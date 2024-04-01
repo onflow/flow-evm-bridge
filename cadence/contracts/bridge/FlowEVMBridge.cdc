@@ -434,7 +434,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge {
             ) as! MetadataViews.NFTCollectionDisplay? {
                 name = collectionDisplay.name
                 let serializedDisplay = SerializeNFT.serializeFromDisplays(nftDisplay: nil, collectionDisplay: collectionDisplay)!
-                contractURI = "data:application/json;ascii,{".concat(serializedDisplay).concat("}")
+                contractURI = "data:application/json;utf8,{".concat(serializedDisplay).concat("}")
             }
         }
 

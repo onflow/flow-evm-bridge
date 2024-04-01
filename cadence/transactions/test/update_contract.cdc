@@ -1,5 +1,5 @@
-transaction(name: String, bytecode: [UInt8]) {
+transaction(name: String, codeHex: String) {
     prepare(signer: auth(UpdateContract) &Account) {
-        signer.contracts.update(name: name, code: bytecode)
+        signer.contracts.update(name: name, code: codeHex.decodeHex())
     }
 }

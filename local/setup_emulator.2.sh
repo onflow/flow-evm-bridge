@@ -1,4 +1,3 @@
-
 # Deploy the bridge router directing calls from COAs to the dedicated bridge
 flow accounts add-contract ./cadence/contracts/bridge/EVMBridgeRouter.cdc 0xf8d6e0586b0a20c7 FlowEVMBridge
 

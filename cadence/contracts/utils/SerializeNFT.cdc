@@ -41,7 +41,7 @@ access(all) contract SerializeNFT {
             return ""
         }
         // Init the data format prefix & concatenate the serialized display & attributes
-        var serializedMetadata = "data:application/json;ascii,{"
+        var serializedMetadata = "data:application/json;utf8,{"
         if display != nil {
             serializedMetadata = serializedMetadata.concat(display!)
         }

@@ -690,7 +690,7 @@ contract FlowEVMBridgeUtils {
         )
     }
 
-    init(bridgeFactoryBytecode: String) {
+    init(bridgeFactoryBytecodeHex: String) {
         self.delimiter = "_"
         self.contractNamePrefixes = {
             Type<@{NonFungibleToken.NFT}>(): {
@@ -700,9 +700,10 @@ contract FlowEVMBridgeUtils {
                 "bridged": "EVMVMBridgedToken"
             }
         }
+        // Deploy the FlowBridgeFactory.sol contract from provided bytecode and capture the deployed address
         self.bridgeFactoryEVMAddress = self.borrowCOA().deploy(
-            code: bridgeFactoryBytecode.decodeHex(),
-            gasLimit: 12_000_000,
+            code: bridgeFactoryBytecodeHex.decodeHex(),
+            gasLimit: 15000000,
             value: EVM.Balance(attoflow: 0)
         )
     }

@@ -32,6 +32,6 @@ transaction(
             gasLimit: gasLimit,
             value: EVM.Balance(attoflow: 0)
         )
-        assert(callResult.status == EVM.Status.successful, message: "ERC721 mint failed")
+        assert(callResult.status == EVM.Status.successful, message: "ERC721 mint failed with code: ".concat(callResult.errorCode.toString()))
     }
 }
