@@ -3,7 +3,7 @@ import "FungibleToken"
 /// Contract interface enabling FlowEVMBridge to mint NFTs
 ///
 access(all)
-contract interface IEVMBridgeFTMinter {
+contract interface IEVMBridgeTokenMinter {
 
     /// Account-only method to mint an NFT
     ///
