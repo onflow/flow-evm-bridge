@@ -1,19 +1,22 @@
 import Test
 import BlockchainHelpers
 
+import "NonFungibleToken"
+
 import "test_helpers.cdc"
 
 access(all) let serviceAccount = Test.serviceAccount()
 access(all) let bridgeAccount = Test.getAccount(0x0000000000000007)
 access(all) let exampleNFTAccount = Test.getAccount(0x0000000000000008)
 access(all) let exampleERC721Account = Test.getAccount(0x0000000000000009)
-access(all) let alice = Test.createAccount()
+access(all) let alice = Test.createAccount() 
 
 // ExampleNFT values
 access(all) let exampleNFTIdentifier = "A.0000000000000008.ExampleNFT.NFT"
 access(all) let exampleNFTTokenName = "Example NFT"
 access(all) let exampleNFTTokenDescription = "Example NFT token description"
 access(all) let exampleNFTTokenThumbnail = "https://examplenft.com/thumbnail.png"
+access(all) var mintedNFTID: UInt64 = 0
 
 // ERC721 values
 access(all) let erc721Name = "NAME"
@@ -63,19 +66,9 @@ fun setup() {
     )
     Test.expect(updateResult, Test.beSucceeded())
     // Transfer bridge account some $FLOW
-    let transferFlowResult = executeTransaction(
-        "../transactions/flow-token/transfer_flow.cdc",
-        [bridgeAccount.address, 10_000.0],
-        serviceAccount
-    )
-    Test.expect(transferFlowResult, Test.beSucceeded())
+    transferFlow(signer: serviceAccount, recipient: bridgeAccount.address, amount: 10_000.0)
     // Configure bridge account with a COA
-    let createCOAResult = executeTransaction(
-        "../transactions/evm/create_account.cdc",
-        [1_000.0],
-        bridgeAccount
-    )
-    Test.expect(createCOAResult, Test.beSucceeded())
+    createCOA(signer: bridgeAccount, fundingAmount: 1_000.0)
 
     err = Test.deployContract(
         name: "BridgePermissions",
@@ -153,19 +146,10 @@ fun setup() {
     Test.expect(err, Test.beNil())
 
     // Transfer ERC721 deployer some $FLOW
-    let fundERC721AccountResult = executeTransaction(
-        "../transactions/flow-token/transfer_flow.cdc",
-        [exampleERC721Account.address, 100.0],
-        serviceAccount
-    )
-    Test.expect(fundERC721AccountResult, Test.beSucceeded())
+    transferFlow(signer: serviceAccount, recipient: exampleERC721Account.address, amount: 1_000.0)
     // Configure bridge account with a COA
-    let createERC721COAResult = executeTransaction(
-        "../transactions/evm/create_account.cdc",
-        [10.0],
-        exampleERC721Account
-    )
-    Test.expect(createERC721COAResult, Test.beSucceeded())
+    createCOA(signer: exampleERC721Account, fundingAmount: 10.0)
+
     // Deploy the ERC721 from EVMDeployer (simply to capture deploye EVM contract address)
     // TODO: Replace this contract with the `deployedContractAddress` value emitted on deployment
     //      once `evm` events Types are available
@@ -183,41 +167,13 @@ fun setup() {
     Test.expect(err, Test.beNil())
 }
 
-// TODO: Figure out how to test EVMBridgeRouter given it needs to be deployed to the service account
-//      and we can't seem to alter service account storage from the test suite
-access(all)
-fun testIsBridgeRouterConfiguredSucceeds() {
-    let isConfiguredResult = executeScript(
-        "../scripts/test/is_bridge_router_configured.cdc",
-        []
-    )
-    Test.expect(isConfiguredResult, Test.beSucceeded())
-    Test.assertEqual(true, isConfiguredResult.returnValue as! Bool? ?? panic("Problem getting Router"))
-}
-
 access(all)
 fun testCreateCOASucceeds() {
-    let transferFlowResult = executeTransaction(
-        "../transactions/flow-token/transfer_flow.cdc",
-        [alice.address, 1_000.0],
-        serviceAccount
-    )
-    Test.expect(transferFlowResult, Test.beSucceeded())
+    transferFlow(signer: serviceAccount, recipient: alice.address, amount: 1_000.0)
+    createCOA(signer: alice, fundingAmount: 100.0)
 
-    let createCOAResult = executeTransaction(
-        "../transactions/evm/create_account.cdc",
-        [100.0],
-        alice
-    )
-    Test.expect(createCOAResult, Test.beSucceeded())
-
-    let coaAddressResult = executeScript(
-        "../scripts/evm/get_evm_address_string.cdc",
-        [alice.address]
-    )
-    Test.expect(coaAddressResult, Test.beSucceeded())
-    let stringAddress = coaAddressResult.returnValue as! String?
-    Test.assertEqual(40, stringAddress!.length)
+    let coaAddressHex = getCOAAddressHex(atFlowAddress: alice.address)
+    Test.assertEqual(40, coaAddressHex!.length)
 }
 
 access(all)
@@ -236,35 +192,32 @@ fun testMintExampleNFTSucceeds() {
     )
     Test.expect(mintExampleNFTResult, Test.beSucceeded())
 
-    let aliceIDResult = executeScript(
-        "../scripts/nft/get_ids.cdc",
-        [alice.address, "cadenceExampleNFTCollection"]
-    )
-    Test.expect(aliceIDResult, Test.beSucceeded())
-    let aliceOwnedIDs = aliceIDResult.returnValue as! [UInt64]? ?? panic("Problem getting ExampleNFT IDs")
+    let aliceOwnedIDs = getIDs(ownerAddr: alice.address, storagePathIdentifier: "cadenceExampleNFTCollection")
     Test.assertEqual(1, aliceOwnedIDs.length)
+
+    let events = Test.eventsOfType(Type<NonFungibleToken.Deposited>())
+    Test.assertEqual(1, events.length)
+    let evt = events[0] as! NonFungibleToken.Deposited
+    mintedNFTID = evt.id
+
+    Test.assertEqual(aliceOwnedIDs[0], mintedNFTID)
 }
 
 access(all)
 fun testMintERC721Succeeds() {
-    let aliceCOAAddressResult = executeScript(
-        "../scripts/evm/get_evm_address_string.cdc",
-        [alice.address]
-    )
-    Test.expect(aliceCOAAddressResult, Test.beSucceeded())
-    let aliceCOAAddressString = aliceCOAAddressResult.returnValue as! String? ?? panic("Problem getting COA address as String")
-    Test.assertEqual(40, aliceCOAAddressString.length)
+    let aliceCOAAddressHex = getCOAAddressHex(atFlowAddress: alice.address)
+    Test.assertEqual(40, aliceCOAAddressHex.length)
     let erc721AddressResult = executeScript(
         "../scripts/test/get_deployed_erc721_address_string.cdc",
         []
     )
     Test.expect(erc721AddressResult, Test.beSucceeded())
-    let erc721AddressString = erc721AddressResult.returnValue as! String? ?? panic("Problem getting COA address as String")
-    Test.assertEqual(40, erc721AddressString.length)
+    let erc721AddressHex = erc721AddressResult.returnValue as! String? ?? panic("Problem getting COA address as String")
+    Test.assertEqual(40, erc721AddressHex.length)
 
     let mintERC721Result = executeTransaction(
         "../transactions/example-assets/safe_mint_erc721.cdc",
-        [aliceCOAAddressString, erc721ID, erc721URI, erc721AddressString, UInt64(200_000)],
+        [aliceCOAAddressHex, erc721ID, erc721URI, erc721AddressHex, UInt64(200_000)],
         exampleERC721Account
     )
     Test.expect(mintERC721Result, Test.beSucceeded())
@@ -310,12 +263,12 @@ fun testOnboardByEVMAddressSucceeds() {
         []
     )
     Test.expect(erc721AddressResult, Test.beSucceeded())
-    let erc721AddressString = erc721AddressResult.returnValue as! String? ?? panic("Problem getting COA address as String")
-    Test.assertEqual(40, erc721AddressString.length)
+    let erc721AddressHex = erc721AddressResult.returnValue as! String? ?? panic("Problem getting COA address as String")
+    Test.assertEqual(40, erc721AddressHex.length)
 
     var onboaringRequiredResult = executeScript(
         "../scripts/bridge/evm_address_requires_onboarding.cdc",
-        [erc721AddressString]
+        [erc721AddressHex]
     )
     Test.expect(onboaringRequiredResult, Test.beSucceeded())
     var requiresOnboarding = onboaringRequiredResult.returnValue as! Bool? ?? panic("Problem getting onboarding requirement")
@@ -323,14 +276,14 @@ fun testOnboardByEVMAddressSucceeds() {
 
     var onboardingResult = executeTransaction(
         "../transactions/bridge/onboard_by_evm_address.cdc",
-        [erc721AddressString],
+        [erc721AddressHex],
         alice
     )
     Test.expect(onboardingResult, Test.beSucceeded())
 
     onboaringRequiredResult = executeScript(
         "../scripts/bridge/evm_address_requires_onboarding.cdc",
-        [erc721AddressString]
+        [erc721AddressHex]
     )
     Test.expect(onboaringRequiredResult, Test.beSucceeded())
     requiresOnboarding = onboaringRequiredResult.returnValue as! Bool? ?? panic("Problem getting onboarding requirement")
@@ -338,7 +291,7 @@ fun testOnboardByEVMAddressSucceeds() {
 
     onboardingResult = executeTransaction(
         "../transactions/bridge/onboard_by_evm_address.cdc",
-        [erc721AddressString],
+        [erc721AddressHex],
         alice
     )
     Test.expect(onboardingResult, Test.beFailed())
@@ -346,42 +299,203 @@ fun testOnboardByEVMAddressSucceeds() {
 
 access(all)
 fun testBridgeCadenceNativeNFTToEVMSucceeds() {
-    let aliceIDResult = executeScript(
-        "../scripts/nft/get_ids.cdc",
-        [alice.address, "cadenceExampleNFTCollection"]
-    )
-    Test.expect(aliceIDResult, Test.beSucceeded())
-    let aliceOwnedIDs = aliceIDResult.returnValue as! [UInt64]? ?? panic("Problem getting ExampleNFT IDs")
+    var aliceOwnedIDs = getIDs(ownerAddr: alice.address, storagePathIdentifier: "cadenceExampleNFTCollection")
     Test.assertEqual(1, aliceOwnedIDs.length)
 
-    let aliceCOAAddressResult = executeScript(
-        "../scripts/evm/get_evm_address_string.cdc",
-        [alice.address]
-    )
-    Test.expect(aliceCOAAddressResult, Test.beSucceeded())
-    let aliceCOAAddressString = aliceCOAAddressResult.returnValue as! String? ?? panic("Problem getting COA address as String")
-    Test.assertEqual(40, aliceCOAAddressString.length)
+    var aliceCOAAddressHex = getCOAAddressHex(atFlowAddress: alice.address)
+    Test.assertEqual(40, aliceCOAAddressHex.length)
 
-    // TODO: This fails because EVMBridgeRouter.Router does not configure a resource in the service account
-    let bridgeToEVMResult = executeTransaction(
-        "../transactions/bridge/bridge_nft_to_evm.cdc",
-        [exampleNFTAccount.address, "ExampleNFT", aliceOwnedIDs[0]],
-        alice
-    )
-    Test.expect(bridgeToEVMResult, Test.beSucceeded())
+    // Execute bridge to EVM
+    bridgeNFTToEVM(signer: alice, contractAddr: exampleNFTAccount.address, contractName: "ExampleNFT", nftID: aliceOwnedIDs[0])
 
-    var associatedEVMAddressResult = executeScript(
-        "../scripts/bridge/get_associated_evm_address.cdc",
-        [exampleNFTIdentifier]
-    )
-    Test.expect(associatedEVMAddressResult, Test.beSucceeded())
-    let associatedEVMAddressString = associatedEVMAddressResult.returnValue as! String? ?? panic("Problem getting EVM Address as String")
-    Test.assertEqual(40, associatedEVMAddressString.length)
+    let associatedEVMAddressHex = getAssociatedEVMAddressHex(with: exampleNFTIdentifier)
+    Test.assertEqual(40, associatedEVMAddressHex.length)
 
-    var isOwnerResult = executeScript(
+    // Confirm the NFT is no longer in Alice's Collection
+    aliceOwnedIDs = getIDs(ownerAddr: alice.address, storagePathIdentifier: "cadenceExampleNFTCollection")
+    Test.assertEqual(0, aliceOwnedIDs.length)
+    
+    // Confirm ownership on EVM side with Alice COA as owner of ERC721 representation
+    let isOwnerResult = executeScript(
         "../scripts/utils/is_owner.cdc",
-        [UInt256(aliceOwnedIDs[0]), aliceCOAAddressString, associatedEVMAddressString]
+        [UInt256(mintedNFTID), aliceCOAAddressHex, associatedEVMAddressHex]
     )
     Test.expect(isOwnerResult, Test.beSucceeded())
     Test.assertEqual(true, isOwnerResult.returnValue as! Bool? ?? panic("Problem getting owner status"))
 }
+
+access(all)
+fun testBridgeCadenceNativeNFTFromEVMSucceeds() {
+    let aliceCOAAddressHex = getCOAAddressHex(atFlowAddress: alice.address)
+    Test.assertEqual(40, aliceCOAAddressHex.length)
+    
+    let associatedEVMAddressHex = getAssociatedEVMAddressHex(with: exampleNFTIdentifier)
+    Test.assertEqual(40, associatedEVMAddressHex.length)
+
+    // Assert ownership of the bridged NFT in EVM
+    var aliceIsOwner = isOwner(of: UInt256(mintedNFTID), ownerEVMAddrHex: aliceCOAAddressHex, erc721AddressHex: associatedEVMAddressHex)
+    Test.assertEqual(true, aliceIsOwner)
+
+    // Execute bridge from EVM
+    bridgeNFTFromEVM(signer: alice, contractAddr: exampleNFTAccount.address, contractName: "ExampleNFT", erc721ID: UInt256(mintedNFTID))
+
+    // Assert ownership of the bridged NFT in EVM has transferred
+    aliceIsOwner = isOwner(of: UInt256(mintedNFTID), ownerEVMAddrHex: aliceCOAAddressHex, erc721AddressHex: associatedEVMAddressHex)
+    Test.assertEqual(false, aliceIsOwner)
+
+    // Assert the NFT is back in Alice's Collection
+    let aliceOwnedIDs = getIDs(ownerAddr: alice.address, storagePathIdentifier: "cadenceExampleNFTCollection")
+    Test.assertEqual(1, aliceOwnedIDs.length)
+    Test.assertEqual(mintedNFTID, aliceOwnedIDs[0])
+}
+
+access(all)
+fun testBridgeEVMNativeNFTFromEVMSucceeds() {
+    let erc721AddressResult = executeScript(
+        "../scripts/test/get_deployed_erc721_address_string.cdc",
+        []
+    )
+    Test.expect(erc721AddressResult, Test.beSucceeded())
+    let erc721AddressHex = erc721AddressResult.returnValue as! String? ?? panic("Problem getting COA address as String")
+    Test.assertEqual(40, erc721AddressHex.length)
+    
+    let derivedERC721ContractName = deriveBridgedNFTContractName(evmAddressHex: erc721AddressHex)
+    let bridgedCollectionPathIdentifier = derivedERC721ContractName.concat("Collection")
+    let aliceCOAAddressHex = getCOAAddressHex(atFlowAddress: alice.address)
+    Test.assertEqual(40, aliceCOAAddressHex.length)
+
+    bridgeNFTFromEVM(signer: alice, contractAddr: bridgeAccount.address, contractName: derivedERC721ContractName, erc721ID: erc721ID)
+
+    let aliceOwnedIDs = getIDs(ownerAddr: alice.address, storagePathIdentifier: bridgedCollectionPathIdentifier)
+    Test.assertEqual(1, aliceOwnedIDs.length)
+
+    let evmIDResult = executeScript(
+        "../scripts/nft/get_evm_id_from_evm_nft.cdc",
+        [alice.address, aliceOwnedIDs[0], StoragePath(identifier: bridgedCollectionPathIdentifier)!]
+    )
+    Test.expect(evmIDResult, Test.beSucceeded())
+    let evmID = evmIDResult.returnValue as! UInt256? ?? panic("Problem getting EVM ID")
+    Test.assertEqual(erc721ID, evmID)
+}
+
+access(all)
+fun testBridgeEVMNativeNFTToEVMSucceeds() {
+    let erc721AddressResult = executeScript(
+        "../scripts/test/get_deployed_erc721_address_string.cdc",
+        []
+    )
+    Test.expect(erc721AddressResult, Test.beSucceeded())
+    let erc721AddressHex = erc721AddressResult.returnValue as! String? ?? panic("Problem getting COA address as String")
+    Test.assertEqual(40, erc721AddressHex.length)
+    
+    let derivedERC721ContractName = deriveBridgedNFTContractName(evmAddressHex: erc721AddressHex)
+    let bridgedCollectionPathIdentifier = derivedERC721ContractName.concat("Collection")
+    let aliceCOAAddressHex = getCOAAddressHex(atFlowAddress: alice.address)
+    Test.assertEqual(40, aliceCOAAddressHex.length)
+    
+    var aliceOwnedIDs = getIDs(ownerAddr: alice.address, storagePathIdentifier: bridgedCollectionPathIdentifier)
+    Test.assertEqual(1, aliceOwnedIDs.length)
+    
+    bridgeNFTToEVM(signer: alice, contractAddr: bridgeAccount.address, contractName: derivedERC721ContractName, nftID: aliceOwnedIDs[0])
+    
+    aliceOwnedIDs = getIDs(ownerAddr: alice.address, storagePathIdentifier: bridgedCollectionPathIdentifier)
+    Test.assertEqual(0, aliceOwnedIDs.length)
+
+    let aliceIsOwner = isOwner(of: erc721ID, ownerEVMAddrHex: aliceCOAAddressHex, erc721AddressHex: erc721AddressHex)
+    Test.assertEqual(true, aliceIsOwner)
+}
+
+/* --- Script Helpers --- */
+
+access(all)
+fun getCOAAddressHex(atFlowAddress: Address): String {
+    let coaAddressResult = executeScript(
+        "../scripts/evm/get_evm_address_string.cdc",
+        [atFlowAddress]
+    )
+    Test.expect(coaAddressResult, Test.beSucceeded())
+    return coaAddressResult.returnValue as! String? ?? panic("Problem getting COA address as String")
+}
+
+access(all)
+fun getAssociatedEVMAddressHex(with typeIdentifier: String): String {
+    var associatedEVMAddressResult = executeScript(
+        "../scripts/bridge/get_associated_evm_address.cdc",
+        [typeIdentifier]
+    )
+    Test.expect(associatedEVMAddressResult, Test.beSucceeded())
+    return associatedEVMAddressResult.returnValue as! String? ?? panic("Problem getting EVM Address as String")
+}
+
+access(all)
+fun getIDs(ownerAddr: Address, storagePathIdentifier: String): [UInt64] {
+    let idResult = executeScript(
+        "../scripts/nft/get_ids.cdc",
+        [ownerAddr, storagePathIdentifier]
+    )
+    Test.expect(idResult, Test.beSucceeded())
+    return idResult.returnValue as! [UInt64]? ?? panic("Problem getting NFT IDs")
+}
+
+access(all)
+fun isOwner(of: UInt256, ownerEVMAddrHex: String, erc721AddressHex: String): Bool {
+    let isOwnerResult = executeScript(
+        "../scripts/utils/is_owner.cdc",
+        [of, ownerEVMAddrHex, erc721AddressHex]
+    )
+    Test.expect(isOwnerResult, Test.beSucceeded())
+    return isOwnerResult.returnValue as! Bool? ?? panic("Problem getting owner status")
+}
+
+access(all)
+fun deriveBridgedNFTContractName(evmAddressHex: String): String {
+    let nameResult = executeScript(
+        "../scripts/utils/derive_bridged_nft_contract_name.cdc",
+        [evmAddressHex]
+    )
+    Test.expect(nameResult, Test.beSucceeded())
+    return nameResult.returnValue as! String? ?? panic("Problem getting derived contract name")
+}
+
+/* --- Transaction Helpers --- */
+
+access(all)
+fun transferFlow(signer: Test.TestAccount, recipient: Address, amount: UFix64) {
+    let transferResult = executeTransaction(
+        "../transactions/flow-token/transfer_flow.cdc",
+        [recipient, amount],
+        signer
+    )
+    Test.expect(transferResult, Test.beSucceeded())
+}
+
+access(all)
+fun createCOA(signer: Test.TestAccount, fundingAmount: UFix64) {
+    let createCOAResult = executeTransaction(
+        "../transactions/evm/create_account.cdc",
+        [fundingAmount],
+        signer
+    )
+    Test.expect(createCOAResult, Test.beSucceeded())
+}
+
+access(all)
+fun bridgeNFTToEVM(signer: Test.TestAccount, contractAddr: Address, contractName: String, nftID: UInt64) {
+    let bridgeResult = executeTransaction(
+        "../transactions/bridge/bridge_nft_to_evm.cdc",
+        [contractAddr, contractName, nftID],
+        signer
+    )
+    Test.expect(bridgeResult, Test.beSucceeded())
+}
+
+access(all)
+fun bridgeNFTFromEVM(signer: Test.TestAccount, contractAddr: Address, contractName: String, erc721ID: UInt256) {
+    let bridgeResult = executeTransaction(
+        "../transactions/bridge/bridge_nft_from_evm.cdc",
+        [contractAddr, contractName, erc721ID],
+        signer
+    )
+    Test.expect(bridgeResult, Test.beSucceeded())
+}
+
