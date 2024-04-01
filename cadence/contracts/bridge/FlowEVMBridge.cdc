@@ -11,9 +11,11 @@ import "ICrossVM"
 import "IEVMBridgeNFTMinter"
 import "IFlowEVMNFTBridge"
 import "CrossVMNFT"
+import "CrossVMToken"
 import "FlowEVMBridgeConfig"
 import "FlowEVMBridgeUtils"
 import "FlowEVMBridgeNFTEscrow"
+import "FlowEVMBridgeTokenEscrow"
 import "FlowEVMBridgeTemplates"
 import "SerializeNFT"
 
@@ -57,6 +59,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge {
     /// @param type: The Cadence Type of the NFT to be onboarded
     /// @param feeProvider: A reference to a FungibleToken Provider from which the bridging fee is withdrawn in $FLOW
     ///
+    // TODO: Generalize for NFTs & FTs
     access(all)
     fun onboardByType(_ type: Type, feeProvider: auth(FungibleToken.Withdraw) &{FungibleToken.Provider}) {
         pre {
@@ -314,7 +317,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge {
     /// @param feeProvider: A reference to a FungibleToken Provider from which the bridging fee is withdrawn in $FLOW
     ///
     access(all)
-    fun bridgeFTToEVM(
+    fun bridgeTokensToEVM(
         vault: @{FungibleToken.Vault},
         to: EVM.EVMAddress,
         feeProvider: auth(FungibleToken.Withdraw) &{FungibleToken.Provider}
@@ -332,7 +335,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge {
         }
 
         // Lock the FT balance & calculate the extra used by the FT if any
-        let storageUsed = FlowEVMBridgeFTEscrow.lockFT(<-vault)
+        let storageUsed = FlowEVMBridgeTokenEscrow.lockTokens(<-vault)
         // Calculate the bridge fee on current rates
         let feeAmount = FlowEVMBridgeUtils.calculateBridgeFee(used: storageUsed, includeBase: true)
         assert(
@@ -421,7 +424,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge {
     /// @returns The bridged FT Vault
     ///
     access(all)
-    fun bridgeFTFromEVM(
+    fun bridgeTokensFromEVM(
         owner: EVM.EVMAddress,
         type: Type,
         amount: UFix64,
@@ -469,7 +472,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge {
         )
         assert(isEscrowed, message: "Transfer to bridge COA failed - cannot bridge FT without bridge escrow")
         // Unlock the amount of the fungible token from the relevant locker
-        <-FlowEVMBridgeFTEscrow.unlockFT(type: type, amount: amount)
+        <-FlowEVMBridgeTokenEscrow.unlockTokens(type: type, amount: amount)
 
         // If the NFT is currently locked, unlock and return
         if let cadenceID = FlowEVMBridgeNFTEscrow.getLockedCadenceID(type: type, evmID: id) {
@@ -480,7 +483,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge {
                 caller: FlowEVMBridgeUtils.getEVMAddressAsHexString(address: owner),
                 evmContractAddress: FlowEVMBridgeUtils.getEVMAddressAsHexString(address: associatedAddress)
             )
-            return <-FlowEVMBridgeFTEscrow.unlockFT(type: type, amount: amount)
+            return <-FlowEVMBridgeTokenEscrow.unlockTokens(type: type, amount: amount)
         }
         
         // Otherwise, we expect the FT to be minted in Cadence
