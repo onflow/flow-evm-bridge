@@ -190,7 +190,7 @@ contract FlowEVMBridgeUtils {
     /// @return True if the asset is an ERC721, false otherwise
     ///
     access(all)
-    fun isEVMNFT(evmContractAddress: EVM.EVMAddress): Bool {
+    fun isERC721(evmContractAddress: EVM.EVMAddress): Bool {
         let callResult = self.call(
             signature: "isERC721(address)",
             targetEVMAddress: self.bridgeFactoryEVMAddress,
@@ -208,10 +208,25 @@ contract FlowEVMBridgeUtils {
 
     /// Identifies if an asset is ERC20
     ///
+    /// @param evmContractAddress: The EVM contract address to check
+    ///
+    /// @return true if the asset is an ERC20, false otherwise
+    ///
     access(all)
-    fun isEVMToken(evmContractAddress: EVM.EVMAddress): Bool {
-        // TODO: We will need to figure out how to identify ERC20s without ERC165 support
-        return false
+    fun isERC20(evmContractAddress: EVM.EVMAddress): Bool {
+        let callResult = self.call(
+            signature: "isERC20(address)",
+            targetEVMAddress: self.bridgeFactoryEVMAddress,
+            args: [evmContractAddress],
+            gasLimit: 100000,
+            value: 0.0
+        )
+
+        assert(callResult.status == EVM.Status.successful, message: "Call to bridge factory failed")
+        let decodedResult = EVM.decodeABI(types: [Type<Bool>()], data: callResult.data)
+        assert(decodedResult.length == 1, message: "Invalid response length")
+
+        return decodedResult[0] as! Bool
     }
 
     /// Returns whether the contract address is either an ERC721 or ERC20 exclusively. Reverts on EVM call failure.
@@ -222,9 +237,9 @@ contract FlowEVMBridgeUtils {
     ///
     access(all)
     fun isValidEVMAsset(evmContractAddress: EVM.EVMAddress): Bool {
-        let isEVMNFT = FlowEVMBridgeUtils.isEVMNFT(evmContractAddress: evmContractAddress)
-        let isEVMToken = FlowEVMBridgeUtils.isEVMToken(evmContractAddress: evmContractAddress)
-        return (isEVMNFT && !isEVMToken) || (!isEVMNFT && isEVMToken)
+        let isERC721 = FlowEVMBridgeUtils.isERC721(evmContractAddress: evmContractAddress)
+        let isERC20 = FlowEVMBridgeUtils.isERC20(evmContractAddress: evmContractAddress)
+        return (isERC721 && !isERC20) || (!isERC721 && isERC20)
     }
 
     /// Returns whether the given type is either an NFT or FT exclusively
@@ -418,7 +433,6 @@ contract FlowEVMBridgeUtils {
             gasLimit: 12000000,
             value: 0.0
         )
-
         assert(callResult.status == EVM.Status.successful, message: "Call to ERC721.getApproved(uint256) failed")
         let decodedCallResult = EVM.decodeABI(types: [Type<EVM.EVMAddress>()], data: callResult.data)
         if decodedCallResult.length == 1 {
@@ -446,7 +460,6 @@ contract FlowEVMBridgeUtils {
             gasLimit: 60000,
             value: 0.0
         )
-
         assert(callResult.status == EVM.Status.successful, message: "Call to ERC20.balanceOf(address) failed")
         let decodedResult = EVM.decodeABI(types: [Type<UInt256>()], data: callResult.data) as! [UInt256]
         assert(decodedResult.length == 1, message: "Invalid response length")

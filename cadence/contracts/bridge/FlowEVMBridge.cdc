@@ -664,7 +664,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge {
         let symbol: String = FlowEVMBridgeUtils.getSymbol(evmContractAddress: evmContractAddress)
 
         // Derive contract name
-        let isERC721: Bool = FlowEVMBridgeUtils.isEVMNFT(evmContractAddress: evmContractAddress)
+        let isERC721: Bool = FlowEVMBridgeUtils.isERC721(evmContractAddress: evmContractAddress)
         let cadenceContractName: String = FlowEVMBridgeUtils.deriveBridgedNFTContractName(from: evmContractAddress)
         let contractURI = FlowEVMBridgeUtils.getContractURI(evmContractAddress: evmContractAddress)
 
