@@ -2,6 +2,8 @@
 pragma solidity ^0.8.17;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 import "./FlowBridgedERC721.sol";
 import "./IBridgePermissions.sol";
 
@@ -44,6 +46,24 @@ contract FlowBridgeFactory is Ownable {
 
     function isFactoryDeployed(address contractAddr) public view returns (bool) {
         return bytes(contractToflowIdentifier[contractAddr]).length != 0;
+    }
+
+    function isERC20(address contractAddr) public view returns (bool) {
+        ERC20 erc20 = ERC20(contractAddr);
+        // Since ERC20 contracts are not guaranteed to support introspection, check if the contract
+        // is ERC20 by calling public functions characteristic of ERC20 contracts. This will revert
+        // if the contract does not, but we can use this failure from Cadence to gain information
+        // about the contract in question.
+        try erc20.totalSupply() {
+            erc20.name();
+            erc20.symbol();
+            erc20.decimals();
+            erc20.balanceOf(address(0));
+            erc20.allowance(address(0), address(0));
+            return true;
+        } catch {
+            return false;
+        }
     }
 
     function isERC721(address contractAddr) public view returns (bool) {
