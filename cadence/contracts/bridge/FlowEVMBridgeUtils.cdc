@@ -652,14 +652,14 @@ contract FlowEVMBridgeUtils {
      **************************/
 
     /// Returns the `createEmptyVault()` function from a Vault Type's defining contract or nil if either the Type is not
-    access(all) fun getCreateEmptyVaultFunction(forType: Type) (fun (Type): @{FungibleToken.Vault})? {
+    access(all) fun getCreateEmptyVaultFunction(forType: Type): (fun (Type): @{FungibleToken.Vault})? {
         // We can only reasonably assume that the requested function is accessible from a FungibleToken contract
         if !forType.isSubtype(of: Type<@{FungibleToken.Vault}>()) {
             return nil
         }
         // Vault Types should guarantee that the following forced optionals are safe
-        let contractAddress = self.getContractAddress(fromType: lockedType)!
-        let contractName = self.getContractName(fromType: lockedType)!
+        let contractAddress = self.getContractAddress(fromType: forType)!
+        let contractName = self.getContractName(fromType: forType)!
         let tokenContract = getAccount(contractAddress).contracts.borrow<&{FungibleToken}>(
                 name: contractName
             )!
