@@ -85,7 +85,11 @@ contract FlowEVMBridgeUtils {
     ///
     access(all)
     view fun calculateBridgeFee(used: UInt64, includeBase: Bool): UFix64 {
-        return FlowEVMBridgeConfig.baseFee
+        // TODO: Include storage-based fee calculation
+        // let x = FlowStorageFees.convertUInt64StorageBytesToUFix64Megabytes(used) * FlowEVMBridgeConfig.storageRate
+        let y = includeBase ? FlowEVMBridgeConfig.baseFee : 0.0
+        // return x + y
+        return y
     }
 
     /// Returns whether the given type is allowed to be bridged as defined by the BridgePermissions contract interface.
@@ -442,6 +446,29 @@ contract FlowEVMBridgeUtils {
         return false
     }
 
+    /// Returns the ERC20 balance of the owner at the given ERC20 contract address. Reverts on EVM call failure.
+    ///
+    /// @param amount: The amount to check if the owner has enough balance to cover
+    /// @param owner: The owner address to query
+    /// @param evmContractAddress: The ERC20 contract address to query
+    ///
+    /// @return true if the owner's balance >= amount, false otherwise
+    ///
+    access(all)
+    fun balanceOf(owner: EVM.EVMAddress, evmContractAddress: EVM.EVMAddress): UInt256 {
+        let callResult = self.call(
+            signature: "balanceOf(address)",
+            targetEVMAddress: evmContractAddress,
+            args: [owner],
+            gasLimit: 60000,
+            value: 0.0
+        )
+        assert(callResult.status == EVM.Status.successful, message: "Call to ERC20.balanceOf(address) failed")
+        let decodedResult = EVM.decodeABI(types: [Type<UInt256>()], data: callResult.data) as! [AnyStruct]
+        assert(decodedResult.length == 1, message: "Invalid response length")
+        return decodedResult[0] as! UInt256
+    }
+
     /// Determines if the owner has sufficient funds to bridge the given amount at the ERC20 contract address
     /// Reverts on EVM call failure.
     ///
@@ -452,20 +479,8 @@ contract FlowEVMBridgeUtils {
     /// @return true if the owner's balance >= amount, false otherwise
     ///
     access(all)
-    fun hasSufficientBalance(amount: UFix64, owner: EVM.EVMAddress, evmContractAddress: EVM.EVMAddress): Bool {
-        let callResult = self.call(
-            signature: "balanceOf(address)",
-            targetEVMAddress: evmContractAddress,
-            args: [owner],
-            gasLimit: 60000,
-            value: 0.0
-        )
-        assert(callResult.status == EVM.Status.successful, message: "Call to ERC20.balanceOf(address) failed")
-        let decodedResult = EVM.decodeABI(types: [Type<UInt256>()], data: callResult.data) as! [UInt256]
-        assert(decodedResult.length == 1, message: "Invalid response length")
-
-        let tokenDecimals = self.getTokenDecimals(evmContractAddress: evmContractAddress)
-        return self.uint256ToUFix64(value: decodedResult[0], decimals: tokenDecimals) >= amount
+    fun hasSufficientBalance(amount: UInt256, owner: EVM.EVMAddress, evmContractAddress: EVM.EVMAddress): Bool {
+        return self.balanceOf(owner: owner, evmContractAddress: evmContractAddress) >= amount
     }
 
     /************************
