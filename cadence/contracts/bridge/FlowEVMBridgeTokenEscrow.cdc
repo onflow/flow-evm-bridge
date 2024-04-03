@@ -111,7 +111,7 @@ access(all) contract FlowEVMBridgeTokenEscrow {
         access(all) let decimals: UInt8
         /// The type of FT this Locker escrows
         access(all) let lockedType: Type
-        /// Corresponding ERC721 address for the locked NFTs
+        /// Corresponding ERC20 address for the locked tokens
         access(all) let evmTokenAddress: EVM.EVMAddress
         // Vault to hold all relevant locked FTs
         access(self) let lockedVault: @{FungibleToken.Vault}
@@ -135,6 +135,8 @@ access(all) contract FlowEVMBridgeTokenEscrow {
             )
         }
 
+        /// Get the EVM contract address of the locked Vault's corresponding ERC20 contract address
+        ///
         access(all) view fun getEVMContractAddress(): EVM.EVMAddress {
             return self.evmTokenAddress
         }
@@ -145,6 +147,8 @@ access(all) contract FlowEVMBridgeTokenEscrow {
             return self.lockedVault.balance
         }
 
+        /// Function to ask a provider if a specific amount of tokens is available to be withdrawn from the locked vault
+        ///
         access(all) view fun isAvailableToWithdraw(amount: UFix64): Bool {
             return self.lockedVault.isAvailableToWithdraw(amount: amount)
         }
