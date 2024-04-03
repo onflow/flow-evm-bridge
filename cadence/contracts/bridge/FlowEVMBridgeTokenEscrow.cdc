@@ -40,14 +40,9 @@ access(all) contract FlowEVMBridgeTokenEscrow {
     /// @returns The resolved view as AnyStruct if the vault is locked and the view is supported, otherwise returns nil
     ///
     access(all) fun resolveLockedTokenView(tokenType: Type, viewType: Type): AnyStruct? {
-        if let lockerPath = FlowEVMBridgeUtils.deriveEscrowStoragePath(fromType: tokenTypeType) {
-            if let locker = self.account.storage.borrow<&Locker>(from: lockerPath) {
-                return locker.borrowViewResolver()
-                if let cadenceID = locker.getCadenceID(from: id) {
-                    // The locker implements Resolver, which has basic resolveView functionality
-                    return locker.resolveView(viewType)
-                }
-            }
+        if let lockerPath = FlowEVMBridgeUtils.deriveEscrowStoragePath(fromType: tokenType) {
+            // The Locker implements Resolver, which has basic resolveView functionality
+            return self.account.storage.borrow<&Locker>(from: lockerPath)?.resolveView(viewType) ?? nil
         }
         return nil
     }
@@ -62,7 +57,7 @@ access(all) contract FlowEVMBridgeTokenEscrow {
         let lockerPath = FlowEVMBridgeUtils.deriveEscrowStoragePath(fromType: forType)
             ?? panic("Problem deriving locker path")
         if self.account.storage.type(at: lockerPath) != nil {
-            panic("Collision at derived Locker path for type: ".concat(forType.toString()))
+            panic("Collision at derived Locker path for type: ".concat(forType.identifier))
         }
 
         // Call to the ERC20 contract to get the decimals of the token
@@ -78,7 +73,7 @@ access(all) contract FlowEVMBridgeTokenEscrow {
         assert(decimals.length == 1, message: "Problem decoding result of decimals() call to ERC20 contract")
 
         // Create the Locker, lock a new vault of given type and save at the derived path
-        let locker <- create Locker(lockedType: forType, evmTokenAddress: erc20Address, decimals: decimals[0])
+        let locker <- create Locker(lockedType: forType, evmTokenAddress: evmTokenAddress, decimals: decimals[0])
         self.account.storage.save(<-locker, to: lockerPath)
     }
 
@@ -90,7 +85,7 @@ access(all) contract FlowEVMBridgeTokenEscrow {
         let locker = self.account.storage.borrow<&Locker>(from: lockerPath)
             ?? panic("Locker doesn't exist")
         let preStorageSnapshot = self.account.storage.used
-        locker.deposit(vault: <-vault)
+        locker.deposit(from: <-vault)
         let postStorageSnapshot = self.account.storage.used
         return postStorageSnapshot - preStorageSnapshot
     }
@@ -129,8 +124,9 @@ access(all) contract FlowEVMBridgeTokenEscrow {
             self.lockedType = lockedType
             self.evmTokenAddress = evmTokenAddress
             self.decimals = decimals
+            self.balance = 0.0
 
-            let createVault = FlowEVMBridgeUtils.getCreateEmptyVaultFunction(forType: type)
+            let createVault = FlowEVMBridgeUtils.getCreateEmptyVaultFunction(forType: lockedType)
                 ?? panic("Could not find createEmptyVault function for given type")
             self.lockedVault <- createVault(lockedType)
             // Locked Vaults must accept their own type as Lockers escrow Vaults on a 1:1 type basis
@@ -146,12 +142,16 @@ access(all) contract FlowEVMBridgeTokenEscrow {
             return self.lockedVault.balance
         }
 
+        access(all) view fun isAvailableToWithdraw(amount: UFix64): Bool {
+            return self.lockedVault.isAvailableToWithdraw(amount: amount)
+        }
+
         /// Returns a map of supported FT types - at the moment Lockers only support the lockedNFTType defined by
         /// their contract
         ///
         access(all) view fun getSupportedVaultTypes(): {Type: Bool} {
             return {
-                self.lockedType: self.isSupportedFTType(type: self.lockedType)
+                self.lockedType: self.isSupportedVaultType(type: self.lockedType)
             }
         }
 
@@ -165,20 +165,13 @@ access(all) contract FlowEVMBridgeTokenEscrow {
         ///
         access(all) fun deposit(from: @{FungibleToken.Vault}) {
             self.balance = self.balance + from.balance
-            self.lockedVault.deposit(from: from)
-        }
-
-        /// Withdraws an amount of tokens from this locker, removing it from the vault and returning it
-        ///
-        access(FungibleToken.Withdraw) fun withdraw(amount: UFix64): @{FungibleToken.Vault} {
-            self.balance = self.balance - amount
-            return <-self.lockedVault.withdraw(amount: amount)
+            self.lockedVault.deposit(from: <-from)
         }
 
         /// Creates a new instance of the locked Vault, **not** the encapsulating Locker
         ///
-        access(all) fun createEmptyVault(): @{Vault} {
-            return self.lockedVault.createEmptyVault()
+        access(all) fun createEmptyVault(): @{FungibleToken.Vault} {
+            return <-create Locker(lockedType: self.lockedType, evmTokenAddress: self.evmTokenAddress, decimals: self.decimals)
         }
 
         /// Returns the views supported by the locked Vault
@@ -191,6 +184,13 @@ access(all) contract FlowEVMBridgeTokenEscrow {
         ///
         access(all) fun resolveView(_ view: Type): AnyStruct? {
             return self.lockedVault.resolveView(view)
+        }
+
+        /// Withdraws an amount of tokens from this locker, removing it from the vault and returning it
+        ///
+        access(FungibleToken.Withdraw) fun withdraw(amount: UFix64): @{FungibleToken.Vault} {
+            self.balance = self.balance - amount
+            return <-self.lockedVault.withdraw(amount: amount)
         }
 
         /// Emits an event notifying that the Locker has been burned with information about the locked vault
