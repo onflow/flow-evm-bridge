@@ -202,7 +202,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge {
                 gasLimit: 15000000,
                 value: 0.0
             )
-            assert(callResult.status == EVM.Status.successful, message: "Tranfer to bridge recipient failed")
+            assert(callResult.status == EVM.Status.successful, message: "Transfer to bridge recipient failed")
         }
     }
 
