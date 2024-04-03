@@ -52,9 +52,36 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         evmContractAddress: String
     )
 
+    /****************
+        Constructs
+    *****************/
+
+    /// Struct used to preserve and pass around multiple values preventing the need to make multiple EVM calls
+    /// during EVM asset onboarding
+    ///
+    access(all) struct EVMOnboardingValues {
+        access(all) let evmContractAddress: EVM.EVMAddress
+        access(all) let name: String
+        access(all) let symbol: String
+        access(all) let decimals: UInt8?
+
+        init(
+            evmContractAddress: EVM.EVMAddress,
+            name: String,
+            symbol: String,
+            decimals: UInt8?
+        ) {
+            self.evmContractAddress = evmContractAddress
+            self.name = name
+            self.symbol = symbol
+            self.decimals = decimals
+        }
+    }
+
     /**************************
         Public Onboarding
     **************************/
+
 
     /// Onboards a given asset by type to the bridge. Since we're onboarding by Cadence Type, the asset must be defined
     /// in a third-party contract. Attempting to onboard a bridge-defined asset will result in an error as the asset has
@@ -82,12 +109,23 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         let feeVault <-feeProvider.withdraw(amount: FlowEVMBridgeConfig.onboardFee) as! @FlowToken.Vault
         FlowEVMBridgeUtils.deposit(<-feeVault)
         // Deploy an EVM defining contract via the FlowBridgeFactory.sol contract
-        let evmContractAddress = self.deployEVMContract(forAssetType: type)
+        // let evmContractAddress = self.deployEVMContract(forAssetType: type)
+        let onboardingValues = self.deployEVMContract(forAssetType: type)
         // Initialize bridge escrow for the asset
         if type.isSubtype(of: Type<@{NonFungibleToken.NFT}>()) {
-            FlowEVMBridgeNFTEscrow.initializeEscrow(forType: type, erc721Address: evmContractAddress)
+            FlowEVMBridgeNFTEscrow.initializeEscrow(
+                forType: type,
+                name: onboardingValues.name,
+                symbol: onboardingValues.symbol,
+                erc721Address: onboardingValues.evmContractAddress
+            )
         } else {
-            FlowEVMBridgeTokenEscrow.initializeEscrow(forType: type, evmTokenAddress: evmContractAddress)
+            FlowEVMBridgeTokenEscrow.initializeEscrow(forType: type,
+                name: onboardingValues.name,
+                symbol: onboardingValues.symbol,
+                decimals: onboardingValues.decimals!,
+                evmTokenAddress: onboardingValues.evmContractAddress
+            )
         }
 
         assert(
@@ -98,7 +136,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         emit Onboarded(
             type: type,
             cadenceContractAddress: FlowEVMBridgeUtils.getContractAddress(fromType: type)!,
-            evmContractAddress: FlowEVMBridgeUtils.getEVMAddressAsHexString(address: evmContractAddress)
+            evmContractAddress: FlowEVMBridgeUtils.getEVMAddressAsHexString(address: onboardingValues.evmContractAddress)
         )
     }
 
@@ -575,7 +613,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
     /// @returns The EVMAddress of the deployed contract
     ///
     access(self)
-    fun deployEVMContract(forAssetType: Type): EVM.EVMAddress {
+    fun deployEVMContract(forAssetType: Type): EVMOnboardingValues {
         if forAssetType.isSubtype(of: Type<@{NonFungibleToken.NFT}>()) {
             return self.deployERC721(forAssetType)
         } else if forAssetType.isSubtype(of: Type<@{FungibleToken.Vault}>()) {
@@ -591,7 +629,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
     /// @returns The EVMAddress of the deployed contract
     ///
     access(self)
-    fun deployERC721(_ forNFTType: Type): EVM.EVMAddress {
+    fun deployERC721(_ forNFTType: Type): EVMOnboardingValues {
         // Retrieve the Cadence type's defining contract name, address, & its identifier
         var name = FlowEVMBridgeUtils.getContractName(fromType: forNFTType)
             ?? panic("Could not contract name from type: ".concat(forNFTType.identifier))
@@ -640,7 +678,12 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         // Associate the deployed contract with the given type & return the deployed address
         let erc721Address = decodedResult[0] as! EVM.EVMAddress
         FlowEVMBridgeConfig.associateType(forNFTType, with: erc721Address)
-        return erc721Address
+        return EVMOnboardingValues(
+            evmContractAddress: erc721Address,
+            name: name,
+            symbol: symbol,
+            decimals: nil
+        )
     }
 
     /// Deploys templated ERC721 contract supporting EVM-native asset bridging to Cadence
@@ -650,7 +693,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
     /// @returns The EVMAddress of the deployed contract
     ///
     access(self)
-    fun deployERC20(_ forTokenType: Type): EVM.EVMAddress {
+    fun deployERC20(_ forTokenType: Type): EVMOnboardingValues {
         // Retrieve the Cadence type's defining contract name, address, & its identifier
         var name = FlowEVMBridgeUtils.getContractName(fromType: forTokenType)
             ?? panic("Could not contract name from type: ".concat(forTokenType.identifier))
@@ -701,7 +744,12 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         // Associate the deployed contract with the given type & return the deployed address
         let erc20Address = decodedResult[0] as! EVM.EVMAddress
         FlowEVMBridgeConfig.associateType(forTokenType, with: erc20Address)
-        return erc20Address
+        return EVMOnboardingValues(
+            evmContractAddress: erc20Address,
+            name: name,
+            symbol: symbol,
+            decimals: FlowEVMBridgeConfig.defaultDecimals
+        )
     }
 
     /// Helper for deploying templated defining contract supporting EVM-native asset bridging to Cadence

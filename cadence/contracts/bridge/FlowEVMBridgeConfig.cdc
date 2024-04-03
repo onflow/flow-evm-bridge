@@ -16,6 +16,9 @@ contract FlowEVMBridgeConfig {
     /// Fee rate per storage unit consumed by bridged assets
     access(all)
     var storageRate: UFix64
+    /// Default ERC20.decimals() value
+    access(all)
+    let defaultDecimals: UInt8
     /// Mapping of Type to its associated EVMAddress as relevant to the bridge
     access(self)
     let typeToEVMAddress: {Type: EVM.EVMAddress}
@@ -113,6 +116,7 @@ contract FlowEVMBridgeConfig {
         self.onboardFee = 0.0
         self.baseFee = 0.0
         self.storageRate = 0.0
+        self.defaultDecimals = 18
         self.typeToEVMAddress = {}
         self.adminStoragePath = /storage/flowEVMBridgeConfigAdmin
         self.coaStoragePath = /storage/evm

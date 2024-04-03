@@ -107,13 +107,17 @@ access(all) contract FlowEVMBridgeNFTEscrow {
     /// Initializes the Locker for the given NFT type if it hasn't been initialized yet
     ///
     access(account)
-    fun initializeEscrow(forType: Type, erc721Address: EVM.EVMAddress) {
+    fun initializeEscrow(forType: Type, name: String, symbol: String, erc721Address: EVM.EVMAddress) {
         let lockerPath = FlowEVMBridgeUtils.deriveEscrowStoragePath(fromType: forType)
             ?? panic("Problem deriving locker path")
         if self.account.storage.type(at: lockerPath) != nil {
             return
         }
-        let locker <- create Locker(lockedType: forType, erc721Address: erc721Address)
+        // Call to the ERC20 contract to get contract values
+        // let name = FlowEVMBridgeUtils.getName(evmContractAddress: erc721Address)
+        // let symbol = FlowEVMBridgeUtils.getSymbol(evmContractAddress: erc721Address)
+
+        let locker <- create Locker(name: name, symbol: symbol, lockedType: forType, erc721Address: erc721Address)
         self.account.storage.save(<-locker, to: lockerPath)
     }
 
@@ -159,29 +163,40 @@ access(all) contract FlowEVMBridgeNFTEscrow {
 
     /// The resource managing the locking & unlocking of NFTs via this contract's interface
     ///
-    access(all) resource Locker : CrossVMNFT.EVMNFTCollection, NonFungibleToken.Collection {
-        /// The type of NFTs this Locker escrows
-        access(all)
-        let lockedType: Type
+    access(all) resource Locker : CrossVMNFT.EVMNFTCollection {
+        /// Corresponding name assigned in the tokens' corresponding ERC20 contract
+        access(all) let name: String
+        /// Corresponding symbol assigned in the tokens' corresponding ERC20 contract
+        access(all) let symbol: String
         /// Corresponding ERC721 address for the locked NFTs
-        access(all)
-        let erc721Address: EVM.EVMAddress
+        access(all) let erc721Address: EVM.EVMAddress
+        /// The type of NFTs this Locker escrows
+        access(all) let lockedType: Type
         /// Count of locked NFTs as lockedNFTs.length may exceed computation limits
-        access(self)
-        var lockedNFTCount: Int
+        access(self) var lockedNFTCount: Int
         /// Indexed on NFT UUID to prevent collisions
-        access(self)
-        let lockedNFTs: @{UInt64: {NonFungibleToken.NFT}}
+        access(self) let lockedNFTs: @{UInt64: {NonFungibleToken.NFT}}
         /// Maps EVM NFT ID to Flow NFT ID, covering cross-VM project NFTs
-        access(self)
-        let evmIDToFlowID: {UInt256: UInt64}
+        access(self) let evmIDToFlowID: {UInt256: UInt64}
 
-        init(lockedType: Type, erc721Address: EVM.EVMAddress) {
+        init(name: String, symbol: String, lockedType: Type, erc721Address: EVM.EVMAddress) {
+            self.name = name
+            self.symbol = symbol
             self.lockedType = lockedType
             self.erc721Address = erc721Address
             self.lockedNFTCount = 0
             self.lockedNFTs <- {}
             self.evmIDToFlowID = {}
+        }
+
+        access(all)
+        view fun getName(): String {
+            return self.name
+        }
+
+        access(all)
+        view fun getSymbol(): String {
+            return self.symbol
         }
 
         /// Returns the number of locked NFTs
@@ -233,7 +248,7 @@ access(all) contract FlowEVMBridgeNFTEscrow {
             return nil
         }
 
-        access(all) view fun contractURI(): String? {
+        access(all) fun contractURI(): String? {
             return nil
         }
 
@@ -300,7 +315,12 @@ access(all) contract FlowEVMBridgeNFTEscrow {
         ///
         access(all)
         fun createEmptyCollection(): @{NonFungibleToken.Collection} {
-            return <- create Locker(lockedType: self.lockedType, erc721Address: self.erc721Address)
+            return <- create Locker(
+                name: self.name,
+                symbol: self.symbol,
+                lockedType: self.lockedType,
+                erc721Address: self.erc721Address
+            )
         }
     }
 }

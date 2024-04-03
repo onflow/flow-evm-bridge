@@ -53,7 +53,7 @@ access(all) contract FlowEVMBridgeTokenEscrow {
 
     /// Initializes the Locker for the given fungible token type if it hasn't been initialized yet
     ///
-    access(account) fun initializeEscrow(forType: Type, evmTokenAddress: EVM.EVMAddress) {
+    access(account) fun initializeEscrow(forType: Type, name: String, symbol: String, decimals: UInt8, evmTokenAddress: EVM.EVMAddress) {
         let lockerPath = FlowEVMBridgeUtils.deriveEscrowStoragePath(fromType: forType)
             ?? panic("Problem deriving locker path")
         if self.account.storage.type(at: lockerPath) != nil {
@@ -61,9 +61,9 @@ access(all) contract FlowEVMBridgeTokenEscrow {
         }
 
         // Call to the ERC20 contract to get contract values
-        let name = FlowEVMBridgeUtils.getName(evmContractAddress: evmTokenAddress)
-        let symbol = FlowEVMBridgeUtils.getSymbol(evmContractAddress: evmTokenAddress)
-        let decimals = FlowEVMBridgeUtils.getTokenDecimals(evmContractAddress: evmTokenAddress)
+        // let name = FlowEVMBridgeUtils.getName(evmContractAddress: evmTokenAddress)
+        // let symbol = FlowEVMBridgeUtils.getSymbol(evmContractAddress: evmTokenAddress)
+        // let decimals = FlowEVMBridgeUtils.getTokenDecimals(evmContractAddress: evmTokenAddress)
 
         // Create the Locker, lock a new vault of given type and save at the derived path
         let locker <- create Locker(name: name, symbol: symbol, decimals: decimals, lockedType: forType, evmTokenAddress: evmTokenAddress)
@@ -109,11 +109,9 @@ access(all) contract FlowEVMBridgeTokenEscrow {
         /// Corresponding decimals assigned in the tokens' corresponding ERC20 contract. While Cadence support floating
         /// point numbers, EVM does not, so we need to keep track of the decimals to convert between the two.
         access(all) let decimals: UInt8
-        /// The type of FT this Locker escrows
-        access(all) let lockedType: Type
         /// Corresponding ERC20 address for the locked tokens
         access(all) let evmTokenAddress: EVM.EVMAddress
-        // Vault to hold all relevant locked FTs
+        // Vault to hold all locked tokens
         access(self) let lockedVault: @{FungibleToken.Vault}
 
 
@@ -122,7 +120,6 @@ access(all) contract FlowEVMBridgeTokenEscrow {
             self.balance = 0.0
             self.name = name
             self.symbol = symbol
-            self.lockedType = lockedType
             self.evmTokenAddress = evmTokenAddress
 
             let createVault = FlowEVMBridgeUtils.getCreateEmptyVaultFunction(forType: lockedType)
@@ -157,15 +154,16 @@ access(all) contract FlowEVMBridgeTokenEscrow {
         /// their contract
         ///
         access(all) view fun getSupportedVaultTypes(): {Type: Bool} {
+            let lockedType = self.getLockedType()
             return {
-                self.lockedType: self.isSupportedVaultType(type: self.lockedType)
+                lockedType: self.isSupportedVaultType(type: lockedType)
             }
         }
 
         /// Returns true if the token Vault type is supported
         ///
         access(all) view fun isSupportedVaultType(type: Type): Bool {
-            return type == self.lockedType
+            return type == self.getLockedType()
         }
 
         /// Deposits the given token vault into this locker
@@ -182,9 +180,13 @@ access(all) contract FlowEVMBridgeTokenEscrow {
                 name: self.name,
                 symbol: self.symbol,
                 decimals: self.decimals,
-                lockedType: self.lockedType,
+                lockedType: self.getLockedType(),
                 evmTokenAddress: self.evmTokenAddress
             )
+        }
+
+        access(all) view fun getLockedType(): Type {
+            return self.lockedVault.getType()
         }
 
         /// Returns the views supported by the locked Vault
@@ -210,7 +212,7 @@ access(all) contract FlowEVMBridgeTokenEscrow {
         ///
         access(contract) fun burnCallback() {
             emit LockerBurned(
-                lockedType: self.lockedType,
+                lockedType: self.getLockedType(),
                 evmTokenAddress: FlowEVMBridgeUtils.getEVMAddressAsHexString(address: self.evmTokenAddress),
                 lockerBalance: self.balance
             )
