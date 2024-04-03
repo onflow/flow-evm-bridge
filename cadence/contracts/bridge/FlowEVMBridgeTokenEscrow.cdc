@@ -66,10 +66,10 @@ access(all) contract FlowEVMBridgeTokenEscrow {
             targetEVMAddress: evmTokenAddress,
             args: [],
             gasLimit: 12_000_000,
-            value: EVM.Balance(attoflow: 0)
+            value: 0.0
         )
-        assert(decimalsResult.status == EVM.Result.successful, message: "Failed to get decimals from ERC20 contract")
-        let decimals = EVM.decodeABI(types: [EVM.EVMAddress], data: decimalsResult.data) as [UInt8]
+        assert(decimalsResult.status == EVM.Status.successful, message: "Failed to get decimals from ERC20 contract")
+        let decimals = EVM.decodeABI(types: [Type<UInt8>()], data: decimalsResult.data) as! [UInt8]
         assert(decimals.length == 1, message: "Problem decoding result of decimals() call to ERC20 contract")
 
         // Create the Locker, lock a new vault of given type and save at the derived path
@@ -106,7 +106,7 @@ access(all) contract FlowEVMBridgeTokenEscrow {
 
     /// The resource managing the locking & unlocking of FTs via this contract's interface
     ///
-    access(all) resource Locker : BridgeTokenLocker, CrossVMToken.EVMFTVault {
+    access(all) resource Locker : CrossVMToken.EVMFTVault {
         /// Field that tracks the balance of a vault
         access(all) var balance: UFix64
         /// The type of FT this Locker escrows
@@ -196,7 +196,11 @@ access(all) contract FlowEVMBridgeTokenEscrow {
         /// Emits an event notifying that the Locker has been burned with information about the locked vault
         ///
         access(contract) fun burnCallback() {
-            emit LockerBurned(lockedType: self.lockedType, evmTokenAddress: self.evmTokenAddress, lockerBalance: self.balance)
+            emit LockerBurned(
+                lockedType: self.lockedType,
+                evmTokenAddress: FlowEVMBridgeUtils.getEVMAddressAsHexString(address: self.evmTokenAddress),
+                lockerBalance: self.balance
+            )
             self.balance = 0.0
         }
     }

@@ -468,7 +468,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         }
         // Otherwise, the bridge will need to unlock them from escrow
         assert(
-            FlowEVMBridgeUtils.isFactoryDeployed(evmContractAddress: associatedAddress),
+            FlowEVMBridgeUtils.isEVMContractBridgeOwned(evmContractAddress: associatedAddress),
             message: "Unexpected error bridging FT from EVM"
         )
         // Burn the EVM tokens that have now been transferred to the bridge in EVM
@@ -480,7 +480,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
             value: 0.0
         )
         assert(burnResult.status == EVM.Status.successful, message: "Burn of EVM tokens failed")
-        return <-FlowEVMBridgeTokenEscrow.unlockTokens(type: type, amount: amount)
+        return <-FlowEVMBridgeTokenEscrow.unlockTokens(type: type, amount: ufixAmount)
     }
 
     /**************************
@@ -691,7 +691,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
 
         // Associate the deployed contract with the given type & return the deployed address
         let erc20Address = decodedResult[0] as! EVM.EVMAddress
-        FlowEVMBridgeConfig.associateType(forTokenType, with: erc721Address)
+        FlowEVMBridgeConfig.associateType(forTokenType, with: erc20Address)
         return erc20Address
     }
 

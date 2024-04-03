@@ -51,6 +51,11 @@ contract FlowEVMBridgeTemplates {
     }
 
     access(self)
+    fun getBridgedTokenContractCode(contractName: String): [UInt8]? {
+        return self.joinChunks(self.templateCodeChunks["bridgedToken"]!, with: String.encodeHex(contractName.utf8))
+    }
+
+    access(self)
     fun joinChunks(_ chunks: [[UInt8]], with name: String): [UInt8] {
         let nameBytes: [UInt8] = name.decodeHex()
         let code: [UInt8] = []

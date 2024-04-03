@@ -89,6 +89,12 @@ fun setup() {
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
+        name: "CrossVMToken",
+        path: "../contracts/bridge/CrossVMToken.cdc",
+        arguments: []
+    )
+    Test.expect(err, Test.beNil())
+    err = Test.deployContract(
         name: "FlowEVMBridgeConfig",
         path: "../contracts/bridge/FlowEVMBridgeConfig.cdc",
         arguments: []
@@ -103,6 +109,12 @@ fun setup() {
     err = Test.deployContract(
         name: "FlowEVMBridgeNFTEscrow",
         path: "../contracts/bridge/FlowEVMBridgeNFTEscrow.cdc",
+        arguments: []
+    )
+    Test.expect(err, Test.beNil())
+    err = Test.deployContract(
+        name: "FlowEVMBridgeTokenEscrow",
+        path: "../contracts/bridge/FlowEVMBridgeTokenEscrow.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
@@ -127,8 +139,20 @@ fun setup() {
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
+        name: "IEVMBridgeTokenMinter",
+        path: "../contracts/bridge/IEVMBridgeTokenMinter.cdc",
+        arguments: []
+    )
+    Test.expect(err, Test.beNil())
+    err = Test.deployContract(
         name: "IFlowEVMNFTBridge",
         path: "../contracts/bridge/IFlowEVMNFTBridge.cdc",
+        arguments: []
+    )
+    Test.expect(err, Test.beNil())
+    err = Test.deployContract(
+        name: "IFlowEVMTokenBridge",
+        path: "../contracts/bridge/IFlowEVMTokenBridge.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
