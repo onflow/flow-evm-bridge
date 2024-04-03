@@ -258,8 +258,8 @@ contract EVM {
             EVM.borrowBridgeAccessor().depositNFT(nft: <-nft, to: self.address(), feeProvider: feeProvider)
         }
 
-        /// Bridges the given NFT to the EVM environment, requiring a Provider from which to withdraw a fee to fulfill
-        /// the bridge request
+        /// Bridges the given NFT from the EVM environment, requiring a Provider from which to withdraw a fee to fulfill
+        /// the bridge request. Note: the caller should own the requested NFT in EVM
         access(Owner | Bridge)
         fun withdrawNFT(
             type: Type,
@@ -270,6 +270,33 @@ contract EVM {
                 caller: &self as auth(Call) &CadenceOwnedAccount,
                 type: type,
                 id: id,
+                feeProvider: feeProvider
+            )
+        }
+
+        /// Bridges the given Vault to the EVM environment, requiring a Provider from which to withdraw a fee to fulfill
+        /// the bridge request
+        access(all)
+        fun depositTokens(
+            vault: @{FungibleToken.Vault},
+            feeProvider: auth(FungibleToken.Withdraw) &{FungibleToken.Provider}
+        ) {
+            EVM.borrowBridgeAccessor().depositTokens(vault: <-vault, to: self.address(), feeProvider: feeProvider)
+        }
+
+        /// Bridges the given fungible tokens from the EVM environment, requiring a Provider from which to withdraw a
+        /// fee to fulfill the bridge request. Note: the caller should own the requested tokens & sufficient balance of
+        /// requested tokens in EVM
+        access(Owner | Bridge)
+        fun withdrawTokens(
+            type: Type,
+            amount: UInt256,
+            feeProvider: auth(FungibleToken.Withdraw) &{FungibleToken.Provider}
+        ): @{FungibleToken.Vault} {
+            return <- EVM.borrowBridgeAccessor().withdrawTokens(
+                caller: &self as auth(Call) &CadenceOwnedAccount,
+                type: type,
+                amount: amount,
                 feeProvider: feeProvider
             )
         }
@@ -460,7 +487,7 @@ contract EVM {
     access(all)
     resource interface BridgeAccessor {
 
-        /// Endpoint enabling the briding of an NFT to EVM
+        /// Endpoint enabling the bridging of an NFT to EVM
         access(Bridge)
         fun depositNFT(
             nft: @{NonFungibleToken.NFT},
@@ -468,7 +495,7 @@ contract EVM {
             feeProvider: auth(FungibleToken.Withdraw) &{FungibleToken.Provider}
         )
 
-        /// Endpoint enabling the briding of an NFT from EVM
+        /// Endpoint enabling the bridging of an NFT from EVM
         access(Bridge)
         fun withdrawNFT(
             caller: auth(Call) &CadenceOwnedAccount,
@@ -476,5 +503,22 @@ contract EVM {
             id: UInt256,
             feeProvider: auth(FungibleToken.Withdraw) &{FungibleToken.Provider}
         ): @{NonFungibleToken.NFT}
+
+        /// Endpoint enabling the bridging of a fungible token vault to EVM
+        access(EVM.Bridge)
+        fun depositTokens(
+            vault: @{FungibleToken.Vault},
+            to: EVM.EVMAddress,
+            feeProvider: auth(FungibleToken.Withdraw) &{FungibleToken.Provider}
+        )
+
+        /// Endpoint enabling the bridging of fungible tokens from EVM
+        access(EVM.Bridge)
+        fun withdrawTokens(
+            caller: auth(EVM.Call) &EVM.CadenceOwnedAccount,
+            type: Type,
+            amount: UInt256,
+            feeProvider: auth(FungibleToken.Withdraw) &{FungibleToken.Provider}
+        ): @{FungibleToken.Vault}
     }
 }

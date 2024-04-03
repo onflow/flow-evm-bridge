@@ -5,6 +5,7 @@ import "FlowToken"
 import "EVM"
 
 import "IFlowEVMNFTBridge"
+import "IFlowEVMTokenBridge"
 
 /// This contract defines a mechanism for routing bridge requests from the EVM contract to the Flow-EVM bridge as well
 /// as updating the designated bridge address
@@ -95,6 +96,69 @@ contract EVMBridgeRouter {
             )
         }
 
+        /// Passes along the bridge request to dedicated bridge contract
+        ///
+        /// @param vault: The fungible token vault to be bridged to EVM
+        /// @param to: The address of the EVM account to receive the bridged tokens
+        /// @param feeProvider: A reference to a FungibleToken Provider from which the bridging fee is withdrawn in $FLOW
+        ///
+        access(EVM.Bridge)
+        fun depositTokens(
+            vault: @{FungibleToken.Vault},
+            to: EVM.EVMAddress,
+            feeProvider: auth(FungibleToken.Withdraw) &{FungibleToken.Provider}
+        ) {
+            self.borrowBridge().bridgeTokensToEVM(vault: <-vault, to: to, feeProvider: feeProvider)
+        }
+
+        /// Passes along the bridge request to the dedicated bridge contract, returning the bridged NFT
+        ///
+        /// @param caller: A reference to the COA which currently owns the tokens in EVM
+        /// @param type: The Cadence type of the fungible token vault to be bridged from EVM
+        /// @param amount: The amount of tokens to be bridged
+        /// @param feeProvider: A reference to a FungibleToken Provider from which the bridging fee is withdrawn in $FLOW
+        ///
+        /// @return The bridged NFT
+        ///
+        access(EVM.Bridge)
+        fun withdrawTokens(
+            caller: auth(EVM.Call) &EVM.CadenceOwnedAccount,
+            type: Type,
+            amount: UInt256,
+            feeProvider: auth(FungibleToken.Withdraw) &{FungibleToken.Provider}
+        ): @{FungibleToken.Vault} {
+            let bridge = self.borrowBridge()
+            // Define a callback function, enabling the bridge to act on the ephemeral COA reference in scope
+            var executed = false
+            fun callback(): EVM.Result {
+                pre {
+                    !executed: "Callback can only be executed once"
+                }
+                post {
+                    executed: "Callback must be executed"
+                }
+                executed = true
+                return caller.call(
+                    to: bridge.getAssociatedEVMAddress(with: type)
+                        ?? panic("No EVM address associated with type"),
+                    data: EVM.encodeABIWithSignature(
+                        "transfer(address,uint256)",
+                        [bridge.getBridgeCOAEVMAddress(), amount]
+                    ),
+                    gasLimit: 15000000,
+                    value: EVM.Balance(attoflow: 0)
+                )
+            }
+            // Execute the bridge request
+            return <- bridge.bridgeTokensFromEVM(
+                owner: caller.address(),
+                type: type,
+                amount: amount,
+                feeProvider: feeProvider,
+                protectedTransferCall: callback
+            )
+        }
+
         /// Sets the bridge contract the router directs bridge requests through
         ///
         access(RouterAdmin) fun setBridgeContract(address: Address, name: String) {
@@ -105,9 +169,10 @@ contract EVMBridgeRouter {
 
         /// Returns a reference to the bridge contract
         ///
-        access(self) fun borrowBridge(): &{IFlowEVMNFTBridge} {
-            return getAccount(self.bridgeAddress).contracts.borrow<&{IFlowEVMNFTBridge}>(name: self.bridgeContractName)
-                ?? panic("Bridge contract not found")
+        access(self) fun borrowBridge(): &{IFlowEVMNFTBridge, IFlowEVMTokenBridge} {
+            return getAccount(self.bridgeAddress).contracts.borrow<&{IFlowEVMNFTBridge, IFlowEVMTokenBridge}>(
+                    name: self.bridgeContractName
+                ) ?? panic("Bridge contract not found")
         }
     }
 
