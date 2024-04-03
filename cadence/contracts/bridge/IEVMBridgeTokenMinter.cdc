@@ -8,5 +8,9 @@ contract interface IEVMBridgeTokenMinter {
     /// Account-only method to mint an NFT
     ///
     access(account)
-    fun mintFT(amount: UFix64): @{FungibleToken.Vault}
+    fun mintTokens(amount: UFix64): @{FungibleToken.Vault} {
+        post {
+            result.balance == amount: "Result does not contained specified amount"
+        }
+    }
 }

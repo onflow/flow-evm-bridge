@@ -1,3 +1,4 @@
+import "Burner"
 import "FungibleToken"
 import "FungibleTokenMetadataViews"
 import "NonFungibleToken"
@@ -10,7 +11,9 @@ import "EVM"
 import "BridgePermissions"
 import "ICrossVM"
 import "IEVMBridgeNFTMinter"
+import "IEVMBridgeTokenMinter"
 import "IFlowEVMNFTBridge"
+import "IFlowEVMTokenBridge"
 import "CrossVMNFT"
 import "CrossVMToken"
 import "FlowEVMBridgeConfig"
@@ -30,7 +33,7 @@ import "SerializeNFT"
 /// - FLIP #237: https://github.com/onflow/flips/pull/233
 ///
 access(all)
-contract FlowEVMBridge : IFlowEVMNFTBridge {
+contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
 
     /*************
         Events
@@ -50,7 +53,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge {
     )
 
     /**************************
-        Public NFT Handling
+        Public Onboarding
     **************************/
 
     /// Onboards a given asset by type to the bridge. Since we're onboarding by Cadence Type, the asset must be defined
@@ -60,7 +63,6 @@ contract FlowEVMBridge : IFlowEVMNFTBridge {
     /// @param type: The Cadence Type of the NFT to be onboarded
     /// @param feeProvider: A reference to a FungibleToken Provider from which the bridging fee is withdrawn in $FLOW
     ///
-    // TODO: Generalize for NFTs & FTs
     access(all)
     fun onboardByType(_ type: Type, feeProvider: auth(FungibleToken.Withdraw) &{FungibleToken.Provider}) {
         pre {
@@ -78,14 +80,14 @@ contract FlowEVMBridge : IFlowEVMNFTBridge {
         let feeVault <-feeProvider.withdraw(amount: FlowEVMBridgeConfig.onboardFee) as! @FlowToken.Vault
         FlowEVMBridgeUtils.deposit(<-feeVault)
         // Deploy an EVM defining contract via the FlowBridgeFactory.sol contract
-        let erc721Address = self.deployEVMContract(forAssetType: type)
+        let evmContractAddress = self.deployEVMContract(forAssetType: type)
         // Initialize bridge escrow for the asset
-        FlowEVMBridgeNFTEscrow.initializeEscrow(forType: type, erc721Address: erc721Address)
+        FlowEVMBridgeNFTEscrow.initializeEscrow(forType: type, erc721Address: evmContractAddress)
 
         emit Onboarded(
             type: type,
             cadenceContractAddress: FlowEVMBridgeUtils.getContractAddress(fromType: type)!,
-            evmContractAddress: FlowEVMBridgeUtils.getEVMAddressAsHexString(address: erc721Address)
+            evmContractAddress: FlowEVMBridgeUtils.getEVMAddressAsHexString(address: evmContractAddress)
         )
     }
 
@@ -120,6 +122,10 @@ contract FlowEVMBridge : IFlowEVMNFTBridge {
         // Deploy a defining Cadence contract to the bridge account
         self.deployDefiningContract(evmContractAddress: address)
     }
+
+    /*************************
+        Public NFT Handling
+    **************************/
 
     /// Public entrypoint to bridge NFTs from Cadence to EVM.
     ///
@@ -313,8 +319,8 @@ contract FlowEVMBridge : IFlowEVMNFTBridge {
 
     /// Public entrypoint to bridge FTs from Cadence to EVM.
     ///
-    /// @param token: The FT to be bridged
-    /// @param to: The FT recipient in FlowEVM
+    /// @param vault: The fungible token Vault to be bridged
+    /// @param to: The fungible token recipient in EVM
     /// @param feeProvider: A reference to a FungibleToken Provider from which the bridging fee is withdrawn in $FLOW
     ///
     access(all)
@@ -329,86 +335,57 @@ contract FlowEVMBridge : IFlowEVMNFTBridge {
         }
         let vaultType = vault.getType()
         let vaultBalance = vault.balance
+        var feeAmount = 0.0
 
-        var uri: String = ""
-        if let metadata = vault.resolveView(Type<CrossVMFT.EVMBridgedMetadata>()) as! CrossVMFT.EVMBridgedMetadata? {
-            uri = metadata.uri.uri()
+        // Lock the tokens if the bridge does not define them
+        if FlowEVMBridgeUtils.isCadenceNative(type: vault.getType()) {
+            // Lock the FT balance & calculate the extra used by the FT if any
+            let storageUsed = FlowEVMBridgeTokenEscrow.lockTokens(<-vault)
+            // Calculate the bridge fee on current rates
+            feeAmount = FlowEVMBridgeUtils.calculateBridgeFee(used: storageUsed, includeBase: true)
+        } else {
+            Burner.burn(<-vault)
+            feeAmount = FlowEVMBridgeUtils.calculateBridgeFee(used: 0, includeBase: true)
         }
 
-        // Lock the FT balance & calculate the extra used by the FT if any
-        let storageUsed = FlowEVMBridgeTokenEscrow.lockTokens(<-vault)
-        // Calculate the bridge fee on current rates
-        let feeAmount = FlowEVMBridgeUtils.calculateBridgeFee(used: storageUsed, includeBase: true)
+        // Withdraw from feeProvider and deposit to self
         assert(
             feeProvider.isAvailableToWithdraw(amount: feeAmount),
             message: "Fee provider does not have balance to cover the bridge fee of ".concat(feeAmount.toString())
         )
-        // Withdraw from feeProvider and deposit to self
         let feeVault <-feeProvider.withdraw(amount: feeAmount) as! @FlowToken.Vault
         FlowEVMBridgeUtils.deposit(<-feeVault)
 
         // Does the bridge control the EVM contract associated with this type?
         let associatedAddress = FlowEVMBridgeConfig.getEVMAddressAssociated(with: vaultType)
             ?? panic("No EVMAddress found for vault type")
+        // Convert the vault balance to a UInt256
+        let decimals = FlowEVMBridgeUtils.getTokenDecimals(evmContractAddress: associatedAddress)
+        let bridgeAmount = FlowEVMBridgeUtils.ufix64ToUInt256(value: vaultBalance, decimals: decimals)
+        
         let isFactoryDeployed = FlowEVMBridgeUtils.isEVMContractBridgeOwned(evmContractAddress: associatedAddress)
-        // Controlled by the bridge - mint or transfer based on existence
+        // Controlled by the bridge - mint or transfer based on the bridge's EVM contract authority
         if isFactoryDeployed {
-            // Check if the ERC20 exists
-            let existsResponse = EVM.decodeABI(
-                    types: [Type<Bool>()],
-                    data: FlowEVMBridgeUtils.call(
-                        signature: "exists(uint256)",
-                        targetEVMAddress: associatedAddress,
-                        args: [evmID],
-                        gasLimit: 12000000,
-                        value: 0.0
-                    ).data,
-                )
-            assert(existsResponse.length == 1, message: "Invalid response length")
-            let exists = existsResponse[0] as! Bool
-            if exists {
-                // if so transfer
-                // TODO: Switch this with an ERC20 transfer call
-                /*let callResult: EVM.Result = FlowEVMBridgeUtils.call(
-                    signature: "safeTransferFrom(address,address,uint256)",
-                    targetEVMAddress: associatedAddress,
-                    args: [self.getBridgeCOAEVMAddress(), to, evmID],
-                    gasLimit: 15000000,
-                    value: 0.0
-                )*/
-                assert(callResult.status == EVM.Status.successful, message: "Tranfer to bridge recipient failed")
-            } else {
-                // Otherwise mint
-                // TODO: Switch this with an ERC20 mint
-                /*
-                let callResult: EVM.Result = FlowEVMBridgeUtils.call(
-                    signature: "safeMint(address,uint256,string)",
-                    targetEVMAddress: associatedAddress,
-                    args: [to, evmID, uri],
-                    gasLimit: 15000000,
-                    value: 0.0
-                )*/
-                assert(callResult.status == EVM.Status.successful, message: "Tranfer to bridge recipient failed")
-            }
-        } else {
-            // Not bridge-controlled, transfer existing ownership
-            // TODO: Switch this with ERC20 transfer
-            /*let callResult: EVM.Result = FlowEVMBridgeUtils.call(
-                signature: "safeTransferFrom(address,address,uint256)",
+            // Mint tokens to the recipient
+            let callResult: EVM.Result = FlowEVMBridgeUtils.call(
+                signature: "mint(address,uint256)",
                 targetEVMAddress: associatedAddress,
-                args: [self.getBridgeCOAEVMAddress(), to, evmID],
+                args: [to, bridgeAmount],
                 gasLimit: 15000000,
                 value: 0.0
-            )*/
+            )
+            assert(callResult.status == EVM.Status.successful, message: "Tranfer to bridge recipient failed")
+        } else {
+            // Not bridge-controlled, transfer existing ownership
+            let callResult: EVM.Result = FlowEVMBridgeUtils.call(
+                signature: "transfer(address,uint256)",
+                targetEVMAddress: associatedAddress,
+                args: [to, bridgeAmount],
+                gasLimit: 15000000,
+                value: 0.0
+            )
             assert(callResult.status == EVM.Status.successful, message: "Tranfer to bridge recipient failed")
         }
-        emit BridgedFTToEVM(
-            type: vaultType,
-            amount: vaultBalance,
-            to: FlowEVMBridgeUtils.getEVMAddressAsHexString(address: to),
-            evmContractAddress: FlowEVMBridgeUtils.getEVMAddressAsHexString(address:associatedAddress)
-        )
-        
     }
 
     /// Public entrypoint to bridge FTs from EVM to Cadence
@@ -416,19 +393,19 @@ contract FlowEVMBridge : IFlowEVMNFTBridge {
     /// @param owner: The EVM address of the FT owner. Current ownership and successful transfer (via 
     ///     `protectedTransferCall`) is validated before the bridge request is executed.
     /// @param calldata: Caller-provided approve() call, enabling contract COA to operate on FT in EVM contract
-    /// @param id: The amount to bridged
+    /// @param amount: The amount of tokens to be bridged
     /// @param evmContractAddress: Address of the EVM address defining the FT being bridged - also call target
     /// @param feeProvider: A reference to a FungibleToken Provider from which the bridging fee is withdrawn in $FLOW
     /// @param protectedTransferCall: A function that executes the transfer of the FT from the named owner to the
     ///     bridge's COA. This function is expected to return a Result indicating the status of the transfer call.
     ///
-    /// @returns The bridged FT Vault
+    /// @returns The bridged fungible token Vault
     ///
     access(all)
     fun bridgeTokensFromEVM(
         owner: EVM.EVMAddress,
         type: Type,
-        amount: UFix64,
+        amount: UInt256,
         feeProvider: auth(FungibleToken.Withdraw) &{FungibleToken.Provider},
         protectedTransferCall: fun (): EVM.Result
     ): @{FungibleToken.Vault} {
@@ -443,65 +420,63 @@ contract FlowEVMBridge : IFlowEVMNFTBridge {
         let feeVault <-feeProvider.withdraw(amount: feeAmount) as! @FlowToken.Vault
         FlowEVMBridgeUtils.deposit(<-feeVault)
 
-        // Get the EVMAddress of the ERC721 contract associated with the type
+        // Get the EVMAddress of the ERC20 contract associated with the type
         let associatedAddress = FlowEVMBridgeConfig.getEVMAddressAssociated(with: type)
             ?? panic("No EVMAddress found for token type")
         
-        // Ensure the caller is either the current owner or approved for the FT
-        /* 
-            TODO: Make a way to check if the caller is owner
-            or approved for this fungible token rather than NFT
-        */
-        /*let isAuthorized: Bool = FlowEVMBridgeUtils.isOwnerOrApproved(
-            ofNFT: id,
+        // Ensure the caller is has sufficient balance to bridge the requested amount
+        let hasSufficientBalance = FlowEVMBridgeUtils.hasSufficientBalance(
+            amount: amount,
             owner: owner,
             evmContractAddress: associatedAddress
-        )*/
-        let isAuthorized: Bool = false
-        assert(isAuthorized, message: "Caller is not the owner of or approved for requested NFT")
+        )
+        assert(hasSufficientBalance, message: "Caller does not have sufficient balance to bridge requested tokens")
 
-        // Execute the transfer from the calling owner to the bridge's COA, escrowing the NFT in EVM
-        let callResult = protectedTransferCall()
-        assert(callResult.status == EVM.Status.successful, message: "Transfer to bridge COA failed")
-
-        // Ensure the bridge is now the owner of the FT after the preceding transfer
-        // TODO: Switch to check if owner is owner of ft, not nft
-        let isEscrowed: Bool = FlowEVMBridgeUtils.isOwner(
-            ofNFT: id,
+        // Get the bridge COA's balance of the token before executing the protected transfer call
+        let bridgeBalanceBefore = FlowEVMBridgeUtils.balanceOf(
             owner: self.getBridgeCOAEVMAddress(),
             evmContractAddress: associatedAddress
         )
-        assert(isEscrowed, message: "Transfer to bridge COA failed - cannot bridge FT without bridge escrow")
-        // Unlock the amount of the fungible token from the relevant locker
-        <-FlowEVMBridgeTokenEscrow.unlockTokens(type: type, amount: amount)
 
-        // If the NFT is currently locked, unlock and return
-        if let cadenceID = FlowEVMBridgeNFTEscrow.getLockedCadenceID(type: type, evmID: id) {
-            emit BridgedFTFromEVM(
-                type: type,
-                id: cadenceID,
-                amount: amount,
-                caller: FlowEVMBridgeUtils.getEVMAddressAsHexString(address: owner),
-                evmContractAddress: FlowEVMBridgeUtils.getEVMAddressAsHexString(address: associatedAddress)
-            )
-            return <-FlowEVMBridgeTokenEscrow.unlockTokens(type: type, amount: amount)
-        }
-        
-        // Otherwise, we expect the FT to be minted in Cadence
-        let contractAddress = FlowEVMBridgeUtils.getContractAddress(fromType: type)!
-        assert(self.account.address == contractAddress, message: "Unexpected error bridging NFT from EVM")
+        // Execute the transfer from the calling owner to the bridge's COA, escrowing the tokens in EVM
+        let callResult = protectedTransferCall()
+        assert(callResult.status == EVM.Status.successful, message: "Transfer to bridge COA failed")
 
-        let contractName = FlowEVMBridgeUtils.getContractName(fromType: type)!
-        let ftContract = getAccount(contractAddress).contracts.borrow<&{IEVMBridgeFTMinter}>(name: contractName)!
-        let ftVault <- ftContract.mintFT(amount: amount)
-        emit BridgedFTFromEVM(
-            type: type,
-            amount: amount,
-            evmID: id,
-            caller: FlowEVMBridgeUtils.getEVMAddressAsHexString(address: owner),
-            evmContractAddress: FlowEVMBridgeUtils.getEVMAddressAsHexString(address: associatedAddress)
+        // Get the bridge COA's balance of the token before executing the protected transfer call
+        let bridgeBalanceAfter = FlowEVMBridgeUtils.balanceOf(
+            owner: self.getBridgeCOAEVMAddress(),
+            evmContractAddress: associatedAddress
         )
-        return <-ftVault
+        assert(
+            bridgeBalanceAfter == bridgeBalanceBefore + amount,
+            message: "Transfer to bridge COA failed - cannot bridge FT without bridge escrow"
+        )
+
+        let definingAddress = FlowEVMBridgeUtils.getContractAddress(fromType: type)!
+        let definingContractName = FlowEVMBridgeUtils.getContractName(fromType: type)!
+
+        let decimals = FlowEVMBridgeUtils.getTokenDecimals(evmContractAddress: associatedAddress)
+        let ufixAmount = FlowEVMBridgeUtils.uint256ToUFix64(value: amount, decimals: decimals)
+        // If the Cadence Vault is bridge-defined, mint the tokens
+        if definingAddress == self.account.address {
+            let minter = getAccount(definingAddress).contracts.borrow<&{IEVMBridgeTokenMinter}>(name: definingContractName)!
+            return <- minter.mintTokens(amount: ufixAmount)
+        }
+        // Otherwise, the bridge will need to unlock them from escrow
+        assert(
+            FlowEVMBridgeUtils.isFactoryDeployed(evmContractAddress: associatedAddress),
+            message: "Unexpected error bridging FT from EVM"
+        )
+        // Burn the EVM tokens that have now been transferred to the bridge in EVM
+        let burnResult: EVM.Result = FlowEVMBridgeUtils.call(
+            signature: "burn(uint256)",
+            targetEVMAddress: associatedAddress,
+            args: [amount],
+            gasLimit: 15000000,
+            value: 0.0
+        )
+        assert(burnResult.status == EVM.Status.successful, message: "Burn of EVM tokens failed")
+        return <-FlowEVMBridgeTokenEscrow.unlockTokens(type: type, amount: amount)
     }
 
     /**************************
@@ -730,6 +705,10 @@ contract FlowEVMBridge : IFlowEVMNFTBridge {
 
         // Derive contract name
         let isERC721: Bool = FlowEVMBridgeUtils.isERC721(evmContractAddress: evmContractAddress)
+        if isERC721 {
+            let isERC20 = FlowEVMBridgeUtils.isERC20(evmContractAddress: evmContractAddress)
+            assert(!isERC20, message: "Contract is mixed asset and is not currently supported by the bridge")
+        }
         let cadenceContractName: String = FlowEVMBridgeUtils.deriveBridgedNFTContractName(from: evmContractAddress)
         let contractURI = FlowEVMBridgeUtils.getContractURI(evmContractAddress: evmContractAddress)
 
