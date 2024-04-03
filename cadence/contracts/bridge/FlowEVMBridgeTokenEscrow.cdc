@@ -60,20 +60,13 @@ access(all) contract FlowEVMBridgeTokenEscrow {
             panic("Collision at derived Locker path for type: ".concat(forType.identifier))
         }
 
-        // Call to the ERC20 contract to get the decimals of the token
-        let decimalsResult = FlowEVMBridgeUtils.call(
-            signature: "decimals()",
-            targetEVMAddress: evmTokenAddress,
-            args: [],
-            gasLimit: 12_000_000,
-            value: 0.0
-        )
-        assert(decimalsResult.status == EVM.Status.successful, message: "Failed to get decimals from ERC20 contract")
-        let decimals = EVM.decodeABI(types: [Type<UInt8>()], data: decimalsResult.data) as! [UInt8]
-        assert(decimals.length == 1, message: "Problem decoding result of decimals() call to ERC20 contract")
+        // Call to the ERC20 contract to get contract values
+        let name = FlowEVMBridgeUtils.getName(evmContractAddress: evmTokenAddress)
+        let symbol = FlowEVMBridgeUtils.getSymbol(evmContractAddress: evmTokenAddress)
+        let decimals = FlowEVMBridgeUtils.getTokenDecimals(evmContractAddress: evmTokenAddress)
 
         // Create the Locker, lock a new vault of given type and save at the derived path
-        let locker <- create Locker(lockedType: forType, evmTokenAddress: evmTokenAddress, decimals: decimals[0])
+        let locker <- create Locker(name: name, symbol: symbol, decimals: decimals, lockedType: forType, evmTokenAddress: evmTokenAddress)
         self.account.storage.save(<-locker, to: lockerPath)
     }
 
@@ -109,22 +102,28 @@ access(all) contract FlowEVMBridgeTokenEscrow {
     access(all) resource Locker : CrossVMToken.EVMFTVault {
         /// Field that tracks the balance of a vault
         access(all) var balance: UFix64
+        /// Corresponding name assigned in the tokens' corresponding ERC20 contract
+        access(all) let name: String
+        /// Corresponding symbol assigned in the tokens' corresponding ERC20 contract
+        access(all) let symbol: String
+        /// Corresponding decimals assigned in the tokens' corresponding ERC20 contract. While Cadence support floating
+        /// point numbers, EVM does not, so we need to keep track of the decimals to convert between the two.
+        access(all) let decimals: UInt8
         /// The type of FT this Locker escrows
         access(all) let lockedType: Type
         /// Corresponding ERC721 address for the locked NFTs
         access(all) let evmTokenAddress: EVM.EVMAddress
-        /// Corresponding decimals assigned in the tokens' corresponding ERC20 contract. While Cadence support floating
-        /// point numbers, EVM does not, so we need to keep track of the decimals to convert between the two.
-        access(all) let decimals: UInt8
         // Vault to hold all relevant locked FTs
         access(self) let lockedVault: @{FungibleToken.Vault}
 
 
-        init(lockedType: Type, evmTokenAddress: EVM.EVMAddress, decimals: UInt8) {
-            self.lockedType = lockedType
-            self.evmTokenAddress = evmTokenAddress
+        init(name: String, symbol: String, decimals: UInt8, lockedType: Type, evmTokenAddress: EVM.EVMAddress) {
             self.decimals = decimals
             self.balance = 0.0
+            self.name = name
+            self.symbol = symbol
+            self.lockedType = lockedType
+            self.evmTokenAddress = evmTokenAddress
 
             let createVault = FlowEVMBridgeUtils.getCreateEmptyVaultFunction(forType: lockedType)
                 ?? panic("Could not find createEmptyVault function for given type")
@@ -134,6 +133,10 @@ access(all) contract FlowEVMBridgeTokenEscrow {
                 self.lockedVault.isSupportedVaultType(type: lockedType),
                 message: "Locked Vault does not accept its own type"
             )
+        }
+
+        access(all) view fun getEVMContractAddress(): EVM.EVMAddress {
+            return self.evmTokenAddress
         }
 
         /// Returns the number of locked tokens in this locker
@@ -171,7 +174,13 @@ access(all) contract FlowEVMBridgeTokenEscrow {
         /// Creates a new instance of the locked Vault, **not** the encapsulating Locker
         ///
         access(all) fun createEmptyVault(): @{FungibleToken.Vault} {
-            return <-create Locker(lockedType: self.lockedType, evmTokenAddress: self.evmTokenAddress, decimals: self.decimals)
+            return <-create Locker(
+                name: self.name,
+                symbol: self.symbol,
+                decimals: self.decimals,
+                lockedType: self.lockedType,
+                evmTokenAddress: self.evmTokenAddress
+            )
         }
 
         /// Returns the views supported by the locked Vault
