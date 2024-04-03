@@ -21,15 +21,14 @@ jobs:
       - name: Install Flow CLI
         run: sh -ci "$(curl -fsSL https://raw.githubusercontent.com/onflow/flow-cli/feature/stable-cadence/install.sh)"
       - name: Flow CLI Version
-        run: flow version
+        run: flow-c1 version
       - name: Update PATH
         run: echo "/root/.local/bin" >> $GITHUB_PATH
       - name: Run tests
         run: sh local/run_cadence_tests.sh
       - name: Normalize coverage report filepaths
-        run : sh ./local/normalize_coverage_report.sh
+        run: sh ./local/normalize_coverage_report.sh
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v3
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
- 
