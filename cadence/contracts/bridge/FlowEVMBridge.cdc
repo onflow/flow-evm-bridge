@@ -66,6 +66,8 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
     access(all)
     fun onboardByType(_ type: Type, feeProvider: auth(FungibleToken.Withdraw) &{FungibleToken.Provider}) {
         pre {
+            type != Type<@FlowToken.Vault>():
+                "$FLOW cannot be bridged via the VM bridge - use the CadenceOwnedAccount interface"
             feeProvider.isAvailableToWithdraw(amount: FlowEVMBridgeConfig.onboardFee):
                 "Insufficient fee available via feeProvider"
             self.typeRequiresOnboarding(type) == true: "Onboarding is not needed for this type"
@@ -330,6 +332,8 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         feeProvider: auth(FungibleToken.Withdraw) &{FungibleToken.Provider}
     ) {
         pre {
+            vault.getType() != Type<@FlowToken.Vault>():
+                "$FLOW cannot be bridged via the VM bridge - use the CadenceOwnedAccount interface"
             !vault.isInstance(Type<@{NonFungibleToken.NFT}>()): "Mixed asset types are not yet supported"
             self.typeRequiresOnboarding(vault.getType()) == false: "FT must first be onboarded"
         }
