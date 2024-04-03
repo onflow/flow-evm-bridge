@@ -84,7 +84,16 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         // Deploy an EVM defining contract via the FlowBridgeFactory.sol contract
         let evmContractAddress = self.deployEVMContract(forAssetType: type)
         // Initialize bridge escrow for the asset
-        FlowEVMBridgeNFTEscrow.initializeEscrow(forType: type, erc721Address: evmContractAddress)
+        if type.isSubtype(of: Type<@{NonFungibleToken.NFT}>()) {
+            FlowEVMBridgeNFTEscrow.initializeEscrow(forType: type, erc721Address: evmContractAddress)
+        } else {
+            FlowEVMBridgeTokenEscrow.initializeEscrow(forType: type, evmTokenAddress: evmContractAddress)
+        }
+
+        assert(
+            FlowEVMBridgeNFTEscrow.isInitialized(forType: type) || FlowEVMBridgeTokenEscrow.isInitialized(forType: type),
+            message: "Failed to initialize escrow for given type"
+        )
 
         emit Onboarded(
             type: type,
