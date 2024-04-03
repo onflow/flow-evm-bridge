@@ -6,7 +6,7 @@ import "MetadataViews"
 import "Serialize"
 import "SerializeNFT"
 
-access(all) let admin = Test.getAccount(0x0000000000000007)
+access(all) let admin = Test.getAccount(0x0000000000000008)
 access(all) let alice = Test.createAccount()
 
 access(all) var mintedBlockHeight: UInt64 = 0
@@ -14,41 +14,6 @@ access(all) var mintedBlockHeight: UInt64 = 0
 access(all)
 fun setup() {
     var err = Test.deployContract(
-        name: "ViewResolver",
-        path: "../contracts/standards/ViewResolver.cdc",
-        arguments: []
-    )
-    Test.expect(err, Test.beNil())
-    err = Test.deployContract(
-        name: "Burner",
-        path: "../contracts/standards/Burner.cdc",
-        arguments: []
-    )
-    err = Test.deployContract(
-        name: "FungibleToken",
-        path: "../contracts/standards/FungibleToken.cdc",
-        arguments: []
-    )
-    Test.expect(err, Test.beNil())
-    err = Test.deployContract(
-        name: "NonFungibleToken",
-        path: "../contracts/standards/NonFungibleToken.cdc",
-        arguments: []
-    )
-    Test.expect(err, Test.beNil())
-    err = Test.deployContract(
-        name: "MetadataViews",
-        path: "../contracts/standards/MetadataViews.cdc",
-        arguments: []
-    )
-    Test.expect(err, Test.beNil())
-    err = Test.deployContract(
-        name: "FungibleTokenMetadataViews",
-        path: "../contracts/standards/FungibleTokenMetadataViews.cdc",
-        arguments: []
-    )
-    Test.expect(err, Test.beNil())
-    err = Test.deployContract(
         name: "ExampleNFT",
         path: "../contracts/example-assets/ExampleNFT.cdc",
         arguments: []
