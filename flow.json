@@ -64,6 +64,13 @@
 				"testing": "0000000000000008"
 			}
 		},
+		"ExampleToken": {
+			"source": "./cadence/contracts/example-assets/ExampleToken.cdc",
+			"aliases": {
+				"emulator": "179b6b1cb6755e31",
+				"testing": "0000000000000010"
+			}
+		},
 		"FlowEVMBridge": {
 			"source": "./cadence/contracts/bridge/FlowEVMBridge.cdc",
 			"aliases": {

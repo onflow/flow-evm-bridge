@@ -8,7 +8,7 @@ import "test_helpers.cdc"
 access(all) let serviceAccount = Test.serviceAccount()
 access(all) let bridgeAccount = Test.getAccount(0x0000000000000007)
 access(all) let exampleNFTAccount = Test.getAccount(0x0000000000000008)
-access(all) let exampleERC721Account = Test.getAccount(0x0000000000000009)
+access(all) let exampleERCAccount = Test.getAccount(0x0000000000000009)
 access(all) let alice = Test.createAccount() 
 
 // ExampleNFT values
@@ -131,6 +131,13 @@ fun setup() {
         bridgeAccount
     )
     Test.expect(bridgedNFTChunkResult, Test.beSucceeded())
+    // Commit bridged Token code
+    let bridgedTokenChunkResult = executeTransaction(
+        "../transactions/bridge/admin/upsert_contract_code_chunks.cdc",
+        ["bridgedToken", getBridgedTokenCodeChunks()],
+        bridgeAccount
+    )
+    Test.expect(bridgedNFTChunkResult, Test.beSucceeded())
 
     err = Test.deployContract(
         name: "IEVMBridgeNFTMinter",
@@ -170,9 +177,9 @@ fun setup() {
     Test.expect(err, Test.beNil())
 
     // Transfer ERC721 deployer some $FLOW
-    transferFlow(signer: serviceAccount, recipient: exampleERC721Account.address, amount: 1_000.0)
+    transferFlow(signer: serviceAccount, recipient: exampleERCAccount.address, amount: 1_000.0)
     // Configure bridge account with a COA
-    createCOA(signer: exampleERC721Account, fundingAmount: 10.0)
+    createCOA(signer: exampleERCAccount, fundingAmount: 10.0)
 
     // Deploy the ERC721 from EVMDeployer (simply to capture deploye EVM contract address)
     // TODO: Replace this contract with the `deployedContractAddress` value emitted on deployment
@@ -180,9 +187,21 @@ fun setup() {
     err = Test.deployContract(
         name: "EVMDeployer",
         path: "../contracts/test/EVMDeployer.cdc",
-        arguments: [getCompiledERC721Bytecode(), UInt(0)]
+        arguments: []
     )
     Test.expect(err, Test.beNil())
+    let erc721DeployResult = executeTransaction(
+        "../transactions/test/deploy_using_evm_deployer.cdc",
+        ["erc721", getCompiledERC721Bytecode(), 0 as UInt],
+        exampleERCAccount
+    )
+    Test.expect(erc721DeployResult, Test.beSucceeded())
+    let erc20DeployResult = executeTransaction(
+        "../transactions/test/deploy_using_evm_deployer.cdc",
+        ["erc20", getCompiledERC20Bytecode(), 0 as UInt],
+        exampleERCAccount
+    )
+    Test.expect(erc20DeployResult, Test.beSucceeded())
     err = Test.deployContract(
         name: "ExampleNFT",
         path: "../contracts/example-assets/ExampleNFT.cdc",
@@ -231,18 +250,13 @@ access(all)
 fun testMintERC721Succeeds() {
     let aliceCOAAddressHex = getCOAAddressHex(atFlowAddress: alice.address)
     Test.assertEqual(40, aliceCOAAddressHex.length)
-    let erc721AddressResult = executeScript(
-        "../scripts/test/get_deployed_erc721_address_string.cdc",
-        []
-    )
-    Test.expect(erc721AddressResult, Test.beSucceeded())
-    let erc721AddressHex = erc721AddressResult.returnValue as! String? ?? panic("Problem getting COA address as String")
+    let erc721AddressHex = getDeployedAddressFromDeployer(name: "erc721")
     Test.assertEqual(40, erc721AddressHex.length)
 
     let mintERC721Result = executeTransaction(
         "../transactions/example-assets/safe_mint_erc721.cdc",
         [aliceCOAAddressHex, erc721ID, erc721URI, erc721AddressHex, UInt64(200_000)],
-        exampleERC721Account
+        exampleERCAccount
     )
     Test.expect(mintERC721Result, Test.beSucceeded())
 }
@@ -282,12 +296,7 @@ fun testOnboardByTypeSucceeds() {
 
 access(all)
 fun testOnboardByEVMAddressSucceeds() {
-    let erc721AddressResult = executeScript(
-        "../scripts/test/get_deployed_erc721_address_string.cdc",
-        []
-    )
-    Test.expect(erc721AddressResult, Test.beSucceeded())
-    let erc721AddressHex = erc721AddressResult.returnValue as! String? ?? panic("Problem getting COA address as String")
+    let erc721AddressHex = getDeployedAddressFromDeployer(name: "erc721")
     Test.assertEqual(40, erc721AddressHex.length)
 
     var onboaringRequiredResult = executeScript(
@@ -375,12 +384,7 @@ fun testBridgeCadenceNativeNFTFromEVMSucceeds() {
 
 access(all)
 fun testBridgeEVMNativeNFTFromEVMSucceeds() {
-    let erc721AddressResult = executeScript(
-        "../scripts/test/get_deployed_erc721_address_string.cdc",
-        []
-    )
-    Test.expect(erc721AddressResult, Test.beSucceeded())
-    let erc721AddressHex = erc721AddressResult.returnValue as! String? ?? panic("Problem getting COA address as String")
+    let erc721AddressHex = getDeployedAddressFromDeployer(name: "erc721")
     Test.assertEqual(40, erc721AddressHex.length)
     
     let derivedERC721ContractName = deriveBridgedNFTContractName(evmAddressHex: erc721AddressHex)
@@ -404,12 +408,7 @@ fun testBridgeEVMNativeNFTFromEVMSucceeds() {
 
 access(all)
 fun testBridgeEVMNativeNFTToEVMSucceeds() {
-    let erc721AddressResult = executeScript(
-        "../scripts/test/get_deployed_erc721_address_string.cdc",
-        []
-    )
-    Test.expect(erc721AddressResult, Test.beSucceeded())
-    let erc721AddressHex = erc721AddressResult.returnValue as! String? ?? panic("Problem getting COA address as String")
+    let erc721AddressHex = getDeployedAddressFromDeployer(name: "erc721")
     Test.assertEqual(40, erc721AddressHex.length)
     
     let derivedERC721ContractName = deriveBridgedNFTContractName(evmAddressHex: erc721AddressHex)
@@ -449,6 +448,16 @@ fun getAssociatedEVMAddressHex(with typeIdentifier: String): String {
     )
     Test.expect(associatedEVMAddressResult, Test.beSucceeded())
     return associatedEVMAddressResult.returnValue as! String? ?? panic("Problem getting EVM Address as String")
+}
+
+access(all)
+fun getDeployedAddressFromDeployer(name: String): String {
+    let erc721AddressResult = executeScript(
+        "../scripts/test/get_deployed_address_string_from_deployer.cdc",
+        [name]
+    )
+    Test.expect(erc721AddressResult, Test.beSucceeded())
+    return erc721AddressResult.returnValue as! String? ?? panic("Problem getting COA address as String")
 }
 
 access(all)
