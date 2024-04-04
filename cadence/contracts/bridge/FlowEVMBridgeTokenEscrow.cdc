@@ -99,7 +99,7 @@ access(all) contract FlowEVMBridgeTokenEscrow {
 
     /// The resource managing the locking & unlocking of FTs via this contract's interface
     ///
-    access(all) resource Locker : CrossVMToken.EVMFTVault {
+    access(all) resource Locker : CrossVMToken.EVMTokenInfo, FungibleToken.Vault {
         /// Field that tracks the balance of a vault
         access(all) var balance: UFix64
         /// Corresponding name assigned in the tokens' corresponding ERC20 contract
@@ -130,6 +130,19 @@ access(all) contract FlowEVMBridgeTokenEscrow {
                 self.lockedVault.isSupportedVaultType(type: lockedType),
                 message: "Locked Vault does not accept its own type"
             )
+        }
+
+        /// Gets the ERC20 name value
+        access(all) view fun getName(): String {
+            return self.name
+        }
+        /// Gets the ERC20 symbol value
+        access(all) view fun getSymbol(): String {
+            return self.symbol
+        }
+        /// Gets the ERC20 decimals value
+        access(all) view fun getDecimals(): UInt8 {
+            return self.decimals
         }
 
         /// Get the EVM contract address of the locked Vault's corresponding ERC20 contract address

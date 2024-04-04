@@ -20,12 +20,12 @@ import CrossVMNFT from 0x0000000000000007
 /// prepared as chunks in FlowEVMBridgeTemplates before being deployed to the Flow EVM Bridge account.
 ///
 /// On bridging, the ERC721 is transferred to the bridge's CadenceOwnedAccount EVM address and a new NFT is minted from
-/// this contract to the bridging caller. On return to Flow EVM, the reverse process is followed - the token is burned
-/// in this contract and the ERC721 is transferred to the defined recipient. In this way, the Cadence token acts as a
+/// this contract to the bridging caller. On return to Flow EVM, the reverse process is followed - the token is locked
+/// in NFT escrow and the ERC721 is transferred to the defined recipient. In this way, the Cadence token acts as a
 /// representation of both the EVM NFT and thus ownership rights to it upon bridging back to Flow EVM.
 ///
-/// To bridge between VMs, a caller can either use the contract methods defined below, or use the FlowEVMBridge's
-/// bridging methods which will programatically route bridging calls to this contract.
+/// To bridge between VMs, a caller can either use the interface exposed on CadenceOwnedAccount or use FlowEVMBridge
+/// public contract methods.
 ///
 access(all) contract {{CONTRACT_NAME}} : ICrossVM, IEVMBridgeNFTMinter, NonFungibleToken {
 

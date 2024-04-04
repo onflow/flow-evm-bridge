@@ -1,5 +1,6 @@
 import NonFungibleToken from 0x0000000000000001
 import MetadataViews from 0x0000000000000001
+import FungibleTokenMetadataViews from 0x0000000000000002
 import ViewResolver from 0x0000000000000001
 import FungibleToken from 0x0000000000000002
 import FlowToken from 0x0000000000000003
@@ -12,28 +13,29 @@ import FlowEVMBridgeTokenEscrow from 0x0000000000000007
 import FlowEVMBridgeConfig from 0x0000000000000007
 import FlowEVMBridgeUtils from 0x0000000000000007
 import FlowEVMBridge from 0x0000000000000007
+import CrossVMNFT from 0x0000000000000007
 import CrossVMToken from 0x0000000000000007
 
-/// This contract is a template used by FlowEVMBridge to define EVM-native NFTs bridged from Flow EVM to Flow.
-/// Upon deployment of this contract, the contract name is derived as a function of the asset type (here an ERC721 aka
-/// an NFT) and the contract's EVM address. The derived contract name is then joined with this contract's code,
+/// This contract is a template used by FlowEVMBridge to define EVM-native fungible tokens bridged from Flow EVM to 
+/// Cadence. Upon deployment of this contract, the contract name is derived as a function of the asset type (here an 
+/// ERC20) and the contract's EVM address. The derived contract name is then joined with this contract's code,
 /// prepared as chunks in FlowEVMBridgeTemplates before being deployed to the Flow EVM Bridge account.
 ///
-/// On bridging, the ERC721 is transferred to the bridge's CadenceOwnedAccount EVM address and a new NFT is minted from
+/// On bridging, the ERC20 is transferred to the bridge's CadenceOwnedAccount EVM address and tokens are minted from
 /// this contract to the bridging caller. On return to Flow EVM, the reverse process is followed - the token is burned
-/// in this contract and the ERC721 is transferred to the defined recipient. In this way, the Cadence token acts as a
-/// representation of both the EVM NFT and thus ownership rights to it upon bridging back to Flow EVM.
+/// in this contract and the ERC20 is transferred to the defined recipient. In this way, the Cadence Vault acts as a
+/// representation of both the EVM tokens and thus ownership rights to it upon bridging back to Flow EVM.
 ///
-/// To bridge between VMs, a caller can either use the contract methods defined below, or use the FlowEVMBridge's
-/// bridging methods which will programatically route bridging calls to this contract.
+/// To bridge between VMs, a caller can either use the interface exposed on CadenceOwnedAccount or use FlowEVMBridge
+/// public contract methods.
 ///
 access(all) contract {{CONTRACT_NAME}} : ICrossVM, IEVMBridgeTokenMinter, FungibleToken {
 
     /// Pointer to the Factory deployed Solidity contract address defining the bridged asset
     access(all) let evmTokenContractAddress: EVM.EVMAddress
-    /// Name of the NFT collection defined in the corresponding ERC20 contract
+    /// Name of the fungible token defined in the corresponding ERC20 contract
     access(all) let name: String
-    /// Symbol of the NFT collection defined in the corresponding ERC20 contract
+    /// Symbol of the fungible token defined in the corresponding ERC20 contract
     access(all) let symbol: String
     /// Decimal place value defined in the source ERC20 contract
     access(all) let decimals: UInt8
@@ -47,183 +49,114 @@ access(all) contract {{CONTRACT_NAME}} : ICrossVM, IEVMBridgeTokenMinter, Fungib
 
     /// The Vault resource representing the bridged ERC20 token
     ///
-    access(all) resource Vault : CrossVMToken.EVMFTVault {
+    access(all) resource Vault : CrossVMToken.EVMTokenInfo, FungibleToken.Vault {
         /// Balance of the tokens in a given Vault
         access(all) var balance: UFix64
-        /// The name of the NFT as defined in the ERC20 contract
-        access(all) let name: String
-        /// The symbol of the NFT as defined in the ERC20 contract
-        access(all) let symbol: String
-        /// Decimal place value defined in the source ERC20 contract
-        access(all) let decimals: UInt8
 
         init(balance: UFix64) {
-            self.name = {{CONTRACT_NAME}}.name
-            self.symbol = {{CONTRACT_NAME}}.symbol
-            self.decimals = {{CONTRACT_NAME}}.decimals
             self.balance = balance
         }
 
-        /// Returns the metadata view types supported by this NFT
-        access(all) view fun getViews(): [Type] {
-            return [
-                Type<CrossVMNFT.EVMBridgedMetadata>(),
-                Type<MetadataViews.Serial>(),
-                Type<MetadataViews.NFTCollectionData>(),
-                Type<MetadataViews.NFTCollectionDisplay>()
-            ]
-        }
-
-        /// Resolves a metadata view for this NFT
-        access(all) fun resolveView(_ view: Type): AnyStruct? {
-            switch view {
-                // We don't know what kind of file the URI represents (IPFS v HTTP), so we can't resolve Display view
-                // with the URI as thumbnail - we may a new standard view for EVM NFTs - this is interim
-                case Type<CrossVMNFT.EVMBridgedMetadata>():
-                    return CrossVMNFT.EVMBridgedMetadata(
-                        name: self.name,
-                        symbol: self.symbol,
-                        uri: CrossVMNFT.URI(baseURI: nil, value: self.tokenURI())
-                    )
-                case Type<MetadataViews.Serial>():
-                    return MetadataViews.Serial(
-                        self.id
-                    )
-                case Type<MetadataViews.NFTCollectionData>():
-                    return {{CONTRACT_NAME}}.resolveContractView(
-                        resourceType: self.getType(),
-                        viewType: Type<MetadataViews.NFTCollectionData>()
-                    )
-                case Type<MetadataViews.NFTCollectionDisplay>():
-                    return {{CONTRACT_NAME}}.resolveContractView(
-                        resourceType: self.getType(),
-                        viewType: Type<MetadataViews.NFTCollectionDisplay>()
-                    )
-            }
-            return nil
-        }
-
-        /// public function that anyone can call to create a new empty collection
-        access(all) fun createEmptyCollection(): @{NonFungibleToken.Collection} {
-            return <- {{CONTRACT_NAME}}.createEmptyCollection(nftType: self.getType())
-        }
-
-        /* --- CrossVMNFT conformance --- */
+        /* --- CrossVMToken.EVMFTVault conformance --- */
         //
-        /// Returns the EVM contract address of the NFT
+        /// Gets the ERC20 name value
+        access(all) view fun getName(): String {
+            return {{CONTRACT_NAME}}.name
+        }
+        /// Gets the ERC20 symbol value
+        access(all) view fun getSymbol(): String {
+            return {{CONTRACT_NAME}}.symbol
+        }
+        /// Gets the ERC20 decimals value
+        access(all) view fun getDecimals(): UInt8 {
+            return {{CONTRACT_NAME}}.decimals
+        }
+        /// Returns the EVM contract address of the fungible token
         access(all) view fun getEVMContractAddress(): EVM.EVMAddress {
             return {{CONTRACT_NAME}}.getEVMContractAddress()
         }
-    }
 
-    /// This resource holds associated NFTs, and serves queries about stored NFTs
-    access(all) resource Collection: NonFungibleToken.Collection, CrossVMNFT.EVMNFTCollection {
-        /// dictionary of NFT conforming tokens indexed on their ID
-        access(contract) var ownedNFTs: @{UInt64: {{CONTRACT_NAME}}.NFT}
-        /// Mapping of EVM IDs to Flow NFT IDs
-        access(contract) let evmIDToFlowID: {UInt256: UInt64}
-
-        access(all) var storagePath: StoragePath
-        access(all) var publicPath: PublicPath
-
-        init () {
-            self.ownedNFTs <- {}
-            self.evmIDToFlowID = {}
-            let collectionData = {{CONTRACT_NAME}}.resolveContractView(
-                    resourceType: Type<@{{CONTRACT_NAME}}.NFT>(),
-                    viewType: Type<MetadataViews.NFTCollectionData>()
-                ) as! MetadataViews.NFTCollectionData?
-                ?? panic("Could not resolve the collection data view for the NFT collection")
-            self.storagePath = collectionData.storagePath
-            self.publicPath = collectionData.publicPath
+        access(all) view fun getViews(): [Type] {
+            return {{CONTRACT_NAME}}.getContractViews(resourceType: nil)
         }
 
-        /// Returns a list of NFT types that this receiver accepts
-        access(all) view fun getSupportedNFTTypes(): {Type: Bool} {
-            return { Type<@{{CONTRACT_NAME}}.NFT>(): true }
+        access(all) fun resolveView(_ view: Type): AnyStruct? {
+            return {{CONTRACT_NAME}}.resolveContractView(resourceType: nil, viewType: view)
         }
 
-        /// Returns whether or not the given type is accepted by the collection
-        /// A collection that can accept any type should just return true by default
-        access(all) view fun isSupportedNFTType(type: Type): Bool {
-           return type == Type<@{{CONTRACT_NAME}}.NFT>()
+        /// getSupportedVaultTypes optionally returns a list of vault types that this receiver accepts
+        access(all) view fun getSupportedVaultTypes(): {Type: Bool} {
+            return { self.getType(): true }
         }
 
-        /// Removes an NFT from the collection and moves it to the caller
-        access(NonFungibleToken.Withdraw | NonFungibleToken.Owner) fun withdraw(withdrawID: UInt64): @{NonFungibleToken.NFT} {
-            let token <- self.ownedNFTs.remove(key: withdrawID)
-                ?? panic("Could not withdraw an NFT with the provided ID from the collection")
-
-            return <-token
+        access(all) view fun isSupportedVaultType(type: Type): Bool {
+            return self.getSupportedVaultTypes()[type] ?? false
         }
 
-        /// Withdraws an NFT from the collection by its EVM ID
-        access(NonFungibleToken.Withdraw | NonFungibleToken.Owner) fun withdrawByEVMID(_ id: UInt64): @{NonFungibleToken.NFT} {
-            let token <- self.ownedNFTs.remove(key: id)
-                ?? panic("Could not withdraw an NFT with the provided ID from the collection")
-
-            return <-token
+        /// Asks if the amount can be withdrawn from this vault
+        access(all) view fun isAvailableToWithdraw(amount: UFix64): Bool {
+            return amount <= self.balance
         }
 
-        /// Ttakes a NFT and adds it to the collections dictionary and adds the ID to the evmIDToFlowID mapping
-        access(all) fun deposit(token: @{NonFungibleToken.NFT}) {
-            let token <- token as! @{{CONTRACT_NAME}}.NFT
-
-            // add the new token to the dictionary which removes the old one
-            self.evmIDToFlowID[token.evmID] = token.id
-            let oldToken <- self.ownedNFTs[token.id] <- token
-
-            destroy oldToken
-        }
-
-        /// Returns an array of the IDs that are in the collection
-        access(all) view fun getIDs(): [UInt64] {
-            return self.ownedNFTs.keys
-        }
-
-        /// Returns an array of the EVM IDs that are in the collection
-        access(all) view fun getEVMIDs(): [UInt256] {
-            return self.evmIDToFlowID.keys
-        }
-
-        /// Returns the Cadence NFT.id for the given EVM NFT ID if
-        access(all) view fun getCadenceID(from evmID: UInt256): UInt64? {
-            return self.evmIDToFlowID[evmID] ?? UInt64(evmID)
-        }
-
-        /// Returns the EVM NFT ID associated with the Cadence NFT ID. The goal is to retrieve the ERC721 ID value.
-        /// As far as the bridge is concerned, an ERC721 defined by the bridge is the NFT's ID at the time of bridging
-        /// or the value of the NFT.evmID if it implements the CrossVMNFT.EVMNFT interface when bridged.
-        /// Following this pattern, if locked, the NFT is checked for EVMNFT conformance returning .evmID if so,
-        /// otherwise the NFT's ID is returned as a UInt256 since that's how the bridge would handle minting in the
-        /// corresponding ERC721 contract.
+        /// deposit
         ///
-        access(all) view fun getEVMID(from cadenceID: UInt64): UInt256? {
-            if let nft = self.borrowNFT(cadenceID) {
-                if let evmNFT = CrossVMNFT.getEVMID(from: nft) {
-                    return evmNFT
-                }
-                return UInt256(nft.id)
+        /// Function that takes a Vault object as an argument and adds
+        /// its balance to the balance of the owners Vault.
+        ///
+        /// It is allowed to destroy the sent Vault because the Vault
+        /// was a temporary holder of the tokens. The Vault's balance has
+        /// been consumed and therefore can be destroyed.
+        ///
+        access(all) fun deposit(from: @{FungibleToken.Vault}) {
+            let vault <- from as! @Vault
+            self.balance = self.balance + vault.balance
+            vault.balance = 0.0
+            destroy vault
+        }
+
+        /// createEmptyVault
+        ///
+        /// Function that creates a new Vault with a balance of zero
+        /// and returns it to the calling context. A user must call this function
+        /// and store the returned Vault in their storage in order to allow their
+        /// account to be able to receive deposits of this token type.
+        ///
+        access(all) fun createEmptyVault(): @Vault {
+            return <-create Vault(balance: 0.0)
+        }
+
+        /// withdraw
+        ///
+        /// Function that takes an amount as an argument
+        /// and withdraws that amount from the Vault.
+        ///
+        /// It creates a new temporary Vault that is used to hold
+        /// the tokens that are being transferred. It returns the newly
+        /// created Vault to the context that called so it can be deposited
+        /// elsewhere.
+        ///
+        access(FungibleToken.Withdraw) fun withdraw(amount: UFix64): @Vault {
+            self.balance = self.balance - amount
+            return <-create Vault(balance: amount)
+        }
+
+        /// Called when a fungible token is burned via the `Burner.burn()` method
+        access(contract) fun burnCallback() {
+            if self.balance > 0.0 {
+                {{CONTRACT_NAME}}.totalSupply = {{CONTRACT_NAME}}.totalSupply - self.balance
             }
-            return nil
-        }
-
-        /// Returns the contractURI for the NFT collection as defined in the source ERC721 contract. If none was
-        /// defined at the time of bridging, an empty string is returned.
-        access(all) view fun contractURI(): String? {
-            return {{CONTRACT_NAME}}.contractURI
-        }
-
-        /// Creates an empty collection
-        access(all) fun createEmptyCollection(): @{NonFungibleToken.Collection}  {
-            return <-{{CONTRACT_NAME}}.createEmptyCollection(nftType: Type<@{{CONTRACT_NAME}}.NFT>())
+            self.balance = 0.0
         }
     }
 
-    /// createEmptyCollection creates an empty Collection for the specified NFT type
-    /// and returns it to the caller so that they can own NFTs
-    access(all) fun createEmptyCollection(nftType: Type): @{NonFungibleToken.Collection} {
-        return <- create Collection()
+    /// createEmptyVault
+    ///
+    /// Function that creates a new Vault with a balance of zero and returns it to the calling context. A user must call
+    /// this function and store the returned Vault in their storage in order to allow their account to be able to
+    /// receive deposits of this token type.
+    ///
+    access(all) fun createEmptyVault(vaultType: Type): @{{CONTRACT_NAME}}.Vault {
+        return <- create Vault(balance: 0.0)
     }
 
     /**********************
@@ -233,7 +166,7 @@ access(all) contract {{CONTRACT_NAME}} : ICrossVM, IEVMBridgeTokenMinter, Fungib
     /// Returns the EVM contract address of the fungible token this contract represents
     ///
     access(all) view fun getEVMContractAddress(): EVM.EVMAddress {
-        return self.evmNFTContractAddress
+        return self.evmTokenContractAddress
     }
 
     /// Function that returns all the Metadata Views implemented by this fungible token contract.
@@ -243,8 +176,8 @@ access(all) contract {{CONTRACT_NAME}} : ICrossVM, IEVMBridgeTokenMinter, Fungib
     ///
     access(all) view fun getContractViews(resourceType: Type?): [Type] {
         return [
-            Type<MetadataViews.FTView>(),
-            Type<MetadataViews.FTDisplay>(),
+            Type<FungibleTokenMetadataViews.FTView>(),
+            Type<FungibleTokenMetadataViews.FTDisplay>(),
             Type<FungibleTokenMetadataViews.FTVaultData>(),
             Type<FungibleTokenMetadataViews.TotalSupply>(),
             Type<CrossVMNFT.EVMBridgedMetadata>()
@@ -310,9 +243,9 @@ access(all) contract {{CONTRACT_NAME}} : ICrossVM, IEVMBridgeTokenMinter, Fungib
         Internal Methods
     ***********************/
 
-    /// Allows the bridge to mint NFTs from bridge-defined NFT contracts
+    /// Allows the bridge to mint tokens from bridge-defined fungible token contracts
     ///
-    access(account) fun mintTokens(amount: UFix64): @{FungibleTokenVault.Vault} {
+    access(account) fun mintTokens(amount: UFix64): @{FungibleToken.Vault} {
         return <- create Vault(balance: amount)
     }
 
@@ -325,12 +258,13 @@ access(all) contract {{CONTRACT_NAME}} : ICrossVM, IEVMBridgeTokenMinter, Fungib
         self.totalSupply = 0.0
         self.vault <- create Vault(balance: 0.0)
 
-        FlowEVMBridgeConfig.associateType(Type<@{{CONTRACT_NAME}}.Vault>(), with: self.evmNFTContractAddress)
+        FlowEVMBridgeConfig.associateType(Type<@{{CONTRACT_NAME}}.Vault>(), with: self.evmTokenContractAddress)
         FlowEVMBridgeTokenEscrow.initializeEscrow(
             forType: Type<@{{CONTRACT_NAME}}.Vault>(),
             name: name,
             symbol: symbol,
-            ercTokenAddress: self.evmTokenContractAddress
+            decimals: decimals,
+            evmTokenAddress: self.evmTokenContractAddress
         )
     }
 }
