@@ -113,9 +113,6 @@ access(all) contract FlowEVMBridgeNFTEscrow {
         if self.account.storage.type(at: lockerPath) != nil {
             return
         }
-        // Call to the ERC20 contract to get contract values
-        // let name = FlowEVMBridgeUtils.getName(evmContractAddress: erc721Address)
-        // let symbol = FlowEVMBridgeUtils.getSymbol(evmContractAddress: erc721Address)
 
         let locker <- create Locker(name: name, symbol: symbol, lockedType: forType, erc721Address: erc721Address)
         self.account.storage.save(<-locker, to: lockerPath)
