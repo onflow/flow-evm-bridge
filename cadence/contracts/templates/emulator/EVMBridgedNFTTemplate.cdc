@@ -20,12 +20,12 @@ import CrossVMNFT from 0xf8d6e0586b0a20c7
 /// prepared as chunks in FlowEVMBridgeTemplates before being deployed to the Flow EVM Bridge account.
 ///
 /// On bridging, the ERC721 is transferred to the bridge's CadenceOwnedAccount EVM address and a new NFT is minted from
-/// this contract to the bridging caller. On return to Flow EVM, the reverse process is followed - the token is burned
-/// in this contract and the ERC721 is transferred to the defined recipient. In this way, the Cadence token acts as a
+/// this contract to the bridging caller. On return to Flow EVM, the reverse process is followed - the token is locked
+/// in NFT escrow and the ERC721 is transferred to the defined recipient. In this way, the Cadence token acts as a
 /// representation of both the EVM NFT and thus ownership rights to it upon bridging back to Flow EVM.
 ///
-/// To bridge between VMs, a caller can either use the contract methods defined below, or use the FlowEVMBridge's
-/// bridging methods which will programatically route bridging calls to this contract.
+/// To bridge between VMs, a caller can either use the interface exposed on CadenceOwnedAccount or use FlowEVMBridge
+/// public contract methods.
 ///
 access(all) contract {{CONTRACT_NAME}} : ICrossVM, IEVMBridgeNFTMinter, NonFungibleToken {
 
@@ -58,8 +58,6 @@ access(all) contract {{CONTRACT_NAME}} : ICrossVM, IEVMBridgeNFTMinter, NonFungi
             evmID: UInt256,
             metadata: {String: AnyStruct}
         ) {
-            self.name = name
-            self.symbol = symbol
             self.id = self.uuid
             self.evmID = evmID
             self.metadata = metadata
@@ -84,7 +82,7 @@ access(all) contract {{CONTRACT_NAME}} : ICrossVM, IEVMBridgeNFTMinter, NonFungi
         }
 
         access(all) view fun tokenURI(): String {
-            return {{CONTRACT_NAME}}.tokenURI[self.evmID] ?? ""
+            return {{CONTRACT_NAME}}.tokenURIs[self.evmID] ?? ""
         }
 
         /// Resolves a metadata view for this NFT
@@ -94,8 +92,8 @@ access(all) contract {{CONTRACT_NAME}} : ICrossVM, IEVMBridgeNFTMinter, NonFungi
                 // with the URI as thumbnail - we may a new standard view for EVM NFTs - this is interim
                 case Type<CrossVMNFT.EVMBridgedMetadata>():
                     return CrossVMNFT.EVMBridgedMetadata(
-                        name: self.name,
-                        symbol: self.symbol,
+                        name: self.getName(),
+                        symbol: self.getSymbol(),
                         uri: CrossVMNFT.URI(baseURI: nil, value: self.tokenURI())
                     )
                 case Type<MetadataViews.Serial>():
@@ -126,11 +124,6 @@ access(all) contract {{CONTRACT_NAME}} : ICrossVM, IEVMBridgeNFTMinter, NonFungi
         /// Returns the EVM contract address of the NFT
         access(all) view fun getEVMContractAddress(): EVM.EVMAddress {
             return {{CONTRACT_NAME}}.getEVMContractAddress()
-        }
-
-        /// Similar to ERC721.tokenURI method, returns the URI of the NFT with self.evmID at time of bridging
-        access(all) view fun tokenURI(): String {
-            return {{CONTRACT_NAME}}.tokenURIs[self.evmID] ?? ""
         }
     }
 
@@ -349,8 +342,6 @@ access(all) contract {{CONTRACT_NAME}} : ICrossVM, IEVMBridgeNFTMinter, NonFungi
         }
         self.tokenURIs[id] = tokenURI
         return <-create NFT(
-            name: self.name,
-            symbol: self.symbol,
             evmID: id,
             metadata: {
                 "Bridged Block": getCurrentBlock().height,
