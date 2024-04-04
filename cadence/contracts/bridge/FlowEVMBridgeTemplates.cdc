@@ -28,16 +28,11 @@ contract FlowEVMBridgeTemplates {
 
     /// Serves bridged asset contract code for a given type, deriving the contract name from the EVM contract info
     access(all)
-    fun getBridgedAssetContractCode(evmContractAddress: EVM.EVMAddress, isERC721: Bool): [UInt8]? {
-        let cadenceContractName: String = isERC721 ?
-            FlowEVMBridgeUtils.deriveBridgedNFTContractName(from: evmContractAddress) :
-            FlowEVMBridgeUtils.deriveBridgedTokenContractName(from: evmContractAddress)
-
+    fun getBridgedAssetContractCode(_ cadenceContractName: String, isERC721: Bool): [UInt8]? {
         if isERC721 {
             return self.getBridgedNFTContractCode(contractName: cadenceContractName)
         } else {
-            // TODO
-            return nil
+            return self.getBridgedTokenContractCode(contractName: cadenceContractName)
         }
     }
 
@@ -47,12 +42,18 @@ contract FlowEVMBridgeTemplates {
 
     access(self)
     fun getBridgedNFTContractCode(contractName: String): [UInt8]? {
-        return self.joinChunks(self.templateCodeChunks["bridgedNFT"]!, with: String.encodeHex(contractName.utf8))
+        if let chunks = self.templateCodeChunks["bridgedNFT"] {
+            return self.joinChunks(chunks, with: String.encodeHex(contractName.utf8))
+        }
+        return nil
     }
 
     access(self)
     fun getBridgedTokenContractCode(contractName: String): [UInt8]? {
-        return self.joinChunks(self.templateCodeChunks["bridgedToken"]!, with: String.encodeHex(contractName.utf8))
+        if let chunks = self.templateCodeChunks["bridgedToken"] {
+            return self.joinChunks(chunks, with: String.encodeHex(contractName.utf8))
+        }
+        return nil
     }
 
     access(self)

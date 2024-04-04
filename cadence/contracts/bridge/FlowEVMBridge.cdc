@@ -120,7 +120,10 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
                 erc721Address: onboardingValues.evmContractAddress
             )
         } else {
-            FlowEVMBridgeTokenEscrow.initializeEscrow(forType: type,
+            let createVaultFunction = FlowEVMBridgeUtils.getCreateEmptyVaultFunction(forType: type)
+                ?? panic("Could not retrieve createEmptyVault function for the given type")
+            FlowEVMBridgeTokenEscrow.initializeEscrow(
+                with: <-createVaultFunction(type),
                 name: onboardingValues.name,
                 symbol: onboardingValues.symbol,
                 decimals: onboardingValues.decimals!,
@@ -590,9 +593,11 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
     fun evmAddressRequiresOnboarding(_ address: EVM.EVMAddress): Bool? {
         // If the address was deployed by the bridge or a Cadence contract has been deployed to define the
         // corresponding NFT, it's already been onboarded
-        let cadenceContractName = FlowEVMBridgeUtils.deriveBridgedNFTContractName(from: address)
+        let nftContractName = FlowEVMBridgeUtils.deriveBridgedNFTContractName(from: address)
+        let tokenContractName = FlowEVMBridgeUtils.deriveBridgedTokenContractName(from: address)
         if FlowEVMBridgeUtils.isEVMContractBridgeOwned(evmContractAddress: address) ||
-            self.account.contracts.get(name: cadenceContractName) != nil {
+            self.account.contracts.get(name: nftContractName) != nil ||
+            self.account.contracts.get(name: tokenContractName) != nil {
             return false
         }
         // Dealing with EVM-native asset, check if it's NFT or FT exclusively
@@ -782,7 +787,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
 
         // Get Cadence code from template & deploy to the bridge account
         let cadenceCode: [UInt8] = FlowEVMBridgeTemplates.getBridgedAssetContractCode(
-                evmContractAddress: evmContractAddress,
+                cadenceContractName,
                 isERC721: isERC721
             ) ?? panic("Problem retrieving code for Cadence-defining contract")
         if isERC721 {

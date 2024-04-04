@@ -688,7 +688,7 @@ contract FlowEVMBridgeUtils {
         // Vault Types should guarantee that the following forced optionals are safe
         let contractAddress = self.getContractAddress(fromType: forType)!
         let contractName = self.getContractName(fromType: forType)!
-        let tokenContract = getAccount(contractAddress).contracts.borrow<&{FungibleToken}>(
+        let tokenContract: &{FungibleToken} = getAccount(contractAddress).contracts.borrow<&{FungibleToken}>(
                 name: contractName
             )!
         return tokenContract.createEmptyVault

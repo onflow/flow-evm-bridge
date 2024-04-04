@@ -9,6 +9,7 @@ access(all) let serviceAccount = Test.serviceAccount()
 access(all) let bridgeAccount = Test.getAccount(0x0000000000000007)
 access(all) let exampleNFTAccount = Test.getAccount(0x0000000000000008)
 access(all) let exampleERCAccount = Test.getAccount(0x0000000000000009)
+access(all) let exampleTokenAccount = Test.getAccount(0x0000000000000010)
 access(all) let alice = Test.createAccount() 
 
 // ExampleNFT values
@@ -17,6 +18,9 @@ access(all) let exampleNFTTokenName = "Example NFT"
 access(all) let exampleNFTTokenDescription = "Example NFT token description"
 access(all) let exampleNFTTokenThumbnail = "https://examplenft.com/thumbnail.png"
 access(all) var mintedNFTID: UInt64 = 0
+
+// ExampleToken
+access(all) let exampleTokenIdentifier = "A.0000000000000010.ExampleToken.Vault"
 
 // ERC721 values
 access(all) let erc721Name = "NAME"
@@ -208,6 +212,12 @@ fun setup() {
         arguments: []
     )
     Test.expect(err, Test.beNil())
+    err = Test.deployContract(
+        name: "ExampleToken",
+        path: "../contracts/example-assets/ExampleToken.cdc",
+        arguments: []
+    )
+    Test.expect(err, Test.beNil())
 }
 
 access(all)
@@ -262,7 +272,7 @@ fun testMintERC721Succeeds() {
 }
 
 access(all)
-fun testOnboardByTypeSucceeds() {
+fun testOnboardNFTByTypeSucceeds() {
     var onboaringRequiredResult = executeScript(
         "../scripts/bridge/type_requires_onboarding.cdc",
         [exampleNFTIdentifier]
@@ -295,7 +305,7 @@ fun testOnboardByTypeSucceeds() {
 }
 
 access(all)
-fun testOnboardByEVMAddressSucceeds() {
+fun testOnboardERC721ByEVMAddressSucceeds() {
     let erc721AddressHex = getDeployedAddressFromDeployer(name: "erc721")
     Test.assertEqual(40, erc721AddressHex.length)
 
@@ -325,6 +335,75 @@ fun testOnboardByEVMAddressSucceeds() {
     onboardingResult = executeTransaction(
         "../transactions/bridge/onboard_by_evm_address.cdc",
         [erc721AddressHex],
+        alice
+    )
+    Test.expect(onboardingResult, Test.beFailed())
+}
+
+access(all)
+fun testOnboardTokenByTypeSucceeds() {
+    var onboaringRequiredResult = executeScript(
+        "../scripts/bridge/type_requires_onboarding.cdc",
+        [exampleTokenIdentifier]
+    )
+    Test.expect(onboaringRequiredResult, Test.beSucceeded())
+    var requiresOnboarding = onboaringRequiredResult.returnValue as! Bool? ?? panic("Problem getting onboarding requirement")
+    Test.assertEqual(true, requiresOnboarding)
+
+    var onboardingResult = executeTransaction(
+        "../transactions/bridge/onboard_by_type.cdc",
+        [exampleTokenIdentifier],
+        alice
+    )
+    Test.expect(onboardingResult, Test.beSucceeded())
+
+    onboaringRequiredResult = executeScript(
+        "../scripts/bridge/type_requires_onboarding.cdc",
+        [exampleTokenIdentifier]
+    )
+    Test.expect(onboaringRequiredResult, Test.beSucceeded())
+    requiresOnboarding = onboaringRequiredResult.returnValue as! Bool? ?? panic("Problem getting onboarding requirement")
+    Test.assertEqual(false, requiresOnboarding)
+
+    onboardingResult = executeTransaction(
+        "../transactions/bridge/onboard_by_type.cdc",
+        [exampleTokenIdentifier],
+        alice
+    )
+    Test.expect(onboardingResult, Test.beFailed())
+}
+
+access(all)
+fun testOnboardERC20ByEVMAddressSucceeds() {
+    let erc20AddressHex = getDeployedAddressFromDeployer(name: "erc20")
+    Test.assertEqual(40, erc20AddressHex.length)
+
+    var onboaringRequiredResult = executeScript(
+        "../scripts/bridge/evm_address_requires_onboarding.cdc",
+        [erc20AddressHex]
+    )
+    Test.expect(onboaringRequiredResult, Test.beSucceeded())
+    var requiresOnboarding = onboaringRequiredResult.returnValue as! Bool? ?? panic("Problem getting onboarding requirement")
+    Test.assertEqual(true, requiresOnboarding)
+
+    var onboardingResult = executeTransaction(
+        "../transactions/bridge/onboard_by_evm_address.cdc",
+        [erc20AddressHex],
+        alice
+    )
+    Test.expect(onboardingResult, Test.beSucceeded())
+
+    onboaringRequiredResult = executeScript(
+        "../scripts/bridge/evm_address_requires_onboarding.cdc",
+        [erc20AddressHex]
+    )
+    Test.expect(onboaringRequiredResult, Test.beSucceeded())
+    requiresOnboarding = onboaringRequiredResult.returnValue as! Bool? ?? panic("Problem getting onboarding requirement")
+    Test.assertEqual(false, requiresOnboarding)
+
+    onboardingResult = executeTransaction(
+        "../transactions/bridge/onboard_by_evm_address.cdc",
+        [erc20AddressHex],
         alice
     )
     Test.expect(onboardingResult, Test.beFailed())
