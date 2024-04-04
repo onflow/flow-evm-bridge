@@ -763,22 +763,33 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         // Treat as NFT if contract is ERC721, otherwise treat as FT
         let name: String = FlowEVMBridgeUtils.getName(evmContractAddress: evmContractAddress)
         let symbol: String = FlowEVMBridgeUtils.getSymbol(evmContractAddress: evmContractAddress)
+        let contractURI = FlowEVMBridgeUtils.getContractURI(evmContractAddress: evmContractAddress)
+        var decimals: UInt8 = FlowEVMBridgeConfig.defaultDecimals
 
         // Derive contract name
         let isERC721: Bool = FlowEVMBridgeUtils.isERC721(evmContractAddress: evmContractAddress)
+        var cadenceContractName: String = ""
         if isERC721 {
+            // Assert the contract is not mixed asset
             let isERC20 = FlowEVMBridgeUtils.isERC20(evmContractAddress: evmContractAddress)
             assert(!isERC20, message: "Contract is mixed asset and is not currently supported by the bridge")
+            // Derive the contract name from the ERC721 contract
+            cadenceContractName = FlowEVMBridgeUtils.deriveBridgedNFTContractName(from: evmContractAddress)
+        } else {
+            cadenceContractName = FlowEVMBridgeUtils.deriveBridgedTokenContractName(from: evmContractAddress)
+            decimals = FlowEVMBridgeUtils.getTokenDecimals(evmContractAddress: evmContractAddress)
         }
-        let cadenceContractName: String = FlowEVMBridgeUtils.deriveBridgedNFTContractName(from: evmContractAddress)
-        let contractURI = FlowEVMBridgeUtils.getContractURI(evmContractAddress: evmContractAddress)
 
-        // Get Cadence code from template
+        // Get Cadence code from template & deploy to the bridge account
         let cadenceCode: [UInt8] = FlowEVMBridgeTemplates.getBridgedAssetContractCode(
                 evmContractAddress: evmContractAddress,
                 isERC721: isERC721
             ) ?? panic("Problem retrieving code for Cadence-defining contract")
-        self.account.contracts.add(name: cadenceContractName, code: cadenceCode, name, symbol, evmContractAddress, contractURI)
+        if isERC721 {
+            self.account.contracts.add(name: cadenceContractName, code: cadenceCode, name, symbol, evmContractAddress, contractURI)
+        } else {
+            self.account.contracts.add(name: cadenceContractName, code: cadenceCode, name, symbol, decimals, evmContractAddress, contractURI)
+        }
 
         emit BridgeDefiningContractDeployed(
             contractName: cadenceContractName,
