@@ -17,7 +17,7 @@ import "FlowEVMBridgeUtils"
 ///
 /// @param tokenContractAddress: The Flow account address hosting the FT-defining Cadence contract
 /// @param tokenContractName: The name of the Vault-defining Cadence contract
-/// @param amount: The amount of tokens to bridge
+/// @param amount: The amount of tokens to bridge from EVM
 ///
 transaction(tokenContractAddress: Address, tokenContractName: String, amount: UFix64) {
     

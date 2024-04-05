@@ -577,7 +577,10 @@ contract FlowEVMBridgeUtils {
         let scaleFactor: UInt256 = self.pow(base: 10, exponent: decimals)
         let scaledValue: UInt256 = value / scaleFactor
 
-        assert(scaledValue > UInt256(UInt64.max), message: "Value too large to fit into UFix64")
+        assert(
+            scaledValue < UInt256(UInt64.max),
+            message: "Value ".concat(value.toString()).concat(" exceeds max UFix64 value")
+        )
 
         return UFix64(scaledValue)
     }
