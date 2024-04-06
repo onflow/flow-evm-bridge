@@ -72,7 +72,7 @@ contract FlowBridgeFactoryTest is Test {
         string memory _name = deployedERC721Contract.name();
         string memory _symbol = deployedERC721Contract.symbol();
         string memory _flowNFTAddress = deployedERC721Contract.flowNFTAddress();
-        string memory _flowNFTIdentifier = deplpoyedERC721Contract.flowNFTIdentifier();
+        string memory _flowNFTIdentifier = deployedERC721Contract.flowNFTIdentifier();
         string memory _contractURI = deployedERC721Contract.contractURI();
 
         assertEq(_name, name);
