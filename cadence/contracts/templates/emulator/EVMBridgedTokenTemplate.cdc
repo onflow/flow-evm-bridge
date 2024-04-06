@@ -246,6 +246,7 @@ access(all) contract {{CONTRACT_NAME}} : ICrossVM, IEVMBridgeTokenMinter, Fungib
     /// Allows the bridge to mint tokens from bridge-defined fungible token contracts
     ///
     access(account) fun mintTokens(amount: UFix64): @{FungibleToken.Vault} {
+        self.totalSupply = self.totalSupply + amount
         return <- create Vault(balance: amount)
     }
 

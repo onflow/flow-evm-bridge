@@ -39,7 +39,7 @@ transaction(tokenContractAddress: Address, tokenContractName: String, amount: UI
                 address: tokenContractAddress,
                 contractName: tokenContractName,
                 resourceName: "Vault"
-            ) ?? panic("Could not construct Vault type")
+            ) ?? panic("Could not construct Vault type of: " .concat(tokenContractAddress.toString()).concat(".").concat(tokenContractName).concat(".Vault"))
 
         /* --- Reference the signer's NFT Collection --- */
         //
