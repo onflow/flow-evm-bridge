@@ -334,7 +334,7 @@ fun testOnboardNFTByTypeSucceeds() {
     Test.assertEqual(true, requiresOnboarding)
 
     var onboardingResult = executeTransaction(
-        "../transactions/bridge/onboard_by_type.cdc",
+        "../transactions/bridge/onboarding/onboard_by_type.cdc",
         [exampleNFTIdentifier],
         alice
     )
@@ -349,7 +349,7 @@ fun testOnboardNFTByTypeSucceeds() {
     Test.assertEqual(false, requiresOnboarding)
 
     onboardingResult = executeTransaction(
-        "../transactions/bridge/onboard_by_type.cdc",
+        "../transactions/bridge/onboarding/onboard_by_type.cdc",
         [exampleNFTIdentifier],
         alice
     )
@@ -370,7 +370,7 @@ fun testOnboardERC721ByEVMAddressSucceeds() {
     Test.assertEqual(true, requiresOnboarding)
 
     var onboardingResult = executeTransaction(
-        "../transactions/bridge/onboard_by_evm_address.cdc",
+        "../transactions/bridge/onboarding/onboard_by_evm_address.cdc",
         [erc721AddressHex],
         alice
     )
@@ -385,7 +385,7 @@ fun testOnboardERC721ByEVMAddressSucceeds() {
     Test.assertEqual(false, requiresOnboarding)
 
     onboardingResult = executeTransaction(
-        "../transactions/bridge/onboard_by_evm_address.cdc",
+        "../transactions/bridge/onboarding/onboard_by_evm_address.cdc",
         [erc721AddressHex],
         alice
     )
@@ -403,7 +403,7 @@ fun testOnboardTokenByTypeSucceeds() {
     Test.assertEqual(true, requiresOnboarding)
 
     var onboardingResult = executeTransaction(
-        "../transactions/bridge/onboard_by_type.cdc",
+        "../transactions/bridge/onboarding/onboard_by_type.cdc",
         [exampleTokenIdentifier],
         alice
     )
@@ -418,7 +418,7 @@ fun testOnboardTokenByTypeSucceeds() {
     Test.assertEqual(false, requiresOnboarding)
 
     onboardingResult = executeTransaction(
-        "../transactions/bridge/onboard_by_type.cdc",
+        "../transactions/bridge/onboarding/onboard_by_type.cdc",
         [exampleTokenIdentifier],
         alice
     )
@@ -439,7 +439,7 @@ fun testOnboardERC20ByEVMAddressSucceeds() {
     Test.assertEqual(true, requiresOnboarding)
 
     var onboardingResult = executeTransaction(
-        "../transactions/bridge/onboard_by_evm_address.cdc",
+        "../transactions/bridge/onboarding/onboard_by_evm_address.cdc",
         [erc20AddressHex],
         alice
     )
@@ -454,7 +454,7 @@ fun testOnboardERC20ByEVMAddressSucceeds() {
     Test.assertEqual(false, requiresOnboarding)
 
     onboardingResult = executeTransaction(
-        "../transactions/bridge/onboard_by_evm_address.cdc",
+        "../transactions/bridge/onboarding/onboard_by_evm_address.cdc",
         [erc20AddressHex],
         alice
     )
@@ -868,7 +868,7 @@ fun createCOA(signer: Test.TestAccount, fundingAmount: UFix64) {
 access(all)
 fun bridgeNFTToEVM(signer: Test.TestAccount, contractAddr: Address, contractName: String, nftID: UInt64) {
     let bridgeResult = executeTransaction(
-        "../transactions/bridge/bridge_nft_to_evm.cdc",
+        "../transactions/bridge/nft/bridge_nft_to_evm.cdc",
         [contractAddr, contractName, nftID],
         signer
     )
@@ -888,7 +888,7 @@ fun bridgeNFTToEVM(signer: Test.TestAccount, contractAddr: Address, contractName
 access(all)
 fun bridgeNFTFromEVM(signer: Test.TestAccount, contractAddr: Address, contractName: String, erc721ID: UInt256) {
     let bridgeResult = executeTransaction(
-        "../transactions/bridge/bridge_nft_from_evm.cdc",
+        "../transactions/bridge/nft/bridge_nft_from_evm.cdc",
         [contractAddr, contractName, erc721ID],
         signer
     )
@@ -906,7 +906,7 @@ fun bridgeNFTFromEVM(signer: Test.TestAccount, contractAddr: Address, contractNa
 access(all)
 fun bridgeTokensToEVM(signer: Test.TestAccount, contractAddr: Address, contractName: String, amount: UFix64) {
     let bridgeResult = executeTransaction(
-        "../transactions/bridge/bridge_tokens_to_evm.cdc",
+        "../transactions/bridge/tokens/bridge_tokens_to_evm.cdc",
         [contractAddr, contractName, amount],
         signer
     )
@@ -919,7 +919,7 @@ fun bridgeTokensToEVM(signer: Test.TestAccount, contractAddr: Address, contractN
 access(all)
 fun bridgeTokensFromEVM(signer: Test.TestAccount, contractAddr: Address, contractName: String, amount: UInt256) {
     let bridgeResult = executeTransaction(
-        "../transactions/bridge/bridge_tokens_from_evm.cdc",
+        "../transactions/bridge/tokens/bridge_tokens_from_evm.cdc",
         [contractAddr, contractName, amount],
         signer
     )

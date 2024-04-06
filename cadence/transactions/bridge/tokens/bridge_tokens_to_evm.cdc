@@ -11,7 +11,8 @@ import "FlowEVMBridge"
 import "FlowEVMBridgeConfig"
 import "FlowEVMBridgeUtils"
 
-/// Bridges a Vault from the signer's storage to the signer's COA in EVM
+/// Bridges a Vault from the signer's storage to the signer's COA in EVM.Account.
+///
 /// NOTE: The Vault being bridged must have first been onboarded to the bridge. This can be checked for with the method
 ///     FlowEVMBridge.typeRequiresOnboarding(type): Bool?
 ///
@@ -20,23 +21,23 @@ import "FlowEVMBridgeUtils"
 /// @param amount: The amount of tokens to bridge from EVM
 ///
 transaction(tokenContractAddress: Address, tokenContractName: String, amount: UFix64) {
-    
+
     let sentVault: @{FungibleToken.Vault}
     let coa: auth(EVM.Bridge) &EVM.CadenceOwnedAccount
     let scopedProvider: @ScopedFTProviders.ScopedFTProvider
-    
+
     prepare(signer: auth(CopyValue, BorrowValue, IssueStorageCapabilityController, PublishCapability, SaveValue) &Account) {
         /* --- Reference the signer's CadenceOwnedAccount --- */
         //
         // Borrow a reference to the signer's COA
         self.coa = signer.storage.borrow<auth(EVM.Bridge) &EVM.CadenceOwnedAccount>(from: /storage/evm)
             ?? panic("Could not borrow COA from provided gateway address")
-        
-        /* --- Retrieve the NFT --- */
+
+        /* --- Retrieve the funds --- */
         //
         // Borrow a reference to the FungibleToken Vault
         let viewResolver = getAccount(tokenContractAddress).contracts.borrow<&{ViewResolver}>(name: tokenContractName)
-            ?? panic("Could not borrow ViewResolver from NFT contract")
+            ?? panic("Could not borrow ViewResolver from FungibleToken contract")
         let vaultData = viewResolver.resolveContractView(
                 resourceType: nil,
                 viewType: Type<FungibleTokenMetadataViews.FTVaultData>()
@@ -45,7 +46,7 @@ transaction(tokenContractAddress: Address, tokenContractName: String, amount: UF
                 from: vaultData.storagePath
             ) ?? panic("Could not access signer's FungibleToken Vault")
 
-        // Withdraw the requested NFT & calculate the approximate bridge fee based on NFT storage usage
+        // Withdraw the requested balance & calculate the approximate bridge fee based on storage usage
         let currentStorageUsage = signer.storage.used
         self.sentVault <- vault.withdraw(amount: amount)
         let withdrawnStorageUsage = signer.storage.used

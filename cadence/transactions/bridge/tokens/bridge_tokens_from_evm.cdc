@@ -12,7 +12,9 @@ import "FlowEVMBridge"
 import "FlowEVMBridgeConfig"
 import "FlowEVMBridgeUtils"
 
-/// This transaction bridges an NFT from EVM to Cadence assuming it has already been onboarded to the FlowEVMBridge
+/// This transaction bridges fungible tokens from EVM to Cadence assuming it has already been onboarded to the
+/// FlowEVMBridge.
+///
 /// NOTE: The ERC721 must have first been onboarded to the bridge. This can be checked via the method
 ///     FlowEVMBridge.evmAddressRequiresOnboarding(address: self.evmContractAddress)
 ///
@@ -26,7 +28,7 @@ transaction(tokenContractAddress: Address, tokenContractName: String, amount: UI
     let receiver: &{FungibleToken.Vault}
     let scopedProvider: @ScopedFTProviders.ScopedFTProvider
     let coa: auth(EVM.Bridge) &EVM.CadenceOwnedAccount
-    
+
     prepare(signer: auth(BorrowValue, CopyValue, IssueStorageCapabilityController, PublishCapability, SaveValue, UnpublishCapability) &Account) {
         /* --- Reference the signer's CadenceOwnedAccount --- */
         //
@@ -41,7 +43,7 @@ transaction(tokenContractAddress: Address, tokenContractName: String, amount: UI
                 resourceName: "Vault"
             ) ?? panic("Could not construct Vault type of: " .concat(tokenContractAddress.toString()).concat(".").concat(tokenContractName).concat(".Vault"))
 
-        /* --- Reference the signer's NFT Collection --- */
+        /* --- Reference the signer's Vault --- */
         //
         // Borrow a reference to the FungibleToken Vault, configuring if necessary
         let viewResolver = getAccount(tokenContractAddress).contracts.borrow<&{ViewResolver}>(name: tokenContractName)
@@ -49,19 +51,22 @@ transaction(tokenContractAddress: Address, tokenContractName: String, amount: UI
         let vaultData = viewResolver.resolveContractView(
                 resourceType: self.vaultType,
                 viewType: Type<FungibleTokenMetadataViews.FTVaultData>()
-            ) as! FungibleTokenMetadataViews.FTVaultData? ?? panic("Could not resolve NFTvaultData view")
+            ) as! FungibleTokenMetadataViews.FTVaultData? ?? panic("Could not resolve FTVaultData view")
         // If the vault does not exist, create it and publish according to the contract's defined configuration
         if signer.storage.borrow<&{FungibleToken.Vault}>(from: vaultData.storagePath) == nil {
             signer.storage.save(<-vaultData.createEmptyVault(), to: vaultData.storagePath)
+
             signer.capabilities.unpublish(vaultData.receiverPath)
             signer.capabilities.unpublish(vaultData.metadataPath)
+
             let receiverCap = signer.capabilities.storage.issue<&{FungibleToken.Vault}>(vaultData.storagePath)
             let metadataCap = signer.capabilities.storage.issue<&{FungibleToken.Vault}>(vaultData.storagePath)
+
             signer.capabilities.publish(receiverCap, at: vaultData.receiverPath)
             signer.capabilities.publish(metadataCap, at: vaultData.metadataPath)
         }
         self.receiver = signer.storage.borrow<&{FungibleToken.Vault}>(from: vaultData.storagePath)
-            ?? panic("Could not borrow collection from storage path")
+            ?? panic("Could not borrow Vault from storage path")
 
         /* --- Configure a ScopedFTProvider --- */
         //
@@ -88,13 +93,13 @@ transaction(tokenContractAddress: Address, tokenContractName: String, amount: UI
 
     execute {
         // Execute the bridge request
-        let nft: @{FungibleToken.Vault} <- self.coa.withdrawTokens(
+        let vault: @{FungibleToken.Vault} <- self.coa.withdrawTokens(
             type: self.vaultType,
             amount: amount,
             feeProvider: &self.scopedProvider as auth(FungibleToken.Withdraw) &{FungibleToken.Provider}
         )
-        // Deposit the bridged NFT into the signer's collection
-        self.receiver.deposit(from: <-nft)
+        // Deposit the bridged token into the signer's vault
+        self.receiver.deposit(from: <-vault)
         // Destroy the ScopedFTProvider
         destroy self.scopedProvider
     }
