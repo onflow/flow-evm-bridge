@@ -28,10 +28,7 @@ access(all) contract FlowEVMBridgeTokenEscrow {
     /// @returns true if the Locker has been initialized for the given fungible token type, otherwise false
     ///
     access(all) view fun isInitialized(forType: Type): Bool {
-        if let lockerPath = FlowEVMBridgeUtils.deriveEscrowStoragePath(fromType: forType) {
-            return self.account.storage.type(at: lockerPath) != nil
-        }
-        return false
+        return self.borrowLocker(forType: forType) != nil
     }
 
     /// Returns the balance of locked tokens for the given fungible token type
@@ -120,6 +117,8 @@ access(all) contract FlowEVMBridgeTokenEscrow {
             
     }
 
+    /// Retrieves an entitled locker for the given type or nil if it doesn't exist
+    ///
     access(self) view fun borrowLocker(forType: Type): auth(FungibleToken.Withdraw) &Locker? {
         let lockerPath = FlowEVMBridgeUtils.deriveEscrowStoragePath(fromType: forType)
             ?? panic("Problem deriving locker path")
