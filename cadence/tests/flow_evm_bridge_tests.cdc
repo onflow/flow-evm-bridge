@@ -225,13 +225,15 @@ fun setup() {
     Test.expect(err, Test.beNil())
 }
 
+/* --- ASSET & ACCOUNT SETUP - Configure test accounts with assets to bridge --- */
+
 access(all)
 fun testCreateCOASucceeds() {
     transferFlow(signer: serviceAccount, recipient: alice.address, amount: 1_000.0)
     createCOA(signer: alice, fundingAmount: 100.0)
 
     let coaAddressHex = getCOAAddressHex(atFlowAddress: alice.address)
-    Test.assertEqual(40, coaAddressHex!.length)
+    Test.assertEqual(40, coaAddressHex.length)
 }
 
 access(all)
@@ -322,6 +324,8 @@ fun testMintERC20Succeeds() {
     let aliceBalance = balanceOf(evmAddressHex: aliceCOAAddressHex, erc20AddressHex: erc20AddressHex)
     Test.assertEqual(erc20MintAmount, aliceBalance)
 }
+
+/* --- ONBOARDING - Test asset onboarding to the bridge --- */
 
 access(all)
 fun testOnboardNFTByTypeSucceeds() {
@@ -461,6 +465,8 @@ fun testOnboardERC20ByEVMAddressSucceeds() {
     Test.expect(onboardingResult, Test.beFailed())
 }
 
+/* --- BRIDGING NFTS - Test bridging both Cadence- & EVM-native NFTs --- */
+
 access(all)
 fun testBridgeCadenceNativeNFTToEVMSucceeds() {
     var aliceOwnedIDs = getIDs(ownerAddr: alice.address, storagePathIdentifier: "cadenceExampleNFTCollection")
@@ -558,6 +564,8 @@ fun testBridgeEVMNativeNFTToEVMSucceeds() {
     let aliceIsOwner = isOwner(of: erc721ID, ownerEVMAddrHex: aliceCOAAddressHex, erc721AddressHex: erc721AddressHex)
     Test.assertEqual(true, aliceIsOwner)
 }
+
+/* --- BRIDGING FUNGIBLE TOKENS - Test bridging both Cadence- & EVM-native fungible tokens --- */
 
 access(all)
 fun testBridgeCadenceNativeTokenToEVMSucceeds() {
@@ -720,6 +728,10 @@ fun testBridgeEVMNativeTokenToEVMSucceeds() {
     bridgeCOAEscrowBalance = balanceOf(evmAddressHex: bridgeCOAAddressHex, erc20AddressHex: erc20AddressHex)
     Test.assertEqual(UInt256(0), bridgeCOAEscrowBalance)
 }
+
+/* ---------------------------------------------- */
+/* --------------- END TEST CASES --------------- */
+/* ---------------------------------------------- */
 
 /* --- Script Helpers --- */
 
@@ -923,7 +935,7 @@ fun bridgeTokensFromEVM(signer: Test.TestAccount, contractAddr: Address, contrac
         [contractAddr, contractName, amount],
         signer
     )
-    Test.assert(bridgeResult.error == nil, message: "Could not construct Vault type of: " .concat(contractAddr.toString()).concat(".").concat(contractName).concat(".Vault"))
+    Test.expect(bridgeResult, Test.beSucceeded())
 
     // TODO: Add event assertions on bridge events. We can't currently import the event types to do this
     //      so state assertions beyond call scope will need to suffice for now
