@@ -131,9 +131,12 @@ access(all) contract FlowEVMBridgeNFTEscrow {
     /// Retrieves an entitled locker for the given type or nil if it doesn't exist
     ///
     access(self) view fun borrowLocker(forType: Type): auth(NonFungibleToken.Withdraw) &Locker? {
-        let lockerPath = FlowEVMBridgeUtils.deriveEscrowStoragePath(fromType: forType)
-            ?? panic("Problem deriving locker path")
-        return self.account.storage.borrow<auth(NonFungibleToken.Withdraw) &Locker>(from: lockerPath)
+        if let lockerPath = FlowEVMBridgeUtils.deriveEscrowStoragePath(fromType: forType) {
+            if self.account.storage.type(at: lockerPath) == Type<@Locker>() {
+                return self.account.storage.borrow<auth(NonFungibleToken.Withdraw) &Locker>(from: lockerPath)
+            }
+        }
+        return nil
     }
 
     /*********************
