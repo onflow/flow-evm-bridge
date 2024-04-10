@@ -491,7 +491,7 @@ contract EVM {
         access(Bridge)
         fun depositNFT(
             nft: @{NonFungibleToken.NFT},
-            to: EVM.EVMAddress,
+            to: EVMAddress,
             feeProvider: auth(FungibleToken.Withdraw) &{FungibleToken.Provider}
         )
 
@@ -505,17 +505,17 @@ contract EVM {
         ): @{NonFungibleToken.NFT}
 
         /// Endpoint enabling the bridging of a fungible token vault to EVM
-        access(EVM.Bridge)
+        access(Bridge)
         fun depositTokens(
             vault: @{FungibleToken.Vault},
-            to: EVM.EVMAddress,
+            to: EVMAddress,
             feeProvider: auth(FungibleToken.Withdraw) &{FungibleToken.Provider}
         )
 
         /// Endpoint enabling the bridging of fungible tokens from EVM
-        access(EVM.Bridge)
+        access(Bridge)
         fun withdrawTokens(
-            caller: auth(EVM.Call) &EVM.CadenceOwnedAccount,
+            caller: auth(Call) &CadenceOwnedAccount,
             type: Type,
             amount: UInt256,
             feeProvider: auth(FungibleToken.Withdraw) &{FungibleToken.Provider}
