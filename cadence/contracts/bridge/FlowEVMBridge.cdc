@@ -109,7 +109,6 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         let feeVault <-feeProvider.withdraw(amount: FlowEVMBridgeConfig.onboardFee) as! @FlowToken.Vault
         FlowEVMBridgeUtils.deposit(<-feeVault)
         // Deploy an EVM defining contract via the FlowBridgeFactory.sol contract
-        // let evmContractAddress = self.deployEVMContract(forAssetType: type)
         let onboardingValues = self.deployEVMContract(forAssetType: type)
         // Initialize bridge escrow for the asset
         if type.isSubtype(of: Type<@{NonFungibleToken.NFT}>()) {
