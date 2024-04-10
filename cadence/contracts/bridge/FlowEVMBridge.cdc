@@ -119,7 +119,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
                 symbol: onboardingValues.symbol,
                 erc721Address: onboardingValues.evmContractAddress
             )
-        } else {
+        } else if type.isSubtype(of: Type<@{FungibleToken.Vault}>()) {
             let createVaultFunction = FlowEVMBridgeUtils.getCreateEmptyVaultFunction(forType: type)
                 ?? panic("Could not retrieve createEmptyVault function for the given type")
             FlowEVMBridgeTokenEscrow.initializeEscrow(
@@ -129,6 +129,8 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
                 decimals: onboardingValues.decimals!,
                 evmTokenAddress: onboardingValues.evmContractAddress
             )
+        } else {
+            panic("Attempted to onboard unsupported type: ".concat(type.identifier))
         }
 
         assert(
