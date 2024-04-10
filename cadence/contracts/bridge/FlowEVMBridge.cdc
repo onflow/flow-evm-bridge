@@ -300,7 +300,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
     ///
     /// @returns The bridged NFT
     ///
-    access(all)
+    access(account)
     fun bridgeNFTFromEVM(
         owner: EVM.EVMAddress,
         type: Type,
@@ -457,7 +457,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
     ///
     /// @returns The bridged fungible token Vault
     ///
-    access(all)
+    access(account)
     fun bridgeTokensFromEVM(
         owner: EVM.EVMAddress,
         type: Type,

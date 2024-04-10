@@ -479,7 +479,8 @@ contract EVM {
     /// Returns a reference to the BridgeAccessor designated for internal bridge requests
     access(self)
     view fun borrowBridgeAccessor(): auth(Bridge) &{BridgeAccessor} {
-        return self.account.storage.borrow<auth(Bridge) &{BridgeAccessor}>(from: /storage/evmBridgeRouter)
+        return self.account.storage.borrow<auth(Bridge) &{BridgeRouter}>(from: /storage/evmBridgeRouter)
+            ?.borrowBridgeAccessor()
             ?? panic("Could not borrow reference to the EVM bridge")
     }
 
@@ -520,5 +521,13 @@ contract EVM {
             amount: UInt256,
             feeProvider: auth(FungibleToken.Withdraw) &{FungibleToken.Provider}
         ): @{FungibleToken.Vault}
+    }
+
+    /// Interface which captures a Capability to the bridge Accessor, saving it within the BridgeRouter resource
+    access(all)
+    resource interface BridgeRouter {
+
+        /// Returns a reference to the BridgeAccessor designated for internal bridge requests
+        access(Bridge) view fun borrowBridgeAccessor(): auth(Bridge) &{BridgeAccessor}
     }
 }

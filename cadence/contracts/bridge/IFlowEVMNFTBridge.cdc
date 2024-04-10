@@ -91,7 +91,7 @@ access(all) contract interface IFlowEVMNFTBridge {
     ///
     /// @returns The bridged NFT
     ///
-    access(all)
+    access(account)
     fun bridgeNFTFromEVM(
         owner: EVM.EVMAddress,
         type: Type,

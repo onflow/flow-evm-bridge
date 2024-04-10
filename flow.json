@@ -43,11 +43,11 @@
 				"previewnet": "b6763b4399a888c8"
 			}
 		},
-		"EVMBridgeRouter": {
-			"source": "./cadence/contracts/bridge/EVMBridgeRouter.cdc",
+		"FlowEVMBridgeAccessor": {
+			"source": "./cadence/contracts/bridge/FlowEVMBridgeAccessor.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
-				"testing": "0000000000000001"
+				"testing": "0000000000000007"
 			}
 		},
 		"EVMDeployer": {

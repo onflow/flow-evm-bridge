@@ -179,11 +179,18 @@ fun setup() {
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
-        name: "EVMBridgeRouter",
-        path: "../contracts/bridge/EVMBridgeRouter.cdc",
-        arguments: [bridgeAccount.address, "FlowEVMBridge"]
+        name: "FlowEVMBridgeAccessor",
+        path: "../contracts/bridge/FlowEVMBridgeAccessor.cdc",
+        arguments: [serviceAccount.address]
     )
     Test.expect(err, Test.beNil())
+
+    let claimAccessorResult = executeTransaction(
+        "../transactions/bridge/admin/claim_accessor_capability_and_save_router.cdc",
+        ["FlowEVMBridgeAccessor", bridgeAccount.address],
+        serviceAccount
+    )
+    Test.expect(claimAccessorResult, Test.beSucceeded())
 
     // Transfer ERC721 deployer some $FLOW
     transferFlow(signer: serviceAccount, recipient: exampleERCAccount.address, amount: 1_000.0)
