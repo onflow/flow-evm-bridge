@@ -383,12 +383,16 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         feeProvider: auth(FungibleToken.Withdraw) &{FungibleToken.Provider}
     ) {
         pre {
-            vault.getType() != Type<@FlowToken.Vault>():
-                "$FLOW cannot be bridged via the VM bridge - use the CadenceOwnedAccount interface"
             !vault.isInstance(Type<@{NonFungibleToken.NFT}>()): "Mixed asset types are not yet supported"
             self.typeRequiresOnboarding(vault.getType()) == false: "FT must first be onboarded"
         }
         let vaultType = vault.getType()
+        if vaultType == Type<@FlowToken.Vault>() {
+            let flowVault <-vault as! @FlowToken.Vault
+            to.deposit(from: <-flowVault)
+            return
+        }
+
         let vaultBalance = vault.balance
         var feeAmount = 0.0
 
@@ -576,7 +580,9 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         if !FlowEVMBridgeUtils.isValidFlowAsset(type: type) {
             return nil
         }
-        if type.isSubtype(of: Type<@{NonFungibleToken.NFT}>()) {
+        if type == Type<@FlowToken.Vault>() {
+            return false
+        } else if type.isSubtype(of: Type<@{NonFungibleToken.NFT}>()) {
             return !FlowEVMBridgeNFTEscrow.isInitialized(forType: type)
         } else if type.isSubtype(of: Type<@{FungibleToken.Vault}>()) {
             return !FlowEVMBridgeTokenEscrow.isInitialized(forType: type)

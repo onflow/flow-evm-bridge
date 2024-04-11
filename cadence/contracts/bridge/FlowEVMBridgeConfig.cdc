@@ -1,5 +1,7 @@
 import "EVM"
 
+import "FlowToken"
+
 /// This contract is used to store configuration information shared by FlowEVMBridge contracts
 ///
 access(all)
@@ -117,7 +119,11 @@ contract FlowEVMBridgeConfig {
         self.baseFee = 0.0
         self.storageRate = 0.0
         self.defaultDecimals = 18
-        self.typeToEVMAddress = {}
+        self.typeToEVMAddress = {
+            Type<@FlowToken.Vault>(): EVM.EVMAddress(
+                bytes: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+            )
+        }
         self.adminStoragePath = /storage/flowEVMBridgeConfigAdmin
         self.coaStoragePath = /storage/evm
         self.providerCapabilityStoragePath = /storage/bridgeFlowVaultProvider

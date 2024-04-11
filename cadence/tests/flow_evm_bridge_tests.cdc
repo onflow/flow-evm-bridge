@@ -244,6 +244,39 @@ fun testCreateCOASucceeds() {
 }
 
 access(all)
+fun testBridgeFlowToEVMSucceeds() {
+    // Get $FLOW balances before, making assertions based on values from previous case
+    let cadenceBalanceBefore = getBalance(ownerAddr: alice.address, storagePathIdentifier: "flowTokenVault")
+        ?? panic("Problem getting $FLOW balance")
+    Test.assertEqual(900.0, cadenceBalanceBefore)
+
+    // Get EVM $FLOW balance before
+    var aliceCOAAddressHex = getCOAAddressHex(atFlowAddress: alice.address)
+    Test.assertEqual(40, aliceCOAAddressHex.length)
+
+    let evmBalanceBefore = getEVMFlowBalance(of: aliceCOAAddressHex)
+    Test.assertEqual(100.0, evmBalanceBefore)
+
+    // Execute bridge to EVM
+    let bridgeAmount = 100.0
+    bridgeTokensToEVM(
+        signer: alice,
+        contractAddr: Address(0x03),
+        contractName: "FlowToken",
+        amount: bridgeAmount
+    )
+
+    // Confirm Alice's token balance is now 0.0
+    let cadenceBalanceAfter = getBalance(ownerAddr: alice.address, storagePathIdentifier: "flowTokenVault")
+        ?? panic("Problem getting $FLOW balance")
+    Test.assertEqual(cadenceBalanceBefore - bridgeAmount, cadenceBalanceAfter)
+
+    // Confirm balance on EVM side has been updated
+    let evmBalanceAfter = getEVMFlowBalance(of: aliceCOAAddressHex)
+    Test.assertEqual(evmBalanceBefore + bridgeAmount, evmBalanceAfter)
+}
+
+access(all)
 fun testMintExampleNFTSucceeds() {
     let setupCollectionResult = executeTransaction(
         "../transactions/example-assets/example-nft/setup_collection.cdc",
@@ -800,6 +833,16 @@ fun balanceOf(evmAddressHex: String, erc20AddressHex: String): UInt256 {
     )
     Test.expect(balanceOfResult, Test.beSucceeded())
     return balanceOfResult.returnValue as! UInt256? ?? panic("Problem getting ERC20 balance")
+}
+
+access(all)
+fun getEVMFlowBalance(of evmAddressHex: String): UFix64 {
+    let balanceResult = executeScript(
+        "../scripts/evm/get_balance.cdc",
+        [evmAddressHex]
+    )
+    Test.expect(balanceResult, Test.beSucceeded())
+    return balanceResult.returnValue as! UFix64? ?? panic("Problem getting EVM balance")
 }
 
 access(all)
