@@ -1,7 +1,7 @@
 import Crypto
-import "NonFungibleToken"
-import "FungibleToken"
-import "FlowToken"
+import NonFungibleToken from 0x0000000000000001
+import FungibleToken from 0x0000000000000002
+import FlowToken from 0x0000000000000003
 
 access(all)
 contract EVM {
@@ -37,6 +37,39 @@ contract EVM {
                 address: self.bytes
             )
             return Balance(attoflow: balance)
+        }
+
+        /// Nonce of the address
+        access(all)
+        fun nonce(): UInt64 {
+            return InternalEVM.nonce(
+                address: self.bytes
+            )
+        }
+
+        /// Code of the address
+        access(all)
+        fun code(): [UInt8] {
+            return InternalEVM.code(
+                address: self.bytes
+            )
+        }
+
+        /// CodeHash of the address
+        access(all)
+        fun codeHash(): [UInt8] {
+            return InternalEVM.codeHash(
+                address: self.bytes
+            )
+        }
+
+        /// Deposits the given vault into the EVM account with the given address
+        access(all)
+        fun deposit(from: @FlowToken.Vault) {
+            InternalEVM.deposit(
+                from: <-from,
+                to: self.bytes
+            )
         }
     }
 
