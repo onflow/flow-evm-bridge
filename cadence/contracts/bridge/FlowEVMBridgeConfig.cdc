@@ -15,9 +15,6 @@ contract FlowEVMBridgeConfig {
     /// Flat rate fee for all bridge requests
     access(all)
     var baseFee: UFix64
-    /// Fee rate per storage unit consumed by bridged assets
-    access(all)
-    var storageRate: UFix64
     /// Default ERC20.decimals() value
     access(all)
     let defaultDecimals: UInt8
@@ -42,10 +39,6 @@ contract FlowEVMBridgeConfig {
     ///
     access(all)
     event BridgeFeeUpdated(old: UFix64, new: UFix64, isOnboarding: Bool)
-    /// Emitted whenever baseFee or storageRate is updated
-    ///
-    access(all)
-    event StorageRateUpdated(old: UFix64, new: UFix64)
 
     /*************
         Getters
@@ -101,24 +94,11 @@ contract FlowEVMBridgeConfig {
             emit BridgeFeeUpdated(old: FlowEVMBridgeConfig.baseFee, new: new, isOnboarding: false)
             FlowEVMBridgeConfig.baseFee = new
         }
-
-        /// Updates the storage rate
-        ///
-        /// @param new: UFix64 - new storage rate
-        ///
-        /// @emits StorageRateUpdated with the old and new rates
-        /// 
-        access(all)
-        fun updateStorageRate(_ new: UFix64) {
-            emit StorageRateUpdated(old: FlowEVMBridgeConfig.baseFee, new: new)
-            FlowEVMBridgeConfig.baseFee = new
-        }
     }
 
     init() {
         self.onboardFee = 0.0
         self.baseFee = 0.0
-        self.storageRate = 0.0
         self.defaultDecimals = 18
         self.typeToEVMAddress = {
             Type<@FlowToken.Vault>(): EVM.EVMAddress(
