@@ -221,8 +221,8 @@
 				"testing": "0000000000000007"
 			}
 		},
-		"SerializeNFT": {
-			"source": "./cadence/contracts/utils/SerializeNFT.cdc",
+		"SerializeMetadata": {
+			"source": "./cadence/contracts/utils/SerializeMetadata.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"testing": "0000000000000007"

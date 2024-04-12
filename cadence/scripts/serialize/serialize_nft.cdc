@@ -2,7 +2,7 @@ import "ViewResolver"
 import "MetadataViews"
 import "NonFungibleToken"
 
-import "SerializeNFT"
+import "SerializeMetadata"
 
 access(all)
 fun main(address: Address, storagePathIdentifier: String, id: UInt64): String? {
@@ -13,7 +13,7 @@ fun main(address: Address, storagePathIdentifier: String, id: UInt64): String? {
             from: storagePath
         ) {
         if let nft = collection.borrowNFT(id) {
-            return SerializeNFT.serializeNFTMetadataAsURI(nft)
+            return SerializeMetadata.serializeNFTMetadataAsURI(nft)
         }
     }
     return nil

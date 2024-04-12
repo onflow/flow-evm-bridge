@@ -4,7 +4,7 @@ import BlockchainHelpers
 import "MetadataViews"
 
 import "Serialize"
-import "SerializeNFT"
+import "SerializeMetadata"
 
 access(all) let admin = Test.getAccount(0x0000000000000008)
 access(all) let alice = Test.createAccount()
@@ -26,8 +26,8 @@ fun setup() {
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
-        name: "SerializeNFT",
-        path: "../contracts/utils/SerializeNFT.cdc",
+        name: "SerializeMetadata",
+        path: "../contracts/utils/SerializeMetadata.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
@@ -81,7 +81,7 @@ fun testSerializeNFTSucceeds() {
 // Returns nil when no displays are provided
 access(all)
 fun testSerializeNilDisplaysReturnsNil() {
-    let serializedResult = SerializeNFT.serializeFromDisplays(nftDisplay: nil, collectionDisplay: nil)
+    let serializedResult = SerializeMetadata.serializeFromDisplays(nftDisplay: nil, collectionDisplay: nil)
     Test.assertEqual(nil, serializedResult)
 }
 
@@ -96,7 +96,7 @@ fun testSerializeNFTDisplaySucceeds() {
 
     let expected = "\"name\": \"NAME\", \"description\": \"NFT Description\", \"image\": \"https://flow.com/examplenft.jpg\""
 
-    let serializedResult = SerializeNFT.serializeFromDisplays(nftDisplay: display, collectionDisplay: nil)
+    let serializedResult = SerializeMetadata.serializeFromDisplays(nftDisplay: display, collectionDisplay: nil)
     Test.assertEqual(expected, serializedResult!)
 }
 
@@ -114,7 +114,7 @@ fun testSerializeNFTCollectionDisplaySucceeds() {
 
     let expected = "\"name\": \"NAME\", \"description\": \"NFT Description\", \"image\": \"https://flow.com/square_image.jpg\", \"external_link\": \"https://flow.com\""
 
-    let serializedResult = SerializeNFT.serializeFromDisplays(nftDisplay: nil, collectionDisplay: collectionDisplay)
+    let serializedResult = SerializeMetadata.serializeFromDisplays(nftDisplay: nil, collectionDisplay: collectionDisplay)
     Test.assertEqual(expected, serializedResult!)
 }
 
@@ -138,6 +138,6 @@ fun testSerializeBothDisplaysSucceeds() {
 
     let expected = "\"name\": \"NAME\", \"description\": \"NFT Description\", \"image\": \"https://flow.com/examplenft.jpg\", \"external_url\": \"https://flow.com\""
 
-    let serializedResult = SerializeNFT.serializeFromDisplays(nftDisplay: nftDisplay, collectionDisplay: collectionDisplay)
+    let serializedResult = SerializeMetadata.serializeFromDisplays(nftDisplay: nftDisplay, collectionDisplay: collectionDisplay)
     Test.assertEqual(expected, serializedResult!)
 }
