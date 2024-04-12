@@ -679,7 +679,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         let callResult: EVM.Result = FlowEVMBridgeUtils.call(
             signature: "deployERC721(string,string,string,string,string)",
             targetEVMAddress: FlowEVMBridgeUtils.bridgeFactoryEVMAddress,
-            args: [name, symbol, cadenceAddress.toString(), identifier, contractURI], // TODO: Decide on and update symbol
+            args: [name, symbol, cadenceAddress.toString(), identifier, contractURI],
             gasLimit: 15000000,
             value: 0.0
         )
@@ -713,7 +713,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         let cadenceAddress = FlowEVMBridgeUtils.getContractAddress(fromType: forTokenType)
             ?? panic("Could not derive contract address for token type: ".concat(identifier))
         // Assign a default symbol
-        var symbol = "BRDG"
+        var symbol: String? = nil
         // Borrow the ViewResolver to attempt to resolve the EVMBridgedMetadata view
         let viewResolver = getAccount(cadenceAddress).contracts.borrow<&{ViewResolver}>(name: name)!
         var contractURI = ""
@@ -745,7 +745,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         let callResult: EVM.Result = FlowEVMBridgeUtils.call(
             signature: "deployERC20(string,string,string,string,string)",
             targetEVMAddress: FlowEVMBridgeUtils.bridgeFactoryEVMAddress,
-            args: [name, symbol, cadenceAddress.toString(), identifier, contractURI], // TODO: Decide on and update symbol
+            args: [name, symbol!, cadenceAddress.toString(), identifier, contractURI], // TODO: Decide on and update symbol
             gasLimit: 15000000,
             value: 0.0
         )
@@ -759,7 +759,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         return EVMOnboardingValues(
             evmContractAddress: erc20Address,
             name: name,
-            symbol: symbol,
+            symbol: symbol!,
             decimals: FlowEVMBridgeConfig.defaultDecimals
         )
     }

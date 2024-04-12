@@ -8,7 +8,7 @@ contract interface IEVMBridgeTokenMinter {
     /// Emitted whenever tokens are minted, identifying the type, amount, and minter
     access(all) event Minted(type: Type, amount: UFix64, minter: Address)
 
-    /// Account-only method to mint an NFT
+    /// Account-only method to mint a fungible token of the specified amount.
     ///
     access(account)
     fun mintTokens(amount: UFix64): @{FungibleToken.Vault} {
