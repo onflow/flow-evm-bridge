@@ -83,6 +83,7 @@ contract FlowEVMBridgeConfig {
         /// @param new: UFix64 - new onboarding fee
         ///
         /// @emits BridgeFeeUpdated with the old and new rates and isOnboarding set to true
+        ///
         access(all)
         fun updateOnboardingFee(_ new: UFix64) {
             emit BridgeFeeUpdated(old: FlowEVMBridgeConfig.onboardFee, new: new, isOnboarding: true)
