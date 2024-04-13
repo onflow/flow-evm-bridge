@@ -7,6 +7,6 @@ import "FlowEVMBridgeUtils"
 /// @return The calculated fee to be paid in FlowToken
 ///
 access(all)
-fun main(bytes used: UFix64): UFix64 {
+fun main(bytes used: UInt64): UFix64 {
     return FlowEVMBridgeUtils.calculateBridgeFee(bytes: used)
 }
