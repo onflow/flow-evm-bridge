@@ -741,6 +741,9 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
             contractURI = "data:application/json;utf8,{".concat(serializedDisplay).concat("}")
         }
 
+        // Ensure symbol is assigned before proceeding
+        assert(symbol != nil, message: "Symbol must be assigned before deploying ERC20 contract")
+
         // Call to the factory contract to deploy an ERC20 & validate result
         let callResult: EVM.Result = FlowEVMBridgeUtils.call(
             signature: "deployERC20(string,string,string,string,string)",
