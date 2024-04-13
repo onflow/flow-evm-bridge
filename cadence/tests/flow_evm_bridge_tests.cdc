@@ -3,6 +3,7 @@ import BlockchainHelpers
 
 import "FungibleToken"
 import "NonFungibleToken"
+import "FlowStorageFees"
 
 import "test_helpers.cdc"
 
@@ -32,6 +33,9 @@ access(all) let erc721URI = "URI"
 
 // ERC20 values
 access(all) let erc20MintAmount: UInt256 = 100_000_000_000_000_000_000
+
+access(all) let expectedOnboardFee = 1.0
+access(all) let expectedBaseFee = 0.001
 
 access(all)
 fun setup() {
@@ -363,6 +367,73 @@ fun testMintERC20Succeeds() {
 
     let aliceBalance = balanceOf(evmAddressHex: aliceCOAAddressHex, erc20AddressHex: erc20AddressHex)
     Test.assertEqual(erc20MintAmount, aliceBalance)
+}
+
+access(all)
+fun testUpdateBridgeFeesSucceeds() {
+    let bytesUsed: UInt64 = 1024
+    let expectedFinalFee = FlowStorageFees.storageCapacityToFlow(
+            FlowStorageFees.convertUInt64StorageBytesToUFix64Megabytes(bytesUsed)
+        ) + expectedBaseFee
+
+    // Validate the initialized values are set to 0.0
+    var actualOnboardFeeResult = executeScript(
+        "../scripts/config/get_onboard_fee.cdc",
+        []
+    )
+    Test.expect(actualOnboardFeeResult, Test.beSucceeded())
+    var actualBaseFeeResult = executeScript(
+        "../scripts/config/get_base_fee.cdc",
+        []
+    )
+    Test.expect(actualBaseFeeResult, Test.beSucceeded())
+
+    Test.assertEqual(0.0, actualOnboardFeeResult.returnValue as! UFix64? ?? panic("Problem getting onboard fee"))
+    Test.assertEqual(0.0, actualBaseFeeResult.returnValue as! UFix64? ?? panic("Problem getting base fee"))
+
+    var actualCalculatedResult = executeScript(
+        "../scripts/bridge/calculate_bridge_fee.cdc",
+        [bytesUsed]
+    )
+    Test.expect(actualCalculatedResult, Test.beSucceeded())
+    Test.assertEqual(0.0, actualCalculatedResult.returnValue as! UFix64? ?? panic("Problem getting calculated fee"))
+
+    // Set the fees to new values
+    let updateOnboardFeeResult = executeTransaction(
+        "../transactions/bridge/admin/update_onboard_fee.cdc",
+        [expectedOnboardFee],
+        bridgeAccount
+    )
+    Test.expect(updateOnboardFeeResult, Test.beSucceeded())
+    let updateBaseFeeResult = executeTransaction(
+        "../transactions/bridge/admin/update_base_fee.cdc",
+        [expectedBaseFee],
+        bridgeAccount
+    )
+    Test.expect(updateBaseFeeResult, Test.beSucceeded())
+
+    // Validate the values have been updated
+    actualOnboardFeeResult = executeScript(
+        "../scripts/config/get_onboard_fee.cdc",
+        []
+    )
+    Test.expect(actualOnboardFeeResult, Test.beSucceeded())
+    actualBaseFeeResult = executeScript(
+        "../scripts/config/get_base_fee.cdc",
+        []
+    )
+    Test.expect(actualBaseFeeResult, Test.beSucceeded())
+
+    Test.assertEqual(expectedOnboardFee, actualOnboardFeeResult.returnValue as! UFix64? ?? panic("Problem getting onboard fee"))
+    Test.assertEqual(expectedBaseFee, actualBaseFeeResult.returnValue as! UFix64? ?? panic("Problem getting base fee"))
+
+    actualCalculatedResult = executeScript(
+        "../scripts/bridge/calculate_bridge_fee.cdc",
+        [bytesUsed]
+    )
+    Test.expect(actualCalculatedResult, Test.beSucceeded())
+    Test.assertEqual(expectedFinalFee, actualCalculatedResult.returnValue as! UFix64? ?? panic("Problem getting calculated fee"))
+
 }
 
 /* --- ONBOARDING - Test asset onboarding to the bridge --- */
