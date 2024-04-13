@@ -1,7 +1,7 @@
 import Crypto
-import "NonFungibleToken"
-import "FungibleToken"
-import "FlowToken"
+import NonFungibleToken from 0x0000000000000001
+import FungibleToken from 0x0000000000000002
+import FlowToken from 0x0000000000000003
 
 access(all)
 contract EVM {
@@ -530,6 +530,31 @@ contract EVM {
             isValid: true,
             problem: nil
         )
+    }
+
+    /// Block returns information about the latest executed block.
+    access(all)
+    struct EVMBlock {
+        access(all)
+        let height: UInt64
+
+        access(all)
+        let hash: String
+
+        access(all)
+        let totalSupply: Int
+
+        init(height: UInt64, hash: String, totalSupply: Int) {
+            self.height = height
+            self.hash = hash
+            self.totalSupply = totalSupply
+        }
+    }
+
+    /// Returns the latest executed block.
+    access(all)
+    fun getLatestBlock(): EVMBlock {
+        return InternalEVM.getLatestBlock() as! EVMBlock
     }
 
     /// Interface for a resource which acts as an entrypoint to the VM bridge
