@@ -20,14 +20,13 @@ import CrossVMNFT from 0xf8d6e0586b0a20c7
 /// prepared as chunks in FlowEVMBridgeTemplates before being deployed to the Flow EVM Bridge account.
 ///
 /// On bridging, the ERC721 is transferred to the bridge's CadenceOwnedAccount EVM address and a new NFT is minted from
-/// this contract to the bridging caller. On return to Flow EVM, the reverse process is followed - the token is burned
-/// in this contract and the ERC721 is transferred to the defined recipient. In this way, the Cadence token acts as a
+/// this contract to the bridging caller. On return to Flow EVM, the reverse process is followed - the token is locked
+/// in NFT escrow and the ERC721 is transferred to the defined recipient. In this way, the Cadence token acts as a
 /// representation of both the EVM NFT and thus ownership rights to it upon bridging back to Flow EVM.
 ///
-/// To bridge between VMs, a caller can either use the contract methods defined below, or use the FlowEVMBridge's
-/// bridging methods which will programatically route bridging calls to this contract.
+/// To bridge between VMs, a caller can either use the interface exposed on CadenceOwnedAccount or use FlowEVMBridge
+/// public contract methods.
 ///
-// TODO: Implement NFT contract interface once v2 available locally
 access(all) contract {{CONTRACT_NAME}} : ICrossVM, IEVMBridgeNFTMinter, NonFungibleToken {
 
     /// Pointer to the Factory deployed Solidity contract address defining the bridged asset
@@ -47,26 +46,18 @@ access(all) contract {{CONTRACT_NAME}} : ICrossVM, IEVMBridgeNFTMinter, NonFungi
 
     /// The NFT resource representing the bridged ERC721 token
     ///
-    access(all) resource NFT: CrossVMNFT.EVMNFT {
+    access(all) resource NFT : CrossVMNFT.EVMNFT {
         /// The Cadence ID of the NFT
         access(all) let id: UInt64
         /// The ERC721 ID of the NFT
         access(all) let evmID: UInt256
-        /// The name of the NFT as defined in the ERC721 contract
-        access(all) let name: String
-        /// The symbol of the NFT as defined in the ERC721 contract
-        access(all) let symbol: String
         /// Additional onchain metadata
         access(all) let metadata: {String: AnyStruct}
 
         init(
-            name: String,
-            symbol: String,
             evmID: UInt256,
             metadata: {String: AnyStruct}
         ) {
-            self.name = name
-            self.symbol = symbol
             self.id = self.uuid
             self.evmID = evmID
             self.metadata = metadata
@@ -82,6 +73,18 @@ access(all) contract {{CONTRACT_NAME}} : ICrossVM, IEVMBridgeNFTMinter, NonFungi
             ]
         }
 
+        access(all) view fun getName(): String {
+            return {{CONTRACT_NAME}}.name
+        }
+
+        access(all) view fun getSymbol(): String {
+            return {{CONTRACT_NAME}}.symbol
+        }
+
+        access(all) view fun tokenURI(): String {
+            return {{CONTRACT_NAME}}.tokenURIs[self.evmID] ?? ""
+        }
+
         /// Resolves a metadata view for this NFT
         access(all) fun resolveView(_ view: Type): AnyStruct? {
             switch view {
@@ -89,8 +92,8 @@ access(all) contract {{CONTRACT_NAME}} : ICrossVM, IEVMBridgeNFTMinter, NonFungi
                 // with the URI as thumbnail - we may a new standard view for EVM NFTs - this is interim
                 case Type<CrossVMNFT.EVMBridgedMetadata>():
                     return CrossVMNFT.EVMBridgedMetadata(
-                        name: self.name,
-                        symbol: self.symbol,
+                        name: self.getName(),
+                        symbol: self.getSymbol(),
                         uri: CrossVMNFT.URI(baseURI: nil, value: self.tokenURI())
                     )
                 case Type<MetadataViews.Serial>():
@@ -122,15 +125,10 @@ access(all) contract {{CONTRACT_NAME}} : ICrossVM, IEVMBridgeNFTMinter, NonFungi
         access(all) view fun getEVMContractAddress(): EVM.EVMAddress {
             return {{CONTRACT_NAME}}.getEVMContractAddress()
         }
-
-        /// Similar to ERC721.tokenURI method, returns the URI of the NFT with self.evmID at time of bridging
-        access(all) view fun tokenURI(): String {
-            return {{CONTRACT_NAME}}.tokenURIs[self.evmID] ?? ""
-        }
     }
 
     /// This resource holds associated NFTs, and serves queries about stored NFTs
-    access(all) resource Collection: NonFungibleToken.Collection, CrossVMNFT.EVMNFTCollection {
+    access(all) resource Collection : CrossVMNFT.EVMNFTCollection {
         /// dictionary of NFT conforming tokens indexed on their ID
         access(contract) var ownedNFTs: @{UInt64: {{CONTRACT_NAME}}.NFT}
         /// Mapping of EVM IDs to Flow NFT IDs
@@ -149,6 +147,14 @@ access(all) contract {{CONTRACT_NAME}} : ICrossVM, IEVMBridgeNFTMinter, NonFungi
                 ?? panic("Could not resolve the collection data view for the NFT collection")
             self.storagePath = collectionData.storagePath
             self.publicPath = collectionData.publicPath
+        }
+
+        access(all) view fun getName(): String {
+            return {{CONTRACT_NAME}}.name
+        }
+
+        access(all) view fun getSymbol(): String {
+            return {{CONTRACT_NAME}}.symbol
         }
 
         /// Returns a list of NFT types that this receiver accepts
@@ -171,11 +177,10 @@ access(all) contract {{CONTRACT_NAME}} : ICrossVM, IEVMBridgeNFTMinter, NonFungi
         }
 
         /// Withdraws an NFT from the collection by its EVM ID
-        access(NonFungibleToken.Withdraw | NonFungibleToken.Owner) fun withdrawByEVMID(_ id: UInt64): @{NonFungibleToken.NFT} {
-            let token <- self.ownedNFTs.remove(key: id)
-                ?? panic("Could not withdraw an NFT with the provided ID from the collection")
-
-            return <-token
+        access(NonFungibleToken.Withdraw | NonFungibleToken.Owner) fun withdrawByEVMID(_ id: UInt256): @{NonFungibleToken.NFT} {
+            return <- self.withdraw(withdrawID: 
+                self.getCadenceID(from: id) ?? panic("Could not withdraw an NFT with the provided EVM ID from the collection")
+            )
         }
 
         /// Ttakes a NFT and adds it to the collections dictionary and adds the ID to the evmIDToFlowID mapping
@@ -337,8 +342,6 @@ access(all) contract {{CONTRACT_NAME}} : ICrossVM, IEVMBridgeNFTMinter, NonFungi
         }
         self.tokenURIs[id] = tokenURI
         return <-create NFT(
-            name: self.name,
-            symbol: self.symbol,
             evmID: id,
             metadata: {
                 "Bridged Block": getCurrentBlock().height,
@@ -372,6 +375,8 @@ access(all) contract {{CONTRACT_NAME}} : ICrossVM, IEVMBridgeNFTMinter, NonFungi
         FlowEVMBridgeConfig.associateType(Type<@{{CONTRACT_NAME}}.NFT>(), with: self.evmNFTContractAddress)
         FlowEVMBridgeNFTEscrow.initializeEscrow(
             forType: Type<@{{CONTRACT_NAME}}.NFT>(),
+            name: name,
+            symbol: symbol,
             erc721Address: self.evmNFTContractAddress
         )
     }

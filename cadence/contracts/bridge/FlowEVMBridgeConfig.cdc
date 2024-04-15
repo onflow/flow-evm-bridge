@@ -1,5 +1,7 @@
 import "EVM"
 
+import "FlowToken"
+
 /// This contract is used to store configuration information shared by FlowEVMBridge contracts
 ///
 access(all)
@@ -16,6 +18,9 @@ contract FlowEVMBridgeConfig {
     /// Fee rate per storage unit consumed by bridged assets
     access(all)
     var storageRate: UFix64
+    /// Default ERC20.decimals() value
+    access(all)
+    let defaultDecimals: UInt8
     /// Mapping of Type to its associated EVMAddress as relevant to the bridge
     access(self)
     let typeToEVMAddress: {Type: EVM.EVMAddress}
@@ -113,7 +118,12 @@ contract FlowEVMBridgeConfig {
         self.onboardFee = 0.0
         self.baseFee = 0.0
         self.storageRate = 0.0
-        self.typeToEVMAddress = {}
+        self.defaultDecimals = 18
+        self.typeToEVMAddress = {
+            Type<@FlowToken.Vault>(): EVM.EVMAddress(
+                bytes: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+            )
+        }
         self.adminStoragePath = /storage/flowEVMBridgeConfigAdmin
         self.coaStoragePath = /storage/evm
         self.providerCapabilityStoragePath = /storage/bridgeFlowVaultProvider

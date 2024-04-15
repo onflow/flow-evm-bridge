@@ -3,32 +3,28 @@ import "NonFungibleToken"
 
 import "EVM"
 
-import "FlowEVMBridgeConfig"
 import "FlowEVMBridgeUtils"
-import "CrossVMNFT"
 
-access(all) contract interface IFlowEVMNFTBridge {
+access(all) contract interface IFlowEVMTokenBridge {
     
     /*************
         Events
     **************/
 
-    /// Broadcasts an NFT was bridged from Cadence to EVM
+    /// Broadcasts fungible tokens were bridged from Cadence to EVM
     access(all)
-    event BridgedNFTToEVM(
+    event BridgedTokensToEVM(
         type: Type,
-        id: UInt64,
-        evmID: UInt256,
+        amount: UFix64,
         to: String,
         evmContractAddress: String,
         bridgeAddress: Address
     )
-    /// Broadcasts an NFT was bridged from EVM to Cadence
+    /// Broadcasts fungible tokens were bridged from EVM to Cadence
     access(all)
-    event BridgedNFTFromEVM(
+    event BridgedTokensFromEVM(
         type: Type,
-        id: UInt64,
-        evmID: UInt256,
+        amount: UInt256,
         caller: String,
         evmContractAddress: String,
         bridgeAddress: Address
@@ -52,38 +48,37 @@ access(all) contract interface IFlowEVMNFTBridge {
         Public Bridge Entrypoints
     *********************************/
 
-    /// Public entrypoint to bridge NFTs from Cadence to EVM.
+    /// Public entrypoint to bridge fungible tokens from Cadence to EVM.
     ///
-    /// @param token: The NFT to be bridged
-    /// @param to: The NFT recipient in FlowEVM
+    /// @param token: The token Vault to be bridged
+    /// @param to: The token recipient in EVM
     /// @param feeProvider: A reference to a FungibleToken Provider from which the bridging fee is withdrawn in $FLOW
     ///
     access(all)
-    fun bridgeNFTToEVM(
-        token: @{NonFungibleToken.NFT},
+    fun bridgeTokensToEVM(
+        vault: @{FungibleToken.Vault},
         to: EVM.EVMAddress,
         feeProvider: auth(FungibleToken.Withdraw) &{FungibleToken.Provider}
     ) {
         pre {
-            emit BridgedNFTToEVM(
-                type: token.getType(),
-                id: token.id,
-                evmID: CrossVMNFT.getEVMID(from: &token as &{NonFungibleToken.NFT}) ?? UInt256(token.id),
+            emit BridgedTokensToEVM(
+                type: vault.getType(),
+                amount: vault.balance,
                 to: FlowEVMBridgeUtils.getEVMAddressAsHexString(address: to),
                 evmContractAddress: FlowEVMBridgeUtils.getEVMAddressAsHexString(
-                    address: self.getAssociatedEVMAddress(with: token.getType())
+                    address: self.getAssociatedEVMAddress(with: vault.getType())
                         ?? panic("Could not find EVM Contract address associated with provided NFT")
                 ), bridgeAddress: self.account.address
             )
         }
     }
 
-    /// Public entrypoint to bridge NFTs from EVM to Cadence
+    /// Public entrypoint to bridge fungible tokens from EVM to Cadence
     ///
-    /// @param owner: The EVM address of the NFT owner. Current ownership and successful transfer (via 
+    /// @param owner: The EVM address of the token owner. Current ownership and successful transfer (via 
     ///     `protectedTransferCall`) is validated before the bridge request is executed.
     /// @param calldata: Caller-provided approve() call, enabling contract COA to operate on NFT in EVM contract
-    /// @param id: The NFT ID to bridged
+    /// @param amount: The amount of tokens to bridge from EVM to Cadence
     /// @param evmContractAddress: Address of the EVM address defining the NFT being bridged - also call target
     /// @param feeProvider: A reference to a FungibleToken Provider from which the bridging fee is withdrawn in $FLOW
     /// @param protectedTransferCall: A function that executes the transfer of the NFT from the named owner to the
@@ -92,22 +87,21 @@ access(all) contract interface IFlowEVMNFTBridge {
     /// @returns The bridged NFT
     ///
     access(account)
-    fun bridgeNFTFromEVM(
+    fun bridgeTokensFromEVM(
         owner: EVM.EVMAddress,
         type: Type,
-        id: UInt256,
+        amount: UInt256,
         feeProvider: auth(FungibleToken.Withdraw) &{FungibleToken.Provider},
         protectedTransferCall: fun (): EVM.Result
-    ): @{NonFungibleToken.NFT} {
+    ): @{FungibleToken.Vault} {
         post {
-            emit BridgedNFTFromEVM(
+            emit BridgedTokensFromEVM(
                 type: result.getType(),
-                id: result.id,
-                evmID: id,
+                amount: amount,
                 caller: FlowEVMBridgeUtils.getEVMAddressAsHexString(address: owner),
                 evmContractAddress: FlowEVMBridgeUtils.getEVMAddressAsHexString(
                     address: self.getAssociatedEVMAddress(with: result.getType())
-                        ?? panic("Could not find EVM Contract address associated with provided NFT")
+                        ?? panic("Could not find EVM Contract address associated with provided Vault")
                 ), bridgeAddress: self.account.address
             )
         }

@@ -4,27 +4,22 @@ import "MetadataViews"
 
 import "EVM"
 
-/// Contract defining cross-VM NFT & Collection interfaces
+/// Contract defining cross-VM NFT-related interfaces & Metadata views
 ///
-access(all)
-contract CrossVMNFT {
+access(all) contract CrossVMNFT {
 
     /// A struct to represent a general case URI, used to represent the URI of the NFT where the type of URI is not
     /// able to be determined (i.e. HTTP, IPFS, etc.)
     ///
-    access(all)
-    struct URI : MetadataViews.File {
+    access(all) struct URI : MetadataViews.File {
         /// The base URI prefix, if any. Not needed for all URIs, but helpful for some use cases
         /// For example, updating a whole NFT collection's image host easily
-        access(all)
-        let baseURI: String?
+        access(all) let baseURI: String?
         /// The URI value
         /// NOTE: this is set on init as a concatenation of the baseURI and the value if baseURI != nil
-        access(self)
-        let value: String
+        access(self) let value: String
 
-        access(all)
-        view fun uri(): String {
+        access(all) view fun uri(): String {
             return self.value
         }
 
@@ -36,19 +31,15 @@ contract CrossVMNFT {
 
     /// Proof of concept metadata to represent the ERC721 values of the NFT
     ///
-    access(all)
-    struct EVMBridgedMetadata {
+    access(all) struct EVMBridgedMetadata {
         /// The name of the NFT
-        access(all)
-        let name: String
+        access(all) let name: String
         /// The symbol of the NFT
-        access(all)
-        let symbol: String
-        /// The URI of the NFT - this can either be contract-level or token-level URI depending on where the metadata
+        access(all) let symbol: String
+        /// The URI of the asset - this can either be contract-level or token-level URI depending on where the metadata
         /// is requested. See the ViewResolver contract interface to discover how contract & resource-level metadata
         /// requests are handled.
-        access(all)
-        let uri: {MetadataViews.File}
+        access(all) let uri: {MetadataViews.File}
 
         init(name: String, symbol: String, uri: {MetadataViews.File}) {
             self.name = name
@@ -65,38 +56,29 @@ contract CrossVMNFT {
     /// See discussion https://github.com/onflow/flow-nft/pull/126#discussion_r1462612559 where @austinkline raised
     /// differentiating IDs in a minimal interface incorporated into the one below
     ///
-    access(all)
-    resource interface EVMNFT : NonFungibleToken.NFT {
-        access(all)
-        let evmID: UInt256
-        access(all)
-        let name: String
-        access(all)
-        let symbol: String
-        access(all)
-        view fun tokenURI(): String
-        access(all)
-        view fun getEVMContractAddress(): EVM.EVMAddress
+    access(all) resource interface EVMNFT : NonFungibleToken.NFT {
+        access(all) let evmID: UInt256
+
+        access(all) view fun getName(): String
+        access(all) view fun getSymbol(): String
+        access(all) view fun tokenURI(): String
+        access(all) view fun getEVMContractAddress(): EVM.EVMAddress
     }
 
     /// A simple interface for a collection of EVMNFTs
     ///
-    access(all)
-    resource interface EVMNFTCollection {
-        access(all)
-        view fun getEVMIDs(): [UInt256]
-        access(all)
-        view fun getCadenceID(from evmID: UInt256): UInt64?
-        access(all)
-        view fun getEVMID(from cadenceID: UInt64): UInt256?
-        access(all)
-        view fun contractURI(): String?
+    access(all) resource interface EVMNFTCollection : NonFungibleToken.Collection {
+        access(all) view fun getName(): String
+        access(all) view fun getSymbol(): String
+        access(all) view fun getEVMIDs(): [UInt256]
+        access(all) view fun getCadenceID(from evmID: UInt256): UInt64?
+        access(all) view fun getEVMID(from cadenceID: UInt64): UInt256?
+        access(all) fun contractURI(): String?
     }
 
     /// Retrieves the EVM ID of an NFT if it implements the EVMNFT interface, returning nil if not
     ///
-    access(all)
-    view fun getEVMID(from token: &{NonFungibleToken.NFT}): UInt256? {
+    access(all) view fun getEVMID(from token: &{NonFungibleToken.NFT}): UInt256? {
         if let evmNFT = token as? &{EVMNFT} {
             return evmNFT.evmID
         }

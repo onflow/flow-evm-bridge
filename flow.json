@@ -19,11 +19,18 @@
 			"aliases": {
 				"emulator": "ee82856bf20e2aa6",
 				"previewnet": "b6763b4399a888c8",
-				"testing": "0000000000000007"
+				"testing": "0000000000000001"
 			}
 		},
 		"CrossVMNFT": {
 			"source": "./cadence/contracts/bridge/CrossVMNFT.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"testing": "0000000000000007"
+			}
+		},
+		"CrossVMToken": {
+			"source": "./cadence/contracts/bridge/CrossVMToken.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"testing": "0000000000000007"
@@ -36,11 +43,11 @@
 				"previewnet": "b6763b4399a888c8"
 			}
 		},
-		"EVMBridgeRouter": {
-			"source": "./cadence/contracts/bridge/EVMBridgeRouter.cdc",
+		"FlowEVMBridgeAccessor": {
+			"source": "./cadence/contracts/bridge/FlowEVMBridgeAccessor.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
-				"testing": "0000000000000001"
+				"testing": "0000000000000007"
 			}
 		},
 		"EVMDeployer": {
@@ -55,6 +62,13 @@
 			"aliases": {
 				"emulator": "179b6b1cb6755e31",
 				"testing": "0000000000000008"
+			}
+		},
+		"ExampleToken": {
+			"source": "./cadence/contracts/example-assets/ExampleToken.cdc",
+			"aliases": {
+				"emulator": "179b6b1cb6755e31",
+				"testing": "0000000000000010"
 			}
 		},
 		"FlowEVMBridge": {
@@ -80,6 +94,13 @@
 		},
 		"FlowEVMBridgeTemplates": {
 			"source": "./cadence/contracts/bridge/FlowEVMBridgeTemplates.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"testing": "0000000000000007"
+			}
+		},
+		"FlowEVMBridgeTokenEscrow": {
+			"source": "./cadence/contracts/bridge/FlowEVMBridgeTokenEscrow.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"testing": "0000000000000007"
@@ -117,7 +138,7 @@
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "f233dcee88fe0abe",
 				"previewnet": "a0225e7000ac82a9",
-				"testing": "0000000000000007",
+				"testing": "0000000000000002",
 				"testnet": "9a0766d93b6608b7"
 			}
 		},
@@ -135,8 +156,22 @@
 				"testing": "0000000000000007"
 			}
 		},
+		"IEVMBridgeTokenMinter": {
+			"source": "./cadence/contracts/bridge/IEVMBridgeTokenMinter.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"testing": "0000000000000007"
+			}
+		},
 		"IFlowEVMNFTBridge": {
 			"source": "./cadence/contracts/bridge/IFlowEVMNFTBridge.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"testing": "0000000000000007"
+			}
+		},
+		"IFlowEVMTokenBridge": {
+			"source": "./cadence/contracts/bridge/IFlowEVMTokenBridge.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"testing": "0000000000000007"

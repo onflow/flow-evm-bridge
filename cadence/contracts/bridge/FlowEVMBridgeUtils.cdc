@@ -85,7 +85,11 @@ contract FlowEVMBridgeUtils {
     ///
     access(all)
     view fun calculateBridgeFee(used: UInt64, includeBase: Bool): UFix64 {
-        return FlowEVMBridgeConfig.baseFee
+        // TODO: Include storage-based fee calculation
+        // let x = FlowStorageFees.convertUInt64StorageBytesToUFix64Megabytes(used) * FlowEVMBridgeConfig.storageRate
+        let y = includeBase ? FlowEVMBridgeConfig.baseFee : 0.0
+        // return x + y
+        return y
     }
 
     /// Returns whether the given type is allowed to be bridged as defined by the BridgePermissions contract interface.
@@ -190,7 +194,7 @@ contract FlowEVMBridgeUtils {
     /// @return True if the asset is an ERC721, false otherwise
     ///
     access(all)
-    fun isEVMNFT(evmContractAddress: EVM.EVMAddress): Bool {
+    fun isERC721(evmContractAddress: EVM.EVMAddress): Bool {
         let callResult = self.call(
             signature: "isERC721(address)",
             targetEVMAddress: self.bridgeFactoryEVMAddress,
@@ -208,10 +212,25 @@ contract FlowEVMBridgeUtils {
 
     /// Identifies if an asset is ERC20
     ///
+    /// @param evmContractAddress: The EVM contract address to check
+    ///
+    /// @return true if the asset is an ERC20, false otherwise
+    ///
     access(all)
-    fun isEVMToken(evmContractAddress: EVM.EVMAddress): Bool {
-        // TODO: We will need to figure out how to identify ERC20s without ERC165 support
-        return false
+    fun isERC20(evmContractAddress: EVM.EVMAddress): Bool {
+        let callResult = self.call(
+            signature: "isERC20(address)",
+            targetEVMAddress: self.bridgeFactoryEVMAddress,
+            args: [evmContractAddress],
+            gasLimit: 100000,
+            value: 0.0
+        )
+
+        assert(callResult.status == EVM.Status.successful, message: "Call to bridge factory failed")
+        let decodedResult = EVM.decodeABI(types: [Type<Bool>()], data: callResult.data)
+        assert(decodedResult.length == 1, message: "Invalid response length")
+
+        return decodedResult[0] as! Bool
     }
 
     /// Returns whether the contract address is either an ERC721 or ERC20 exclusively. Reverts on EVM call failure.
@@ -222,9 +241,9 @@ contract FlowEVMBridgeUtils {
     ///
     access(all)
     fun isValidEVMAsset(evmContractAddress: EVM.EVMAddress): Bool {
-        let isEVMNFT = FlowEVMBridgeUtils.isEVMNFT(evmContractAddress: evmContractAddress)
-        let isEVMToken = FlowEVMBridgeUtils.isEVMToken(evmContractAddress: evmContractAddress)
-        return (isEVMNFT && !isEVMToken) || (!isEVMNFT && isEVMToken)
+        let isERC721 = FlowEVMBridgeUtils.isERC721(evmContractAddress: evmContractAddress)
+        let isERC20 = FlowEVMBridgeUtils.isERC20(evmContractAddress: evmContractAddress)
+        return (isERC721 && !isERC20) || (!isERC721 && isERC20)
     }
 
     /// Returns whether the given type is either an NFT or FT exclusively
@@ -418,7 +437,6 @@ contract FlowEVMBridgeUtils {
             gasLimit: 12000000,
             value: 0.0
         )
-
         assert(callResult.status == EVM.Status.successful, message: "Call to ERC721.getApproved(uint256) failed")
         let decodedCallResult = EVM.decodeABI(types: [Type<EVM.EVMAddress>()], data: callResult.data)
         if decodedCallResult.length == 1 {
@@ -426,6 +444,29 @@ contract FlowEVMBridgeUtils {
             return actualApproved.bytes == owner.bytes
         }
         return false
+    }
+
+    /// Returns the ERC20 balance of the owner at the given ERC20 contract address. Reverts on EVM call failure.
+    ///
+    /// @param amount: The amount to check if the owner has enough balance to cover
+    /// @param owner: The owner address to query
+    /// @param evmContractAddress: The ERC20 contract address to query
+    ///
+    /// @return true if the owner's balance >= amount, false otherwise
+    ///
+    access(all)
+    fun balanceOf(owner: EVM.EVMAddress, evmContractAddress: EVM.EVMAddress): UInt256 {
+        let callResult = self.call(
+            signature: "balanceOf(address)",
+            targetEVMAddress: evmContractAddress,
+            args: [owner],
+            gasLimit: 60000,
+            value: 0.0
+        )
+        assert(callResult.status == EVM.Status.successful, message: "Call to ERC20.balanceOf(address) failed")
+        let decodedResult = EVM.decodeABI(types: [Type<UInt256>()], data: callResult.data) as! [AnyStruct]
+        assert(decodedResult.length == 1, message: "Invalid response length")
+        return decodedResult[0] as! UInt256
     }
 
     /// Determines if the owner has sufficient funds to bridge the given amount at the ERC20 contract address
@@ -438,21 +479,8 @@ contract FlowEVMBridgeUtils {
     /// @return true if the owner's balance >= amount, false otherwise
     ///
     access(all)
-    fun hasSufficientBalance(amount: UFix64, owner: EVM.EVMAddress, evmContractAddress: EVM.EVMAddress): Bool {
-        let callResult = self.call(
-            signature: "balanceOf(address)",
-            targetEVMAddress: evmContractAddress,
-            args: [owner],
-            gasLimit: 60000,
-            value: 0.0
-        )
-
-        assert(callResult.status == EVM.Status.successful, message: "Call to ERC20.balanceOf(address) failed")
-        let decodedResult = EVM.decodeABI(types: [Type<UInt256>()], data: callResult.data) as! [UInt256]
-        assert(decodedResult.length == 1, message: "Invalid response length")
-
-        let tokenDecimals = self.getTokenDecimals(evmContractAddress: evmContractAddress)
-        return self.uint256ToUFix64(value: decodedResult[0], decimals: tokenDecimals) >= amount
+    fun hasSufficientBalance(amount: UInt256, owner: EVM.EVMAddress, evmContractAddress: EVM.EVMAddress): Bool {
+        return self.balanceOf(owner: owner, evmContractAddress: evmContractAddress) >= amount
     }
 
     /************************
@@ -549,7 +577,10 @@ contract FlowEVMBridgeUtils {
         let scaleFactor: UInt256 = self.pow(base: 10, exponent: decimals)
         let scaledValue: UInt256 = value / scaleFactor
 
-        assert(scaledValue > UInt256(UInt64.max), message: "Value too large to fit into UFix64")
+        assert(
+            scaledValue < UInt256(UInt64.max),
+            message: "Value ".concat(value.toString()).concat(" exceeds max UFix64 value")
+        )
 
         return UFix64(scaledValue)
     }
@@ -645,6 +676,25 @@ contract FlowEVMBridgeUtils {
         let subtract0x = addressStr.slice(from: 2, upTo: addressStr.length)
         let identifier = "A".concat(".").concat(subtract0x).concat(".").concat(contractName).concat(".").concat(resourceName)
         return CompositeType(identifier)
+    }
+
+    /**************************
+        FungibleToken Utils
+     **************************/
+
+    /// Returns the `createEmptyVault()` function from a Vault Type's defining contract or nil if either the Type is not
+    access(all) fun getCreateEmptyVaultFunction(forType: Type): (fun (Type): @{FungibleToken.Vault})? {
+        // We can only reasonably assume that the requested function is accessible from a FungibleToken contract
+        if !forType.isSubtype(of: Type<@{FungibleToken.Vault}>()) {
+            return nil
+        }
+        // Vault Types should guarantee that the following forced optionals are safe
+        let contractAddress = self.getContractAddress(fromType: forType)!
+        let contractName = self.getContractName(fromType: forType)!
+        let tokenContract: &{FungibleToken} = getAccount(contractAddress).contracts.borrow<&{FungibleToken}>(
+                name: contractName
+            )!
+        return tokenContract.createEmptyVault
     }
 
     /******************************

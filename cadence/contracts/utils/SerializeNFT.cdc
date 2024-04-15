@@ -1,6 +1,7 @@
 import "ViewResolver"
 import "MetadataViews"
 import "NonFungibleToken"
+import "FungibleTokenMetadataViews"
 
 import "Serialize"
 
@@ -17,8 +18,8 @@ access(all) contract SerializeNFT {
     /// Reference: https://docs.opensea.io/docs/metadata-standards
     ///
     ///
-    /// @returns: A JSON compatible string containing the serialized display & collection display views as:
-    ///     `{
+    /// @returns: A JSON compatible data URL string containing the serialized display & collection display views as:
+    ///     `data:application/json;utf8,{
     ///         \"name\": \"<display.name>\",
     ///         \"description\": \"<display.description>\",
     ///         \"image\": \"<display.thumbnail.uri()>\",
@@ -131,5 +132,33 @@ access(all) contract SerializeNFT {
             }
         }
         return serializedResult.concat("]")
+    }
+
+    /// Serializes the FTDisplay view of a given fungible token as a JSON compatible data URL. The value is returned as 
+    /// contract-level metadata.
+    ///
+    /// @param ftDisplay: The tokens's FTDisplay view from which values `name`, `symbol`, `description`, and 
+    ///     `externaURL` are serialized
+    ///
+    /// @returns: A JSON compatible data URL string containing the serialized view as:
+    ///     `data:application/json;utf8,{
+    ///         \"name\": \"<ftDisplay.name>\",
+    ///         \"symbol\": \"<ftDisplay.symbol>\",
+    ///         \"description\": \"<ftDisplay.description>\",
+    ///         \"external_link\": \"<ftDisplay.externalURL.url>\",
+    ///     }`
+    access(all)
+    fun serializeFTDisplay(_ ftDisplay: FungibleTokenMetadataViews.FTDisplay): String {
+        let name = "\"name\": "
+        let symbol = "\"symbol\": "
+        let description = "\"description\": "
+        let externalLink = "\"external_link\": "
+
+        return "data:application/json;utf8,{"
+            .concat(name).concat(Serialize.tryToJSONString(ftDisplay.name)!).concat(", ")
+            .concat(symbol).concat(Serialize.tryToJSONString(ftDisplay.symbol)!).concat(", ")
+            .concat(description).concat(Serialize.tryToJSONString(ftDisplay.description)!).concat(", ")
+            .concat(externalLink).concat(Serialize.tryToJSONString(ftDisplay.externalURL.url)!)
+            .concat("}")
     }
 }

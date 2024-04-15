@@ -36,14 +36,14 @@ fun setup() {
 access(all)
 fun testSerializeNFTSucceeds() {
     let setupResult = executeTransaction(
-        "../transactions/example-assets/setup_collection.cdc",
+        "../transactions/example-assets/example-nft/setup_collection.cdc",
         [],
         alice
     )
     Test.expect(setupResult, Test.beSucceeded())
 
     let mintResult = executeTransaction(
-        "../transactions/example-assets/mint_nft.cdc",
+        "../transactions/example-assets/example-nft/mint_nft.cdc",
         [alice.address, "ExampleNFT", "Example NFT Collection", "https://flow.com/examplenft.jpg", [], [], []],
         admin
     )

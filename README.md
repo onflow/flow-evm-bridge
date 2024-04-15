@@ -1,3 +1,6 @@
+![Tests](https://github.com/onflow/flow-evm-bridge/actions/workflows/cadence_test.yml/badge.svg)
+[![codecov](https://codecov.io/gh/onflow/flow-evm-bridge/graph/badge.svg?token=C1vCK0t88F)](https://codecov.io/gh/onflow/flow-evm-bridge)
+
 # [WIP] Flow EVM Bridge
 
 > :warning: This repo is a work in progress :building_construction:
@@ -13,8 +16,7 @@ As the bridge contracts are still in development, builders should be aware that 
 Install an EVM-compatible pre-release version of the Flow CLI (currently [v1.12.0-cadence-v1.0.0-M8-2](https://github.com/onflow/flow-cli/releases/tag/v1.12.0-cadence-v1.0.0-M8-2)):
 
 ```sh
-sudo sh -ci "$(curl -fsSL https://raw.githubusercontent.com/onflow/flow-cli/master/install.sh)" \
-    -- v1.12.0-cadence-v1.0.0-M8-2
+sudo sh -ci "$(curl -fsSL https://raw.githubusercontent.com/onflow/flow-cli/feature/stable-cadence/install.sh)"
 ```
 
 If you wish to interact with the contracts from the EVM side, this repo is configured for use with Foundry. See [Foundry's installation docs](https://book.getfoundry.sh/getting-started/installation) for more information.
