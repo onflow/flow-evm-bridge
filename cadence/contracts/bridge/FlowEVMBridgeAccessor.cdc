@@ -12,9 +12,6 @@ access(all)
 contract FlowEVMBridgeAccessor {
 
     access(all) let StoragePath: StoragePath
-
-    /// Entitlement allowing for updates to the Router
-    access(all) entitlement RouterAdmin
     
     /// BridgeAccessor implementation used by the EVM contract to route bridge calls from COA resources
     ///
@@ -124,6 +121,7 @@ contract FlowEVMBridgeAccessor {
                     executed: "Callback must be executed"
                 }
                 executed = true
+                is
                 return caller.call(
                     to: FlowEVMBridge.getAssociatedEVMAddress(with: type)
                         ?? panic("No EVM address associated with type"),

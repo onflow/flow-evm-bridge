@@ -472,6 +472,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
             feeProvider.isAvailableToWithdraw(amount: FlowEVMBridgeUtils.calculateBridgeFee(used: 0, includeBase: true)):
                 "Insufficient fee paid"
             !type.isSubtype(of: Type<@{NonFungibleToken.Collection}>()): "Mixed asset types are not yet supported"
+            !type.isInstance(Type<@FlowToken.Vault>()): "Must use the CadenceOwnedAccount interface to bridge $FLOW from EVM"
             self.typeRequiresOnboarding(type) == false: "NFT must first be onboarded"
         }
         // Withdraw from feeProvider and deposit to self
