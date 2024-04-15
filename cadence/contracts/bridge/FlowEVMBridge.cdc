@@ -698,7 +698,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         )
     }
 
-    /// Deploys templated ERC721 contract supporting EVM-native asset bridging to Cadence
+    /// Deploys templated ERC20 contract supporting EVM-native asset bridging to Cadence
     ///
     /// @param forTokenType: The Cadence Type of the FungibleToken.Vault
     ///
