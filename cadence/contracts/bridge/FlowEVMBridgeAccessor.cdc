@@ -121,7 +121,6 @@ contract FlowEVMBridgeAccessor {
                     executed: "Callback must be executed"
                 }
                 executed = true
-                is
                 return caller.call(
                     to: FlowEVMBridge.getAssociatedEVMAddress(with: type)
                         ?? panic("No EVM address associated with type"),
