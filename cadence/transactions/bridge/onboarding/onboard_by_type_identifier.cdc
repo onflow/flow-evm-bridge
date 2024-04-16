@@ -11,13 +11,17 @@ import "FlowEVMBridgeConfig"
 /// This transaction onboards the asset type to the bridge, configuring the bridge to move assets between environments
 /// NOTE: This must be done before bridging a Cadence-native asset to EVM
 ///
-/// @param type: The Cadence type of the bridgeable asset to onboard to the bridge
+/// @param identifer: The Cadence type identifier of the bridgeable asset to onboarded to the bridge
 ///
-transaction(type: Type) {
+transaction(identifier: String) {
 
+    let type: Type
     let scopedProvider: @ScopedFTProviders.ScopedFTProvider
     
     prepare(signer: auth(CopyValue, BorrowValue, IssueStorageCapabilityController, PublishCapability, SaveValue) &Account) {
+        /* --- Construct the type from identifier --- */
+        //
+        self.type = CompositeType(identifier) ?? panic("Invalid type identifier")
 
         /* --- Configure a ScopedFTProvider --- */
         //
@@ -43,7 +47,7 @@ transaction(type: Type) {
     execute {
         // Onboard the asset Type
         FlowEVMBridge.onboardByType(
-            type,
+            self.type,
             feeProvider: &self.scopedProvider as auth(FungibleToken.Withdraw) &{FungibleToken.Provider}
         )
         destroy self.scopedProvider
