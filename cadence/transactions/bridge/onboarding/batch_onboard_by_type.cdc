@@ -51,7 +51,7 @@ transaction(types: [Type]) {
             }
             // Onboard the asset Type
             FlowEVMBridge.onboardByType(
-                self.type,
+                type,
                 feeProvider: &self.scopedProvider as auth(FungibleToken.Withdraw) &{FungibleToken.Provider}
             )
         }
