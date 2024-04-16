@@ -604,144 +604,106 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
     ///
     access(self)
     fun deployEVMContract(forAssetType: Type): EVMOnboardingValues {
-        if forAssetType.isSubtype(of: Type<@{NonFungibleToken.NFT}>()) {
-            return self.deployERC721(forAssetType)
-        } else if forAssetType.isSubtype(of: Type<@{FungibleToken.Vault}>()) {
-            return self.deployERC20(forAssetType)
+        pre {
+            FlowEVMBridgeUtils.isValidFlowAsset(type: forAssetType):
+                "Asset type is not supported by the bridge"
         }
-        panic("Unsupported asset type: ".concat(forAssetType.identifier))
-    }
+        let isNFT = forAssetType.isSubtype(of: Type<@{NonFungibleToken.NFT}>())
 
-    /// Deploys templated ERC721 contract supporting EVM-native asset bridging to Cadence
-    ///
-    /// @param forNFTType: The Cadence Type of the NFT
-    ///
-    /// @returns The EVMAddress of the deployed contract
-    ///
-    access(self)
-    fun deployERC721(_ forNFTType: Type): EVMOnboardingValues {
         // Retrieve the Cadence type's defining contract name, address, & its identifier
-        var name = FlowEVMBridgeUtils.getContractName(fromType: forNFTType)
-            ?? panic("Could not contract name from type: ".concat(forNFTType.identifier))
-        let identifier = forNFTType.identifier
-        let cadenceAddress = FlowEVMBridgeUtils.getContractAddress(fromType: forNFTType)
-            ?? panic("Could not derive contract address for token type: ".concat(identifier))
-        // Assign a default symbol
-        var symbol = "BRDG"
-        // Borrow the ViewResolver to attempt to resolve the EVMBridgedMetadata view
-        let viewResolver = getAccount(cadenceAddress).contracts.borrow<&{ViewResolver}>(name: name)!
-        var contractURI = ""
-        // Try to resolve the EVMBridgedMetadata
-        let bridgedMetadata = viewResolver.resolveContractView(
-                resourceType: forNFTType,
-                viewType: Type<CrossVMNFT.EVMBridgedMetadata>()
-            ) as! CrossVMNFT.EVMBridgedMetadata?
-        // Default to project-defined URI if available
-        if bridgedMetadata != nil {
-            name = bridgedMetadata!.name
-            symbol = bridgedMetadata!.symbol
-            contractURI = bridgedMetadata!.uri.uri()
-        } else {
-            // Otherwise, serialize collection-level NFTCollectionDisplay
-            if let collectionDisplay = viewResolver.resolveContractView(
-                resourceType: forNFTType,
-                viewType: Type<MetadataViews.NFTCollectionDisplay>()
-            ) as! MetadataViews.NFTCollectionDisplay? {
-                name = collectionDisplay.name
-                let serializedDisplay = SerializeMetadata.serializeFromDisplays(nftDisplay: nil, collectionDisplay: collectionDisplay)!
-                contractURI = "data:application/json;utf8,{".concat(serializedDisplay).concat("}")
-            }
-        }
-
-        // Call to the factory contract to deploy an ERC721
-        let callResult: EVM.Result = FlowEVMBridgeUtils.call(
-            signature: "deployERC721(string,string,string,string,string)",
-            targetEVMAddress: FlowEVMBridgeUtils.bridgeFactoryEVMAddress,
-            args: [name, symbol, cadenceAddress.toString(), identifier, contractURI],
-            gasLimit: 15000000,
-            value: 0.0
-        )
-        assert(callResult.status == EVM.Status.successful, message: "Contract deployment failed")
-        let decodedResult: [AnyStruct] = EVM.decodeABI(types: [Type<EVM.EVMAddress>()], data: callResult.data)
-        assert(decodedResult.length == 1, message: "Invalid response length")
-
-        // Associate the deployed contract with the given type & return the deployed address
-        let erc721Address = decodedResult[0] as! EVM.EVMAddress
-        FlowEVMBridgeConfig.associateType(forNFTType, with: erc721Address)
-        return EVMOnboardingValues(
-            evmContractAddress: erc721Address,
-            name: name,
-            symbol: symbol,
-            decimals: nil
-        )
-    }
-
-    /// Deploys templated ERC20 contract supporting EVM-native asset bridging to Cadence
-    ///
-    /// @param forTokenType: The Cadence Type of the FungibleToken.Vault
-    ///
-    /// @returns The EVMAddress of the deployed contract
-    ///
-    access(self)
-    fun deployERC20(_ forTokenType: Type): EVMOnboardingValues {
-        // Retrieve the Cadence type's defining contract name, address, & its identifier
-        var name = FlowEVMBridgeUtils.getContractName(fromType: forTokenType)
-            ?? panic("Could not contract name from type: ".concat(forTokenType.identifier))
-        let identifier = forTokenType.identifier
-        let cadenceAddress = FlowEVMBridgeUtils.getContractAddress(fromType: forTokenType)
+        var name = FlowEVMBridgeUtils.getContractName(fromType: forAssetType)
+            ?? panic("Could not contract name from type: ".concat(forAssetType.identifier))
+        let identifier = forAssetType.identifier
+        let cadenceAddress = FlowEVMBridgeUtils.getContractAddress(fromType: forAssetType)
             ?? panic("Could not derive contract address for token type: ".concat(identifier))
         // Assign a default symbol
         var symbol: String? = nil
         // Borrow the ViewResolver to attempt to resolve the EVMBridgedMetadata view
         let viewResolver = getAccount(cadenceAddress).contracts.borrow<&{ViewResolver}>(name: name)!
         var contractURI = ""
+
         // Try to resolve the EVMBridgedMetadata
         let bridgedMetadata = viewResolver.resolveContractView(
-                resourceType: forTokenType,
+                resourceType: forAssetType,
                 viewType: Type<CrossVMNFT.EVMBridgedMetadata>()
-            ) as! CrossVMNFT.EVMBridgedMetadata?
-        let ftDisplay = viewResolver.resolveContractView(
-                resourceType: forTokenType,
-                viewType: Type<FungibleTokenMetadataViews.FTDisplay>()
-            ) as! FungibleTokenMetadataViews.FTDisplay?
-        // Default to project-defined bridged metadata if available
+            ) as! CrossVMNFT.EVMBridgedMetadata?        
+        // Default to project-defined URI if available
         if bridgedMetadata != nil {
             name = bridgedMetadata!.name
             symbol = bridgedMetadata!.symbol
             contractURI = bridgedMetadata!.uri.uri()
-        } else if ftDisplay != nil {
-            // Otherwise pull from FTDisplay
-            name = ftDisplay!.name
-            symbol = ftDisplay!.symbol
-        }
-        if contractURI.length == 0 && ftDisplay != nil {
-            let serializedDisplay = SerializeMetadata.serializeFTDisplay(ftDisplay!)
-            contractURI = "data:application/json;utf8,{".concat(serializedDisplay).concat("}")
+        } else {
+            if isNFT {
+                // Otherwise, serialize collection-level NFTCollectionDisplay
+                if let collectionDisplay = viewResolver.resolveContractView(
+                    resourceType: forAssetType,
+                    viewType: Type<MetadataViews.NFTCollectionDisplay>()
+                ) as! MetadataViews.NFTCollectionDisplay? {
+                    name = collectionDisplay.name
+                    let serializedDisplay = SerializeMetadata.serializeFromDisplays(nftDisplay: nil, collectionDisplay: collectionDisplay)!
+                    contractURI = "data:application/json;utf8,{".concat(serializedDisplay).concat("}")
+                }
+                // TODO: Decide on symbol resolution for undefined NFT symbols
+                if symbol == nil {
+                    symbol = "BRDG"
+                }
+            } else {
+                let ftDisplay = viewResolver.resolveContractView(
+                    resourceType: forAssetType,
+                    viewType: Type<FungibleTokenMetadataViews.FTDisplay>()
+                ) as! FungibleTokenMetadataViews.FTDisplay?
+                if ftDisplay != nil {
+                    name = ftDisplay!.name
+                    symbol = ftDisplay!.symbol
+                }
+                if contractURI.length == 0 && ftDisplay != nil {
+                    let serializedDisplay = SerializeMetadata.serializeFTDisplay(ftDisplay!)
+                    contractURI = "data:application/json;utf8,{".concat(serializedDisplay).concat("}")
+                }
+                // Ensure symbol is assigned before proceeding
+                assert(symbol != nil, message: "Symbol must be assigned before deploying ERC20 contract")
+            }
         }
 
-        // Ensure symbol is assigned before proceeding
-        assert(symbol != nil, message: "Symbol must be assigned before deploying ERC20 contract")
-
-        // Call to the factory contract to deploy an ERC20 & validate result
-        let callResult: EVM.Result = FlowEVMBridgeUtils.call(
-            signature: "deployERC20(string,string,string,string,string)",
-            targetEVMAddress: FlowEVMBridgeUtils.bridgeFactoryEVMAddress,
-            args: [name, symbol!, cadenceAddress.toString(), identifier, contractURI], // TODO: Decide on and update symbol
-            gasLimit: 15000000,
-            value: 0.0
-        )
-        assert(callResult.status == EVM.Status.successful, message: "Contract deployment failed")
-        let decodedResult: [AnyStruct] = EVM.decodeABI(types: [Type<EVM.EVMAddress>()], data: callResult.data)
-        assert(decodedResult.length == 1, message: "Invalid response length")
+        var deployedContractAddress: EVM.EVMAddress? = nil
+        if forAssetType.isSubtype(of: Type<@{NonFungibleToken.NFT}>()) {
+            // Call to the factory contract to deploy an ERC721
+            let callResult: EVM.Result = FlowEVMBridgeUtils.call(
+                signature: "deployERC721(string,string,string,string,string)",
+                targetEVMAddress: FlowEVMBridgeUtils.bridgeFactoryEVMAddress,
+                args: [name, symbol!, cadenceAddress.toString(), identifier, contractURI],
+                gasLimit: 15000000,
+                value: 0.0
+            )
+            assert(callResult.status == EVM.Status.successful, message: "Contract deployment failed")
+            let decodedResult: [AnyStruct] = EVM.decodeABI(types: [Type<EVM.EVMAddress>()], data: callResult.data)
+            assert(decodedResult.length == 1, message: "Invalid response length")
+            deployedContractAddress = decodedResult[0] as! EVM.EVMAddress
+        } else if forAssetType.isSubtype(of: Type<@{FungibleToken.Vault}>()) {
+            // Call to the factory contract to deploy an ERC20 & validate result
+            let callResult: EVM.Result = FlowEVMBridgeUtils.call(
+                signature: "deployERC20(string,string,string,string,string)",
+                targetEVMAddress: FlowEVMBridgeUtils.bridgeFactoryEVMAddress,
+                args: [name, symbol!, cadenceAddress.toString(), identifier, contractURI], // TODO: Decide on and update symbol
+                gasLimit: 15000000,
+                value: 0.0
+            )
+            assert(callResult.status == EVM.Status.successful, message: "Contract deployment failed")
+            let decodedResult: [AnyStruct] = EVM.decodeABI(types: [Type<EVM.EVMAddress>()], data: callResult.data)
+            assert(decodedResult.length == 1, message: "Invalid response length")
+            deployedContractAddress = decodedResult[0] as! EVM.EVMAddress
+        } else {
+            panic("Attempted to onboard unsupported type: ".concat(forAssetType.identifier))
+        }
 
         // Associate the deployed contract with the given type & return the deployed address
-        let erc20Address = decodedResult[0] as! EVM.EVMAddress
-        FlowEVMBridgeConfig.associateType(forTokenType, with: erc20Address)
+        assert(deployedContractAddress != nil, message: "Failed to retrieve deployed contract address")
+        FlowEVMBridgeConfig.associateType(forAssetType, with: deployedContractAddress!)
         return EVMOnboardingValues(
-            evmContractAddress: erc20Address,
+            evmContractAddress: deployedContractAddress!,
             name: name,
             symbol: symbol!,
-            decimals: FlowEVMBridgeConfig.defaultDecimals
+            decimals: isNFT ? nil : FlowEVMBridgeConfig.defaultDecimals
         )
     }
 
