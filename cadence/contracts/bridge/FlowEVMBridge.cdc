@@ -21,7 +21,7 @@ import "FlowEVMBridgeUtils"
 import "FlowEVMBridgeNFTEscrow"
 import "FlowEVMBridgeTokenEscrow"
 import "FlowEVMBridgeTemplates"
-import "SerializeNFT"
+import "SerializeMetadata"
 
 /// The FlowEVMBridge contract is the main entrypoint for bridging NFT & FT assets between Flow & FlowEVM.
 ///
@@ -207,7 +207,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
             uri = metadata.uri.uri()
         } else {
             // Otherwise, serialize the NFT
-            uri = SerializeNFT.serializeNFTMetadataAsURI(&token as &{NonFungibleToken.NFT})
+            uri = SerializeMetadata.serializeNFTMetadataAsURI(&token as &{NonFungibleToken.NFT})
         }
 
         // Lock the NFT & calculate the storage used by the NFT
@@ -671,7 +671,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
                 viewType: Type<MetadataViews.NFTCollectionDisplay>()
             ) as! MetadataViews.NFTCollectionDisplay? {
                 name = collectionDisplay.name
-                let serializedDisplay = SerializeNFT.serializeFromDisplays(nftDisplay: nil, collectionDisplay: collectionDisplay)!
+                let serializedDisplay = SerializeMetadata.serializeFromDisplays(nftDisplay: nil, collectionDisplay: collectionDisplay)!
                 contractURI = "data:application/json;utf8,{".concat(serializedDisplay).concat("}")
             }
         }
@@ -738,7 +738,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
             symbol = ftDisplay!.symbol
         }
         if contractURI.length == 0 && ftDisplay != nil {
-            let serializedDisplay = SerializeNFT.serializeFTDisplay(ftDisplay!)
+            let serializedDisplay = SerializeMetadata.serializeFTDisplay(ftDisplay!)
             contractURI = "data:application/json;utf8,{".concat(serializedDisplay).concat("}")
         }
 

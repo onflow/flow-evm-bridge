@@ -8,7 +8,7 @@ import "Serialize"
 /// This contract defines methods for serializing NFT metadata as a JSON compatible string, according to the common
 /// OpenSea metadata format. NFTs and metadata views can be serialized by reference via contract methods.
 ///
-access(all) contract SerializeNFT {
+access(all) contract SerializeMetadata {
 
     /// Serializes the metadata (as a JSON compatible String) for a given NFT according to formats expected by EVM
     /// platforms like OpenSea. If you are a project owner seeking to expose custom traits on bridged NFTs and your

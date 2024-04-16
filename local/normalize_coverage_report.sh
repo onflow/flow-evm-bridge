@@ -1,5 +1,5 @@
 sed -i 's/A.0000000000000007.Serialize/cadence\/contracts\/utils\/Serialize.cdc/' coverage.lcov
-sed -i 's/A.0000000000000007.SerializeNFT/cadence\contracts\/SerializeNFT.cdc/' coverage.lcov
+sed -i 's/A.0000000000000007.SerializeMetadata/cadence\contracts\/SerializeMetadata.cdc/' coverage.lcov
 sed -i 's/A.0000000000000007.BridgePermissions/cadence\/contracts\/bridge\/BridgePermissions.cdc/' coverage.lcov
 sed -i 's/A.0000000000000007.ICrossVM/cadence\/contracts\/bridge\/ICrossVM.cdc/' coverage.lcov
 sed -i 's/A.0000000000000007.CrossVMNFT/cadence\/contracts\/bridge\/CrossVMNFT.cdc/' coverage.lcov

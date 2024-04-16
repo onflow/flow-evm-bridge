@@ -65,8 +65,8 @@ fun setup() {
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
-        name: "SerializeNFT",
-        path: "../contracts/utils/SerializeNFT.cdc",
+        name: "SerializeMetadata",
+        path: "../contracts/utils/SerializeMetadata.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
