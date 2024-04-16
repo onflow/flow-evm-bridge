@@ -5,8 +5,8 @@ import "ScopedFTProviders"
 
 import "EVM"
 
+import "EVMUtils"
 import "FlowEVMBridge"
-import "FlowEVMBridgeUtils"
 import "FlowEVMBridgeConfig"
 
 /// This transaction onboards the NFT type to the bridge, configuring the bridge to move NFTs between environments
@@ -49,7 +49,7 @@ transaction(addressesAsHex: [String]) {
         // Iterate over provided array
         for addressHex in addressesAsHex {
             // Convert hex string to EVMAddress
-            let address = FlowEVMBridgeUtils.getEVMAddressFromHexString(address: addressHex)
+            let address = EVMUtils.getEVMAddressFromHexString(address: addressHex)
             // Continue if the hex is not a valid EVM address or if the address is already onboarded
             if address == nil || FlowEVMBridge.evmAddressRequiresOnboarding(address!) != true {
                 continue

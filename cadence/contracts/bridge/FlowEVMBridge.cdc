@@ -8,6 +8,7 @@ import "FlowToken"
 
 import "EVM"
 
+import "EVMUtils"
 import "BridgePermissions"
 import "ICrossVM"
 import "IEVMBridgeNFTMinter"
@@ -140,7 +141,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         emit Onboarded(
             type: type,
             cadenceContractAddress: FlowEVMBridgeUtils.getContractAddress(fromType: type)!,
-            evmContractAddress: FlowEVMBridgeUtils.getEVMAddressAsHexString(address: onboardingValues.evmContractAddress)
+            evmContractAddress: EVMUtils.getEVMAddressAsHexString(address: onboardingValues.evmContractAddress)
         )
     }
 
@@ -581,14 +582,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         if !FlowEVMBridgeUtils.isValidFlowAsset(type: type) {
             return nil
         }
-        if type == Type<@FlowToken.Vault>() {
-            return false
-        } else if type.isSubtype(of: Type<@{NonFungibleToken.NFT}>()) {
-            return !FlowEVMBridgeNFTEscrow.isInitialized(forType: type)
-        } else if type.isSubtype(of: Type<@{FungibleToken.Vault}>()) {
-            return !FlowEVMBridgeTokenEscrow.isInitialized(forType: type)
-        }
-        return nil
+        return FlowEVMBridgeConfig.getEVMAddressAssociated(with: type) == nil
     }
 
     /// Returns whether an EVM-native asset needs to be onboarded to the bridge
@@ -812,7 +806,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
             assetName: name,
             symbol: symbol,
             isERC721: isERC721,
-            evmContractAddress: FlowEVMBridgeUtils.getEVMAddressAsHexString(address: evmContractAddress)
+            evmContractAddress: EVMUtils.getEVMAddressAsHexString(address: evmContractAddress)
         )
     }
 }

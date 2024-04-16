@@ -21,6 +21,8 @@ contract FlowEVMBridgeConfig {
     /// Mapping of Type to its associated EVMAddress as relevant to the bridge
     access(self)
     let typeToEVMAddress: {Type: EVM.EVMAddress}
+    access(self)
+    let evmAddressHexToType: {String: Type}
 
     /* --- Path Constants --- */
     //
@@ -60,6 +62,7 @@ contract FlowEVMBridgeConfig {
     access(account)
     fun associateType(_ type: Type, with evmAddress: EVM.EVMAddress) {
         self.typeToEVMAddress[type] = evmAddress
+
     }
 
     /*****************
@@ -100,11 +103,13 @@ contract FlowEVMBridgeConfig {
         self.onboardFee = 0.0
         self.baseFee = 0.0
         self.defaultDecimals = 18
+
         self.typeToEVMAddress = {
             Type<@FlowToken.Vault>(): EVM.EVMAddress(
                 bytes: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
             )
         }
+        self.evmAddressHexToType = {}
         self.adminStoragePath = /storage/flowEVMBridgeConfigAdmin
         self.coaStoragePath = /storage/evm
         self.providerCapabilityStoragePath = /storage/bridgeFlowVaultProvider

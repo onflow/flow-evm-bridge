@@ -1,5 +1,6 @@
 import "EVM"
 
+import "EVMUtils"
 import "FlowEVMBridgeUtils"
 
 /// Returns the tokenURI of the given tokenID from the given EVM contract address
@@ -11,7 +12,7 @@ import "FlowEVMBridgeUtils"
 /// @return The tokenURI of the given tokenID from the given EVM contract address. Reverts if the call is unsuccessful
 ///
 access(all) fun main(contractAddressHex: String, tokenID: UInt256): String? {
-    let address = FlowEVMBridgeUtils.getEVMAddressFromHexString(address: contractAddressHex)
+    let address = EVMUtils.getEVMAddressFromHexString(address: contractAddressHex)
         ?? panic("Problem ")
     return FlowEVMBridgeUtils.getTokenURI(
         evmContractAddress: address,
