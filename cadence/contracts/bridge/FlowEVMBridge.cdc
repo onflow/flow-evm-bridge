@@ -42,7 +42,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
     /// Emitted any time a new asset type is onboarded to the bridge
     access(all)
     event Onboarded(type: Type, cadenceContractAddress: Address, evmContractAddress: String)
-    /// Denotes a defining contract was deployed to the bridge accountcode
+    /// Denotes a defining contract was deployed to the bridge account
     access(all)
     event BridgeDefiningContractDeployed(
         contractName: String,

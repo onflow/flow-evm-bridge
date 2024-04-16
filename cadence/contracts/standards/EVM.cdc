@@ -1,7 +1,7 @@
 import Crypto
-import NonFungibleToken from 0x0000000000000001
-import FungibleToken from 0x0000000000000002
-import FlowToken from 0x0000000000000003
+import "NonFungibleToken"
+import "FungibleToken"
+import "FlowToken"
 
 access(all)
 contract EVM {
