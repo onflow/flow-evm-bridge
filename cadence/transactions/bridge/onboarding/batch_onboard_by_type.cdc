@@ -11,7 +11,7 @@ import "FlowEVMBridgeConfig"
 /// This transaction onboards the asset type to the bridge, configuring the bridge to move assets between environments
 /// NOTE: This must be done before bridging a Cadence-native asset to EVM
 ///
-/// @param identifer: The Cadence type identifier of the bridgeable asset to onboarded to the bridge
+/// @param types: The Cadence types of the bridgeable asset to onboard to the bridge
 ///
 transaction(types: [Type]) {
 
@@ -44,8 +44,8 @@ transaction(types: [Type]) {
     }
 
     execute {
-        for type in types {
-            
+        for type in types { 
+            // Continue on if the type does not require onboarding
             if FlowEVMBridge.typeRequiresOnboarding(type) != true {
                 continue
             }
