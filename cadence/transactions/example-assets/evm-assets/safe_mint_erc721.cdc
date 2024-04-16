@@ -1,6 +1,6 @@
 import "EVM"
 
-import "FlowEVMBridgeUtils"
+import "EVMUtils"
 
 transaction(
     recipientHexAddress: String,
@@ -18,9 +18,9 @@ transaction(
     }
 
     execute {
-        let recipientAddress = FlowEVMBridgeUtils.getEVMAddressFromHexString(address: recipientHexAddress)
+        let recipientAddress = EVMUtils.getEVMAddressFromHexString(address: recipientHexAddress)
             ?? panic("Invalid recipient address")
-        let erc721Address = FlowEVMBridgeUtils.getEVMAddressFromHexString(address: erc721HexAddress)
+        let erc721Address = EVMUtils.getEVMAddressFromHexString(address: erc721HexAddress)
             ?? panic("Invalid ERC721 address")
         let calldata = EVM.encodeABIWithSignature(
             "safeMint(address,uint256,string)",

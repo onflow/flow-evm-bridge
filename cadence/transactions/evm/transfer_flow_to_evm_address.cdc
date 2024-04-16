@@ -3,7 +3,7 @@ import "FlowToken"
 
 import "EVM"
 
-import "FlowEVMBridgeUtils"
+import "EVMUtils"
 
 /// Transfers $FLOW from the signer's account Cadence Flow balance to the recipient's hex-encoded EVM address.
 /// Note that a COA must have a $FLOW balance in EVM before transferring value to another EVM address.
@@ -26,7 +26,7 @@ transaction(recipientEVMAddressHex: String, amount: UFix64, gasLimit: UInt64) {
             ) ?? panic("Could not borrow reference to the owner's Vault!")
         self.sentVault <- vaultRef.withdraw(amount: amount) as! @FlowToken.Vault
 
-        self.recipientEVMAddress = FlowEVMBridgeUtils.getEVMAddressFromHexString(address: recipientEVMAddressHex)
+        self.recipientEVMAddress = EVMUtils.getEVMAddressFromHexString(address: recipientEVMAddressHex)
             ?? panic("Invalid recipient EVM address")
     }
 

@@ -8,6 +8,7 @@ import "FlowToken"
 
 import "EVM"
 
+import "EVMUtils"
 import "BridgePermissions"
 import "ICrossVM"
 import "IEVMBridgeNFTMinter"
@@ -140,7 +141,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         emit Onboarded(
             type: type,
             cadenceContractAddress: FlowEVMBridgeUtils.getContractAddress(fromType: type)!,
-            evmContractAddress: FlowEVMBridgeUtils.getEVMAddressAsHexString(address: onboardingValues.evmContractAddress)
+            evmContractAddress: EVMUtils.getEVMAddressAsHexString(address: onboardingValues.evmContractAddress)
         )
     }
 
@@ -581,14 +582,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         if !FlowEVMBridgeUtils.isValidFlowAsset(type: type) {
             return nil
         }
-        if type == Type<@FlowToken.Vault>() {
-            return false
-        } else if type.isSubtype(of: Type<@{NonFungibleToken.NFT}>()) {
-            return !FlowEVMBridgeNFTEscrow.isInitialized(forType: type)
-        } else if type.isSubtype(of: Type<@{FungibleToken.Vault}>()) {
-            return !FlowEVMBridgeTokenEscrow.isInitialized(forType: type)
-        }
-        return nil
+        return FlowEVMBridgeConfig.getEVMAddressAssociated(with: type) == nil
     }
 
     /// Returns whether an EVM-native asset needs to be onboarded to the bridge
@@ -599,19 +593,15 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
     ///
     access(all)
     fun evmAddressRequiresOnboarding(_ address: EVM.EVMAddress): Bool? {
-        // If the address was deployed by the bridge or a Cadence contract has been deployed to define the
-        // corresponding NFT, it's already been onboarded
-        let nftContractName = FlowEVMBridgeUtils.deriveBridgedNFTContractName(from: address)
-        let tokenContractName = FlowEVMBridgeUtils.deriveBridgedTokenContractName(from: address)
-        if FlowEVMBridgeUtils.isEVMContractBridgeOwned(evmContractAddress: address) ||
-            self.account.contracts.get(name: nftContractName) != nil ||
-            self.account.contracts.get(name: tokenContractName) != nil {
+        // See if the bridge already has a known type associated with the given address
+        if FlowEVMBridgeConfig.getTypeAssociated(with: address) != nil {
             return false
         }
         // Dealing with EVM-native asset, check if it's NFT or FT exclusively
         if FlowEVMBridgeUtils.isValidEVMAsset(evmContractAddress: address) {
             return true
         }
+        // Not onboarded and not a valid asset, so return nil
         return nil
     }
 
@@ -812,7 +802,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
             assetName: name,
             symbol: symbol,
             isERC721: isERC721,
-            evmContractAddress: FlowEVMBridgeUtils.getEVMAddressAsHexString(address: evmContractAddress)
+            evmContractAddress: EVMUtils.getEVMAddressAsHexString(address: evmContractAddress)
         )
     }
 }

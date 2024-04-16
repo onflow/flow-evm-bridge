@@ -6,6 +6,7 @@ sed -i 's/A.0000000000000007.CrossVMNFT/cadence\/contracts\/bridge\/CrossVMNFT.c
 sed -i 's/A.0000000000000007.CrossVMToken/cadence\/contracts\/bridge\/CrossVMToken.cdc/' coverage.lcov
 sed -i 's/A.0000000000000007.FlowEVMBridgeConfig/cadence\/contracts\/bridge\/FlowEVMBridgeConfig.cdc/' coverage.lcov
 sed -i 's/A.0000000000000007.FlowEVMBridgeUtils/cadence\/contracts\/bridge\/FlowEVMBridgeUtils.cdc/' coverage.lcov
+sed -i 's/A.0000000000000007.EVMUtils/cadence\/contracts\/bridge\/EVMUtils.cdc/' coverage.lcov
 sed -i 's/A.0000000000000007.FlowEVMBridgeNFTEscrow/cadence\/contracts\/bridge\/FlowEVMBridgeNFTEscrow.cdc/' coverage.lcov
 sed -i 's/A.0000000000000007.FlowEVMBridgeTokenEscrow/cadence\/contracts\/bridge\/FlowEVMBridgeTokenEscrow.cdc/' coverage.lcov
 sed -i 's/A.0000000000000007.FlowEVMBridgeTemplates/cadence\/contracts\/bridge\/FlowEVMBridgeTemplates.cdc/' coverage.lcov

@@ -3,6 +3,8 @@ import BlockchainHelpers
 
 import "FungibleToken"
 import "NonFungibleToken"
+import "ExampleNFT"
+import "ExampleToken"
 import "FlowStorageFees"
 
 import "test_helpers.cdc"
@@ -34,8 +36,12 @@ access(all) let erc721URI = "URI"
 // ERC20 values
 access(all) let erc20MintAmount: UInt256 = 100_000_000_000_000_000_000
 
+// Fee initialiazation values
 access(all) let expectedOnboardFee = 1.0
 access(all) let expectedBaseFee = 0.001
+
+// Test height snapshot for test state resets
+access(all) var snapshot: UInt64 = 0
 
 access(all)
 fun setup() {
@@ -104,6 +110,12 @@ fun setup() {
     err = Test.deployContract(
         name: "CrossVMToken",
         path: "../contracts/bridge/CrossVMToken.cdc",
+        arguments: []
+    )
+    Test.expect(err, Test.beNil())
+    err = Test.deployContract(
+        name: "EVMUtils",
+        path: "../contracts/utils/EVMUtils.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
@@ -440,8 +452,9 @@ fun testUpdateBridgeFeesSucceeds() {
 
 access(all)
 fun testOnboardNFTByTypeSucceeds() {
-    var onboaringRequiredResult = executeScript(
-        "../scripts/bridge/type_requires_onboarding.cdc",
+    snapshot = getCurrentBlockHeight()
+    var onboaringRequiredResult: Test.ScriptResult = executeScript(
+        "../scripts/bridge/type_requires_onboarding_by_identifier.cdc",
         [exampleNFTIdentifier]
     )
     Test.expect(onboaringRequiredResult, Test.beSucceeded())
@@ -449,14 +462,14 @@ fun testOnboardNFTByTypeSucceeds() {
     Test.assertEqual(true, requiresOnboarding)
 
     var onboardingResult = executeTransaction(
-        "../transactions/bridge/onboarding/onboard_by_type.cdc",
+        "../transactions/bridge/onboarding/onboard_by_type_identifier.cdc",
         [exampleNFTIdentifier],
         alice
     )
     Test.expect(onboardingResult, Test.beSucceeded())
 
     onboaringRequiredResult = executeScript(
-        "../scripts/bridge/type_requires_onboarding.cdc",
+        "../scripts/bridge/type_requires_onboarding_by_identifier.cdc",
         [exampleNFTIdentifier]
     )
     Test.expect(onboaringRequiredResult, Test.beSucceeded())
@@ -464,7 +477,7 @@ fun testOnboardNFTByTypeSucceeds() {
     Test.assertEqual(false, requiresOnboarding)
 
     onboardingResult = executeTransaction(
-        "../transactions/bridge/onboarding/onboard_by_type.cdc",
+        "../transactions/bridge/onboarding/onboard_by_type_identifier.cdc",
         [exampleNFTIdentifier],
         alice
     )
@@ -472,7 +485,94 @@ fun testOnboardNFTByTypeSucceeds() {
 }
 
 access(all)
+fun testOnboardTokenByTypeSucceeds() {
+    var onboaringRequiredResult = executeScript(
+        "../scripts/bridge/type_requires_onboarding_by_identifier.cdc",
+        [exampleTokenIdentifier]
+    )
+    Test.expect(onboaringRequiredResult, Test.beSucceeded())
+    var requiresOnboarding = onboaringRequiredResult.returnValue as! Bool? ?? panic("Problem getting onboarding requirement")
+    Test.assertEqual(true, requiresOnboarding)
+
+    var onboardingResult = executeTransaction(
+        "../transactions/bridge/onboarding/onboard_by_type_identifier.cdc",
+        [exampleTokenIdentifier],
+        alice
+    )
+    Test.expect(onboardingResult, Test.beSucceeded())
+
+    onboaringRequiredResult = executeScript(
+        "../scripts/bridge/type_requires_onboarding_by_identifier.cdc",
+        [exampleTokenIdentifier]
+    )
+    Test.expect(onboaringRequiredResult, Test.beSucceeded())
+    requiresOnboarding = onboaringRequiredResult.returnValue as! Bool? ?? panic("Problem getting onboarding requirement")
+    Test.assertEqual(false, requiresOnboarding)
+
+    onboardingResult = executeTransaction(
+        "../transactions/bridge/onboarding/onboard_by_type_identifier.cdc",
+        [exampleTokenIdentifier],
+        alice
+    )
+    Test.expect(onboardingResult, Test.beFailed())
+}
+
+access(all)
+fun testBatchOnboardByTypeSucceeds() {
+    Test.assert(snapshot != 0, message: "Expected snapshot to be taken before onboarding any types")
+    Test.reset(to: snapshot)
+
+    let nftOnboaringRequiredResult = executeScript(
+        "../scripts/bridge/type_requires_onboarding_by_identifier.cdc",
+        [exampleNFTIdentifier]
+    )
+    Test.expect(nftOnboaringRequiredResult, Test.beSucceeded())
+    let nftRequiresOnboarding = nftOnboaringRequiredResult.returnValue as! Bool? ?? panic("Problem getting onboarding requirement")
+    Test.assertEqual(true, nftRequiresOnboarding)
+    let tokenOnboaringRequiredResult = executeScript(
+        "../scripts/bridge/type_requires_onboarding_by_identifier.cdc",
+        [exampleTokenIdentifier]
+    )
+    Test.expect(tokenOnboaringRequiredResult, Test.beSucceeded())
+    let tokenRequiresOnboarding = tokenOnboaringRequiredResult.returnValue as! Bool? ?? panic("Problem getting onboarding requirement")
+    Test.assertEqual(true, tokenRequiresOnboarding)
+
+    let exampleNFTType = Type<@ExampleNFT.NFT>()
+    let exampleTokenType = Type<@ExampleToken.Vault>()
+    var onboardingResult = executeTransaction(
+        "../transactions/bridge/onboarding/batch_onboard_by_type.cdc",
+        [[exampleNFTType, exampleTokenType]],
+        alice
+    )
+    Test.expect(onboardingResult, Test.beSucceeded())
+
+    let expectedBatchOnboardingRequired: {Type: Bool?} = {
+        exampleNFTType: false,
+        exampleTokenType: false
+    }
+    let batchOnboaringRequiredResult = executeScript(
+        "../scripts/bridge/batch_type_requires_onboarding.cdc",
+        [[exampleNFTType, exampleTokenType]]
+    )
+    Test.expect(batchOnboaringRequiredResult, Test.beSucceeded())
+    let batchRequiresOnboarding = batchOnboaringRequiredResult.returnValue as! {Type: Bool?}? ?? panic("Problem getting onboarding requirement")
+    Test.assertEqual(expectedBatchOnboardingRequired, batchRequiresOnboarding)
+
+    // Should succeed as batch onboarding skips already onboarded types
+    onboardingResult = executeTransaction(
+        "../transactions/bridge/onboarding/batch_onboard_by_type.cdc",
+        [[exampleNFTType, exampleTokenType]],
+        alice
+    )
+    Test.expect(onboardingResult, Test.beSucceeded())
+}
+
+
+
+access(all)
 fun testOnboardERC721ByEVMAddressSucceeds() {
+    snapshot = getCurrentBlockHeight()
+
     let erc721AddressHex = getDeployedAddressFromDeployer(name: "erc721")
     Test.assertEqual(40, erc721AddressHex.length)
 
@@ -502,39 +602,6 @@ fun testOnboardERC721ByEVMAddressSucceeds() {
     onboardingResult = executeTransaction(
         "../transactions/bridge/onboarding/onboard_by_evm_address.cdc",
         [erc721AddressHex],
-        alice
-    )
-    Test.expect(onboardingResult, Test.beFailed())
-}
-
-access(all)
-fun testOnboardTokenByTypeSucceeds() {
-    var onboaringRequiredResult = executeScript(
-        "../scripts/bridge/type_requires_onboarding.cdc",
-        [exampleTokenIdentifier]
-    )
-    Test.expect(onboaringRequiredResult, Test.beSucceeded())
-    var requiresOnboarding = onboaringRequiredResult.returnValue as! Bool? ?? panic("Problem getting onboarding requirement")
-    Test.assertEqual(true, requiresOnboarding)
-
-    var onboardingResult = executeTransaction(
-        "../transactions/bridge/onboarding/onboard_by_type.cdc",
-        [exampleTokenIdentifier],
-        alice
-    )
-    Test.expect(onboardingResult, Test.beSucceeded())
-
-    onboaringRequiredResult = executeScript(
-        "../scripts/bridge/type_requires_onboarding.cdc",
-        [exampleTokenIdentifier]
-    )
-    Test.expect(onboaringRequiredResult, Test.beSucceeded())
-    requiresOnboarding = onboaringRequiredResult.returnValue as! Bool? ?? panic("Problem getting onboarding requirement")
-    Test.assertEqual(false, requiresOnboarding)
-
-    onboardingResult = executeTransaction(
-        "../transactions/bridge/onboarding/onboard_by_type.cdc",
-        [exampleTokenIdentifier],
         alice
     )
     Test.expect(onboardingResult, Test.beFailed())
@@ -574,6 +641,60 @@ fun testOnboardERC20ByEVMAddressSucceeds() {
         alice
     )
     Test.expect(onboardingResult, Test.beFailed())
+}
+
+access(all)
+fun testBatchOnboardByEVMAddressSucceeds() {
+    Test.assert(snapshot != 0, message: "Expected snapshot to be taken before onboarding any EVM contracts")
+    Test.reset(to: snapshot)
+
+    let erc721AddressHex = getDeployedAddressFromDeployer(name: "erc721")
+    let erc20AddressHex = getDeployedAddressFromDeployer(name: "erc20")
+    Test.assertEqual(40, erc721AddressHex.length)
+    Test.assertEqual(40, erc20AddressHex.length)
+
+    var erc721OnboaringRequiredResult = executeScript(
+        "../scripts/bridge/evm_address_requires_onboarding.cdc",
+        [erc721AddressHex]
+    )
+    Test.expect(erc721OnboaringRequiredResult, Test.beSucceeded())
+    var erc721RequiresOnboarding = erc721OnboaringRequiredResult.returnValue as! Bool? ?? panic("Problem getting onboarding requirement")
+    Test.assertEqual(true, erc721RequiresOnboarding)
+    var erc20OnboaringRequiredResult = executeScript(
+        "../scripts/bridge/evm_address_requires_onboarding.cdc",
+        [erc20AddressHex]
+    )
+    Test.expect(erc20OnboaringRequiredResult, Test.beSucceeded())
+    var erc20RequiresOnboarding = erc20OnboaringRequiredResult.returnValue as! Bool? ?? panic("Problem getting onboarding requirement")
+    Test.assertEqual(true, erc20RequiresOnboarding)
+
+    var batchOnboardingResult = executeTransaction(
+        "../transactions/bridge/onboarding/batch_onboard_by_evm_address.cdc",
+        [[erc721AddressHex, erc20AddressHex]],
+        alice
+    )
+    Test.expect(batchOnboardingResult, Test.beSucceeded())
+
+    let expectedBatchRequiresOnboarding: {String: Bool?} = {
+        erc721AddressHex: false,
+        erc20AddressHex: false
+    }
+    let batchOnboaringRequiredResult = executeScript(
+        "../scripts/bridge/batch_evm_address_requires_onboarding.cdc",
+        [[erc721AddressHex, erc20AddressHex]]
+    )
+    Test.expect(batchOnboaringRequiredResult, Test.beSucceeded())
+    let batchRequiresOnboarding = batchOnboaringRequiredResult.returnValue as! {String: Bool?}? ?? panic("Problem getting onboarding requirement")
+    Test.assertEqual(expectedBatchRequiresOnboarding, batchRequiresOnboarding)
+
+    // Batch onboarding should succeed as it skips already onboarded contracts
+    batchOnboardingResult = executeTransaction(
+        "../transactions/bridge/onboarding/batch_onboard_by_evm_address.cdc",
+        [[erc721AddressHex, erc20AddressHex]],
+        alice
+    )
+    Test.expect(batchOnboardingResult, Test.beSucceeded())
+
 }
 
 /* --- BRIDGING NFTS - Test bridging both Cadence- & EVM-native NFTs --- */

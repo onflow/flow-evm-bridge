@@ -1,5 +1,6 @@
 import "EVM"
 
+import "EVMUtils"
 import "FlowEVMBridgeUtils"
 
 /// Returns the balance of the owner (hex-encoded EVM address - minus 0x prefix) of a given ERC20 fungible token defined
@@ -13,9 +14,9 @@ import "FlowEVMBridgeUtils"
 ///
 access(all) fun main(owner: String, evmContractAddress: String): UInt256 {
     return FlowEVMBridgeUtils.balanceOf(
-        owner: FlowEVMBridgeUtils.getEVMAddressFromHexString(address: owner)
+        owner: EVMUtils.getEVMAddressFromHexString(address: owner)
             ?? panic("Invalid owner address"),
-        evmContractAddress: FlowEVMBridgeUtils.getEVMAddressFromHexString(address: evmContractAddress)
+        evmContractAddress: EVMUtils.getEVMAddressFromHexString(address: evmContractAddress)
             ?? panic("Invalid EVM contract address")
     )
 }

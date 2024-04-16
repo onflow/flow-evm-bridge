@@ -2,11 +2,11 @@ import "EVM"
 
 import "EVMDeployer"
 
-import "FlowEVMBridgeUtils"
+import "EVMUtils"
 
 access(all)
 fun main(name: String): String {
-    return FlowEVMBridgeUtils.getEVMAddressAsHexString(
+    return EVMUtils.getEVMAddressAsHexString(
         address: EVMDeployer.deployedAddresses[name] ?? panic("Could not find deployed address for: ".concat(name))
     )
 }

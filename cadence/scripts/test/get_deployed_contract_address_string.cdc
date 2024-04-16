@@ -1,9 +1,9 @@
 import "EVM"
 
-import "FlowEVMBridgeUtils"
+import "EVMUtils"
 
 import "EVMDeployer"
 
 access(all) fun main(): String {
-    return FlowEVMBridgeUtils.getEVMAddressAsHexString(address: EVMDeployer.deployedContractAddress)
+    return EVMUtils.getEVMAddressAsHexString(address: EVMDeployer.deployedContractAddress)
 }

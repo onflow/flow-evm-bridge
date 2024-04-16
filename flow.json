@@ -43,6 +43,13 @@
 				"previewnet": "b6763b4399a888c8"
 			}
 		},
+		"EVMUtils": {
+			"source": "./cadence/contracts/standards/EVMUtils.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"testing": "0000000000000007"
+			}
+		},
 		"FlowEVMBridgeAccessor": {
 			"source": "./cadence/contracts/bridge/FlowEVMBridgeAccessor.cdc",
 			"aliases": {

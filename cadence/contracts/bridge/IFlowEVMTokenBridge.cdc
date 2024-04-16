@@ -3,7 +3,7 @@ import "NonFungibleToken"
 
 import "EVM"
 
-import "FlowEVMBridgeUtils"
+import "EVMUtils"
 
 access(all) contract interface IFlowEVMTokenBridge {
     
@@ -64,8 +64,8 @@ access(all) contract interface IFlowEVMTokenBridge {
             emit BridgedTokensToEVM(
                 type: vault.getType(),
                 amount: vault.balance,
-                to: FlowEVMBridgeUtils.getEVMAddressAsHexString(address: to),
-                evmContractAddress: FlowEVMBridgeUtils.getEVMAddressAsHexString(
+                to: EVMUtils.getEVMAddressAsHexString(address: to),
+                evmContractAddress: EVMUtils.getEVMAddressAsHexString(
                     address: self.getAssociatedEVMAddress(with: vault.getType())
                         ?? panic("Could not find EVM Contract address associated with provided NFT")
                 ), bridgeAddress: self.account.address
@@ -98,8 +98,8 @@ access(all) contract interface IFlowEVMTokenBridge {
             emit BridgedTokensFromEVM(
                 type: result.getType(),
                 amount: amount,
-                caller: FlowEVMBridgeUtils.getEVMAddressAsHexString(address: owner),
-                evmContractAddress: FlowEVMBridgeUtils.getEVMAddressAsHexString(
+                caller: EVMUtils.getEVMAddressAsHexString(address: owner),
+                evmContractAddress: EVMUtils.getEVMAddressAsHexString(
                     address: self.getAssociatedEVMAddress(with: result.getType())
                         ?? panic("Could not find EVM Contract address associated with provided Vault")
                 ), bridgeAddress: self.account.address

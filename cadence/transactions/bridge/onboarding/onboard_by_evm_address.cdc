@@ -5,8 +5,8 @@ import "ScopedFTProviders"
 
 import "EVM"
 
+import "EVMUtils"
 import "FlowEVMBridge"
-import "FlowEVMBridgeUtils"
 import "FlowEVMBridgeConfig"
 
 /// This transaction onboards the NFT type to the bridge, configuring the bridge to move NFTs between environments
@@ -23,7 +23,7 @@ transaction(contractAddressHex: String) {
     prepare(signer: auth(CopyValue, BorrowValue, IssueStorageCapabilityController, PublishCapability, SaveValue) &Account) {
         /* --- Construct EVMAddress from hex string (no leading `"0x"`) --- */
         //
-        self.contractAddress = FlowEVMBridgeUtils.getEVMAddressFromHexString(address: contractAddressHex)
+        self.contractAddress = EVMUtils.getEVMAddressFromHexString(address: contractAddressHex)
             ?? panic("Invalid EVM address string provided")
 
         /* --- Configure a ScopedFTProvider --- */

@@ -1,6 +1,6 @@
 import "EVM"
 
-import "FlowEVMBridgeUtils"
+import "EVMUtils"
 
 /// Converts EVM address bytes into to a hex string
 ///
@@ -13,5 +13,5 @@ access(all) fun main(bytes: [UInt8]): String? {
                 bytes[15], bytes[16], bytes[17], bytes[18], bytes[19]
             ]
         )
-    return FlowEVMBridgeUtils.getEVMAddressAsHexString(address: address)
+    return EVMUtils.getEVMAddressAsHexString(address: address)
 }

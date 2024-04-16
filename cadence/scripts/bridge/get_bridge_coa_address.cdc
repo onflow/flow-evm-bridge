@@ -1,6 +1,6 @@
 import "EVM"
 
-import "FlowEVMBridgeUtils"
+import "EVMUtils"
 import "FlowEVMBridge"
 
 /// Returns the EVM address associated with the FlowEVMBridge
@@ -9,5 +9,5 @@ import "FlowEVMBridge"
 ///
 access(all) fun main(): String {
     let address: EVM.EVMAddress = FlowEVMBridge.getBridgeCOAEVMAddress()
-    return FlowEVMBridgeUtils.getEVMAddressAsHexString(address: address)
+    return EVMUtils.getEVMAddressAsHexString(address: address)
 }
