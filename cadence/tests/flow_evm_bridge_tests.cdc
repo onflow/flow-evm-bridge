@@ -440,8 +440,8 @@ fun testUpdateBridgeFeesSucceeds() {
 
 access(all)
 fun testOnboardNFTByTypeSucceeds() {
-    var onboaringRequiredResult = executeScript(
-        "../scripts/bridge/type_requires_onboarding.cdc",
+    var onboaringRequiredResult: Test.ScriptResult = executeScript(
+        "../scripts/bridge/type_requires_onboarding_by_identifier.cdc",
         [exampleNFTIdentifier]
     )
     Test.expect(onboaringRequiredResult, Test.beSucceeded())
@@ -449,14 +449,14 @@ fun testOnboardNFTByTypeSucceeds() {
     Test.assertEqual(true, requiresOnboarding)
 
     var onboardingResult = executeTransaction(
-        "../transactions/bridge/onboarding/onboard_by_type.cdc",
+        "../transactions/bridge/onboarding/onboard_by_type_identifier.cdc",
         [exampleNFTIdentifier],
         alice
     )
     Test.expect(onboardingResult, Test.beSucceeded())
 
     onboaringRequiredResult = executeScript(
-        "../scripts/bridge/type_requires_onboarding.cdc",
+        "../scripts/bridge/type_requires_onboarding_by_identifier.cdc",
         [exampleNFTIdentifier]
     )
     Test.expect(onboaringRequiredResult, Test.beSucceeded())
@@ -464,7 +464,7 @@ fun testOnboardNFTByTypeSucceeds() {
     Test.assertEqual(false, requiresOnboarding)
 
     onboardingResult = executeTransaction(
-        "../transactions/bridge/onboarding/onboard_by_type.cdc",
+        "../transactions/bridge/onboarding/onboard_by_type_identifier.cdc",
         [exampleNFTIdentifier],
         alice
     )
@@ -510,7 +510,7 @@ fun testOnboardERC721ByEVMAddressSucceeds() {
 access(all)
 fun testOnboardTokenByTypeSucceeds() {
     var onboaringRequiredResult = executeScript(
-        "../scripts/bridge/type_requires_onboarding.cdc",
+        "../scripts/bridge/type_requires_onboarding_by_identifier.cdc",
         [exampleTokenIdentifier]
     )
     Test.expect(onboaringRequiredResult, Test.beSucceeded())
@@ -518,14 +518,14 @@ fun testOnboardTokenByTypeSucceeds() {
     Test.assertEqual(true, requiresOnboarding)
 
     var onboardingResult = executeTransaction(
-        "../transactions/bridge/onboarding/onboard_by_type.cdc",
+        "../transactions/bridge/onboarding/onboard_by_type_identifier.cdc",
         [exampleTokenIdentifier],
         alice
     )
     Test.expect(onboardingResult, Test.beSucceeded())
 
     onboaringRequiredResult = executeScript(
-        "../scripts/bridge/type_requires_onboarding.cdc",
+        "../scripts/bridge/type_requires_onboarding_by_identifier.cdc",
         [exampleTokenIdentifier]
     )
     Test.expect(onboaringRequiredResult, Test.beSucceeded())
@@ -533,7 +533,7 @@ fun testOnboardTokenByTypeSucceeds() {
     Test.assertEqual(false, requiresOnboarding)
 
     onboardingResult = executeTransaction(
-        "../transactions/bridge/onboarding/onboard_by_type.cdc",
+        "../transactions/bridge/onboarding/onboard_by_type_identifier.cdc",
         [exampleTokenIdentifier],
         alice
     )
