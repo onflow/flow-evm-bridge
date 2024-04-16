@@ -42,7 +42,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
     /// Emitted any time a new asset type is onboarded to the bridge
     access(all)
     event Onboarded(type: Type, cadenceContractAddress: Address, evmContractAddress: String)
-    /// Denotes a defining contract was deployed to the bridge accountcode
+    /// Denotes a defining contract was deployed to the bridge account
     access(all)
     event BridgeDefiningContractDeployed(
         contractName: String,
@@ -213,7 +213,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         // Lock the NFT & calculate the storage used by the NFT
         let storageUsed = FlowEVMBridgeNFTEscrow.lockNFT(<-token)
         // Calculate the bridge fee on current rates
-        let feeAmount = FlowEVMBridgeUtils.calculateBridgeFee(used: storageUsed, includeBase: true)
+        let feeAmount = FlowEVMBridgeUtils.calculateBridgeFee(bytes: storageUsed)
         assert(
             feeProvider.isAvailableToWithdraw(amount: feeAmount),
             message: "Fee provider does not have balance to cover the bridge fee of ".concat(feeAmount.toString())
@@ -308,13 +308,13 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         protectedTransferCall: fun (): EVM.Result
     ): @{NonFungibleToken.NFT} {
         pre {
-            feeProvider.isAvailableToWithdraw(amount: FlowEVMBridgeUtils.calculateBridgeFee(used: 0, includeBase: true)):
+            feeProvider.isAvailableToWithdraw(amount: FlowEVMBridgeUtils.calculateBridgeFee(bytes: 0)):
                 "Insufficient fee paid"
             !type.isSubtype(of: Type<@{FungibleToken.Vault}>()): "Mixed asset types are not yet supported"
             self.typeRequiresOnboarding(type) == false: "NFT must first be onboarded"
         }
         // Withdraw from feeProvider and deposit to self
-        let feeAmount = FlowEVMBridgeUtils.calculateBridgeFee(used: 0, includeBase: true)
+        let feeAmount = FlowEVMBridgeUtils.calculateBridgeFee(bytes: 0)
         let feeVault <-feeProvider.withdraw(amount: feeAmount) as! @FlowToken.Vault
         FlowEVMBridgeUtils.deposit(<-feeVault)
 
@@ -401,10 +401,10 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
             // Lock the FT balance & calculate the extra used by the FT if any
             let storageUsed = FlowEVMBridgeTokenEscrow.lockTokens(<-vault)
             // Calculate the bridge fee on current rates
-            feeAmount = FlowEVMBridgeUtils.calculateBridgeFee(used: storageUsed, includeBase: true)
+            feeAmount = FlowEVMBridgeUtils.calculateBridgeFee(bytes: storageUsed)
         } else {
             Burner.burn(<-vault)
-            feeAmount = FlowEVMBridgeUtils.calculateBridgeFee(used: 0, includeBase: true)
+            feeAmount = FlowEVMBridgeUtils.calculateBridgeFee(bytes: 0)
         }
 
         // Withdraw from feeProvider and deposit to self
@@ -469,14 +469,14 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         protectedTransferCall: fun (): EVM.Result
     ): @{FungibleToken.Vault} {
         pre {
-            feeProvider.isAvailableToWithdraw(amount: FlowEVMBridgeUtils.calculateBridgeFee(used: 0, includeBase: true)):
+            feeProvider.isAvailableToWithdraw(amount: FlowEVMBridgeUtils.calculateBridgeFee(bytes: 0)):
                 "Insufficient fee paid"
             !type.isSubtype(of: Type<@{NonFungibleToken.Collection}>()): "Mixed asset types are not yet supported"
             !type.isInstance(Type<@FlowToken.Vault>()): "Must use the CadenceOwnedAccount interface to bridge $FLOW from EVM"
             self.typeRequiresOnboarding(type) == false: "NFT must first be onboarded"
         }
         // Withdraw from feeProvider and deposit to self
-        let feeAmount = FlowEVMBridgeUtils.calculateBridgeFee(used: 0, includeBase: true)
+        let feeAmount = FlowEVMBridgeUtils.calculateBridgeFee(bytes: 0)
         let feeVault <-feeProvider.withdraw(amount: feeAmount) as! @FlowToken.Vault
         FlowEVMBridgeUtils.deposit(<-feeVault)
 

@@ -51,8 +51,7 @@ transaction(nftContractAddress: Address, nftContractName: String, id: UInt64) {
         self.nft <- collection.withdraw(withdrawID: id)
         let withdrawnStorageUsage = signer.storage.used
         let approxFee = FlowEVMBridgeUtils.calculateBridgeFee(
-                used: currentStorageUsage - withdrawnStorageUsage,
-                includeBase: true
+                bytes: currentStorageUsage - withdrawnStorageUsage
             ) * 1.10
 
         /* --- Configure a ScopedFTProvider --- */

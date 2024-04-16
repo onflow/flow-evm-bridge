@@ -3,6 +3,7 @@ import "FungibleToken"
 import "MetadataViews"
 import "ViewResolver"
 import "FlowToken"
+import "FlowStorageFees"
 
 import "EVM"
 
@@ -74,9 +75,8 @@ contract FlowEVMBridgeUtils {
         ])
     }
 
-    /// Validates the Vault used to pay the bridging fee
-    /// NOTE: Currently fees are calculated at a flat base fee, but may be dynamically calculated based on storage
-    ///       used by escrowed assets in the future
+    /// Calculates the fee bridge fee based on the given storage usage. If includeBase is true, the base fee is included
+    /// in the resulting calculation.
     ///
     /// @param used: The amount of storage used by the asset
     /// @param includeBase: Whether to include the base fee in the calculation
@@ -84,12 +84,10 @@ contract FlowEVMBridgeUtils {
     /// @return The calculated fee amount
     ///
     access(all)
-    view fun calculateBridgeFee(used: UInt64, includeBase: Bool): UFix64 {
-        // TODO: Include storage-based fee calculation
-        // let x = FlowStorageFees.convertUInt64StorageBytesToUFix64Megabytes(used) * FlowEVMBridgeConfig.storageRate
-        let y = includeBase ? FlowEVMBridgeConfig.baseFee : 0.0
-        // return x + y
-        return y
+    view fun calculateBridgeFee(bytes used: UInt64): UFix64 {
+        let megabytesUsed = FlowStorageFees.convertUInt64StorageBytesToUFix64Megabytes(used)
+        let storageFee = FlowStorageFees.storageCapacityToFlow(megabytesUsed)
+        return storageFee + FlowEVMBridgeConfig.baseFee
     }
 
     /// Returns whether the given type is allowed to be bridged as defined by the BridgePermissions contract interface.

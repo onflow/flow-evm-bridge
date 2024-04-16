@@ -71,7 +71,7 @@ transaction(tokenContractAddress: Address, tokenContractName: String, amount: UI
         /* --- Configure a ScopedFTProvider --- */
         //
         // Calculate the bridge fee - bridging from EVM consumes no storage, so flat fee
-        let approxFee = FlowEVMBridgeUtils.calculateBridgeFee(used: 0, includeBase: true)
+        let approxFee = FlowEVMBridgeUtils.calculateBridgeFee(bytes: 0)
         // Issue and store bridge-dedicated Provider Capability in storage if necessary
         if signer.storage.type(at: FlowEVMBridgeConfig.providerCapabilityStoragePath) == nil {
             let providerCap = signer.capabilities.storage.issue<auth(FungibleToken.Withdraw) &{FungibleToken.Provider}>(

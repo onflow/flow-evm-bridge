@@ -52,8 +52,7 @@ transaction(tokenContractAddress: Address, tokenContractName: String, amount: UF
         let withdrawnStorageUsage = signer.storage.used
         // Approximate the bridge fee based on the difference in storage usage with some buffer
         let approxFee = FlowEVMBridgeUtils.calculateBridgeFee(
-                used: currentStorageUsage - withdrawnStorageUsage,
-                includeBase: true
+                bytes: currentStorageUsage - withdrawnStorageUsage
             ) * 1.10
 
         /* --- Configure a ScopedFTProvider --- */
