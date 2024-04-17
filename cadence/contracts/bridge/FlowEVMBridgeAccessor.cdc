@@ -160,20 +160,16 @@ contract FlowEVMBridgeAccessor {
             self.bridgeAccessorCap = nil
         }
 
-        /// Sets the BridgeAccessor capability on the BridgeRouter
-        ///
-        access(EVM.Bridge) fun setBridgeAccessorCap(_ cap: Capability<auth(EVM.Bridge) &{EVM.BridgeAccessor}>) {
-            pre {
-                cap.check(): "BridgeAccessor capability already set"
-            }
-            self.bridgeAccessorCap = cap
-        }
-
         /// Returns an EVM.Bridge entitled reference to the underlying BridgeAccessor resource
         ///
         access(EVM.Bridge) view fun borrowBridgeAccessor(): auth(EVM.Bridge) &{EVM.BridgeAccessor} {
             let cap = self.bridgeAccessorCap ?? panic("BridgeAccessor Capabaility is not yet set")
             return cap.borrow() ?? panic("Problem retrieving BridgeAccessor reference")
+        }
+
+        /// Sets the BridgeAccessor Capability in the BridgeRouter
+        access(EVM.Bridge) fun setBridgeAccessor(_ accessorCap: Capability<auth(EVM.Bridge) &{EVM.BridgeAccessor}>) {
+            self.bridgeAccessorCap = accessorCap
         }
     }
 

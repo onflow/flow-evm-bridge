@@ -10,7 +10,7 @@ import "FlowEVMBridgeAccessor"
 ///
 transaction(name: String, provider: Address) {
 
-    prepare(signer: auth(Inbox, SaveValue) &Account) {
+    prepare(signer: auth(BorrowValue, ClaimInboxCapability, SaveValue) &Account) {
         // Claim the BridgeAccessor Capability
         let accessorCap = signer.inbox.claim<auth(EVM.Bridge) &FlowEVMBridgeAccessor.BridgeAccessor>(name, provider: provider)
             ?? panic("BridgeAccessor Capability not found")
@@ -18,11 +18,13 @@ transaction(name: String, provider: Address) {
         // Ensure the Capability is valid
         assert(accessorCap.check() == true, message: "Invalid BridgeAccessor Capability")
 
-        // Create a Router to store the Capability and set the BridgeAccessor Capability in the Router
+        // Create a Router to store the Capability and save the Router in storage
         let router <- accessorCap.borrow()!.createBridgeRouter()
-        router.setBridgeAccessorCap(accessorCap)
-
-        // Save the Router in storage
         signer.storage.save(<-router, to: /storage/evmBridgeRouter)
+
+        // Borrow the router from storage and set the BridgeAccessor Capability
+        let routerRef = signer.storage.borrow<auth(EVM.Bridge) &{EVM.BridgeRouter}>(from: /storage/evmBridgeRouter)
+            ?? panic("BridgeRouter not found in storage")
+        routerRef.setBridgeAccessor(accessorCap)
     }
 }

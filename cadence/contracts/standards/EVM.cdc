@@ -29,6 +29,19 @@ contract EVM {
     access(all)
     event FLOWTokensWithdrawn(addressBytes: [UInt8; 20], amount: UFix64)
 
+    /// BridgeAccessorUpdated is emitted when the BridgeAccessor Capability
+    /// is updated in the stored BridgeRouter along with identifying
+    /// information about both.
+    access(all)
+    event BridgeAccessorUpdated(
+        routerType: Type,
+        routerUUID: UInt64,
+        routerAddress: Address,
+        accessorType: Type,
+        accessorUUID: UInt64,
+        accessorAddress: Address
+    )
+
     /// EVMAddress is an EVM-compatible address
     access(all)
     struct EVMAddress {
@@ -602,6 +615,21 @@ contract EVM {
 
         /// Returns a reference to the BridgeAccessor designated for internal bridge requests
         access(Bridge) view fun borrowBridgeAccessor(): auth(Bridge) &{BridgeAccessor}
+
+        /// Sets the BridgeAccessor Capability in the BridgeRouter
+        access(Bridge) fun setBridgeAccessor(_ accessor: Capability<auth(Bridge) &{BridgeAccessor}>) {
+            pre {
+                accessor.check(): "Invalid BridgeAccessor Capability provided"
+                emit BridgeAccessorUpdated(
+                    routerType: self.getType(),
+                    routerUUID: self.uuid,
+                    routerAddress: self.owner?.address ?? panic("Router must have an owner to be identified"),
+                    accessorType: accessor.borrow().getType(),
+                    accessorUUID: accessor.borrow()!.uuid,
+                    accessorAddress: accessor.address
+                )
+            }
+        }
     }
 
     /// Returns a reference to the BridgeAccessor designated for internal bridge requests
