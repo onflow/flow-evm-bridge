@@ -76,6 +76,12 @@ fun setup() {
         arguments: []
     )
     Test.expect(err, Test.beNil())
+    err = Test.deployContract(
+        name: "EVMUtils",
+        path: "../contracts/utils/EVMUtils.cdc",
+        arguments: []
+    )
+    Test.expect(err, Test.beNil())
 
     // Update EVM contract with proposed bridge-supporting COA integration
     let updateResult = executeTransaction(
@@ -110,12 +116,6 @@ fun setup() {
     err = Test.deployContract(
         name: "CrossVMToken",
         path: "../contracts/bridge/CrossVMToken.cdc",
-        arguments: []
-    )
-    Test.expect(err, Test.beNil())
-    err = Test.deployContract(
-        name: "EVMUtils",
-        path: "../contracts/utils/EVMUtils.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
