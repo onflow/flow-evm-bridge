@@ -624,7 +624,7 @@ contract EVM {
                     routerType: self.getType(),
                     routerUUID: self.uuid,
                     routerAddress: self.owner?.address ?? panic("Router must have an owner to be identified"),
-                    accessorType: accessor.borrow().getType(),
+                    accessorType: accessor.borrow()!.getType(),
                     accessorUUID: accessor.borrow()!.uuid,
                     accessorAddress: accessor.address
                 )
