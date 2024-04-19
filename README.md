@@ -7,77 +7,55 @@
 
 This repo contains contracts enabling bridging of fungible & non-fungible assets between Cadence and EVM.
 
-## Deploying Bridge Contracts Locally
+## Deployments
 
-As the bridge contracts are still in development, builders should be aware that interfaces may change. If you would like to participate in early development, below are the steps to deploy the bridge contracts to your local emulator environment.
+PreviewNet is currently the only EVM-enabled network on Flow. The bridge in this repo are deployed to the following addresses:
 
-### Prerequisites
+|Network|Address|
+|---|---|
+|PreviewNet|`0x634acef27f871527`|
+|Testnet|TBD|
+|Mainnet|TBD|
 
-Install an EVM-compatible pre-release version of the Flow CLI (currently [v1.12.0-cadence-v1.0.0-M8-2](https://github.com/onflow/flow-cli/releases/tag/v1.12.0-cadence-v1.0.0-M8-2)):
+## Interacting with the bridge
 
-```sh
-sudo sh -ci "$(curl -fsSL https://raw.githubusercontent.com/onflow/flow-cli/feature/stable-cadence/install.sh)"
-```
-
-If you wish to interact with the contracts from the EVM side, this repo is configured for use with Foundry. See [Foundry's installation docs](https://book.getfoundry.sh/getting-started/installation) for more information.
-
-### Setup
-
-1. Clone this repo and navigate to the root directory.
-
-2. Start the emulator with EVM enabled
-
-```sh
-flow-c1 emulator --evm-enabled
-```
-
-3. (Optional) If you would like to interact with Flow EVM via the EVM RPC gateway (e.g. via Hardhat, Foundry, etc.), run the gateway locally
-
-> :information_source: Running the gateway enables you to interact with your emulator instance via traditional EVM tooling. More information about the Flow EVM Gateway can be found [here](https://github.com/onflow/flow-evm-gateway)
-
-```sh
-flow-c1 evm gateway --coa-address f8d6e0586b0a20c7 --coinbase 0000000000000000000000025521cbccbbaa9977 --coa-key fe809cc837ddcd7e761a482721c050aae43657448db859f4eb8fc421e9609938 --network emulator
-```
-
-4. Execute the first setup script
-   
-```sh
-sh local/setup_emulator.1.sh
-```
-
-5. Note the last `deployedContractAddress` field in a `evm.TransactionExecuted` event emitted by a deployment transaction executed in the setup script. Got into [`setup_emulator.2.sh`](./local/setup_emulator.2.sh) and replace the first command's argument with the value. Then run the second setup script.
-
-```sh
-sh local/setup_emulator.2.sh
-```
-
-6. Note the `deployedContractAddress` emitted by the last command in the second script. This is an ERC721 contract deployed by the `erc721` Flow account (as named in the [`flow.json`](./flow.json)). We'll use this address in the last command with one other address. The last command we execute will give us an EVM-native ERC721 minted to the `user` account as named in the [`flow.json`](./flow.json). But first we need to get the COA address owned by the `user` account. Run the following script to get the user's COA's EVM address:
-
-```sh
-flow-c1 scripts execute ./cadence/scripts/evm/get_evm_address_string.cdc f3fcd2c1a78f5eee
-```
-
-7. To mint the EVM-native ERC721 to the `user` account, run the following script with the `deployedContractAddress` from the second setup script and the COA address from the previous step:
-
-```sh
-flow-c1 transactions send ./cadence/transactions/example-assets/safe_mint_erc721.cdc \
-    <USER_COA_ADDRESS> 42 "URI" <ERC721_DEPLOYED_CONTRACT_ADDRESS> 200000 \
-    --signer erc721
-```
-
-You now have all bridge contracts deployed, and a user account with an `ExampleNFT` Cadence NFT minted to it and an `ExampleERC721` EVM-native ERC721 minted to its COA. If you've run the gateway, you can call to the ERC721 address to get the owner of the minted NFT ID (42 in the last command).
-
-```sh
-cast call --rpc-url 127.0.0.1:3000 0x<ERC721_DEPLOYED_CONTRACT_ADDRESS> "ownerOf(uint256)" 42
-```
-
-The result should be the COA address returned when you queried the `user` account's COA address. To get the NFT ID of the Cadence NFT minted to the `user`, run the following script which queries the `user`'s Flow account to check the Collection for the NFT IDs contained within it.
-
-```sh
-flow-c1 scripts execute cadence/scripts/nft/get_ids.cdc f3fcd2c1a78f5eee cadenceExampleNFTCollection
-```
-
+<!-- 
+### Overview
+### Onboarding
 ### Bridging
+- NFTs
+- Fungible Tokens
+-->
+
+## Prep Your Assets for Bridging
+
+<!--
+### Context
+### EVMBridgedMetadata
+- name
+- symbol
+- tokenURI
+### SerializeMetadata
+### Opting Out
+-->
+
+## Under the Hood (facilitating cross-vm interactions)
+
+<!--
+### Architecture
+### Use Case Walkthrough
+- Cadence-native NFT
+  - to EVM
+  - from EVM
+- EVM-native ERC721
+  - from EVM
+  - to EVM
+### Call Flows
+### Events
+- Cadence
+- EVM
+### API Reference (docgen public methods? FLIX reference?)
+ -->
 
 The user has some NFTs to bridge and the bridge is now running, so let's get started.
 
