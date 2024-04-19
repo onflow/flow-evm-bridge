@@ -13,8 +13,9 @@ import "FlowEVMBridgeConfig"
 import "FlowEVMBridgeUtils"
 
 /// Bridges an NFT from the signer's collection in Cadence to the signer's COA in FlowEVM
-/// NOTE: The NFT being bridged must have first been onboarded to the bridge. This can be checked for with the method
-///     FlowEVMBridge.typeRequiresOnboarding(type): Bool?
+///
+/// NOTE: This transaction also onboards the NFT to the bridge if necessary which may incur additional fees
+///     than bridging an asset that has already been onboarded.
 ///
 /// @param nftContractAddress: The Flow account address hosting the NFT-defining Cadence contract
 /// @param nftContractName: The name of the NFT-defining Cadence contract
@@ -24,6 +25,7 @@ transaction(nftContractAddress: Address, nftContractName: String, id: UInt64) {
     
     let nft: @{NonFungibleToken.NFT}
     let coa: auth(EVM.Bridge) &EVM.CadenceOwnedAccount
+    let requiresOnboarding: Bool
     let scopedProvider: @ScopedFTProviders.ScopedFTProvider
     
     prepare(signer: auth(CopyValue, BorrowValue, IssueStorageCapabilityController, PublishCapability, SaveValue) &Account) {
@@ -50,9 +52,15 @@ transaction(nftContractAddress: Address, nftContractName: String, id: UInt64) {
         let currentStorageUsage = signer.storage.used
         self.nft <- collection.withdraw(withdrawID: id)
         let withdrawnStorageUsage = signer.storage.used
-        let approxFee = FlowEVMBridgeUtils.calculateBridgeFee(
+        var approxFee = FlowEVMBridgeUtils.calculateBridgeFee(
                 bytes: currentStorageUsage - withdrawnStorageUsage
             ) * 1.10
+        // Determine if the NFT requires onboarding - this impacts the fee required
+        self.requiresOnboarding = FlowEVMBridge.typeRequiresOnboarding(self.nft.getType())
+            ?? panic("Bridge does not support this asset type")
+        if self.requiresOnboarding {
+            approxFee = approxFee + FlowEVMBridgeConfig.onboardFee
+        }
 
         /* --- Configure a ScopedFTProvider --- */
         //
@@ -76,6 +84,13 @@ transaction(nftContractAddress: Address, nftContractName: String, id: UInt64) {
     }
 
     execute {
+        if self.requiresOnboarding {
+            // Onboard the NFT to the bridge
+            FlowEVMBridge.onboardByType(
+                self.nft.getType(),
+                feeProvider: &self.scopedProvider as auth(FungibleToken.Withdraw) &{FungibleToken.Provider}
+            )
+        }
         // Execute the bridge
         self.coa.depositNFT(
             nft: <-self.nft,
