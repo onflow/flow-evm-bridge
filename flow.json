@@ -100,6 +100,14 @@
 				"testing": "0000000000000007"
 			}
 		},
+		"FlowEVMBridgeHandlerInterfaces": {
+			"source": "./cadence/contracts/bridge/FlowEVMBridgeHandlerInterfaces.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"previewnet": "634acef27f871527",
+				"testing": "0000000000000007"
+			}
+		},
 		"FlowEVMBridgeNFTEscrow": {
 			"source": "./cadence/contracts/bridge/FlowEVMBridgeNFTEscrow.cdc",
 			"aliases": {
