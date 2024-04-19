@@ -42,10 +42,11 @@ transaction(bytecode: String, gasLimit: UInt64, value: UFix64) {
         let valueBalance = EVM.Balance(attoflow: 0)
         valueBalance.setFLOW(flow: value)
         // Finally deploy the contract
-        let address: EVM.EVMAddress = self.coa.deploy(
+        let evmResult = self.coa.deploy(
            code: bytecode.decodeHex(),
            gasLimit: gasLimit,
            value: valueBalance
         )
+        assert(evmResult.status == EVM.Status.successful, message: "EVM deployment failed")
     }
 }

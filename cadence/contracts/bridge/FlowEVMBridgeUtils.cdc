@@ -704,10 +704,11 @@ contract FlowEVMBridgeUtils {
             }
         }
         // Deploy the FlowBridgeFactory.sol contract from provided bytecode and capture the deployed address
-        self.bridgeFactoryEVMAddress = self.borrowCOA().deploy(
+        let evmResult = self.borrowCOA().deploy(
             code: bridgeFactoryBytecodeHex.decodeHex(),
             gasLimit: 15000000,
             value: EVM.Balance(attoflow: 0)
         )
+        self.bridgeFactoryEVMAddress = evmResult.deployedContractAddress
     }
 }
