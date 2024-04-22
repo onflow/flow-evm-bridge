@@ -183,13 +183,14 @@ contract FlowEVMBridgeConfig {
                 FlowEVMBridgeConfig.getTypeAssociated(with: targetEVMAddress) == nil:
                     "EVM Address already associated with another Type"
             }
-            FlowEVMBridgeConfig.borrowHandlerAdmin(targetType)
-                ?.setTargetEVMAddress(targetEVMAddress)
+            let handler = FlowEVMBridgeConfig.borrowHandlerAdmin(targetType)
                 ?? panic("No handler found for target Type")
+            handler.setTargetEVMAddress(targetEVMAddress)
+
             emit HandlerConfigured(
                 targetType: targetType,
                 targetEVMAddress: EVMUtils.getEVMAddressAsHexString(address: targetEVMAddress),
-                isEnabled: false
+                isEnabled: handler.isEnabled()
             )
         }
 

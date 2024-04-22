@@ -55,7 +55,7 @@ access(all) contract FlowEVMBridgeHandlerInterfaces {
 
     access(all) resource interface TokenMinter {
         access(all) view fun getMintedType(): Type
-        access(account) fun mint(amount: UFix64): @{FungibleToken.Vault} {
+        access(Mint) fun mint(amount: UFix64): @{FungibleToken.Vault} {
             pre {
                 amount > 0.0: "Amount must be greater than 0"
             }
@@ -81,7 +81,7 @@ access(all) contract FlowEVMBridgeHandlerInterfaces {
         access(account) fun fulfillTokensFromEVM(
             owner: EVM.EVMAddress,
             type: Type,
-            amount: UFix64,
+            amount: UInt256,
             protectedTransferCall: fun (): EVM.Result
         ): @{FungibleToken.Vault} {
             pre {

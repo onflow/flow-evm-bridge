@@ -212,6 +212,15 @@ contract FlowEVMBridgeUtils {
         return (isFlowNFT && !isFlowToken) || (!isFlowNFT && isFlowToken)
     }
 
+    /// Retrieves the bridge contract's COA EVMAddress
+    ///
+    /// @returns The EVMAddress of the bridge contract's COA orchestrating actions in FlowEVM
+    ///
+    access(all)
+    view fun getBridgeCOAEVMAddress(): EVM.EVMAddress {
+        return FlowEVMBridgeUtils.borrowCOA().address()
+    }
+
     /************************
         EVM Call Wrappers
      ************************/
