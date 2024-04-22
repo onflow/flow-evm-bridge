@@ -3,10 +3,11 @@ import "NonFungibleToken"
 
 import "EVM"
 
-access(all) contract FlowEVMBridgeHandlers {
-    
+access(all) contract FlowEVMBridgeHandlerInterfaces {
+
     // Entitlement related to admin-like functionality
     access(all) entitlement Admin
+    access(all) entitlement Mint
 
     // Events
     //
@@ -21,12 +22,18 @@ access(all) contract FlowEVMBridgeHandlers {
     access(all) resource interface HandlerAdmin : HandlerInfo {
         access(Admin) fun setTargetType(_ type: Type) {
             pre {
-                self.getTargetType() != nil: "Target Type has already been set"
+                self.getTargetType() == nil: "Target Type has already been set"
+            }
+            post {
+                self.getTargetType()! == type: "Problem setting target type"
             }
         }
         access(Admin) fun setTargetEVMAddress(_ address: EVM.EVMAddress) {
             pre {
                 self.getTargetEVMAddress() != nil: "Target EVM address has already been set"
+            }
+            post {
+                self.getTargetEVMAddress()!.bytes == address!.bytes: "Problem setting target EVM address"
             }
         }
         access(Admin) fun enableBridging() {
@@ -45,11 +52,24 @@ access(all) contract FlowEVMBridgeHandlers {
             }
         }
     }
-    
-    access(all) resource interface FTHandler : HandlerInfo, HandlerAdmin {
+
+    access(all) resource interface TokenMinter {
+        access(all) view fun getMintedType(): Type
+        access(account) fun mint(amount: UFix64): @{FungibleToken.Vault} {
+            pre {
+                amount > 0.0: "Amount must be greater than 0"
+            }
+            post {
+                result.getType() == self.getMintedType(): "Invalid Vault type returned"
+                result.balance == amount: "Minted amount does not match requested amount"
+            }
+        }
+    }
+
+    access(all) resource interface TokenHandler : HandlerInfo, HandlerAdmin {
         // Handling
         //
-        access(EVM.Bridge) fun fulfillTokensToEVM(
+        access(account) fun fulfillTokensToEVM(
             tokens: @{FungibleToken.Vault},
             to: EVM.EVMAddress
         ) {
@@ -58,39 +78,12 @@ access(all) contract FlowEVMBridgeHandlers {
                 tokens.getType() == self.getTargetType(): "Invalid Vault type"
             }
         }
-        access(EVM.Bridge) fun fulfillTokensFromEVM(
+        access(account) fun fulfillTokensFromEVM(
             owner: EVM.EVMAddress,
             type: Type,
             amount: UFix64,
             protectedTransferCall: fun (): EVM.Result
         ): @{FungibleToken.Vault} {
-            pre {
-                self.isEnabled(): "Handler is not yet enabled"
-            }
-            post {
-                result.getType() == self.getTargetType(): "Invalid Vault type returned"
-            }
-        }
-    }
-
-    access(all) resource interface NFTHandler : HandlerInfo, HandlerAdmin {
-        // Handling
-        //
-        access(EVM.Bridge) fun fulfillNFTToEVM(
-            nft: @{NonFungibleToken.NFT},
-            to: EVM.EVMAddress
-        ) {
-            pre {
-                self.isEnabled(): "Handler is not yet enabled"
-                nft.getType() == self.getTargetType(): "Invalid Vault type"
-            }
-        }
-        access(EVM.Bridge) fun fulfillNFTFromEVM(
-            owner: EVM.EVMAddress,
-            type: Type,
-            amount: UFix64,
-            protectedTransferCall: fun (): EVM.Result
-        ): @{NonFungibleToken.NFT} {
             pre {
                 self.isEnabled(): "Handler is not yet enabled"
             }
