@@ -187,6 +187,14 @@ contract FlowEVMBridgeConfig {
                 ?? panic("No handler found for target Type")
             handler.setTargetEVMAddress(targetEVMAddress)
 
+            if FlowEVMBridgeConfig.getEVMAddressAssociated(with: targetType) == nil {
+                FlowEVMBridgeConfig.associateType(targetType, with: targetEVMAddress)
+            }
+            assert(
+                FlowEVMBridgeConfig.getEVMAddressAssociated(with: targetType)!.bytes == targetEVMAddress.bytes,
+                message: "Problem associating target Type and target EVM Address"
+            )
+
             emit HandlerConfigured(
                 targetType: targetType,
                 targetEVMAddress: EVMUtils.getEVMAddressAsHexString(address: targetEVMAddress),

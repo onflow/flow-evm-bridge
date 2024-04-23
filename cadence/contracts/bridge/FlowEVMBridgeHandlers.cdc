@@ -9,7 +9,9 @@ import "FlowEVMBridgeHandlerInterfaces"
 import "FlowEVMBridgeConfig"
 import "FlowEVMBridgeUtils"
 
-access(all) contract FlowEVMBridgeHandler {
+access(all) contract FlowEVMBridgeHandlers {
+
+    access(all) let ConfiguratorStoragePath: StoragePath
 
     access(all) resource CadenceNativeTokenHandler : FlowEVMBridgeHandlerInterfaces.TokenHandler {
         /// Flag determining if request handling is enabled
@@ -160,5 +162,10 @@ access(all) contract FlowEVMBridgeHandler {
                     panic("Invalid Handler type requested")
             }
         }
+    }
+
+    init() {
+        self.ConfiguratorStoragePath = /storage/BridgeHandlerConfigurator
+        self.account.storage.save(<-create HandlerConfigurator(), to: self.ConfiguratorStoragePath)
     }
 }

@@ -18,6 +18,7 @@ import "IFlowEVMTokenBridge"
 import "CrossVMNFT"
 import "CrossVMToken"
 import "FlowEVMBridgeConfig"
+import "FlowEVMBridgeHandlerInterfaces"
 import "FlowEVMBridgeUtils"
 import "FlowEVMBridgeNFTEscrow"
 import "FlowEVMBridgeTokenEscrow"
@@ -396,24 +397,39 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
 
         let vaultBalance = vault.balance
         var feeAmount = 0.0
+        if FlowEVMBridgeConfig.typeHasHandler(vaultType) {
+            // Some tokens pre-dating bridge require special case handling - borrow handler and passthrough to fulfill
+            let handler = FlowEVMBridgeConfig.borrowHandler(vaultType)
+                ?? panic("Could not retrieve handler for the given type")
+            assert(handler.isEnabled(), message: "Cannot bridge tokens of this type at this time")
 
-        // Lock the tokens if the bridge does not define them
-        if FlowEVMBridgeUtils.isCadenceNative(type: vault.getType()) {
+            handler.fulfillTokensToEVM(tokens: <-vault, to: to)
+
+            // Here we assume burning Vault in Cadence which doesn't require storage consumption
+            feeAmount = FlowEVMBridgeUtils.calculateBridgeFee(bytes: 0)
+            let feeVault <-feeProvider.withdraw(amount: feeAmount) as! @FlowToken.Vault
+            assert(feeVault.balance == feeAmount, message: "Fee provider did not return the requested fee")
+
+            // Deposit fee and return early
+            FlowEVMBridgeUtils.deposit(<-feeVault)
+            return
+        }
+
+        // In most all other cases, if Cadence-native then tokens must be escrowed
+        if FlowEVMBridgeUtils.isCadenceNative(type: vaultType) {
             // Lock the FT balance & calculate the extra used by the FT if any
             let storageUsed = FlowEVMBridgeTokenEscrow.lockTokens(<-vault)
             // Calculate the bridge fee on current rates
             feeAmount = FlowEVMBridgeUtils.calculateBridgeFee(bytes: storageUsed)
         } else {
+            // Since not Cadence-native, bridge defines the token - burn the vault and calculate the fee
             Burner.burn(<-vault)
             feeAmount = FlowEVMBridgeUtils.calculateBridgeFee(bytes: 0)
         }
 
         // Withdraw from feeProvider and deposit to self
-        assert(
-            feeProvider.isAvailableToWithdraw(amount: feeAmount),
-            message: "Fee provider does not have balance to cover the bridge fee of ".concat(feeAmount.toString())
-        )
         let feeVault <-feeProvider.withdraw(amount: feeAmount) as! @FlowToken.Vault
+        assert(feeVault.balance == feeAmount, message: "Fee provider did not return the requested fee")
         FlowEVMBridgeUtils.deposit(<-feeVault)
 
         // Does the bridge control the EVM contract associated with this type?
@@ -582,7 +598,8 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         if !FlowEVMBridgeUtils.isValidFlowAsset(type: type) {
             return nil
         }
-        return FlowEVMBridgeConfig.getEVMAddressAssociated(with: type) == nil
+        return FlowEVMBridgeConfig.getEVMAddressAssociated(with: type) == nil ||
+            !FlowEVMBridgeConfig.typeHasHandler(type)
     }
 
     /// Returns whether an EVM-native asset needs to be onboarded to the bridge

@@ -30,7 +30,7 @@ access(all) contract FlowEVMBridgeHandlerInterfaces {
         }
         access(Admin) fun setTargetEVMAddress(_ address: EVM.EVMAddress) {
             pre {
-                self.getTargetEVMAddress() != nil: "Target EVM address has already been set"
+                self.getTargetEVMAddress() == nil: "Target EVM address has already been set"
             }
             post {
                 self.getTargetEVMAddress()!.bytes == address!.bytes: "Problem setting target EVM address"
