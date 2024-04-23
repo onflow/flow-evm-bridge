@@ -598,7 +598,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         if !FlowEVMBridgeUtils.isValidFlowAsset(type: type) {
             return nil
         }
-        return FlowEVMBridgeConfig.getEVMAddressAssociated(with: type) == nil ||
+        return FlowEVMBridgeConfig.getEVMAddressAssociated(with: type) == nil &&
             !FlowEVMBridgeConfig.typeHasHandler(type)
     }
 

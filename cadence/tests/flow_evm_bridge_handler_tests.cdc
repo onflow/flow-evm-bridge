@@ -25,6 +25,9 @@ access(all) let erc20MintAmount: UInt256 = 100_000_000_000_000_000_000
 access(all) let expectedOnboardFee = 1.0
 access(all) let expectedBaseFee = 0.001
 
+// Default decimals for Cadence UFix64 values
+access(all) let defaultDecimals: UInt8 = 18
+
 // Test height snapshot for test state resets
 access(all) var snapshot: UInt64 = 0
 
@@ -329,7 +332,7 @@ access(all)
 fun testMintERC20ToBridgeEscrowSucceeds() {
     let bridgeCOAAddressHex = getBridgeCOAAddressHex()
     let exampleTokenTotalSupplyResult = executeScript(
-        "../scripts/example-assets/tokens/total_supply.cdc",
+        "../scripts/tokens/total_supply.cdc",
         [exampleHandledTokenAccount.address, "ExampleHandledToken", exampleTokenIdentifier]
     )
     Test.expect(exampleTokenTotalSupplyResult, Test.beSucceeded())
@@ -338,15 +341,18 @@ fun testMintERC20ToBridgeEscrowSucceeds() {
     let erc20AddressHex = getDeployedAddressFromDeployer(name: "erc20")
     Test.assertEqual(40, erc20AddressHex.length)
 
+    // Convert total supply UFix64 to UInt256 for ERC20 minting
+    let uintTotalSupply = ufix64ToUInt256(exampleTokenTotalSupply, decimals: defaultDecimals)
+
     let mintERC20Result = executeTransaction(
         "../transactions/example-assets/evm-assets/mint_erc20.cdc",
-        [bridgeCOAAddressHex, exampleTokenTotalSupply, erc20AddressHex, UInt64(200_000)],
+        [bridgeCOAAddressHex, uintTotalSupply, erc20AddressHex, UInt64(200_000)],
         exampleERCAccount
     )
     Test.expect(mintERC20Result, Test.beSucceeded())
 
     let escrowBalance = balanceOf(evmAddressHex: bridgeCOAAddressHex, erc20AddressHex: erc20AddressHex)
-    Test.assertEqual(exampleTokenTotalSupply, escrowBalance)
+    Test.assertEqual(uintTotalSupply, escrowBalance)
 }
 
 access(all)
