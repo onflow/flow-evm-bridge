@@ -445,6 +445,27 @@ contract FlowEVMBridgeUtils {
         return self.balanceOf(owner: owner, evmContractAddress: evmContractAddress) >= amount
     }
 
+    /// Retrieves the total supply of the ERC20 contract at the given EVM contract address. Reverts on EVM call failure.
+    ///
+    /// @param evmContractAddress: The EVM contract address to retrieve the total supply from
+    ///
+    /// @return the total supply of the ERC20
+    ///
+    access(all)
+    fun totalSupply(evmContractAddress: EVM.EVMAddress): UInt256 {
+        let callResult = self.call(
+            signature: "totalSupply()",
+            targetEVMAddress: evmContractAddress,
+            args: [],
+            gasLimit: 60000,
+            value: 0.0
+        )
+        assert(callResult.status == EVM.Status.successful, message: "Call to ERC20.totalSupply() failed")
+        let decodedResult = EVM.decodeABI(types: [Type<UInt256>()], data: callResult.data) as! [AnyStruct]
+        assert(decodedResult.length == 1, message: "Invalid response length")
+        return decodedResult[0] as! UInt256
+    }
+
     /************************
         Derivation Utils
      ************************/
