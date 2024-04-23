@@ -289,7 +289,7 @@ fun testConfigureCadenceNativeTokenHandlerSucceeds() {
         code: Test.readFile("../transactions/bridge/admin/create_cadence_native_token_handler.cdc"),
         authorizers: [exampleHandledTokenAccount.address, bridgeAccount.address],
         signers: [exampleHandledTokenAccount, bridgeAccount],
-        arguments: [],
+        arguments: [exampleTokenIdentifier, /storage/exampleTokenAdmin],
     )
     let createHandlerResult = Test.executeTransaction(handlerSetupTxn)
     Test.expect(createHandlerResult, Test.beSucceeded())
