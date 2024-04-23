@@ -666,9 +666,13 @@ contract FlowEVMBridgeUtils {
     /// Deposits fees to the bridge account's FlowToken Vault - helps fund asset storage
     ///
     access(account)
-    fun deposit(_ feeVault: @FlowToken.Vault) {
+    fun depositFee(_ feeProvider: auth(FungibleToken.Withdraw) &{FungibleToken.Provider}, feeAmount: UFix64) {
         let vault = self.account.storage.borrow<&FlowToken.Vault>(from: /storage/flowTokenVault)
             ?? panic("Could not borrow FlowToken.Vault reference")
+        
+        let feeVault <-feeProvider.withdraw(amount: feeAmount) as! @FlowToken.Vault
+        assert(feeVault.balance == feeAmount, message: "Fee provider did not return the requested fee")
+
         vault.deposit(from: <-feeVault)
     }
 

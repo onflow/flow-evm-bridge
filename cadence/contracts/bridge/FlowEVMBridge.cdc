@@ -108,8 +108,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
             message: "This type is not supported as defined by the project's development team"
         )
         // Withdraw from feeProvider and deposit to self
-        let feeVault <-feeProvider.withdraw(amount: FlowEVMBridgeConfig.onboardFee) as! @FlowToken.Vault
-        FlowEVMBridgeUtils.deposit(<-feeVault)
+        FlowEVMBridgeUtils.depositFee(feeProvider, feeAmount: FlowEVMBridgeConfig.onboardFee)
         // Deploy an EVM defining contract via the FlowBridgeFactory.sol contract
         let onboardingValues = self.deployEVMContract(forAssetType: type)
         // Initialize bridge escrow for the asset
@@ -171,9 +170,8 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
             self.evmAddressRequiresOnboarding(address) == true,
             message: "Onboarding is not needed for this contract"
         )
-        // Withdraw from feeProvider and deposit to self
-        let feeVault <-feeProvider.withdraw(amount: FlowEVMBridgeConfig.onboardFee) as! @FlowToken.Vault
-        FlowEVMBridgeUtils.deposit(<-feeVault)
+        // Withdraw fee from feeProvider and deposit
+        FlowEVMBridgeUtils.depositFee(feeProvider, feeAmount: FlowEVMBridgeConfig.onboardFee)
         // Deploy a defining Cadence contract to the bridge account
         self.deployDefiningContract(evmContractAddress: address)
     }
@@ -216,13 +214,8 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         let storageUsed = FlowEVMBridgeNFTEscrow.lockNFT(<-token)
         // Calculate the bridge fee on current rates
         let feeAmount = FlowEVMBridgeUtils.calculateBridgeFee(bytes: storageUsed)
-        assert(
-            feeProvider.isAvailableToWithdraw(amount: feeAmount),
-            message: "Fee provider does not have balance to cover the bridge fee of ".concat(feeAmount.toString())
-        )
-        // Withdraw from feeProvider and deposit to self
-        let feeVault <-feeProvider.withdraw(amount: feeAmount) as! @FlowToken.Vault
-        FlowEVMBridgeUtils.deposit(<-feeVault)
+        // Withdraw fee from feeProvider and deposit
+        FlowEVMBridgeUtils.depositFee(feeProvider, feeAmount: feeAmount)
 
         // Does the bridge control the EVM contract associated with this type?
         let associatedAddress = FlowEVMBridgeConfig.getEVMAddressAssociated(with: tokenType)
@@ -317,8 +310,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         }
         // Withdraw from feeProvider and deposit to self
         let feeAmount = FlowEVMBridgeUtils.calculateBridgeFee(bytes: 0)
-        let feeVault <-feeProvider.withdraw(amount: feeAmount) as! @FlowToken.Vault
-        FlowEVMBridgeUtils.deposit(<-feeVault)
+        FlowEVMBridgeUtils.depositFee(feeProvider, feeAmount: feeAmount)
 
         // Get the EVMAddress of the ERC721 contract associated with the type
         let associatedAddress = FlowEVMBridgeConfig.getEVMAddressAssociated(with: type)
@@ -407,11 +399,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
 
             // Here we assume burning Vault in Cadence which doesn't require storage consumption
             feeAmount = FlowEVMBridgeUtils.calculateBridgeFee(bytes: 0)
-            let feeVault <-feeProvider.withdraw(amount: feeAmount) as! @FlowToken.Vault
-            assert(feeVault.balance == feeAmount, message: "Fee provider did not return the requested fee")
-
-            // Deposit fee and return early
-            FlowEVMBridgeUtils.deposit(<-feeVault)
+            FlowEVMBridgeUtils.depositFee(feeProvider, feeAmount: feeAmount)
             return
         }
 
@@ -427,10 +415,8 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
             feeAmount = FlowEVMBridgeUtils.calculateBridgeFee(bytes: 0)
         }
 
-        // Withdraw from feeProvider and deposit to self
-        let feeVault <-feeProvider.withdraw(amount: feeAmount) as! @FlowToken.Vault
-        assert(feeVault.balance == feeAmount, message: "Fee provider did not return the requested fee")
-        FlowEVMBridgeUtils.deposit(<-feeVault)
+        // Withdraw fee amount from feeProvider and deposit
+        FlowEVMBridgeUtils.depositFee(feeProvider, feeAmount: feeAmount)
 
         // Does the bridge control the EVM contract associated with this type?
         let associatedAddress = FlowEVMBridgeConfig.getEVMAddressAssociated(with: vaultType)
@@ -494,8 +480,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         }
         // Withdraw from feeProvider and deposit to self
         let feeAmount = FlowEVMBridgeUtils.calculateBridgeFee(bytes: 0)
-        let feeVault <-feeProvider.withdraw(amount: feeAmount) as! @FlowToken.Vault
-        FlowEVMBridgeUtils.deposit(<-feeVault)
+        FlowEVMBridgeUtils.depositFee(feeProvider, feeAmount: feeAmount)
 
         // Get the EVMAddress of the ERC20 contract associated with the type
         let associatedAddress = FlowEVMBridgeConfig.getEVMAddressAssociated(with: type)
