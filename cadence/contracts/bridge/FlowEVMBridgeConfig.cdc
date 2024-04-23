@@ -32,7 +32,7 @@ contract FlowEVMBridgeConfig {
     let evmAddressHexToType: {String: Type}
     /// Mapping of Type to its associated EVMAddress as relevant to the bridge
     access(self)
-    let typeToHandlers: @{Type: {FlowEVMBridgeHandlerInterfaces.TokenHandler}}
+    let typeToTokenHandlers: @{Type: {FlowEVMBridgeHandlerInterfaces.TokenHandler}}
 
     /* --- Path Constants --- */
     //
@@ -88,24 +88,30 @@ contract FlowEVMBridgeConfig {
         self.evmAddressHexToType[evmAddressHex] = type
     }
 
+    /// Returns whether the given Type has a TokenHandler configured
+    ///
     access(account)
-    view fun typeHasHandler(_ type: Type): Bool {
-        return self.typeToHandlers[type] != nil
+    view fun typeHasTokenHandler(_ type: Type): Bool {
+        return self.typeToTokenHandlers[type] != nil
     }
 
+    /// Returns whether the given EVMAddress has a TokenHandler configured
+    ///
     access(account)
-    view fun evmAddressHasHandler(_ evmAddress: EVM.EVMAddress): Bool {
+    view fun evmAddressHasTokenHandler(_ evmAddress: EVM.EVMAddress): Bool {
         let associatedType = self.getTypeAssociated(with: evmAddress)
-        return associatedType == nil ? self.typeHasHandler(associatedType!) : false
+        return associatedType == nil ? self.typeHasTokenHandler(associatedType!) : false
     }
 
+    /// Adds a TokenHandler to the bridge configuration
+    ///
     access(account)
-    fun addHandler(_ handler: @{FlowEVMBridgeHandlerInterfaces.TokenHandler}) {
+    fun addTokenHandler(_ handler: @{FlowEVMBridgeHandlerInterfaces.TokenHandler}) {
         pre {
             handler.getTargetType() != nil: "Cannot configure Handler without a target Cadence Type set"
             self.getEVMAddressAssociated(with: handler.getTargetType()!) == nil:
                 "Cannot configure Handler for Type that has already been onboarded to the bridge"
-            self.borrowHandler(handler.getTargetType()!) == nil:
+            self.borrowTokenHandler(handler.getTargetType()!) == nil:
                 "Cannot configure Handler for Type that already has a Handler configured"
         }
         let type = handler.getTargetType()!
@@ -127,21 +133,23 @@ contract FlowEVMBridgeConfig {
             isEnabled: handler.isEnabled()
         )
 
-        self.typeToHandlers[type] <-! handler
+        self.typeToTokenHandlers[type] <-! handler
     }
 
+    /// Returns an unentitled reference to the TokenHandler associated with the given Type
     access(account)
-    view fun borrowHandler(
+    view fun borrowTokenHandler(
         _ type: Type
     ): &{FlowEVMBridgeHandlerInterfaces.TokenHandler}? {
-        return &self.typeToHandlers[type]
+        return &self.typeToTokenHandlers[type]
     }
 
+    /// Returns an entitled reference to the TokenHandler associated with the given Type
     access(self)
-    view fun borrowHandlerAdmin(
+    view fun borrowTokenHandlerAdmin(
         _ type: Type
     ): auth(FlowEVMBridgeHandlerInterfaces.Admin) &{FlowEVMBridgeHandlerInterfaces.TokenHandler}? {
-        return &self.typeToHandlers[type]
+        return &self.typeToTokenHandlers[type]
     }
 
     /*****************
@@ -177,13 +185,21 @@ contract FlowEVMBridgeConfig {
             FlowEVMBridgeConfig.baseFee = new
         }
 
+        /// Sets the target EVM contract address on the handler for a given Type, associating the Cadence type with the
+        /// provided EVM address. If a TokenHandler does not exist for the given Type, the operation reverts.
+        ///
+        /// @param targetType: Cadence type to associate with the target EVM address
+        /// @param targetEVMAddress: target EVM address to associate with the Cadence type
+        ///
+        /// @emits HandlerConfigured with the target Type, target EVM address, and whether the handler is enabled
+        ///
         access(FlowEVMBridgeHandlerInterfaces.Admin)
         fun setHandlerTargetEVMAddress(targetType: Type, targetEVMAddress: EVM.EVMAddress) {
             pre {
                 FlowEVMBridgeConfig.getTypeAssociated(with: targetEVMAddress) == nil:
                     "EVM Address already associated with another Type"
             }
-            let handler = FlowEVMBridgeConfig.borrowHandlerAdmin(targetType)
+            let handler = FlowEVMBridgeConfig.borrowTokenHandlerAdmin(targetType)
                 ?? panic("No handler found for target Type")
             handler.setTargetEVMAddress(targetEVMAddress)
 
@@ -202,9 +218,16 @@ contract FlowEVMBridgeConfig {
             )
         }
 
+        /// Enables the TokenHandler for the given Type. If a TokenHandler does not exist for the given Type, the
+        /// operation reverts.
+        ///
+        /// @param targetType: Cadence type indexing the relevant TokenHandler
+        ///
+        /// @emits HandlerConfigured with the target Type, target EVM address, and whether the handler is enabled
+        ///
         access(FlowEVMBridgeHandlerInterfaces.Admin)
         fun enableHandler(targetType: Type) {
-            let handler = FlowEVMBridgeConfig.borrowHandlerAdmin(targetType)
+            let handler = FlowEVMBridgeConfig.borrowTokenHandlerAdmin(targetType)
                 ?? panic("No handler found for target Type")
             handler.enableBridging()
 
@@ -234,7 +257,8 @@ contract FlowEVMBridgeConfig {
         let flowOriginationAddressHex = EVMUtils.getEVMAddressAsHexString(address: flowOriginationAddress)
         self.typeToEVMAddress = { flowVaultType: flowOriginationAddress }
         self.evmAddressHexToType = { flowOriginationAddressHex: flowVaultType }
-        self.typeToHandlers <- {}
+        self.typeToTokenHandlers <- {}
+
         self.adminStoragePath = /storage/flowEVMBridgeConfigAdmin
         self.coaStoragePath = /storage/evm
         self.providerCapabilityStoragePath = /storage/bridgeFlowVaultProvider

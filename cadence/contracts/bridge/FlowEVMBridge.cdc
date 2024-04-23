@@ -389,9 +389,9 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
 
         let vaultBalance = vault.balance
         var feeAmount = 0.0
-        if FlowEVMBridgeConfig.typeHasHandler(vaultType) {
+        if FlowEVMBridgeConfig.typeHasTokenHandler(vaultType) {
             // Some tokens pre-dating bridge require special case handling - borrow handler and passthrough to fulfill
-            let handler = FlowEVMBridgeConfig.borrowHandler(vaultType)
+            let handler = FlowEVMBridgeConfig.borrowTokenHandler(vaultType)
                 ?? panic("Could not retrieve handler for the given type")
             assert(handler.isEnabled(), message: "Cannot bridge tokens of this type at this time")
 
@@ -482,9 +482,9 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         let feeAmount = FlowEVMBridgeUtils.calculateBridgeFee(bytes: 0)
         FlowEVMBridgeUtils.depositFee(feeProvider, feeAmount: feeAmount)
 
-        if FlowEVMBridgeConfig.typeHasHandler(type) {
+        if FlowEVMBridgeConfig.typeHasTokenHandler(type) {
             // Some tokens pre-dating bridge require special case handling - borrow handler and passthrough to fulfill
-            let handler = FlowEVMBridgeConfig.borrowHandler(type)
+            let handler = FlowEVMBridgeConfig.borrowTokenHandler(type)
                 ?? panic("Could not retrieve handler for the given type")
             assert(handler.isEnabled(), message: "Cannot bridge tokens of this type at this time")
 
@@ -598,7 +598,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
             return nil
         }
         return FlowEVMBridgeConfig.getEVMAddressAssociated(with: type) == nil &&
-            !FlowEVMBridgeConfig.typeHasHandler(type)
+            !FlowEVMBridgeConfig.typeHasTokenHandler(type)
     }
 
     /// Returns whether an EVM-native asset needs to be onboarded to the bridge

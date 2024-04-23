@@ -229,7 +229,7 @@ access(all) contract FlowEVMBridgeHandlers {
                         targetEVMAddress: targetEVMAddress,
                         minter: <-minter
                     )
-                    FlowEVMBridgeConfig.addHandler(<-handler)
+                    FlowEVMBridgeConfig.addTokenHandler(<-handler)
                 default:
                     panic("Invalid Handler type requested")
             }
