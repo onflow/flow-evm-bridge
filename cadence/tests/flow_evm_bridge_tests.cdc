@@ -261,7 +261,6 @@ fun testCreateCOASucceeds() {
     createCOA(signer: alice, fundingAmount: 100.0)
 
     let coaAddressHex = getCOAAddressHex(atFlowAddress: alice.address)
-    Test.assertEqual(40, coaAddressHex.length)
 }
 
 access(all)
@@ -273,7 +272,6 @@ fun testBridgeFlowToEVMSucceeds() {
 
     // Get EVM $FLOW balance before
     var aliceCOAAddressHex = getCOAAddressHex(atFlowAddress: alice.address)
-    Test.assertEqual(40, aliceCOAAddressHex.length)
 
     let evmBalanceBefore = getEVMFlowBalance(of: aliceCOAAddressHex)
     Test.assertEqual(100.0, evmBalanceBefore)
@@ -284,7 +282,8 @@ fun testBridgeFlowToEVMSucceeds() {
         signer: alice,
         contractAddr: Address(0x03),
         contractName: "FlowToken",
-        amount: bridgeAmount
+        amount: bridgeAmount,
+        beFailed: false
     )
 
     // Confirm Alice's token balance is now 0.0
@@ -353,7 +352,6 @@ fun testMintExampleTokenSucceeds() {
 access(all)
 fun testMintERC721Succeeds() {
     let aliceCOAAddressHex = getCOAAddressHex(atFlowAddress: alice.address)
-    Test.assertEqual(40, aliceCOAAddressHex.length)
     let erc721AddressHex = getDeployedAddressFromDeployer(name: "erc721")
     Test.assertEqual(40, erc721AddressHex.length)
 
@@ -371,7 +369,6 @@ fun testMintERC721Succeeds() {
 access(all)
 fun testMintERC20Succeeds() {
     let aliceCOAAddressHex = getCOAAddressHex(atFlowAddress: alice.address)
-    Test.assertEqual(40, aliceCOAAddressHex.length)
     let erc20AddressHex = getDeployedAddressFromDeployer(name: "erc20")
     Test.assertEqual(40, erc20AddressHex.length)
 
@@ -710,7 +707,6 @@ fun testBridgeCadenceNativeNFTToEVMSucceeds() {
     Test.assertEqual(1, aliceOwnedIDs.length)
 
     var aliceCOAAddressHex = getCOAAddressHex(atFlowAddress: alice.address)
-    Test.assertEqual(40, aliceCOAAddressHex.length)
 
     // Execute bridge to EVM
     bridgeNFTToEVM(
@@ -740,7 +736,6 @@ fun testBridgeCadenceNativeNFTToEVMSucceeds() {
 access(all)
 fun testBridgeCadenceNativeNFTFromEVMSucceeds() {
     let aliceCOAAddressHex = getCOAAddressHex(atFlowAddress: alice.address)
-    Test.assertEqual(40, aliceCOAAddressHex.length)
 
     let associatedEVMAddressHex = getAssociatedEVMAddressHex(with: exampleNFTIdentifier)
     Test.assertEqual(40, associatedEVMAddressHex.length)
@@ -776,7 +771,6 @@ fun testBridgeEVMNativeNFTFromEVMSucceeds() {
     let derivedERC721ContractName = deriveBridgedNFTContractName(evmAddressHex: erc721AddressHex)
     let bridgedCollectionPathIdentifier = derivedERC721ContractName.concat("Collection")
     let aliceCOAAddressHex = getCOAAddressHex(atFlowAddress: alice.address)
-    Test.assertEqual(40, aliceCOAAddressHex.length)
 
     bridgeNFTFromEVM(
         signer: alice,
@@ -806,7 +800,6 @@ fun testBridgeEVMNativeNFTToEVMSucceeds() {
     let derivedERC721ContractName = deriveBridgedNFTContractName(evmAddressHex: erc721AddressHex)
     let bridgedCollectionPathIdentifier = derivedERC721ContractName.concat("Collection")
     let aliceCOAAddressHex = getCOAAddressHex(atFlowAddress: alice.address)
-    Test.assertEqual(40, aliceCOAAddressHex.length)
 
     var aliceOwnedIDs = getIDs(ownerAddr: alice.address, storagePathIdentifier: bridgedCollectionPathIdentifier)
     Test.assertEqual(1, aliceOwnedIDs.length)
@@ -835,14 +828,14 @@ fun testBridgeCadenceNativeTokenToEVMSucceeds() {
     Test.assert(cadenceBalance == exampleTokenMintAmount)
 
     var aliceCOAAddressHex = getCOAAddressHex(atFlowAddress: alice.address)
-    Test.assertEqual(40, aliceCOAAddressHex.length)
 
     // Execute bridge to EVM
     bridgeTokensToEVM(
         signer: alice,
         contractAddr: exampleTokenAccount.address,
         contractName: "ExampleToken",
-        amount: cadenceBalance
+        amount: cadenceBalance,
+        beFailed: false
     )
 
     let associatedEVMAddressHex = getAssociatedEVMAddressHex(with: exampleTokenIdentifier)
@@ -866,7 +859,6 @@ fun testBridgeCadenceNativeTokenFromEVMSucceeds() {
     Test.assertEqual(40, associatedEVMAddressHex.length)
     
     var aliceCOAAddressHex = getCOAAddressHex(atFlowAddress: alice.address)
-    Test.assertEqual(40, aliceCOAAddressHex.length)
 
     // Confirm Alice is starting with 0.0 balance in their Cadence Vault
     var cadenceBalance = getBalance(ownerAddr: alice.address, storagePathIdentifier: "exampleTokenVault")
@@ -885,7 +877,8 @@ fun testBridgeCadenceNativeTokenFromEVMSucceeds() {
         signer: alice,
         contractAddr: exampleTokenAccount.address,
         contractName: "ExampleToken",
-        amount: evmBalance
+        amount: evmBalance,
+        beFailed: false
     )
 
     // Confirm ExampleToken balance has been bridged back to Alice's Cadence vault
@@ -906,7 +899,6 @@ fun testBridgeEVMNativeTokenFromEVMSucceeds() {
     let derivedERC20ContractName = deriveBridgedTokenContractName(evmAddressHex: erc20AddressHex)
     let bridgedVaultPathIdentifier = derivedERC20ContractName.concat("Vault")
     let aliceCOAAddressHex = getCOAAddressHex(atFlowAddress: alice.address)
-    Test.assertEqual(40, aliceCOAAddressHex.length)
 
     // Confirm ownership on EVM side with Alice COA as owner of ERC721 representation
     var evmBalance = balanceOf(evmAddressHex: aliceCOAAddressHex, erc20AddressHex: erc20AddressHex)
@@ -921,7 +913,8 @@ fun testBridgeEVMNativeTokenFromEVMSucceeds() {
         signer: alice,
         contractAddr: bridgeAccount.address,
         contractName: derivedERC20ContractName,
-        amount: evmBalance
+        amount: evmBalance,
+        beFailed: false
     )
 
     // Confirm EVM balance is no 0
@@ -937,7 +930,6 @@ fun testBridgeEVMNativeTokenFromEVMSucceeds() {
 
     // With the bridge executed, confirm the bridge COA escrows the ERC20 tokens
     let bridgeCOAAddressHex = getCOAAddressHex(atFlowAddress: bridgeAccount.address)
-    Test.assertEqual(40, bridgeCOAAddressHex.length)
     let bridgeCOAEscrowBalance = balanceOf(evmAddressHex: bridgeCOAAddressHex, erc20AddressHex: erc20AddressHex)
     Test.assertEqual(erc20MintAmount, bridgeCOAEscrowBalance)
 }
@@ -950,7 +942,6 @@ fun testBridgeEVMNativeTokenToEVMSucceeds() {
     let derivedERC20ContractName = deriveBridgedTokenContractName(evmAddressHex: erc20AddressHex)
     let bridgedVaultPathIdentifier = derivedERC20ContractName.concat("Vault")
     let aliceCOAAddressHex = getCOAAddressHex(atFlowAddress: alice.address)
-    Test.assertEqual(40, aliceCOAAddressHex.length)
 
     // Confirm Cadence Vault has the expected balance
     var cadenceBalance = getBalance(ownerAddr: alice.address, storagePathIdentifier: bridgedVaultPathIdentifier)
@@ -965,7 +956,6 @@ fun testBridgeEVMNativeTokenToEVMSucceeds() {
 
     // Confirm the bridge COA currently escrows the ERC20 tokens we will be bridging
     let bridgeCOAAddressHex = getCOAAddressHex(atFlowAddress: bridgeAccount.address)
-    Test.assertEqual(40, bridgeCOAAddressHex.length)
     var bridgeCOAEscrowBalance = balanceOf(evmAddressHex: bridgeCOAAddressHex, erc20AddressHex: erc20AddressHex)
     Test.assertEqual(erc20MintAmount, bridgeCOAEscrowBalance)
 
@@ -974,7 +964,8 @@ fun testBridgeEVMNativeTokenToEVMSucceeds() {
         signer: alice,
         contractAddr: bridgeAccount.address,
         contractName: derivedERC20ContractName,
-        amount: cadenceBalance
+        amount: cadenceBalance,
+        beFailed: false
     )
 
     // Confirm ownership on EVM side with Alice COA as owner of ERC721 representation

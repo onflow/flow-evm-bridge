@@ -4,12 +4,11 @@ import "EVMUtils"
 import "FlowEVMBridgeHandlerInterfaces"
 import "FlowEVMBridgeConfig"
 
-/// Sets the target EVM address for the associated type in the configured TokenHandler
+/// Enables the TokenHandler to fulfill bridge requests.
 ///
-/// @param targetTypeIdentifier: The identifier of the target type.
-/// @param targetEVMAddressHex: The EVM address of the target EVM contract.
+/// @param targetTypeIdentifier: The identifier of the handler's target type.
 ///
-transaction(targetTypeIdentifier: String, targetEVMAddressHex: String) {
+transaction(targetTypeIdentifier: String) {
 
     let admin: auth(FlowEVMBridgeHandlerInterfaces.Admin) &FlowEVMBridgeConfig.Admin
 
@@ -22,11 +21,6 @@ transaction(targetTypeIdentifier: String, targetEVMAddressHex: String) {
     execute {
         let targetType = CompositeType(targetTypeIdentifier)
             ?? panic("Invalid Type identifier provided")
-        let targetEVMAddress = EVMUtils.getEVMAddressFromHexString(address: targetEVMAddressHex)
-            ?? panic("Invalid EVM Address provided")
-        self.admin.setHandlerTargetEVMAddress(
-            targetType: targetType,
-            targetEVMAddress: targetEVMAddress
-        )
+        self.admin.enableHandler(targetType: targetType)
     }
 }

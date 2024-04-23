@@ -207,7 +207,7 @@ access(all) contract ExampleHandledToken: FungibleToken {
     }
 
     init() {
-        self.totalSupply = 1000.0
+        self.totalSupply = 0.0
 
         self.VaultStoragePath = /storage/exampleTokenVault
         self.VaultPublicPath = /public/exampleTokenVault

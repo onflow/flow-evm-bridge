@@ -132,7 +132,9 @@ fun getCOAAddressHex(atFlowAddress: Address): String {
         [atFlowAddress]
     )
     Test.expect(coaAddressResult, Test.beSucceeded())
-    return coaAddressResult.returnValue as! String? ?? panic("Problem getting COA address as String")
+    let coaAddressHex = coaAddressResult.returnValue as! String? ?? panic("Problem getting COA address as String")
+    Test.assertEqual(40, coaAddressHex.length)
+    return coaAddressHex
 }
 
 access(all)
@@ -164,7 +166,9 @@ fun getDeployedAddressFromDeployer(name: String): String {
         [name]
     )
     Test.expect(erc721AddressResult, Test.beSucceeded())
-    return erc721AddressResult.returnValue as! String? ?? panic("Problem getting COA address as String")
+    let addressHex = erc721AddressResult.returnValue as! String? ?? panic("Problem getting COA address as String")
+    Test.assertEqual(40, addressHex.length)
+    return addressHex
 }
 
 access(all)
@@ -245,6 +249,26 @@ fun isOwner(of: UInt256, ownerEVMAddrHex: String, erc721AddressHex: String): Boo
     )
     Test.expect(isOwnerResult, Test.beSucceeded())
     return isOwnerResult.returnValue as! Bool? ?? panic("Problem getting owner status")
+}
+
+access(all)
+fun getCadenceTotalSupply(contractAddress: Address, contractName: String, vaultIdentifier: String): UFix64? {
+    let exampleTokenTotalSupplyResult = _executeScript(
+        "../scripts/tokens/total_supply.cdc",
+        [contractAddress, "ExampleHandledToken", vaultIdentifier]
+    )
+    Test.expect(exampleTokenTotalSupplyResult, Test.beSucceeded())
+    return exampleTokenTotalSupplyResult.returnValue as! UFix64?
+}
+
+access(all)
+fun getEVMTotalSupply(erc20AddressHex: String): UInt256 {
+    let totalSupplyResult = _executeScript(
+        "../scripts/utils/total_supply.cdc",
+        [erc20AddressHex]
+    )
+    Test.expect(totalSupplyResult, Test.beSucceeded())
+    return totalSupplyResult.returnValue as! UInt256? ?? panic("Problem getting ERC20 total supply")
 }
 
 access(all)
@@ -340,26 +364,26 @@ fun bridgeNFTFromEVM(
 }
 
 access(all)
-fun bridgeTokensToEVM(signer: Test.TestAccount, contractAddr: Address, contractName: String, amount: UFix64) {
+fun bridgeTokensToEVM(signer: Test.TestAccount, contractAddr: Address, contractName: String, amount: UFix64, beFailed: Bool) {
     let bridgeResult = _executeTransaction(
         "../transactions/bridge/tokens/bridge_tokens_to_evm.cdc",
         [contractAddr, contractName, amount],
         signer
     )
-    Test.expect(bridgeResult, Test.beSucceeded())
+    Test.expect(bridgeResult, beFailed ? Test.beFailed() : Test.beSucceeded())
 
     // TODO: Add event assertions on bridge events. We can't currently import the event types to do this
     //      so state assertions beyond call scope will need to suffice for now
 }
 
 access(all)
-fun bridgeTokensFromEVM(signer: Test.TestAccount, contractAddr: Address, contractName: String, amount: UInt256) {
+fun bridgeTokensFromEVM(signer: Test.TestAccount, contractAddr: Address, contractName: String, amount: UInt256, beFailed: Bool) {
     let bridgeResult = _executeTransaction(
         "../transactions/bridge/tokens/bridge_tokens_from_evm.cdc",
         [contractAddr, contractName, amount],
         signer
     )
-    Test.expect(bridgeResult, Test.beSucceeded())
+    Test.expect(bridgeResult, beFailed ? Test.beFailed() : Test.beSucceeded())
 
     // TODO: Add event assertions on bridge events. We can't currently import the event types to do this
     //      so state assertions beyond call scope will need to suffice for now
