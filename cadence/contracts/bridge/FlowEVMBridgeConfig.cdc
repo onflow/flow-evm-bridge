@@ -10,10 +10,16 @@ import "FlowEVMBridgeHandlerInterfaces"
 access(all)
 contract FlowEVMBridgeConfig {
 
+    /******************
+        Entitlements
+    *******************/
+
     access(all) entitlement Fee
 
-    /* --- Contract values --- */
-    //
+    /*************
+        Fields
+    **************/
+
     /// Amount of FLOW paid to onboard a Type or EVMAddress to the bridge
     access(all)
     var onboardFee: UFix64
@@ -34,8 +40,10 @@ contract FlowEVMBridgeConfig {
     access(self)
     let typeToTokenHandlers: @{Type: {FlowEVMBridgeHandlerInterfaces.TokenHandler}}
 
-    /* --- Path Constants --- */
-    //
+    /********************
+        Path Constants
+    *********************/
+
     /// StoragePath where bridge Cadence Owned Account is stored
     access(all)
     let coaStoragePath: StoragePath
@@ -46,8 +54,10 @@ contract FlowEVMBridgeConfig {
     access(all)
     let providerCapabilityStoragePath: StoragePath
 
-    /* --- Events --- */
-    //
+    /*************
+        Events
+    **************/
+
     /// Emitted whenever the onboarding fee is updated
     ///
     access(all)
@@ -137,6 +147,7 @@ contract FlowEVMBridgeConfig {
     }
 
     /// Returns an unentitled reference to the TokenHandler associated with the given Type
+    ///
     access(account)
     view fun borrowTokenHandler(
         _ type: Type
@@ -145,6 +156,7 @@ contract FlowEVMBridgeConfig {
     }
 
     /// Returns an entitled reference to the TokenHandler associated with the given Type
+    ///
     access(self)
     view fun borrowTokenHandlerAdmin(
         _ type: Type
