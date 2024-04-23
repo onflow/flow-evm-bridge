@@ -482,6 +482,20 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         let feeAmount = FlowEVMBridgeUtils.calculateBridgeFee(bytes: 0)
         FlowEVMBridgeUtils.depositFee(feeProvider, feeAmount: feeAmount)
 
+        if FlowEVMBridgeConfig.typeHasHandler(type) {
+            // Some tokens pre-dating bridge require special case handling - borrow handler and passthrough to fulfill
+            let handler = FlowEVMBridgeConfig.borrowHandler(type)
+                ?? panic("Could not retrieve handler for the given type")
+            assert(handler.isEnabled(), message: "Cannot bridge tokens of this type at this time")
+
+            return <-handler.fulfillTokensFromEVM(
+                owner: owner,
+                type: type,
+                amount: amount,
+                protectedTransferCall: protectedTransferCall
+            )
+        }
+
         // Get the EVMAddress of the ERC20 contract associated with the type
         let associatedAddress = FlowEVMBridgeConfig.getEVMAddressAssociated(with: type)
             ?? panic("No EVMAddress found for token type")
