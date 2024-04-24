@@ -425,6 +425,8 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         let decimals = FlowEVMBridgeUtils.getTokenDecimals(evmContractAddress: associatedAddress)
         let bridgeAmount = FlowEVMBridgeUtils.ufix64ToUInt256(value: vaultBalance, decimals: decimals)
         
+        let toPreBalance = FlowEVMBridgeUtils.balanceOf(owner: to, evmContractAddress: associatedAddress)
+
         let isFactoryDeployed = FlowEVMBridgeUtils.isEVMContractBridgeOwned(evmContractAddress: associatedAddress)
         // Controlled by the bridge - mint or transfer based on the bridge's EVM contract authority
         if isFactoryDeployed {
@@ -448,6 +450,13 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
             )
             assert(callResult.status == EVM.Status.successful, message: "Tranfer to bridge recipient failed")
         }
+
+        // Ensure bridge to recipient was succcessful
+        let toPostBalance = FlowEVMBridgeUtils.balanceOf(owner: to, evmContractAddress: associatedAddress)
+        assert(
+            toPostBalance == toPreBalance + bridgeAmount,
+            message: "Transfer to bridge recipient failed"
+        )
     }
 
     /// Public entrypoint to bridge FTs from EVM to Cadence
@@ -508,9 +517,11 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         )
         assert(hasSufficientBalance, message: "Caller does not have sufficient balance to bridge requested tokens")
 
-        // Get the bridge COA's balance of the token before executing the protected transfer call
+        // Get the owner and escrow balance of the token before executing the protected transfer call
+        let bridgeCOAAddress = self.getBridgeCOAEVMAddress()
+        let ownerBalanceBefore = FlowEVMBridgeUtils.balanceOf(owner: owner, evmContractAddress: associatedAddress)
         let bridgeBalanceBefore = FlowEVMBridgeUtils.balanceOf(
-            owner: self.getBridgeCOAEVMAddress(),
+            owner: bridgeCOAAddress,
             evmContractAddress: associatedAddress
         )
 
@@ -518,10 +529,15 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         let callResult = protectedTransferCall()
         assert(callResult.status == EVM.Status.successful, message: "Transfer to bridge COA failed")
 
-        // Get the bridge COA's balance of the token before executing the protected transfer call
+        // Confirm the transfer of the expected was successful in both sending owner and recipient escrow
+        let ownerBalanceAfter = FlowEVMBridgeUtils.balanceOf(owner: owner, evmContractAddress: associatedAddress)
         let bridgeBalanceAfter = FlowEVMBridgeUtils.balanceOf(
-            owner: self.getBridgeCOAEVMAddress(),
+            owner: bridgeCOAAddress,
             evmContractAddress: associatedAddress
+        )
+        assert(
+            ownerBalanceAfter == ownerBalanceBefore - amount,
+            message: "Transfer to bridge COA failed - cannot bridge FT without bridge escrow"
         )
         assert(
             bridgeBalanceAfter == bridgeBalanceBefore + amount,
