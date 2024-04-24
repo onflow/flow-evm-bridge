@@ -16,6 +16,7 @@ access(all) let alice = Test.createAccount()
 
 // ExampleToken
 access(all) let exampleTokenIdentifier = "A.0000000000000011.ExampleHandledToken.Vault"
+access(all) let exampleTokenMinterIdentifier = "A.0000000000000011.ExampleHandledToken.Minter"
 access(all) let exampleTokenMintAmount = 100.0
 
 // ERC20 values
@@ -285,16 +286,26 @@ fun testMintExampleTokenSucceeds() {
 // Configuring the Handler also disables onboarding of the Cadence-native token to the bridge
 access(all)
 fun testConfigureCadenceNativeTokenHandlerSucceeds() {
-    let handlerSetupTxn = Test.Transaction(
-        code: Test.readFile("../transactions/bridge/admin/create_cadence_native_token_handler.cdc"),
-        authorizers: [exampleHandledTokenAccount.address, bridgeAccount.address],
-        signers: [exampleHandledTokenAccount, bridgeAccount],
-        arguments: [exampleTokenIdentifier, /storage/exampleTokenAdmin],
+    // Create TokenHandler for ExampleHandledToken, specifying the target type and expected minter type
+    let createHandlerResult = executeTransaction(
+        "../transactions/bridge/admin/create_cadence_native_token_handler.cdc",
+        [exampleTokenIdentifier, exampleTokenMinterIdentifier],
+        bridgeAccount
     )
-    let createHandlerResult = Test.executeTransaction(handlerSetupTxn)
     Test.expect(createHandlerResult, Test.beSucceeded())
 
     // TODO: Add event validation when EVM and EVM dependent contracts can be imported to Test env
+}
+
+// Set the minter in the configured TokenHandler
+access(all)
+fun testSetTokenHandlerMinterSucceeds() {
+    let setHandlerMinterResult = executeTransaction(
+        "../transactions/bridge/admin/set_token_handler_minter.cdc",
+        [exampleTokenIdentifier, /storage/exampleTokenAdmin, bridgeAccount.address],
+        exampleHandledTokenAccount
+    )
+    Test.expect(setHandlerMinterResult, Test.beSucceeded())
 }
 
 // ExampleHandledToken no longer has minter after handoff, so minting should fail
@@ -310,6 +321,17 @@ fun testMintExampleTokenFails() {
         exampleHandledTokenAccount
     )
     Test.expect(mintExampleTokenResult, Test.beFailed())
+}
+
+// Should not be able to enable TokenHandler without targetEVMAddress set
+access(all)
+fun testEnableTokenHandlerFails() {
+    let enabledResult = executeTransaction(
+        "../transactions/bridge/admin/enable_token_handler.cdc",
+        [exampleTokenIdentifier],
+        bridgeAccount
+    )
+    Test.expect(enabledResult, Test.beFailed())
 }
 
 // ERC20 deploys successfully - this will be used as the targetEVMAddress in our TokenHandler

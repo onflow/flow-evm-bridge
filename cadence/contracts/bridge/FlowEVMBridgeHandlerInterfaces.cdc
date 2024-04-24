@@ -42,6 +42,8 @@ access(all) contract FlowEVMBridgeHandlerInterfaces {
         access(all) view fun getTargetType(): Type?
         /// Returns the EVM address handled by the Handler, nil if not set
         access(all) view fun getTargetEVMAddress(): EVM.EVMAddress?
+        /// Returns the Type of the expected minter if the handler utilizes one
+        access(all) view fun getExpectedMinterType(): Type?
     }
 
     /// Administrative interface for Handler configuration
@@ -65,7 +67,13 @@ access(all) contract FlowEVMBridgeHandlerInterfaces {
                 self.getTargetEVMAddress()!.bytes == address!.bytes: "Problem setting target EVM address"
             }
         }
-        /// Enables the Handler to fulfill bridge requests for the configured targets
+        access(Admin) fun setMinter(_ minter: @{FlowEVMBridgeHandlerInterfaces.TokenMinter}) {
+            pre {
+                self.getExpectedMinterType() == minter.getType(): "Minter is not of the expected type"
+            }
+        }
+        /// Enables the Handler to fulfill bridge requests for the configured targets. If implementers utilize a minter,
+        /// they should additionally ensure the minter is set before enabling.
         access(Admin) fun enableBridging() {
             pre {
                 self.getTargetType() != nil && self.getTargetEVMAddress() != nil:

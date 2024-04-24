@@ -47,14 +47,21 @@ access(all) contract FlowEVMBridgeHandlers {
         /// contract address is not yet known but the Cadence type must still be filtered via Handler to prevent the
         /// type from being onboarded otherwise.
         access(self) var targetEVMAddress: EVM.EVMAddress?
+        /// The expected minter type for minting tokens on fulfillment
+        access(self) let expectedMinterType: Type
         /// The Minter enabling minting of Cadence tokens on fulfillment from EVM
-        access(self) let minter: @{FlowEVMBridgeHandlerInterfaces.TokenMinter}
+        access(self) var minter: @{FlowEVMBridgeHandlerInterfaces.TokenMinter}?
 
-        init(targetType: Type, targetEVMAddress: EVM.EVMAddress?, minter: @{FlowEVMBridgeHandlerInterfaces.TokenMinter}) {
+        init(targetType: Type, targetEVMAddress: EVM.EVMAddress?, expectedMinterType: Type) {
+            pre {
+                expectedMinterType.isSubtype(of: Type<@{FlowEVMBridgeHandlerInterfaces.TokenMinter}>()):
+                    "Invalid minter type"
+            }
             self.enabled = false
             self.targetType = targetType
             self.targetEVMAddress = targetEVMAddress
-            self.minter <- minter
+            self.expectedMinterType = expectedMinterType
+            self.minter <- nil
         }
 
         /* --- HandlerInfo --- */
@@ -72,6 +79,11 @@ access(all) contract FlowEVMBridgeHandlers {
         /// Returns the EVM contract address the handler is configured to handle
         access(all) view fun getTargetEVMAddress(): EVM.EVMAddress? {
             return self.targetEVMAddress
+        }
+
+        /// Returns the expected minter type for the handler
+        access(all) view fun getExpectedMinterType(): Type? {
+            return self.expectedMinterType
         }
 
         /* --- TokenHandler --- */
@@ -171,7 +183,8 @@ access(all) contract FlowEVMBridgeHandlers {
             assert(bridgePostBalance == bridgePreBalance + amount, message: "Transfer to bridge escrow failed")
 
             // After state confirmation, mint the tokens and return
-            let minted <- self.borrowMinter().mint(amount: ufixAmount)
+            let minter = self.borrowMinter() ?? panic("Minter not set")
+            let minted <- minter.mint(amount: ufixAmount)
             return <-minted
         }
 
@@ -189,9 +202,21 @@ access(all) contract FlowEVMBridgeHandlers {
             self.targetEVMAddress = address
         }
 
+        /// Sets the target type for the handler
+        access(FlowEVMBridgeHandlerInterfaces.Admin)
+        fun setMinter(_ minter: @{FlowEVMBridgeHandlerInterfaces.TokenMinter}) {
+            pre {
+                self.minter == nil: "Minter has already been set"
+            }
+            self.minter <-! minter
+        }
+
         /// Enables the handler for request handling. The 
         access(FlowEVMBridgeHandlerInterfaces.Admin)
         fun enableBridging() {
+            pre {
+                self.minter != nil: "Cannot enable handler without a minter"
+            }
             self.enabled = true
         }
 
@@ -199,7 +224,7 @@ access(all) contract FlowEVMBridgeHandlers {
 
         /// Returns an entitled reference to the encapsulated minter resource
         access(self)
-        view fun borrowMinter(): auth(FlowEVMBridgeHandlerInterfaces.Mint) &{FlowEVMBridgeHandlerInterfaces.TokenMinter} {
+        view fun borrowMinter(): auth(FlowEVMBridgeHandlerInterfaces.Mint) &{FlowEVMBridgeHandlerInterfaces.TokenMinter}? {
             return &self.minter
         }
     }
@@ -213,21 +238,21 @@ access(all) contract FlowEVMBridgeHandlers {
         /// @param handlerType: The type of handler to create as defined in this contract
         /// @param targetType: The type of the asset the handler will handle.
         /// @param targetEVMAddress: The EVM contract address the handler will handle, can be nil if still unknown
-        /// @param minter: The minter resource to use for minting tokens on fulfillment
+        /// @param expectedMinterType: The Type of the expected minter to be set for the created TokenHandler
         ///
         access(FlowEVMBridgeHandlerInterfaces.Admin)
         fun createTokenHandler(
             handlerType: Type,
             targetType: Type,
             targetEVMAddress: EVM.EVMAddress?,
-            minter: @{FlowEVMBridgeHandlerInterfaces.TokenMinter}
+            expectedMinterType: Type
         ) {
             switch handlerType {
                 case Type<@CadenceNativeTokenHandler>():
                     let handler <-create CadenceNativeTokenHandler(
                         targetType: targetType,
                         targetEVMAddress: targetEVMAddress,
-                        minter: <-minter
+                        expectedMinterType: expectedMinterType
                     )
                     FlowEVMBridgeConfig.addTokenHandler(<-handler)
                 default:

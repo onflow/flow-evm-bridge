@@ -50,6 +50,9 @@ contract FlowEVMBridgeConfig {
     /// StoragePath where bridge config Admin is stored
     access(all)
     let adminStoragePath: StoragePath
+    /// PublicPath where a public Capability on the bridge config Admin is exposed
+    access(all)
+    let adminPublicPath: PublicPath
     /// StoragePath to store the Provider capability used as a bridge fee Provider
     access(all)
     let providerCapabilityStoragePath: StoragePath
@@ -173,6 +176,26 @@ contract FlowEVMBridgeConfig {
     access(all)
     resource Admin {
 
+        /// Sets the TokenMinter for the given Type. If a TokenHandler does not exist for the given Type, the operation
+        /// reverts. The provided minter must be of the expected type for the TokenHandler and the handler cannot have
+        /// a minter already set.
+        ///
+        /// @param targetType: Cadence type indexing the relevant TokenHandler
+        /// @param minter: TokenMinter minter to set for the TokenHandler
+        ///
+        access(all)
+        fun setTokenHandlerMinter(targetType: Type, minter: @{FlowEVMBridgeHandlerInterfaces.TokenMinter}) {
+            pre {
+                FlowEVMBridgeConfig.typeHasTokenHandler(targetType):
+                    "Cannot set minter for Type that does not have a TokenHandler configured"
+            }
+            let handler = FlowEVMBridgeConfig.borrowTokenHandlerAdmin(targetType)
+                ?? panic("No handler found for target Type")
+            assert(minter.getType() == handler.getExpectedMinterType(), message: "Invalid minter type")
+
+            handler.setMinter(<-minter)
+        }
+
         /// Updates the onboarding fee
         ///
         /// @param new: UFix64 - new onboarding fee
@@ -259,6 +282,7 @@ contract FlowEVMBridgeConfig {
         self.onboardFee = 0.0
         self.baseFee = 0.0
         self.defaultDecimals = 18
+
         // Although $FLOW does not have ERC20 address, we associate the the Vault with the EVM address from which
         // EVM transfers originate
         // See FLIP #223 - https://github.com/onflow/flips/pull/225
@@ -269,12 +293,17 @@ contract FlowEVMBridgeConfig {
         let flowOriginationAddressHex = EVMUtils.getEVMAddressAsHexString(address: flowOriginationAddress)
         self.typeToEVMAddress = { flowVaultType: flowOriginationAddress }
         self.evmAddressHexToType = { flowOriginationAddressHex: flowVaultType }
+
         self.typeToTokenHandlers <- {}
 
         self.adminStoragePath = /storage/flowEVMBridgeConfigAdmin
+        self.adminPublicPath = /public/flowEVMBridgeConfigAdmin
         self.coaStoragePath = /storage/evm
         self.providerCapabilityStoragePath = /storage/bridgeFlowVaultProvider
 
+        // Create & save Admin, issuing a public unentitled Admin Capability
         self.account.storage.save(<-create Admin(), to: self.adminStoragePath)
+        let adminCap = self.account.capabilities.storage.issue<&Admin>(self.adminStoragePath)
+        self.account.capabilities.publish(adminCap, at: self.adminPublicPath)
     }
 }
