@@ -466,6 +466,14 @@ contract FlowEVMBridgeUtils {
         return decodedResult[0] as! UInt256
     }
 
+    access(all)
+    fun convertERC20AmountToCadenceAmount(_ amount: UInt256, erc20Address: EVM.EVMAddress): UFix64 {
+        return self.uint256ToUFix64(
+            value: amount,
+            decimals: self.getTokenDecimals(evmContractAddress: erc20Address)
+        )
+    }
+
     /************************
         Derivation Utils
      ************************/
@@ -725,6 +733,100 @@ contract FlowEVMBridgeUtils {
             gasLimit: gasLimit,
             value: valueBalance
         )
+    }
+
+    access(account)
+    fun mustMintERC20(to: EVM.EVMAddress, amount: UInt256, erc20Address: EVM.EVMAddress) {
+        let toPreBalance = FlowEVMBridgeUtils.balanceOf(owner: to, evmContractAddress: erc20Address)
+        // Mint tokens to the recipient
+        let mintResult: EVM.Result = FlowEVMBridgeUtils.call(
+            signature: "mint(address,uint256)",
+            targetEVMAddress: erc20Address,
+            args: [to, amount],
+            gasLimit: 15000000,
+            value: 0.0
+        )
+        assert(mintResult.status == EVM.Status.successful, message: "Tranfer to bridge recipient failed")
+        // Ensure bridge to recipient was succcessful
+        let toPostBalance = FlowEVMBridgeUtils.balanceOf(owner: to, evmContractAddress: erc20Address)
+        assert(
+            toPostBalance == toPreBalance + amount,
+            message: "Transfer to bridge recipient failed"
+        )
+    }
+
+    access(account)
+    fun mustTransferERC20(to: EVM.EVMAddress, amount: UInt256, erc20Address: EVM.EVMAddress) {
+        let bridgeCOAAddress = self.getBridgeCOAEVMAddress()
+
+        let toPreBalance = FlowEVMBridgeUtils.balanceOf(owner: to, evmContractAddress: erc20Address)
+        let escrowPreBalance = FlowEVMBridgeUtils.balanceOf(
+            owner: bridgeCOAAddress,
+            evmContractAddress: erc20Address
+        )
+
+        // Mint tokens to the recipient
+        let mintResult: EVM.Result = FlowEVMBridgeUtils.call(
+            signature: "transfer(address,uint256)",
+            targetEVMAddress: erc20Address,
+            args: [to, amount],
+            gasLimit: 15000000,
+            value: 0.0
+        )
+        assert(mintResult.status == EVM.Status.successful, message: "Tranfer to bridge recipient failed")
+
+        // Ensure bridge to recipient was succcessful
+        let toPostBalance = FlowEVMBridgeUtils.balanceOf(owner: to, evmContractAddress: erc20Address)
+        let escrowPostBalance = FlowEVMBridgeUtils.balanceOf(
+            owner: bridgeCOAAddress,
+            evmContractAddress: erc20Address
+        )
+        assert(
+            toPostBalance == toPreBalance + amount,
+            message: "Transfer to bridge COA failed - cannot bridge FT without bridge escrow"
+        )
+        assert(
+            escrowPostBalance == escrowPreBalance - amount,
+            message: "Transfer to bridge COA failed - cannot bridge FT without bridge escrow"
+        )
+    }
+
+    access(account)
+    fun mustExecuteProtectedERC20TransferCall(
+        owner: EVM.EVMAddress,
+        amount: UInt256,
+        erc20Address: EVM.EVMAddress,
+        protectedTransferCall: fun (): EVM.Result
+    ) {
+        // Ensure the caller is has sufficient balance to bridge the requested amount
+        let hasSufficientBalance = FlowEVMBridgeUtils.hasSufficientBalance(
+            amount: amount,
+            owner: owner,
+            evmContractAddress: erc20Address
+        )
+        assert(hasSufficientBalance, message: "Caller does not have sufficient balance to bridge requested tokens")
+
+        // Get the owner and escrow balances before transfer
+        let ownerPreBalance = FlowEVMBridgeUtils.balanceOf(owner: owner, evmContractAddress: erc20Address)
+        let bridgePreBalance = FlowEVMBridgeUtils.balanceOf(
+                owner: FlowEVMBridgeUtils.getBridgeCOAEVMAddress(),
+                evmContractAddress: erc20Address
+            )
+
+        // Call the protected transfer function which should execute a transfer call from the owner to escrow
+        let transferResult = protectedTransferCall()
+        assert(transferResult.status == EVM.Status.successful, message: "Transfer via callback failed")
+
+        // Get the resulting balances after transfer
+        let ownerPostBalance = FlowEVMBridgeUtils.balanceOf(owner: owner, evmContractAddress: erc20Address)
+        let bridgePostBalance = FlowEVMBridgeUtils.balanceOf(
+                owner: FlowEVMBridgeUtils.getBridgeCOAEVMAddress(),
+                evmContractAddress: erc20Address
+            )
+        
+        // Confirm the transfer of the expected was successful in both sending owner and recipient escrow
+        assert(ownerPostBalance == ownerPreBalance - amount, message: "Transfer to owner failed")
+        assert(bridgePostBalance == bridgePreBalance + amount, message: "Transfer to bridge escrow failed")
     }
 
     init(bridgeFactoryBytecodeHex: String) {
