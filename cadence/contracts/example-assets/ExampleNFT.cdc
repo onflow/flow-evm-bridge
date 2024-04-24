@@ -123,7 +123,7 @@ access(all) contract ExampleNFT: NonFungibleToken {
     access(all) resource Collection: NonFungibleToken.Collection {
         /// dictionary of NFT conforming tokens
         /// NFT is a resource type with an `UInt64` ID field
-        access(contract) var ownedNFTs: @{UInt64: ExampleNFT.NFT}
+        access(all) var ownedNFTs: @{UInt64: {NonFungibleToken.NFT}}
 
         access(all) var storagePath: StoragePath
         access(all) var publicPath: PublicPath
@@ -187,7 +187,7 @@ access(all) contract ExampleNFT: NonFungibleToken {
 
         /// Borrow the view resolver for the specified NFT ID
         access(all) view fun borrowViewResolver(id: UInt64): &{ViewResolver.Resolver}? {
-            if let nft = &self.ownedNFTs[id] as &ExampleNFT.NFT? {
+            if let nft = &self.ownedNFTs[id] as &{NonFungibleToken.NFT}? {
                 return nft as &{ViewResolver.Resolver}
             }
             return nil
