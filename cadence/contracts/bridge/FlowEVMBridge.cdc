@@ -97,21 +97,24 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         pre {
             type != Type<@FlowToken.Vault>():
                 "$FLOW cannot be bridged via the VM bridge - use the CadenceOwnedAccount interface"
-            feeProvider.isAvailableToWithdraw(amount: FlowEVMBridgeConfig.onboardFee):
-                "Insufficient fee available via feeProvider"
             self.typeRequiresOnboarding(type) == true: "Onboarding is not needed for this type"
+            FlowEVMBridgeUtils.typeAllowsBridging(type):
+                "This type is not supported as defined by the project's development team"
             FlowEVMBridgeUtils.isCadenceNative(type: type): "Only Cadence-native assets can be onboarded by Type"
         }
-        // Ensure the project has not opted out of bridge support
-        assert(
-            FlowEVMBridgeUtils.typeAllowsBridging(type),
-            message: "This type is not supported as defined by the project's development team"
-        )
+        /* Provision fees */
+        //
         // Withdraw from feeProvider and deposit to self
         FlowEVMBridgeUtils.depositFee(feeProvider, feeAmount: FlowEVMBridgeConfig.onboardFee)
+        
+        /* EVM setup */
+        //
         // Deploy an EVM defining contract via the FlowBridgeFactory.sol contract
         let onboardingValues = self.deployEVMContract(forAssetType: type)
-        // Initialize bridge escrow for the asset
+
+        /* Cadence escrow setup */
+        //
+        // Initialize bridge escrow for the asset based on its type
         if type.isSubtype(of: Type<@{NonFungibleToken.NFT}>()) {
             FlowEVMBridgeNFTEscrow.initializeEscrow(
                 forType: type,
@@ -133,6 +136,8 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
             panic("Attempted to onboard unsupported type: ".concat(type.identifier))
         }
 
+        /* Confirmation */
+        //
         assert(
             FlowEVMBridgeNFTEscrow.isInitialized(forType: type) || FlowEVMBridgeTokenEscrow.isInitialized(forType: type),
             message: "Failed to initialize escrow for given type"
@@ -157,10 +162,8 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         _ address: EVM.EVMAddress,
         feeProvider: auth(FungibleToken.Withdraw) &{FungibleToken.Provider}
     ) {
-        pre {
-            feeProvider.isAvailableToWithdraw(amount: FlowEVMBridgeConfig.onboardFee):
-                "Insufficient fee available via feeProvider"
-        }
+        /* Validate the EVM contract */
+        //
         // Ensure the project has not opted out of bridge support
         assert(
             FlowEVMBridgeUtils.evmAddressAllowsBridging(address),
@@ -170,17 +173,23 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
             self.evmAddressRequiresOnboarding(address) == true,
             message: "Onboarding is not needed for this contract"
         )
+
+        /* Provision fees */
+        //
         // Withdraw fee from feeProvider and deposit
         FlowEVMBridgeUtils.depositFee(feeProvider, feeAmount: FlowEVMBridgeConfig.onboardFee)
+    
+        /* Setup Cadence-defining contract */
+        //
         // Deploy a defining Cadence contract to the bridge account
         self.deployDefiningContract(evmContractAddress: address)
     }
 
     /*************************
-        Public NFT Handling
+        NFT Handling
     **************************/
 
-    /// Public entrypoint to bridge NFTs from Cadence to EVM.
+    /// Public entrypoint to bridge NFTs from Cadence to EVM as ERC721.
     ///
     /// @param token: The NFT to be bridged
     /// @param to: The NFT recipient in FlowEVM
@@ -281,7 +290,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         }
     }
 
-    /// Public entrypoint to bridge NFTs from EVM to Cadence
+    /// Entrypoint to bridge ERC721 from EVM to Cadence as NonFungibleToken.NFT
     ///
     /// @param owner: The EVM address of the NFT owner. Current ownership and successful transfer (via
     ///     `protectedTransferCall`) is validated before the bridge request is executed.
@@ -303,8 +312,6 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         protectedTransferCall: fun (): EVM.Result
     ): @{NonFungibleToken.NFT} {
         pre {
-            feeProvider.isAvailableToWithdraw(amount: FlowEVMBridgeUtils.calculateBridgeFee(bytes: 0)):
-                "Insufficient fee paid"
             !type.isSubtype(of: Type<@{FungibleToken.Vault}>()): "Mixed asset types are not yet supported"
             self.typeRequiresOnboarding(type) == false: "NFT must first be onboarded"
         }
@@ -361,10 +368,10 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
     }
 
     /**************************
-        Public FT Handling
+        FT Handling
     ***************************/
 
-    /// Public entrypoint to bridge FTs from Cadence to EVM.
+    /// Public entrypoint to bridge FTs from Cadence to EVM as ERC20 tokens.
     ///
     /// @param vault: The fungible token Vault to be bridged
     /// @param to: The fungible token recipient in EVM
@@ -433,8 +440,10 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         let associatedAddress = FlowEVMBridgeConfig.getEVMAddressAssociated(with: vaultType)
             ?? panic("No EVMAddress found for vault type")
         // Convert the vault balance to a UInt256
-        let decimals = FlowEVMBridgeUtils.getTokenDecimals(evmContractAddress: associatedAddress)
-        let bridgeAmount = FlowEVMBridgeUtils.ufix64ToUInt256(value: vaultBalance, decimals: decimals)
+        let bridgeAmount = FlowEVMBridgeUtils.convertCadenceAmountToERC20Amount(
+                vaultBalance,
+                erc20Address: associatedAddress
+            )
         // Determine if the EVM contract is bridge-owned - affects how tokens are transmitted to recipient
         let isFactoryDeployed = FlowEVMBridgeUtils.isEVMContractBridgeOwned(evmContractAddress: associatedAddress)
 
@@ -448,7 +457,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         }
     }
 
-    /// Public entrypoint to bridge FTs from EVM to Cadence
+    /// Entrypoint to bridge ERC20 tokens from EVM to Cadence as FungibleToken Vaults
     ///
     /// @param owner: The EVM address of the FT owner. Current ownership and successful transfer (via 
     ///     `protectedTransferCall`) is validated before the bridge request is executed.
@@ -470,8 +479,6 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         protectedTransferCall: fun (): EVM.Result
     ): @{FungibleToken.Vault} {
         pre {
-            feeProvider.isAvailableToWithdraw(amount: FlowEVMBridgeUtils.calculateBridgeFee(bytes: 0)):
-                "Insufficient fee paid"
             !type.isSubtype(of: Type<@{NonFungibleToken.Collection}>()): "Mixed asset types are not yet supported"
             !type.isInstance(Type<@FlowToken.Vault>()): "Must use the CadenceOwnedAccount interface to bridge $FLOW from EVM"
             self.typeRequiresOnboarding(type) == false: "NFT must first be onboarded"

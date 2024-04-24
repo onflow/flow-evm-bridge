@@ -103,10 +103,7 @@ access(all) contract FlowEVMBridgeHandlers {
 
             // Get values from vault and burn
             let amount = tokens.balance
-            let uintAmount = FlowEVMBridgeUtils.ufix64ToUInt256(
-                    value: amount,
-                    decimals: FlowEVMBridgeUtils.getTokenDecimals(evmContractAddress: evmAddress)
-                )
+            let uintAmount = FlowEVMBridgeUtils.convertCadenceAmountToERC20Amount(amount, erc20Address: evmAddress)
 
             Burner.burn(<-tokens)
 

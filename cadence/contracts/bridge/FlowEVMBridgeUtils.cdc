@@ -466,12 +466,33 @@ contract FlowEVMBridgeUtils {
         return decodedResult[0] as! UInt256
     }
 
+    /// Converts the given amount of ERC20 tokens to the equivalent amount in FLOW tokens based on the ERC20s decimals
+    /// value. Reverts on EVM call failure.
+    ///
+    /// @param amount: The amount of ERC20 tokens to convert
+    /// @param erc20Address: The EVM contract address of the ERC20 token
+    ///
+    /// @return the equivalent amount in FLOW tokens as a UFix64
+    ///
     access(all)
     fun convertERC20AmountToCadenceAmount(_ amount: UInt256, erc20Address: EVM.EVMAddress): UFix64 {
         return self.uint256ToUFix64(
             value: amount,
             decimals: self.getTokenDecimals(evmContractAddress: erc20Address)
         )
+    }
+
+    /// Converts the given amount of Cadence fungible tokens to the equivalent amount in ERC20 tokens based on the
+    /// ERC20s decimals. Reverts on EVM call failure.
+    ///
+    /// @param amount: The amount of Cadence fungible tokens to convert
+    /// @param erc20Address: The EVM contract address of the ERC20 token
+    ///
+    /// @return the equivalent amount in ERC20 tokens as a UInt256
+    ///
+    access(all)
+    fun convertCadenceAmountToERC20Amount(_ amount: UFix64, erc20Address: EVM.EVMAddress): UInt256 {
+        return self.ufix64ToUInt256(value: amount, decimals: self.getTokenDecimals(evmContractAddress: erc20Address))
     }
 
     /************************
@@ -735,6 +756,8 @@ contract FlowEVMBridgeUtils {
         )
     }
 
+    /// Mints ERC20 tokens to the recipient and confirms that the recipient's balance was updated
+    ///
     access(account)
     fun mustMintERC20(to: EVM.EVMAddress, amount: UInt256, erc20Address: EVM.EVMAddress) {
         let toPreBalance = FlowEVMBridgeUtils.balanceOf(owner: to, evmContractAddress: erc20Address)
@@ -755,6 +778,9 @@ contract FlowEVMBridgeUtils {
         )
     }
 
+    /// Transfers ERC20 tokens to the recipient and confirms that the recipient's balance was incremented and the escrow
+    /// balance was decremented by the requested amount.
+    ///
     access(account)
     fun mustTransferERC20(to: EVM.EVMAddress, amount: UInt256, erc20Address: EVM.EVMAddress) {
         let bridgeCOAAddress = self.getBridgeCOAEVMAddress()
@@ -791,6 +817,10 @@ contract FlowEVMBridgeUtils {
         )
     }
 
+    /// Executes the provided method, assumed to be a protected transfer call, and confirms that the transfer was
+    /// successful by validating that the named owner's balance was decremented by the requested amount and the bridge
+    /// escrow balance was incremented by the same amount.
+    ///
     access(account)
     fun mustExecuteProtectedERC20TransferCall(
         owner: EVM.EVMAddress,
