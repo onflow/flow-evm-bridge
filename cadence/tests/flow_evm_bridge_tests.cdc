@@ -157,14 +157,14 @@ fun setup() {
     Test.expect(err, Test.beNil())
     // Commit bridged NFT code
     let bridgedNFTChunkResult = executeTransaction(
-        "../transactions/bridge/admin/upsert_contract_code_chunks.cdc",
+        "../transactions/bridge/admin/templates/upsert_contract_code_chunks.cdc",
         ["bridgedNFT", getBridgedNFTCodeChunks()],
         bridgeAccount
     )
     Test.expect(bridgedNFTChunkResult, Test.beSucceeded())
     // Commit bridged Token code
     let bridgedTokenChunkResult = executeTransaction(
-        "../transactions/bridge/admin/upsert_contract_code_chunks.cdc",
+        "../transactions/bridge/admin/templates/upsert_contract_code_chunks.cdc",
         ["bridgedToken", getBridgedTokenCodeChunks()],
         bridgeAccount
     )
@@ -208,7 +208,7 @@ fun setup() {
     Test.expect(err, Test.beNil())
 
     let claimAccessorResult = executeTransaction(
-        "../transactions/bridge/admin/claim_accessor_capability_and_save_router.cdc",
+        "../transactions/bridge/admin/evm/claim_accessor_capability_and_save_router.cdc",
         ["FlowEVMBridgeAccessor", bridgeAccount.address],
         serviceAccount
     )
@@ -414,13 +414,13 @@ fun testUpdateBridgeFeesSucceeds() {
 
     // Set the fees to new values
     let updateOnboardFeeResult = executeTransaction(
-        "../transactions/bridge/admin/update_onboard_fee.cdc",
+        "../transactions/bridge/admin/fee/update_onboard_fee.cdc",
         [expectedOnboardFee],
         bridgeAccount
     )
     Test.expect(updateOnboardFeeResult, Test.beSucceeded())
     let updateBaseFeeResult = executeTransaction(
-        "../transactions/bridge/admin/update_base_fee.cdc",
+        "../transactions/bridge/admin/fee/update_base_fee.cdc",
         [expectedBaseFee],
         bridgeAccount
     )

@@ -146,14 +146,14 @@ fun setup() {
     Test.expect(err, Test.beNil())
     // Commit bridged NFT code
     let bridgedNFTChunkResult = executeTransaction(
-        "../transactions/bridge/admin/upsert_contract_code_chunks.cdc",
+        "../transactions/bridge/admin/templates/upsert_contract_code_chunks.cdc",
         ["bridgedNFT", getBridgedNFTCodeChunks()],
         bridgeAccount
     )
     Test.expect(bridgedNFTChunkResult, Test.beSucceeded())
     // Commit bridged Token code
     let bridgedTokenChunkResult = executeTransaction(
-        "../transactions/bridge/admin/upsert_contract_code_chunks.cdc",
+        "../transactions/bridge/admin/templates/upsert_contract_code_chunks.cdc",
         ["bridgedToken", getBridgedTokenCodeChunks()],
         bridgeAccount
     )
@@ -197,7 +197,7 @@ fun setup() {
     Test.expect(err, Test.beNil())
 
     let claimAccessorResult = executeTransaction(
-        "../transactions/bridge/admin/claim_accessor_capability_and_save_router.cdc",
+        "../transactions/bridge/admin/evm/claim_accessor_capability_and_save_router.cdc",
         ["FlowEVMBridgeAccessor", bridgeAccount.address],
         serviceAccount
     )
@@ -231,13 +231,13 @@ fun setup() {
 
     // Set bridge fees
     let updateOnboardFeeResult = executeTransaction(
-        "../transactions/bridge/admin/update_onboard_fee.cdc",
+        "../transactions/bridge/admin/fee/update_onboard_fee.cdc",
         [expectedOnboardFee],
         bridgeAccount
     )
     Test.expect(updateOnboardFeeResult, Test.beSucceeded())
     let updateBaseFeeResult = executeTransaction(
-        "../transactions/bridge/admin/update_base_fee.cdc",
+        "../transactions/bridge/admin/fee/update_base_fee.cdc",
         [expectedBaseFee],
         bridgeAccount
     )
@@ -288,7 +288,7 @@ access(all)
 fun testConfigureCadenceNativeTokenHandlerSucceeds() {
     // Create TokenHandler for ExampleHandledToken, specifying the target type and expected minter type
     let createHandlerResult = executeTransaction(
-        "../transactions/bridge/admin/create_cadence_native_token_handler.cdc",
+        "../transactions/bridge/admin/token-handler/create_cadence_native_token_handler.cdc",
         [exampleTokenIdentifier, exampleTokenMinterIdentifier],
         bridgeAccount
     )
@@ -301,7 +301,7 @@ fun testConfigureCadenceNativeTokenHandlerSucceeds() {
 access(all)
 fun testSetTokenHandlerMinterSucceeds() {
     let setHandlerMinterResult = executeTransaction(
-        "../transactions/bridge/admin/set_token_handler_minter.cdc",
+        "../transactions/bridge/admin/token-handler/set_token_handler_minter.cdc",
         [exampleTokenIdentifier, /storage/exampleTokenAdmin, bridgeAccount.address],
         exampleHandledTokenAccount
     )
@@ -327,7 +327,7 @@ fun testMintExampleTokenFails() {
 access(all)
 fun testEnableTokenHandlerFails() {
     let enabledResult = executeTransaction(
-        "../transactions/bridge/admin/enable_token_handler.cdc",
+        "../transactions/bridge/admin/token-handler/enable_token_handler.cdc",
         [exampleTokenIdentifier],
         bridgeAccount
     )
@@ -354,7 +354,7 @@ fun testSetHandlerTargetEVMAddressSucceeds() {
     let erc20AddressHex = getDeployedAddressFromDeployer(name: "erc20")
 
     let setHandlerTargetResult = executeTransaction(
-        "../transactions/bridge/admin/set_handler_target_evm_address.cdc",
+        "../transactions/bridge/admin/token-handler/set_handler_target_evm_address.cdc",
         [exampleTokenIdentifier, erc20AddressHex],
         bridgeAccount
     )
@@ -497,7 +497,7 @@ fun testBridgeHandledCadenceNativeTokenFromEVMFails() {
 access(all)
 fun testEnableTokenHandlerSucceeds() {
     let enabledResult = executeTransaction(
-        "../transactions/bridge/admin/enable_token_handler.cdc",
+        "../transactions/bridge/admin/token-handler/enable_token_handler.cdc",
         [exampleTokenIdentifier],
         bridgeAccount
     )
