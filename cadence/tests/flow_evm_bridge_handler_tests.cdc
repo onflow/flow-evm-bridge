@@ -74,7 +74,7 @@ fun setup() {
 
     // Update EVM contract with proposed bridge-supporting COA integration
     let updateResult = executeTransaction(
-        "../transactions/test/update_contract.cdc",
+        "./transactions/update_contract.cdc",
         ["EVM", getEVMUpdateCode()],
         serviceAccount
     )
@@ -338,7 +338,7 @@ fun testEnableTokenHandlerFails() {
 access(all)
 fun testDeployERC20Succeeds() {
     let erc20DeployResult = executeTransaction(
-        "../transactions/test/deploy_using_evm_deployer.cdc",
+        "./transactions/deploy_using_evm_deployer.cdc",
         ["erc20", getCompiledERC20Bytecode(), 0 as UInt],
         exampleERCAccount
     )
