@@ -408,6 +408,31 @@ contract FlowEVMBridgeUtils {
         return false
     }
 
+    /// Returns whether the given ERC721 exists, assuming the ERC721 contract implements the `exists` method. While this
+    /// method is not part of the ERC721 standard, it is implemented in the bridge-deployed ERC721 implementation.
+    /// Reverts on EVM call failure.
+    ///
+    /// @param erc721Address: The EVM contract address of the ERC721 token
+    /// @param id: The ID of the ERC721 token to check
+    ///
+    /// @return true if the ERC721 token exists, false otherwise
+    ///
+    access(all)
+    fun erc721Exists(erc721Address: EVM.EVMAddress, id: UInt256): Bool {
+        let existsResponse = EVM.decodeABI(
+                types: [Type<Bool>()],
+                data: FlowEVMBridgeUtils.call(
+                    signature: "exists(uint256)",
+                    targetEVMAddress: erc721Address,
+                    args: [id],
+                    gasLimit: 12000000,
+                    value: 0.0
+                ).data,
+            )
+        assert(existsResponse.length == 1, message: "Invalid response length")
+        return existsResponse[0] as! Bool
+    }
+
     /// Returns the ERC20 balance of the owner at the given ERC20 contract address. Reverts on EVM call failure.
     ///
     /// @param amount: The amount to check if the owner has enough balance to cover
@@ -754,6 +779,95 @@ contract FlowEVMBridgeUtils {
             gasLimit: gasLimit,
             value: valueBalance
         )
+    }
+
+    /// Executes a safeTransferFrom call on the given ERC721 contract address, transferring the NFT from bridge escrow
+    /// in EVM to the named recipient and asserting pre- and post-state changes.
+    ///
+    access(account)
+    fun mustSafeTransferERC721(erc721Address: EVM.EVMAddress, to: EVM.EVMAddress, id: UInt256) {
+        let bridgeCOAAddress = self.getBridgeCOAEVMAddress()
+        
+        let bridgePreStatus = self.isOwner(ofNFT: id, owner: bridgeCOAAddress, evmContractAddress: erc721Address)
+        let toPreStatus = self.isOwner(ofNFT: id, owner: to, evmContractAddress: erc721Address)
+        assert(bridgePreStatus, message: "Bridge COA does not own NFT")
+        assert(!toPreStatus, message: "Recipient already owns NFT")
+        
+        let transferResult: EVM.Result = FlowEVMBridgeUtils.call(
+            signature: "safeTransferFrom(address,address,uint256)",
+            targetEVMAddress: erc721Address,
+            args: [bridgeCOAAddress, to, id],
+            gasLimit: 15000000,
+            value: 0.0
+        )
+        assert(transferResult.status == EVM.Status.successful, message: "Transfer to bridge recipient failed")
+
+        let bridgePostStatus = self.isOwner(ofNFT: id, owner: bridgeCOAAddress, evmContractAddress: erc721Address)
+        let toPostStatus = self.isOwner(ofNFT: id, owner: to, evmContractAddress: erc721Address)
+        assert(!bridgePostStatus, message: "Bridge is still owner of NFT after transfer")
+        assert(toPostStatus, message: "Recipient does not own the NFT after transfer")
+    }
+
+    /// Executes a safeMint call on the given ERC721 contract address, minting an ERC72 to the named recipient and
+    /// asserting pre- and post-state changes. Assumes the bridge COA has the authority to mint the NFT.
+    ///
+    access(account)
+    fun mustSafeMintERC721(erc721Address: EVM.EVMAddress, to: EVM.EVMAddress, id: UInt256, uri: String) {
+        let bridgeCOAAddress = self.getBridgeCOAEVMAddress()
+        
+        let mintResult: EVM.Result = FlowEVMBridgeUtils.call(
+            signature: "safeMint(address,uint256,string)",
+            targetEVMAddress: erc721Address,
+            args: [to, id, uri],
+            gasLimit: 15000000,
+            value: 0.0
+        )
+        assert(mintResult.status == EVM.Status.successful, message: "Mint to bridge recipient failed")
+
+        let toPostStatus = self.isOwner(ofNFT: id, owner: to, evmContractAddress: erc721Address)
+        assert(toPostStatus, message: "Recipient does not own the NFT after minting")
+    }
+
+    /// Executes updateTokenURI call on the given ERC721 contract address, updating the tokenURI of the NFT. This is
+    /// not a standard ERC721 function, but is implemented in the bridge-deployed ERC721 implementation to enable
+    /// synchronization of token metadata with Cadence NFT state on bridging.
+    ///
+    access(account)
+    fun mustUpdateTokenURI(erc721Address: EVM.EVMAddress, id: UInt256, uri: String) {
+        let bridgeCOAAddress = self.getBridgeCOAEVMAddress()
+        
+        let updateResult: EVM.Result = FlowEVMBridgeUtils.call(
+            signature: "updateTokenURI(uint256,string)",
+            targetEVMAddress: erc721Address,
+            args: [id, uri],
+            gasLimit: 15000000,
+            value: 0.0
+        )
+        assert(updateResult.status == EVM.Status.successful, message: "URI update failed")
+    }
+
+    /// Executes the provided method, assumed to be a protected transfer call, and confirms that the transfer was
+    /// successful by validating the named owner is authorized to act on the NFT before the transfer, the transfer
+    /// was successful, and the bridge COA owns the NFT after the protected transfer call.
+    ///
+    access(account)
+    fun mustExecuteERC721ProtectedTransferCall(
+        owner: EVM.EVMAddress,
+        id: UInt256,
+        erc721Address: EVM.EVMAddress,
+        protectedTransferCall: fun (): EVM.Result
+    ) {
+        // Ensure the named owner is authorized to act on the NFT
+        let isAuthorized = self.isOwnerOrApproved(ofNFT: id, owner: owner, evmContractAddress: erc721Address)
+        assert(isAuthorized, message: "Named owner is not the owner of the NFT")
+
+        // Call the protected transfer function which should execute a transfer call from the owner to escrow
+        let transferResult = protectedTransferCall()
+        assert(transferResult.status == EVM.Status.successful, message: "Transfer to escrow via callback failed")
+
+        // Validate the NFT is now owned by the bridge COA, escrow the NFT
+        let isEscrowed = self.isOwner(ofNFT: id, owner: self.getBridgeCOAEVMAddress(), evmContractAddress: erc721Address)
+        assert(isEscrowed, message: "Bridge COA does not own NFT after transfer")
     }
 
     /// Mints ERC20 tokens to the recipient and confirms that the recipient's balance was updated

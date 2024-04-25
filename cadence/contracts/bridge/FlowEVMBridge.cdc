@@ -205,10 +205,14 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
             !token.isInstance(Type<@{FungibleToken.Vault}>()): "Mixed asset types are not yet supported"
             self.typeRequiresOnboarding(token.getType()) == false: "NFT must first be onboarded"
         }
+        /* Gather identifying information */
+        //
         let tokenType = token.getType()
         let tokenID = token.id
         let evmID = CrossVMNFT.getEVMID(from: &token as &{NonFungibleToken.NFT}) ?? UInt256(token.id)
 
+        /* Metadata assignement */
+        //
         // Grab the URI from the NFT if available
         var uri: String = ""
         // Default to project-specified URI
@@ -219,6 +223,8 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
             uri = SerializeMetadata.serializeNFTMetadataAsURI(&token as &{NonFungibleToken.NFT})
         }
 
+        /* Secure NFT in escrow & deposit calculated fees */
+        //
         // Lock the NFT & calculate the storage used by the NFT
         let storageUsed = FlowEVMBridgeNFTEscrow.lockNFT(<-token)
         // Calculate the bridge fee on current rates
@@ -226,67 +232,34 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         // Withdraw fee from feeProvider and deposit
         FlowEVMBridgeUtils.depositFee(feeProvider, feeAmount: feeAmount)
 
+        /* Determine EVM handling */
+        //
         // Does the bridge control the EVM contract associated with this type?
         let associatedAddress = FlowEVMBridgeConfig.getEVMAddressAssociated(with: tokenType)
             ?? panic("No EVMAddress found for token type")
         let isFactoryDeployed = FlowEVMBridgeUtils.isEVMContractBridgeOwned(evmContractAddress: associatedAddress)
-        // Controlled by the bridge - mint or transfer based on existence
-        if isFactoryDeployed {
+        
+        /* Third-party controlled ERC721 handling */
+        //
+        // Not bridge-controlled, transfer existing ownership
+        if !isFactoryDeployed {
+            FlowEVMBridgeUtils.mustSafeTransferERC721(erc721Address: associatedAddress, to: to, id: evmID)
+            return
+        }
 
-            // Check if the ERC721 exists
-            let existsResponse = EVM.decodeABI(
-                    types: [Type<Bool>()],
-                    data: FlowEVMBridgeUtils.call(
-                        signature: "exists(uint256)",
-                        targetEVMAddress: associatedAddress,
-                        args: [evmID],
-                        gasLimit: 12000000,
-                        value: 0.0
-                    ).data,
-                )
-            assert(existsResponse.length == 1, message: "Invalid response length")
-            let exists = existsResponse[0] as! Bool
-            if exists {
-                // If so transfer
-                let transferResult: EVM.Result = FlowEVMBridgeUtils.call(
-                    signature: "safeTransferFrom(address,address,uint256)",
-                    targetEVMAddress: associatedAddress,
-                    args: [self.getBridgeCOAEVMAddress(), to, evmID],
-                    gasLimit: 15000000,
-                    value: 0.0
-                )
-                assert(transferResult.status == EVM.Status.successful, message: "Tranfer to bridge recipient failed")
+        /* Bridge-owned ERC721 handling */
+        //
+        // Check if the ERC721 exists in the EVM contract - determines if bridge mints or transfers
+        let exists = FlowEVMBridgeUtils.erc721Exists(erc721Address: associatedAddress, id: evmID)
+        if exists {
+            // Transfer the existing NFT
+            FlowEVMBridgeUtils.mustSafeTransferERC721(erc721Address: associatedAddress, to: to, id: evmID)
 
-                // And update the URI to reflect current metadata
-                let updateURIResult: EVM.Result = FlowEVMBridgeUtils.call(
-                    signature: "updateTokenURI(uint256,string)",
-                    targetEVMAddress: associatedAddress,
-                    args: [evmID, uri],
-                    gasLimit: 15000000,
-                    value: 0.0
-                )
-                assert(updateURIResult.status == EVM.Status.successful, message: "Tranfer to bridge recipient failed")
-            } else {
-                // Otherwise mint with current URI
-                let callResult: EVM.Result = FlowEVMBridgeUtils.call(
-                    signature: "safeMint(address,uint256,string)",
-                    targetEVMAddress: associatedAddress,
-                    args: [to, evmID, uri],
-                    gasLimit: 15000000,
-                    value: 0.0
-                )
-                assert(callResult.status == EVM.Status.successful, message: "Tranfer to bridge recipient failed")
-            }
+            // And update the URI to reflect current metadata
+            FlowEVMBridgeUtils.mustUpdateTokenURI(erc721Address: associatedAddress, id: evmID, uri: uri)
         } else {
-            // Not bridge-controlled, transfer existing ownership
-            let callResult: EVM.Result = FlowEVMBridgeUtils.call(
-                signature: "safeTransferFrom(address,address,uint256)",
-                targetEVMAddress: associatedAddress,
-                args: [self.getBridgeCOAEVMAddress(), to, evmID],
-                gasLimit: 15000000,
-                value: 0.0
-            )
-            assert(callResult.status == EVM.Status.successful, message: "Transfer to bridge recipient failed")
+            // Otherwise mint with current URI
+            FlowEVMBridgeUtils.mustSafeMintERC721(erc721Address: associatedAddress, to: to, id: evmID, uri: uri)
         }
     }
 
@@ -315,40 +288,36 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
             !type.isSubtype(of: Type<@{FungibleToken.Vault}>()): "Mixed asset types are not yet supported"
             self.typeRequiresOnboarding(type) == false: "NFT must first be onboarded"
         }
+        /* Provision fee */
+        //
         // Withdraw from feeProvider and deposit to self
         let feeAmount = FlowEVMBridgeUtils.calculateBridgeFee(bytes: 0)
         FlowEVMBridgeUtils.depositFee(feeProvider, feeAmount: feeAmount)
 
+        /* Execute escrow transfer */
+        //
         // Get the EVMAddress of the ERC721 contract associated with the type
         let associatedAddress = FlowEVMBridgeConfig.getEVMAddressAssociated(with: type)
             ?? panic("No EVMAddress found for token type")
-
-        // Ensure the caller is either the current owner or approved for the NFT
-        let isAuthorized: Bool = FlowEVMBridgeUtils.isOwnerOrApproved(
-            ofNFT: id,
+        // Execute the transfer call and make needed state assertions to confirm escrow from named owner
+        FlowEVMBridgeUtils.mustExecuteERC721ProtectedTransferCall(
             owner: owner,
-            evmContractAddress: associatedAddress
+            id: id,
+            erc721Address: associatedAddress,
+            protectedTransferCall: protectedTransferCall
         )
-        assert(isAuthorized, message: "Caller is not the owner of or approved for requested NFT")
 
-        // Execute the transfer from the calling owner to the bridge's COA, escrowing the NFT in EVM
-        let callResult = protectedTransferCall()
-        assert(callResult.status == EVM.Status.successful, message: "Transfer to bridge COA failed")
-
-        // Ensure the bridge is now the owner of the NFT after the preceding transfer
-        let isEscrowed: Bool = FlowEVMBridgeUtils.isOwner(
-            ofNFT: id,
-            owner: self.getBridgeCOAEVMAddress(),
-            evmContractAddress: associatedAddress
-        )
-        assert(isEscrowed, message: "Transfer to bridge COA failed - cannot bridge NFT without bridge escrow")
-
+        /* Gather identifying info */
+        //
         // Derive the defining Cadence contract name & address & attempt to borrow it as IEVMBridgeNFTMinter
         let contractName = FlowEVMBridgeUtils.getContractName(fromType: type)!
         let contractAddress = FlowEVMBridgeUtils.getContractAddress(fromType: type)!
         let nftContract = getAccount(contractAddress).contracts.borrow<&{IEVMBridgeNFTMinter}>(name: contractName)
         // Get the token URI from the ERC721 contract
         let uri = FlowEVMBridgeUtils.getTokenURI(evmContractAddress: associatedAddress, id: id)
+
+        /* Unlock escrowed NFTs */
+        //
         // If the NFT is currently locked, unlock and return
         if let cadenceID = FlowEVMBridgeNFTEscrow.getLockedCadenceID(type: type, evmID: id) {
             let nft <- FlowEVMBridgeNFTEscrow.unlockNFT(type: type, id: cadenceID)
@@ -360,9 +329,13 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
 
             return <-nft
         }
-        // Otherwise, we expect the NFT to be minted in Cadence
+
+        /* Mint bridge-defined NFT */
+        //
+        // Ensure the NFT is bridge-defined
         assert(self.account.address == contractAddress, message: "Unexpected error bridging NFT from EVM")
 
+        // We expect the NFT to be minted in Cadence as it is bridge-defined
         let nft <- nftContract!.mintNFT(id: id, tokenURI: uri)
         return <-nft
     }
