@@ -162,7 +162,7 @@ fun getAssociatedEVMAddressHex(with typeIdentifier: String): String {
 access(all)
 fun getDeployedAddressFromDeployer(name: String): String {
     let erc721AddressResult = _executeScript(
-        "../scripts/test/get_deployed_address_string_from_deployer.cdc",
+        "./scripts/get_deployed_address_string_from_deployer.cdc",
         [name]
     )
     Test.expect(erc721AddressResult, Test.beSucceeded())

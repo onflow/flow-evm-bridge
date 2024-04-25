@@ -50,7 +50,7 @@ fun testSerializeNFTSucceeds() {
     Test.expect(mintResult, Test.beSucceeded())
 
     let heightResult = executeScript(
-        "../scripts/test/get_block_height.cdc",
+        "./scripts/get_block_height.cdc",
         []
     )
     mintedBlockHeight = heightResult.returnValue! as! UInt64

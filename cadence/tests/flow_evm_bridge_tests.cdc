@@ -223,7 +223,7 @@ fun setup() {
     //      once `evm` events Types are available
     err = Test.deployContract(
         name: "EVMDeployer",
-        path: "../contracts/test/EVMDeployer.cdc",
+        path: "./contracts/EVMDeployer.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
