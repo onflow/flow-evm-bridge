@@ -790,8 +790,8 @@ contract FlowEVMBridgeUtils {
         
         let bridgePreStatus = self.isOwner(ofNFT: id, owner: bridgeCOAAddress, evmContractAddress: erc721Address)
         let toPreStatus = self.isOwner(ofNFT: id, owner: to, evmContractAddress: erc721Address)
-        assert(bridgePreStatus, message: "Bridge COA does not own NFT")
-        assert(!toPreStatus, message: "Recipient already owns NFT")
+        assert(bridgePreStatus, message: "Bridge COA does not own ERC721 requesting to be transferred")
+        assert(!toPreStatus, message: "Recipient already owns ERC721 attempting to be transferred")
         
         let transferResult: EVM.Result = FlowEVMBridgeUtils.call(
             signature: "safeTransferFrom(address,address,uint256)",
@@ -800,12 +800,15 @@ contract FlowEVMBridgeUtils {
             gasLimit: 15000000,
             value: 0.0
         )
-        assert(transferResult.status == EVM.Status.successful, message: "Transfer to bridge recipient failed")
+        assert(
+            transferResult.status == EVM.Status.successful,
+            message: "safeTransferFrom call to ERC721 transferring NFT from escrow to bridge recipient failed"
+        )
 
         let bridgePostStatus = self.isOwner(ofNFT: id, owner: bridgeCOAAddress, evmContractAddress: erc721Address)
         let toPostStatus = self.isOwner(ofNFT: id, owner: to, evmContractAddress: erc721Address)
-        assert(!bridgePostStatus, message: "Bridge is still owner of NFT after transfer")
-        assert(toPostStatus, message: "Recipient does not own the NFT after transfer")
+        assert(!bridgePostStatus, message: "ERC721 is still in escrow after transfer")
+        assert(toPostStatus, message: "ERC721 was not successfully transferred to recipient from escrow")
     }
 
     /// Executes a safeMint call on the given ERC721 contract address, minting an ERC721 to the named recipient and
@@ -859,15 +862,15 @@ contract FlowEVMBridgeUtils {
     ) {
         // Ensure the named owner is authorized to act on the NFT
         let isAuthorized = self.isOwnerOrApproved(ofNFT: id, owner: owner, evmContractAddress: erc721Address)
-        assert(isAuthorized, message: "Named owner is not the owner of the NFT")
+        assert(isAuthorized, message: "Named owner is not the owner of the ERC721")
 
         // Call the protected transfer function which should execute a transfer call from the owner to escrow
         let transferResult = protectedTransferCall()
-        assert(transferResult.status == EVM.Status.successful, message: "Transfer to escrow via callback failed")
+        assert(transferResult.status == EVM.Status.successful, message: "Transfer ERC721 to escrow via callback failed")
 
         // Validate the NFT is now owned by the bridge COA, escrow the NFT
         let isEscrowed = self.isOwner(ofNFT: id, owner: self.getBridgeCOAEVMAddress(), evmContractAddress: erc721Address)
-        assert(isEscrowed, message: "Bridge COA does not own NFT after transfer")
+        assert(isEscrowed, message: "ERC721 was not successfully escrowed")
     }
 
     /// Mints ERC20 tokens to the recipient and confirms that the recipient's balance was updated
@@ -883,12 +886,12 @@ contract FlowEVMBridgeUtils {
             gasLimit: 15000000,
             value: 0.0
         )
-        assert(mintResult.status == EVM.Status.successful, message: "Tranfer to bridge recipient failed")
+        assert(mintResult.status == EVM.Status.successful, message: "Mint to bridge ERC20 contract failed")
         // Ensure bridge to recipient was succcessful
         let toPostBalance = FlowEVMBridgeUtils.balanceOf(owner: to, evmContractAddress: erc20Address)
         assert(
             toPostBalance == toPreBalance + amount,
-            message: "Transfer to bridge recipient failed"
+            message: "Recipient didn't receive minted ERC20 tokens during bridging"
         )
     }
 
@@ -905,15 +908,15 @@ contract FlowEVMBridgeUtils {
             evmContractAddress: erc20Address
         )
 
-        // Mint tokens to the recipient
-        let mintResult: EVM.Result = FlowEVMBridgeUtils.call(
+        // Transfer tokens to the recipient
+        let transferResult: EVM.Result = FlowEVMBridgeUtils.call(
             signature: "transfer(address,uint256)",
             targetEVMAddress: erc20Address,
             args: [to, amount],
             gasLimit: 15000000,
             value: 0.0
         )
-        assert(mintResult.status == EVM.Status.successful, message: "Tranfer to bridge recipient failed")
+        assert(transferResult.status == EVM.Status.successful, message: "transfer call to ERC20 contract failed")
 
         // Ensure bridge to recipient was succcessful
         let toPostBalance = FlowEVMBridgeUtils.balanceOf(owner: to, evmContractAddress: erc20Address)
@@ -923,11 +926,11 @@ contract FlowEVMBridgeUtils {
         )
         assert(
             toPostBalance == toPreBalance + amount,
-            message: "Transfer to bridge COA failed - cannot bridge FT without bridge escrow"
+            message: "Recipient's ERC20 balance did not increment by the requested amount after transfer from escrow"
         )
         assert(
             escrowPostBalance == escrowPreBalance - amount,
-            message: "Transfer to bridge COA failed - cannot bridge FT without bridge escrow"
+            message: "Escrow ERC20 balance did not decrement by the requested amount after transfer from escrow"
         )
     }
 
