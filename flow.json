@@ -25,7 +25,7 @@
 			}
 		},
 		"CrossVMNFT": {
-			"source": "./cadence/contracts/bridge/CrossVMNFT.cdc",
+			"source": "./cadence/contracts/bridge/interfaces/CrossVMNFT.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"previewnet": "634acef27f871527",
@@ -33,7 +33,7 @@
 			}
 		},
 		"CrossVMToken": {
-			"source": "./cadence/contracts/bridge/CrossVMToken.cdc",
+			"source": "./cadence/contracts/bridge/interfaces/CrossVMToken.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"previewnet": "634acef27f871527",
@@ -108,7 +108,7 @@
 			}
 		},
 		"FlowEVMBridgeHandlerInterfaces": {
-			"source": "./cadence/contracts/bridge/FlowEVMBridgeHandlerInterfaces.cdc",
+			"source": "./cadence/contracts/bridge/interfaces/FlowEVMBridgeHandlerInterfaces.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"testing": "0000000000000007"
@@ -193,7 +193,7 @@
 			}
 		},
 		"ICrossVM": {
-			"source": "./cadence/contracts/bridge/ICrossVM.cdc",
+			"source": "./cadence/contracts/bridge/interfaces/ICrossVM.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"previewnet": "634acef27f871527",
@@ -201,7 +201,7 @@
 			}
 		},
 		"IEVMBridgeNFTMinter": {
-			"source": "./cadence/contracts/bridge/IEVMBridgeNFTMinter.cdc",
+			"source": "./cadence/contracts/bridge/interfaces/IEVMBridgeNFTMinter.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"previewnet": "634acef27f871527",
@@ -209,7 +209,7 @@
 			}
 		},
 		"IEVMBridgeTokenMinter": {
-			"source": "./cadence/contracts/bridge/IEVMBridgeTokenMinter.cdc",
+			"source": "./cadence/contracts/bridge/interfaces/IEVMBridgeTokenMinter.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"previewnet": "634acef27f871527",
@@ -217,7 +217,7 @@
 			}
 		},
 		"IFlowEVMNFTBridge": {
-			"source": "./cadence/contracts/bridge/IFlowEVMNFTBridge.cdc",
+			"source": "./cadence/contracts/bridge/interfaces/IFlowEVMNFTBridge.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"previewnet": "634acef27f871527",
@@ -225,7 +225,7 @@
 			}
 		},
 		"IFlowEVMTokenBridge": {
-			"source": "./cadence/contracts/bridge/IFlowEVMTokenBridge.cdc",
+			"source": "./cadence/contracts/bridge/interfaces/IFlowEVMTokenBridge.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"previewnet": "634acef27f871527",

@@ -92,25 +92,25 @@ fun setup() {
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
         name: "ICrossVM",
-        path: "../contracts/bridge/ICrossVM.cdc",
+        path: "../contracts/bridge/interfaces/ICrossVM.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
         name: "CrossVMNFT",
-        path: "../contracts/bridge/CrossVMNFT.cdc",
+        path: "../contracts/bridge/interfaces/CrossVMNFT.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
         name: "CrossVMToken",
-        path: "../contracts/bridge/CrossVMToken.cdc",
+        path: "../contracts/bridge/interfaces/CrossVMToken.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
         name: "FlowEVMBridgeHandlerInterfaces",
-        path: "../contracts/bridge/FlowEVMBridgeHandlerInterfaces.cdc",
+        path: "../contracts/bridge/interfaces/FlowEVMBridgeHandlerInterfaces.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
@@ -161,25 +161,25 @@ fun setup() {
 
     err = Test.deployContract(
         name: "IEVMBridgeNFTMinter",
-        path: "../contracts/bridge/IEVMBridgeNFTMinter.cdc",
+        path: "../contracts/bridge/interfaces/IEVMBridgeNFTMinter.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
         name: "IEVMBridgeTokenMinter",
-        path: "../contracts/bridge/IEVMBridgeTokenMinter.cdc",
+        path: "../contracts/bridge/interfaces/IEVMBridgeTokenMinter.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
         name: "IFlowEVMNFTBridge",
-        path: "../contracts/bridge/IFlowEVMNFTBridge.cdc",
+        path: "../contracts/bridge/interfaces/IFlowEVMNFTBridge.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
         name: "IFlowEVMTokenBridge",
-        path: "../contracts/bridge/IFlowEVMTokenBridge.cdc",
+        path: "../contracts/bridge/interfaces/IFlowEVMTokenBridge.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
