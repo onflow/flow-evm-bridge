@@ -5,7 +5,7 @@
 
 > :warning: Upcoming breaking changes may result in updated deployment addresses and redirection of bridge requests.
 
-This repo contains contracts enabling bridging of fungible & non-fungible assets between Cadence and EVM.
+This repo contains contracts enabling bridging of fungible & non-fungible tokens between Cadence and EVM.
 
 ## Deployments
 
@@ -28,14 +28,14 @@ addresses:
 ### Overview
 
 The Flow EVM bridge allows both fungible and non-fungible tokens to move atomically between Cadence and EVM. In the
-context of EVM, fungible tokens are defined as ERC20 tokens, and non-fungible tokens are defined as ERC721 tokens while
-in Cadence, fungible tokens are defined by contracts implementing FungibleToken and non-fungible tokens the
-NonFungibleToken standard contract interfaces.
+context of EVM, fungible tokens are defined as ERC20 tokens, and non-fungible tokens as ERC721 tokens. In Cadence,
+fungible tokens are defined by contracts implementing FungibleToken and non-fungible tokens the NonFungibleToken
+standard contract interfaces.
 
 Like all operations on Flow, there are native fees associated with both computation and storage. To prevent spam and
-sustain the bridge accounts storage consumption, fees are charged for both onboarding assets and bridging assets. In the
-case where storage consumption is expected, fees are charges based on the storage consumed. In all cases, there a
-flat-rate fee in addition to any storage fees.
+sustain the bridge account's storage consumption, fees are charged for both onboarding assets and bridging assets. In
+the case where storage consumption is expected, fees are charges based on the storage consumed at the current network
+rates. In all cases, there a flat-rate fee in addition to any storage fees.
 
 ### Onboarding
 
@@ -58,16 +58,16 @@ assets, this is in most cases a templated Cadence contract deployed to the bridg
 from the EVM contract address. For instance, an ERC721 contract at address `0x1234` would be onboarded to the bridge as
 `EVMVMBridgedNFT_0x1234`, making its type identifier `A.<BRIDGE_ADDRESS>.EVMVMBridgedNFT_0x1234.NFT`.
 
-However, the derivation of these identifiers can be abstracted within transactions so that calling applications can
-provide the defining contract address and name of the bridged asset (see
+However, the derivation of these identifiers can be abstracted within transactions. For example, calling applications 
+can provide the defining contract address and name of the bridged asset (see
 [`bridge_nft_to_evm.cdc`](./cadence/transactions/bridge/nft/bridge_nft_to_evm.cdc)). Alternatively, the defining EVM
-contract could be provided, etc.
+contract could be provided, etc - this flexibility is thanks to Cadence's scripted transactions.
 
 #### NFTs
 
 Any Cadence NFTs bridging to EVM are escrowed in the bridge account and either minted in a bridge-deployed ERC721
-contract or transferred to the calling COA in EVM. On the return trip, NFTs are escrowed in EVM - owned by the bridge's
-COA - and either unlocked from escrow if locked or minted from a bridge-owned NFT contract.
+contract or transferred from escrow to the calling COA in EVM. On the return trip, NFTs are escrowed in EVM - owned by
+the bridge's COA - and either unlocked from escrow if locked or minted from a bridge-owned NFT contract.
 
 Below are transactions relevant to bridging NFTs:
 - [`bridge_nft_to_evm.cdc`](./cadence/transactions/bridge/nft/bridge_nft_to_evm.cdc)
@@ -77,11 +77,11 @@ Below are transactions relevant to bridging NFTs:
 
 Any Cadence fungible tokens bridging to EVM are escrowed in the bridge account only if they are Cadence-native. If the
 bridge defines the tokens, they are burned. On the return trip the pattern is similar, with the bridge burning
-bride-defined tokens or escrowing them if they are EVM-native. In all cases, if the bridge has authority to mint on one
-side, it must escrow on the other as the native VM is owned by an external party.
+bridge-defined tokens or escrowing them if they are EVM-native. In all cases, if the bridge has authority to mint on one
+side, it must escrow on the other as the native VM contract is owned by an external party.
 
-With fungible tokens in particular, there may be some cases where the Cadence contract is not deployed to the bridge,
-but the bridge still follows a mint/burn pattern in Cadence. These cases are handled via
+With fungible tokens in particular, there may be some cases where the Cadence contract is not deployed to the bridge
+account, but the bridge still follows a mint/burn pattern in Cadence. These cases are handled via
 [`TokenHandler`](./cadence/contracts/bridge/interfaces/FlowEVMBridgeHandlerInterfaces.cdc) implementations. Also know
 that moving $FLOW to EVM is built into the `EVMAddress` object so any requests bridging $FLOW to EVM will simply
 leverage this interface; however, moving $FLOW from EVM to Cadence must be done through the COA resource.
@@ -96,17 +96,17 @@ Below are transactions relevant to bridging fungible tokens:
 ### Context
 
 To maximize utility to the ecosystem, this bridge is permissionless and open to any fungible or non-fungible token as
-defined by the respective Cadence and EVM ecosystems. Ultimately, a project does not have to do anything for users to be
-able to bridge their assets between VMs. However, there are some considerations developers may make to enhance the
-representation of their assets on non-native VMs. These largely relate to asset metadata and ensuring that bridging does
-not compromise critical user assumptions about asset ownership.
+defined by the respective Cadence standards and limited to ERC20 and ERC721 Solidity standards. Ultimately, a project
+does not have to do anything for users to be able to bridge their assets between VMs. However, there are some
+considerations developers may take to enhance the representation of their assets in non-native VMs. These largely relate
+to asset metadata and ensuring that bridging does not compromise critical user assumptions about asset ownership.
 
 ### EVMBridgedMetadata
 
-Proposed in [@onflow/flow-nft/pull/203](https://github.com/onflow/flow-nft/pull/203), the `EVMBridgedMetadata` metadata
-view presents a mechanism to both represent metadata from bridged EVM assets as well as enable Cadence-native projects
-to specify the representation of their assets in EVM. Implementing this view is not required for assets to be bridged,
-but the bridge does default to it when available as a way to provide projects greater control over their EVM asset
+Proposed in [@onflow/flow-nft/pull/203](https://github.com/onflow/flow-nft/pull/203), the `EVMBridgedMetadata` view
+presents a mechanism to both represent metadata from bridged EVM assets as well as enable Cadence-native projects to
+specify the representation of their assets in EVM. Implementing this view is not required for assets to be bridged, but
+the bridge does default to it when available as a way to provide projects greater control over their EVM asset
 definitions within the scope of ERC20 and ERC721 standards.
 
 The interface for this view is as follows:
@@ -140,29 +140,29 @@ couple the `uri()` method with the utility contract below to serialize the oncha
 ### SerializeMetadata
 
 The key consideration with respect to metadata is the distinct metadata storage patterns between ecosystem. It's
-critical for NFT utility that the metadata be bridged in addition to the representation of ownership. However, it's
-commonplace for Cadence NFTs to store metadata onchain while EVM NFTs often store an onchain pointer to metadata stored
-offchain. In order for Cadence NFTs to be properly represented in EVM platforms, the metadata must be bridged in a
-format expected by those platforms and do so in a manner that preserves the atomicity of bridge requests. The path
-forward on this was decided to be commitment of serialized Cadence NFT metadata into formats popular in the EVM
+critical for NFT utility that the metadata be bridged in addition to the representation of the NFTs ownership. However,
+it's commonplace for Cadence NFTs to store metadata onchain while EVM NFTs often store an onchain pointer to metadata
+stored offchain. In order for Cadence NFTs to be properly represented in EVM platforms, the metadata must be bridged in
+a format expected by those platforms and be done in a manner that also preserves the atomicity of bridge requests. The
+path forward on this was decided to be a commitment of serialized Cadence NFT metadata into formats popular in the EVM
 ecosystem.
 
 For assets that do not implement `EVMBridgedMetadata`, the bridge will attempt to serialize the metadata of the asset as
 a JSON data URL string. This is done via the [`SerializeMetadata`
-contract](./cadence/contracts/utils/SerializeMetadata.cdc) which serialized metadata values into JSON blob compatible
-with the OpenSea metadata standard. The serialized metadata is then committed as the `tokenURI` upon bridging
+contract](./cadence/contracts/utils/SerializeMetadata.cdc) which serializes metadata values into a JSON blob compatible
+with the OpenSea metadata standard. The serialized metadata is then committed as the ERC721 `tokenURI` upon bridging
 Cadence-native NFTs to EVM. Since Cadence NFTs can easily update onchain metadata either by field or by the ownership of
 sub-NFTs, this serialization pattern enables token URI updates on subsequent bridge requests.
 
 ### Opting Out
 
 It's also recognized that the logic of some use cases may actually be compromised by the act of bridging, particularly
-in such a unique runtime environment. These would be cases that do not hold implicit ownership assumptions around
-ecosystem standards. For instance, one ERC721 may reclaim a users assets after `n` time period. In such a case, bridging
-that ERC721 to Cadence would decouple the representation of ownership in Cadence from the actual ownership in the
-definine ERC721 contract after the token had been reclaimed - there would be no NFT in escrow for the bridge to transfer
-on fulfillment of the NFT back to EVM. In such cases, projects may choose to opt-out of bridging, but **importantly must
-do so on contract deployment**.
+in such a unique runtime environment. These would be cases that do not maintain ownership assumptions implicit to
+ecosystem standards. For instance, an ERC721 implementation may reclaim a user's assets after a month of inactivity time
+period. In such a case, bridging that ERC721 to Cadence would decouple the representation of ownership of the bridged
+NFT from the actual ownership in the definining ERC721 contract after the token had been reclaimed - there would be no
+NFT in escrow for the bridge to transfer on fulfillment of the NFT back to EVM. In such cases, projects may choose to
+opt-out of bridging, but **importantly must do so before the asset has been onboarded to the bridge**.
 
 For Solidity contracts, opting out is as simple as extending the [`BridgePermissions.sol` abstract
 contract](./solidity/src/BridgePermissions.sol) which defaults `allowsBridging()` to false. The bridge explicitly checks
@@ -176,8 +176,8 @@ implementation of `IBridgePermissions` and the value of `allowsBridging()` to va
 out of bridging. Should you later choose to enable bridging, you can simply override the default implementation and
 return true.
 
-In both cases, `allowsBridging()` gates onboarding to the bridge. Once onboarded - a permissionless operation anyone can
-execute - the value of `allowsBridging()` is irrelevant.
+In both cases, `allowsBridging()` gates onboarding to the bridge. Once onboarded - **a permissionless operation anyone can
+execute** - the value of `allowsBridging()` is irrelevant and assets can move between VMs permissionlessly.
 
 ## Under the Hood (facilitating cross-vm interactions)
 
