@@ -13,5 +13,7 @@ contract interface IBridgePermissions {
     /// would otherwise prevent them from supporting VM bridging at the outset.
     ///
     access(all)
-    view fun allowsBridging(): Bool
+    view fun allowsBridging(): Bool {
+        return false
+    }
 }
