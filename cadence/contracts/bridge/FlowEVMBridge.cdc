@@ -9,7 +9,7 @@ import "FlowToken"
 import "EVM"
 
 import "EVMUtils"
-import "BridgePermissions"
+import "IBridgePermissions"
 import "ICrossVM"
 import "IEVMBridgeNFTMinter"
 import "IEVMBridgeTokenMinter"

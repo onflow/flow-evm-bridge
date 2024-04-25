@@ -13,7 +13,7 @@ flow-c1 accounts add-contract ./cadence/contracts/utils/SerializeMetadata.cdc
 flow-c1 accounts update-contract ./cadence/contracts/standards/EVM.cdc
 
 # Deploy initial bridge contracts
-flow-c1 accounts add-contract ./cadence/contracts/bridge/BridgePermissions.cdc
+flow-c1 accounts add-contract ./cadence/contracts/bridge/IBridgePermissions.cdc
 flow-c1 accounts add-contract ./cadence/contracts/bridge/ICrossVM.cdc
 flow-c1 accounts add-contract ./cadence/contracts/bridge/CrossVMNFT.cdc
 flow-c1 accounts add-contract ./cadence/contracts/bridge/FlowEVMBridgeConfig.cdc

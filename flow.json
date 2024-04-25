@@ -8,8 +8,8 @@
 				"testing": "0000000000000007"
 			}
 		},
-		"BridgePermissions": {
-			"source": "./cadence/contracts/bridge/BridgePermissions.cdc",
+		"IBridgePermissions": {
+			"source": "./cadence/contracts/bridge/interfaces/IBridgePermissions.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"previewnet": "634acef27f871527",
@@ -347,7 +347,7 @@
 				"ScopedFTProviders",
 				"Serialize",
 				"SerializeMetadata",
-				"BridgePermissions",
+				"IBridgePermissions",
 				"ICrossVM",
 				"CrossVMNFT",
 				"CrossVMToken",

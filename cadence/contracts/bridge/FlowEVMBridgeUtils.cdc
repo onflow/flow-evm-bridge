@@ -9,7 +9,7 @@ import "EVM"
 
 import "EVMUtils"
 import "FlowEVMBridgeConfig"
-import "BridgePermissions"
+import "IBridgePermissions"
 
 /// This contract serves as a source of utility methods leveraged by FlowEVMBridge contracts
 //
@@ -45,9 +45,9 @@ contract FlowEVMBridgeUtils {
         return storageFee + FlowEVMBridgeConfig.baseFee
     }
 
-    /// Returns whether the given type is allowed to be bridged as defined by the BridgePermissions contract interface.
-    /// If the type's defining contract does not implement BridgePermissions, the method returns true as the bridge
-    /// operates permissionlessly by default. Otherwise, the result of {BridgePermissions}.allowsBridging() is returned
+    /// Returns whether the given type is allowed to be bridged as defined by the IBridgePermissions contract interface.
+    /// If the type's defining contract does not implement IBridgePermissions, the method returns true as the bridge
+    /// operates permissionlessly by default. Otherwise, the result of {IBridgePermissions}.allowsBridging() is returned
     ///
     /// @param type: The Type of the asset to check
     ///
@@ -59,7 +59,7 @@ contract FlowEVMBridgeUtils {
             ?? panic("Could not construct contract address from type identifier: ".concat(type.identifier))
         let contractName = self.getContractName(fromType: type)
             ?? panic("Could not construct contract name from type identifier: ".concat(type.identifier))
-        if let bridgePermissions = getAccount(contractAddress).contracts.borrow<&{BridgePermissions}>(name: contractName) {
+        if let bridgePermissions = getAccount(contractAddress).contracts.borrow<&{IBridgePermissions}>(name: contractName) {
             return bridgePermissions.allowsBridging()
         }
         return true
@@ -85,7 +85,7 @@ contract FlowEVMBridgeUtils {
         if callResult.status != EVM.Status.successful {
             return true
         }
-        // Contract is BridgePermissions - return the result
+        // Contract is IBridgePermissions - return the result
         let decodedResult = EVM.decodeABI(types: [Type<Bool>()], data: callResult.data) as! [AnyStruct]
         return (decodedResult.length == 1 && decodedResult[0] as! Bool) == true ? true : false
     }

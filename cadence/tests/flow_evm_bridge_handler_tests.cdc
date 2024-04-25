@@ -85,8 +85,8 @@ fun setup() {
     createCOA(signer: bridgeAccount, fundingAmount: 1_000.0)
 
     err = Test.deployContract(
-        name: "BridgePermissions",
-        path: "../contracts/bridge/BridgePermissions.cdc",
+        name: "IBridgePermissions",
+        path: "../contracts/bridge/interfaces/IBridgePermissions.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
