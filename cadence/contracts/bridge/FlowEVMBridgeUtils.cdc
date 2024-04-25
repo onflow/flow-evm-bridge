@@ -808,7 +808,7 @@ contract FlowEVMBridgeUtils {
         assert(toPostStatus, message: "Recipient does not own the NFT after transfer")
     }
 
-    /// Executes a safeMint call on the given ERC721 contract address, minting an ERC72 to the named recipient and
+    /// Executes a safeMint call on the given ERC721 contract address, minting an ERC721 to the named recipient and
     /// asserting pre- and post-state changes. Assumes the bridge COA has the authority to mint the NFT.
     ///
     access(account)
