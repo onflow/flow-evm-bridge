@@ -851,7 +851,7 @@ contract FlowEVMBridgeUtils {
     /// was successful, and the bridge COA owns the NFT after the protected transfer call.
     ///
     access(account)
-    fun mustExecuteERC721ProtectedTransferCall(
+    fun mustEscrowERC721(
         owner: EVM.EVMAddress,
         id: UInt256,
         erc721Address: EVM.EVMAddress,
@@ -936,7 +936,7 @@ contract FlowEVMBridgeUtils {
     /// escrow balance was incremented by the same amount.
     ///
     access(account)
-    fun mustExecuteProtectedERC20TransferCall(
+    fun mustEscrowERC20(
         owner: EVM.EVMAddress,
         amount: UInt256,
         erc20Address: EVM.EVMAddress,

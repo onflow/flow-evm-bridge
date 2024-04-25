@@ -300,7 +300,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         let associatedAddress = FlowEVMBridgeConfig.getEVMAddressAssociated(with: type)
             ?? panic("No EVMAddress found for token type")
         // Execute the transfer call and make needed state assertions to confirm escrow from named owner
-        FlowEVMBridgeUtils.mustExecuteERC721ProtectedTransferCall(
+        FlowEVMBridgeUtils.mustEscrowERC721(
             owner: owner,
             id: id,
             erc721Address: associatedAddress,
@@ -490,7 +490,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
 
         /* Execute the transfer call and make needed state assertions */
         //
-        FlowEVMBridgeUtils.mustExecuteProtectedERC20TransferCall(
+        FlowEVMBridgeUtils.mustEscrowERC20(
             owner: owner,
             amount: amount,
             erc20Address: associatedAddress,

@@ -135,7 +135,7 @@ access(all) contract FlowEVMBridgeHandlers {
                     erc20Address: evmAddress
                 )
 
-            FlowEVMBridgeUtils.mustExecuteProtectedERC20TransferCall(
+            FlowEVMBridgeUtils.mustEscrowERC20(
                 owner: owner,
                 amount: amount,
                 erc20Address: evmAddress,
