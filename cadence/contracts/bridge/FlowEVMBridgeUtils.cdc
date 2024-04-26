@@ -308,7 +308,8 @@ contract FlowEVMBridgeUtils {
         let identifier = forAssetType.identifier
         let cadenceAddress = FlowEVMBridgeUtils.getContractAddress(fromType: forAssetType)
             ?? panic("Could not derive contract address for token type: ".concat(identifier))
-        // Assign an asset symbol based on the contract name
+        // Initialize asset symbol which will be assigned later
+        // based on presence of asset-defined metadata
         var symbol: String? = nil
         // Borrow the ViewResolver to attempt to resolve the EVMBridgedMetadata view
         let viewResolver = getAccount(cadenceAddress).contracts.borrow<&{ViewResolver}>(name: name)!
