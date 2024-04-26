@@ -1181,7 +1181,7 @@ contract FlowEVMBridgeUtils {
             gasLimit: 15000000,
             value: 0.0
         )
-        assert(deployResult.status == EVM.Status.successful, message: "Contract deployment failed")
+        assert(deployResult.status == EVM.Status.successful, message: "EVM Token contract deployment failed")
         let decodedResult: [AnyStruct] = EVM.decodeABI(types: [Type<EVM.EVMAddress>()], data: deployResult.data)
         assert(decodedResult.length == 1, message: "Invalid response length")
         return decodedResult[0] as! EVM.EVMAddress

@@ -35,7 +35,7 @@ standard contract interfaces.
 Like all operations on Flow, there are native fees associated with both computation and storage. To prevent spam and
 sustain the bridge account's storage consumption, fees are charged for both onboarding assets and bridging assets. In
 the case where storage consumption is expected, fees are charges based on the storage consumed at the current network
-rates. In all cases, there a flat-rate fee in addition to any storage fees.
+rates. In all cases, there is a flat-rate fee in addition to any storage fees.
 
 ### Onboarding
 
