@@ -33,7 +33,7 @@ access(all) contract FlowEVMBridgeHandlers {
     /// In order for this to occur, neither the Cadence token nor the EVM contract can be onboarded to the bridge - in
     /// essence, neither side of the asset can be onboarded to the bridge.
     /// The Handler must be configured in the bridge via the HandlerConfigurator. Once added, the bridge will filter
-    /// requests to bridge the token Vault to EVM through this Handler which cannot be enabled until a target EVM 
+    /// requests to bridge the token Vault to EVM through this Handler which cannot be enabled until a target EVM
     /// address is set. Once the corresponding EVM contract address is known, it can be set and the Handler. It's also
     /// suggested that the Handler only be enabled once sufficient liquidity has been arranged in bridge escrow on the
     /// EVM side.
@@ -99,42 +99,15 @@ access(all) contract FlowEVMBridgeHandlers {
             tokens: @{FungibleToken.Vault},
             to: EVM.EVMAddress
         ) {
+            let evmAddress = self.getTargetEVMAddress()!
+
             // Get values from vault and burn
             let amount = tokens.balance
-            let uintAmount = FlowEVMBridgeUtils.ufix64ToUInt256(
-                    value: amount,
-                    decimals: FlowEVMBridgeUtils.getTokenDecimals(evmContractAddress: self.getTargetEVMAddress()!)
-                )
+            let uintAmount = FlowEVMBridgeUtils.convertCadenceAmountToERC20Amount(amount, erc20Address: evmAddress)
 
             Burner.burn(<-tokens)
 
-            // Get the recipient and escrow balances before transferring 
-            let toPreBalance = FlowEVMBridgeUtils.balanceOf(owner: to, evmContractAddress: self.targetEVMAddress!)
-            let bridgePreBalance = FlowEVMBridgeUtils.balanceOf(
-                    owner: FlowEVMBridgeUtils.getBridgeCOAEVMAddress(),
-                    evmContractAddress: self.targetEVMAddress!
-                )
-
-            // Call the EVM contract to transfer escrowed tokens
-            let callResult: EVM.Result = FlowEVMBridgeUtils.call(
-                    signature: "transfer(address,uint256)",
-                    targetEVMAddress: self.getTargetEVMAddress()!,
-                    args: [to, uintAmount],
-                    gasLimit: 15000000,
-                    value: 0.0
-                )
-            assert(callResult.status == EVM.Status.successful, message: "Tranfer to bridge recipient failed")
-
-            // Get the resulting balances after transfer
-            let toPostBalance = FlowEVMBridgeUtils.balanceOf(owner: to, evmContractAddress: self.targetEVMAddress!)
-            let bridgePostBalance = FlowEVMBridgeUtils.balanceOf(
-                    owner: FlowEVMBridgeUtils.getBridgeCOAEVMAddress(),
-                    evmContractAddress: self.targetEVMAddress!
-                )
-
-            // Recipient should have received the tokens and bridge escrow should have decreased
-            assert(toPostBalance == toPreBalance + uintAmount, message: "Transfer to bridge recipient failed")
-            assert(bridgePostBalance == bridgePreBalance - uintAmount, message: "Transfer to bridge escrow failed")
+            FlowEVMBridgeUtils.mustTransferERC20(to: to, amount: uintAmount, erc20Address: evmAddress)
         }
 
         /// Fulfill a request to bridge tokens from EVM to Cadence, minting the provided amount of tokens in Cadence
@@ -154,33 +127,20 @@ access(all) contract FlowEVMBridgeHandlers {
             amount: UInt256,
             protectedTransferCall: fun (): EVM.Result
         ): @{FungibleToken.Vault} {
+            let evmAddress = self.getTargetEVMAddress()!
+
             // Convert the amount to a UFix64
-            let ufixAmount = FlowEVMBridgeUtils.uint256ToUFix64(
-                    value: amount,
-                    decimals: FlowEVMBridgeUtils.getTokenDecimals(evmContractAddress: self.getTargetEVMAddress()!)
+            let ufixAmount = FlowEVMBridgeUtils.convertERC20AmountToCadenceAmount(
+                    amount,
+                    erc20Address: evmAddress
                 )
 
-            // Get the owner and escrow balances before transfer
-            let ownerPreBalance = FlowEVMBridgeUtils.balanceOf(owner: owner, evmContractAddress: self.targetEVMAddress!)
-            let bridgePreBalance = FlowEVMBridgeUtils.balanceOf(
-                    owner: FlowEVMBridgeUtils.getBridgeCOAEVMAddress(),
-                    evmContractAddress: self.targetEVMAddress!
-                )
-
-            // Call the protected transfer function which should execute a transfer call from the owner to escrow
-            let transferResult = protectedTransferCall()
-            assert(transferResult.status == EVM.Status.successful, message: "Transfer via callback failed")
-
-            // Get the resulting balances after transfer
-            let ownerPostBalance = FlowEVMBridgeUtils.balanceOf(owner: owner, evmContractAddress: self.targetEVMAddress!)
-            let bridgePostBalance = FlowEVMBridgeUtils.balanceOf(
-                    owner: FlowEVMBridgeUtils.getBridgeCOAEVMAddress(),
-                    evmContractAddress: self.targetEVMAddress!
-                )
-            
-            // Confirm the transfer of the expected was successful in both sending owner and recipient escrow
-            assert(ownerPostBalance == ownerPreBalance - amount, message: "Transfer to owner failed")
-            assert(bridgePostBalance == bridgePreBalance + amount, message: "Transfer to bridge escrow failed")
+            FlowEVMBridgeUtils.mustEscrowERC20(
+                owner: owner,
+                amount: amount,
+                erc20Address: evmAddress,
+                protectedTransferCall: protectedTransferCall
+            )
 
             // After state confirmation, mint the tokens and return
             let minter = self.borrowMinter() ?? panic("Minter not set")
@@ -196,7 +156,7 @@ access(all) contract FlowEVMBridgeHandlers {
             self.targetType = type
         }
 
-        /// Sets the target EVM address for the handler 
+        /// Sets the target EVM address for the handler
         access(FlowEVMBridgeHandlerInterfaces.Admin)
         fun setTargetEVMAddress(_ address: EVM.EVMAddress) {
             self.targetEVMAddress = address
@@ -211,7 +171,7 @@ access(all) contract FlowEVMBridgeHandlers {
             self.minter <-! minter
         }
 
-        /// Enables the handler for request handling. The 
+        /// Enables the handler for request handling. The
         access(FlowEVMBridgeHandlerInterfaces.Admin)
         fun enableBridging() {
             pre {
