@@ -69,6 +69,13 @@
 				"testing": "0000000000000008"
 			}
 		},
+		"ExampleHandledToken": {
+			"source": "./cadence/contracts/example-assets/ExampleHandledToken.cdc",
+			"aliases": {
+				"emulator": "179b6b1cb6755e31",
+				"testing": "0000000000000011"
+			}
+		},
 		"ExampleToken": {
 			"source": "./cadence/contracts/example-assets/ExampleToken.cdc",
 			"aliases": {
@@ -97,6 +104,20 @@
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"previewnet": "634acef27f871527",
+				"testing": "0000000000000007"
+			}
+		},
+		"FlowEVMBridgeHandlerInterfaces": {
+			"source": "./cadence/contracts/bridge/FlowEVMBridgeHandlerInterfaces.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"testing": "0000000000000007"
+			}
+		},
+		"FlowEVMBridgeHandlers": {
+			"source": "./cadence/contracts/bridge/FlowEVMBridgeHandlers.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
 				"testing": "0000000000000007"
 			}
 		},

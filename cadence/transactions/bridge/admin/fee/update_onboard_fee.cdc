@@ -8,7 +8,7 @@ import "FlowEVMBridgeConfig"
 ///
 transaction(newFee: UFix64) {
     prepare(signer: auth(BorrowValue) &Account) {
-        signer.storage.borrow<&FlowEVMBridgeConfig.Admin>(from: FlowEVMBridgeConfig.adminStoragePath)
+        signer.storage.borrow<auth(FlowEVMBridgeConfig.Fee) &FlowEVMBridgeConfig.Admin>(from: FlowEVMBridgeConfig.adminStoragePath)
             ?.updateOnboardingFee(newFee)
             ?? panic("Could not borrow FlowEVMBridgeConfig Admin reference")
     }
