@@ -710,6 +710,40 @@ fun testBatchOnboardByEVMAddressSucceeds() {
 /* --- BRIDGING NFTS - Test bridging both Cadence- & EVM-native NFTs --- */
 
 access(all)
+fun testPauseBridgeSucceeds() {
+    // Pause the bridge
+    let pauseResult = executeTransaction(
+        "../transactions/bridge/admin/pause/pause_bridge.cdc",
+        [],
+        bridgeAccount
+    )
+    Test.expect(pauseResult, Test.beSucceeded())
+
+    var aliceOwnedIDs = getIDs(ownerAddr: alice.address, storagePathIdentifier: "cadenceExampleNFTCollection")
+    Test.assertEqual(1, aliceOwnedIDs.length)
+
+    var aliceCOAAddressHex = getCOAAddressHex(atFlowAddress: alice.address)
+
+    // Execute bridge to EVM - should fail after pausing
+    bridgeNFTToEVM(
+        signer: alice,
+        contractAddr: exampleNFTAccount.address,
+        contractName: "ExampleNFT",
+        nftID: aliceOwnedIDs[0],
+        bridgeAccountAddr: bridgeAccount.address,
+        beFailed: true
+    )
+
+    // Unpause bridging
+    let unpauseResult = executeTransaction(
+        "../transactions/bridge/admin/pause/unpause_bridge.cdc",
+        [],
+        bridgeAccount
+    )
+    Test.expect(unpauseResult, Test.beSucceeded())
+}
+
+access(all)
 fun testBridgeCadenceNativeNFTToEVMSucceeds() {
     var aliceOwnedIDs = getIDs(ownerAddr: alice.address, storagePathIdentifier: "cadenceExampleNFTCollection")
     Test.assertEqual(1, aliceOwnedIDs.length)
@@ -722,7 +756,8 @@ fun testBridgeCadenceNativeNFTToEVMSucceeds() {
         contractAddr: exampleNFTAccount.address,
         contractName: "ExampleNFT",
         nftID: aliceOwnedIDs[0],
-        bridgeAccountAddr: bridgeAccount.address
+        bridgeAccountAddr: bridgeAccount.address,
+        beFailed: false
     )
 
     let associatedEVMAddressHex = getAssociatedEVMAddressHex(with: exampleNFTIdentifier)
@@ -758,7 +793,8 @@ fun testBridgeCadenceNativeNFTFromEVMSucceeds() {
         contractAddr: exampleNFTAccount.address,
         contractName: "ExampleNFT",
         erc721ID: UInt256(mintedNFTID),
-        bridgeAccountAddr: bridgeAccount.address
+        bridgeAccountAddr: bridgeAccount.address,
+        beFailed: false
     )
 
     // Assert ownership of the bridged NFT in EVM has transferred
@@ -785,7 +821,8 @@ fun testBridgeEVMNativeNFTFromEVMSucceeds() {
         contractAddr: bridgeAccount.address,
         contractName: derivedERC721ContractName,
         erc721ID: erc721ID,
-        bridgeAccountAddr: bridgeAccount.address
+        bridgeAccountAddr: bridgeAccount.address,
+        beFailed: false
     )
 
     let aliceOwnedIDs = getIDs(ownerAddr: alice.address, storagePathIdentifier: bridgedCollectionPathIdentifier)
@@ -817,7 +854,8 @@ fun testBridgeEVMNativeNFTToEVMSucceeds() {
         contractAddr: bridgeAccount.address,
         contractName: derivedERC721ContractName,
         nftID: aliceOwnedIDs[0],
-        bridgeAccountAddr: bridgeAccount.address
+        bridgeAccountAddr: bridgeAccount.address,
+        beFailed: false
     )
 
     aliceOwnedIDs = getIDs(ownerAddr: alice.address, storagePathIdentifier: bridgedCollectionPathIdentifier)

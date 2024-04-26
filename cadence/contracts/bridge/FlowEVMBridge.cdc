@@ -69,6 +69,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
     access(all)
     fun onboardByType(_ type: Type, feeProvider: auth(FungibleToken.Withdraw) &{FungibleToken.Provider}) {
         pre {
+            !FlowEVMBridgeConfig.isPaused(): "Bridge operations are currently paused"
             type != Type<@FlowToken.Vault>():
                 "$FLOW cannot be bridged via the VM bridge - use the CadenceOwnedAccount interface"
             self.typeRequiresOnboarding(type) == true: "Onboarding is not needed for this type"
@@ -136,6 +137,9 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         _ address: EVM.EVMAddress,
         feeProvider: auth(FungibleToken.Withdraw) &{FungibleToken.Provider}
     ) {
+        pre {
+            !FlowEVMBridgeConfig.isPaused(): "Bridge operations are currently paused"
+        }
         /* Validate the EVM contract */
         //
         // Ensure the project has not opted out of bridge support
@@ -176,6 +180,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         feeProvider: auth(FungibleToken.Withdraw) &{FungibleToken.Provider}
     ) {
         pre {
+            !FlowEVMBridgeConfig.isPaused(): "Bridge operations are currently paused"
             !token.isInstance(Type<@{FungibleToken.Vault}>()): "Mixed asset types are not yet supported"
             self.typeRequiresOnboarding(token.getType()) == false: "NFT must first be onboarded"
         }
@@ -259,6 +264,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         protectedTransferCall: fun (): EVM.Result
     ): @{NonFungibleToken.NFT} {
         pre {
+            !FlowEVMBridgeConfig.isPaused(): "Bridge operations are currently paused"
             !type.isSubtype(of: Type<@{FungibleToken.Vault}>()): "Mixed asset types are not yet supported"
             self.typeRequiresOnboarding(type) == false: "NFT must first be onboarded"
         }
@@ -331,6 +337,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         feeProvider: auth(FungibleToken.Withdraw) &{FungibleToken.Provider}
     ) {
         pre {
+            !FlowEVMBridgeConfig.isPaused(): "Bridge operations are currently paused"
             !vault.isInstance(Type<@{NonFungibleToken.NFT}>()): "Mixed asset types are not yet supported"
             self.typeRequiresOnboarding(vault.getType()) == false: "FT must first be onboarded"
         }
@@ -426,6 +433,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         protectedTransferCall: fun (): EVM.Result
     ): @{FungibleToken.Vault} {
         pre {
+            !FlowEVMBridgeConfig.isPaused(): "Bridge operations are currently paused"
             !type.isSubtype(of: Type<@{NonFungibleToken.Collection}>()): "Mixed asset types are not yet supported"
             !type.isInstance(Type<@FlowToken.Vault>()): "Must use the CadenceOwnedAccount interface to bridge $FLOW from EVM"
             self.typeRequiresOnboarding(type) == false: "NFT must first be onboarded"

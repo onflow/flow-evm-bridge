@@ -15,6 +15,7 @@ contract FlowEVMBridgeConfig {
     *******************/
 
     access(all) entitlement Fee
+    access(all) entitlement Pause
 
     /*************
         Fields
@@ -29,6 +30,9 @@ contract FlowEVMBridgeConfig {
     /// Default ERC20.decimals() value
     access(all)
     let defaultDecimals: UInt8
+    /// Flag enabling pausing of bridge operations
+    access(self)
+    var paused: Bool
     /// Mapping of Type to its associated EVMAddress as relevant to the bridge
     access(self)
     let typeToEVMAddress: {Type: EVM.EVMAddress}
@@ -65,13 +69,24 @@ contract FlowEVMBridgeConfig {
     ///
     access(all)
     event BridgeFeeUpdated(old: UFix64, new: UFix64, isOnboarding: Bool)
-    // TODO
+    /// Emitted whenever a TokenHandler is configured
+    ///
     access(all)
     event HandlerConfigured(targetType: Type, targetEVMAddress: String?, isEnabled: Bool)
+    /// Emitted whenever the bridge is paused
+    ///
+    access(all)
+    event PauseStatusUpdated(paused: Bool)
 
     /*************
         Getters
      *************/
+
+    /// Returns whether the bridge is paused
+    access(all)
+    view fun isPaused(): Bool {
+        return self.paused
+    }
 
     /// Retrieves the EVMAddress associated with a given Type if it has been onboarded to the bridge
     ///
@@ -220,6 +235,22 @@ contract FlowEVMBridgeConfig {
             FlowEVMBridgeConfig.baseFee = new
         }
 
+        /// Pauses the bridge, preventing all bridge operations
+        ///
+        access(Pause)
+        fun pauseBridge() {
+            FlowEVMBridgeConfig.paused = true
+            emit PauseStatusUpdated(paused: true)
+        }
+
+        /// Unpauses the bridge, allowing bridge operations to resume
+        ///
+        access(Pause)
+        fun unpauseBridge() {
+            FlowEVMBridgeConfig.paused = false
+            emit PauseStatusUpdated(paused: false)
+        }
+
         /// Sets the target EVM contract address on the handler for a given Type, associating the Cadence type with the
         /// provided EVM address. If a TokenHandler does not exist for the given Type, the operation reverts.
         ///
@@ -282,6 +313,7 @@ contract FlowEVMBridgeConfig {
         self.onboardFee = 0.0
         self.baseFee = 0.0
         self.defaultDecimals = 18
+        self.paused = false
 
         // Although $FLOW does not have ERC20 address, we associate the the Vault with the EVM address from which
         // EVM transfers originate

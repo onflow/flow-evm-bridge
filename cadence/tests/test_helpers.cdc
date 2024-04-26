@@ -326,13 +326,19 @@ fun bridgeNFTToEVM(
     contractAddr: Address,
     contractName: String,
     nftID: UInt64,
-    bridgeAccountAddr: Address
+    bridgeAccountAddr: Address,
+    beFailed: Bool
 ) {
     let bridgeResult = _executeTransaction(
         "../transactions/bridge/nft/bridge_nft_to_evm.cdc",
         [contractAddr, contractName, nftID],
         signer
     )
+    if beFailed {
+        Test.expect(bridgeResult, Test.beFailed())
+        return
+    }
+
     Test.expect(bridgeResult, Test.beSucceeded())
 
     var events = Test.eventsOfType(Type<NonFungibleToken.Withdrawn>())
@@ -352,13 +358,19 @@ fun bridgeNFTFromEVM(
     contractAddr: Address,
     contractName: String,
     erc721ID: UInt256,
-    bridgeAccountAddr: Address
+    bridgeAccountAddr: Address,
+    beFailed: Bool
 ) {
     let bridgeResult = _executeTransaction(
         "../transactions/bridge/nft/bridge_nft_from_evm.cdc",
         [contractAddr, contractName, erc721ID],
         signer
     )
+    if beFailed {
+        Test.expect(bridgeResult, Test.beFailed())
+        return
+    }
+
     Test.expect(bridgeResult, Test.beSucceeded())
 
     var events = Test.eventsOfType(Type<NonFungibleToken.Withdrawn>())
@@ -371,7 +383,13 @@ fun bridgeNFTFromEVM(
 }
 
 access(all)
-fun bridgeTokensToEVM(signer: Test.TestAccount, contractAddr: Address, contractName: String, amount: UFix64, beFailed: Bool) {
+fun bridgeTokensToEVM(
+    signer: Test.TestAccount,
+    contractAddr: Address,
+    contractName: String,
+    amount: UFix64,
+    beFailed: Bool
+) {
     let bridgeResult = _executeTransaction(
         "../transactions/bridge/tokens/bridge_tokens_to_evm.cdc",
         [contractAddr, contractName, amount],
@@ -384,7 +402,13 @@ fun bridgeTokensToEVM(signer: Test.TestAccount, contractAddr: Address, contractN
 }
 
 access(all)
-fun bridgeTokensFromEVM(signer: Test.TestAccount, contractAddr: Address, contractName: String, amount: UInt256, beFailed: Bool) {
+fun bridgeTokensFromEVM(
+    signer: Test.TestAccount,
+    contractAddr: Address,
+    contractName: String,
+    amount: UInt256,
+    beFailed: Bool
+) {
     let bridgeResult = _executeTransaction(
         "../transactions/bridge/tokens/bridge_tokens_from_evm.cdc",
         [contractAddr, contractName, amount],
