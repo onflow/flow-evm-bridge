@@ -190,7 +190,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         // Grab the URI from the NFT if available
         var uri: String = ""
         // Default to project-specified URI
-        if let metadata = token.resolveView(Type<CrossVMNFT.EVMBridgedMetadata>()) as! CrossVMNFT.EVMBridgedMetadata? {
+        if let metadata = token.resolveView(Type<MetadataViews.EVMBridgedMetadata>()) as! MetadataViews.EVMBridgedMetadata? {
             uri = metadata.uri.uri()
         } else {
             // Otherwise, serialize the NFT

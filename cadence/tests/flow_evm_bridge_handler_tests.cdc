@@ -72,8 +72,16 @@ fun setup() {
     )
     Test.expect(err, Test.beNil())
 
+    // Update MetadataViews contract with proposed URI & EVMBridgedMetadata view COA integration
+    // TODO: Remove once MetadataViews contract is updated in CLI's core contracts
+    var updateResult = executeTransaction(
+        "./transactions/update_contract.cdc",
+        ["MetadataViews", getMetadataViewsUpdateCode()],
+        serviceAccount
+    )
     // Update EVM contract with proposed bridge-supporting COA integration
-    let updateResult = executeTransaction(
+    // TODO: Remove once EVM contract is updated in CLI's core contracts
+    updateResult = executeTransaction(
         "./transactions/update_contract.cdc",
         ["EVM", getEVMUpdateCode()],
         serviceAccount

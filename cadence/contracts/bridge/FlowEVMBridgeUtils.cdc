@@ -317,8 +317,8 @@ contract FlowEVMBridgeUtils {
         // Try to resolve the EVMBridgedMetadata
         let bridgedMetadata = viewResolver.resolveContractView(
                 resourceType: forAssetType,
-                viewType: Type<CrossVMNFT.EVMBridgedMetadata>()
-            ) as! CrossVMNFT.EVMBridgedMetadata?
+                viewType: Type<MetadataViews.EVMBridgedMetadata>()
+            ) as! MetadataViews.EVMBridgedMetadata?
         // Default to project-defined URI if available
         if bridgedMetadata != nil {
             name = bridgedMetadata!.name
