@@ -83,9 +83,17 @@ fun setup() {
     )
     Test.expect(err, Test.beNil())
 
+    // Update MetadataViews contract with proposed URI & EVMBridgedMetadata view COA integration
+    // TODO: Remove once MetadataViews contract is updated in CLI's core contracts
+    var updateResult = executeTransaction(
+        "./transactions/update_contract.cdc",
+        ["MetadataViews", getMetadataViewsUpdateCode()],
+        serviceAccount
+    )
     // Update EVM contract with proposed bridge-supporting COA integration
-    let updateResult = executeTransaction(
-        "../transactions/test/update_contract.cdc",
+    // TODO: Remove once EVM contract is updated in CLI's core contracts
+    updateResult = executeTransaction(
+        "./transactions/update_contract.cdc",
         ["EVM", getEVMUpdateCode()],
         serviceAccount
     )
@@ -96,32 +104,32 @@ fun setup() {
     createCOA(signer: bridgeAccount, fundingAmount: 1_000.0)
 
     err = Test.deployContract(
-        name: "BridgePermissions",
-        path: "../contracts/bridge/BridgePermissions.cdc",
+        name: "IBridgePermissions",
+        path: "../contracts/bridge/interfaces/IBridgePermissions.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
         name: "ICrossVM",
-        path: "../contracts/bridge/ICrossVM.cdc",
+        path: "../contracts/bridge/interfaces/ICrossVM.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
         name: "CrossVMNFT",
-        path: "../contracts/bridge/CrossVMNFT.cdc",
+        path: "../contracts/bridge/interfaces/CrossVMNFT.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
         name: "CrossVMToken",
-        path: "../contracts/bridge/CrossVMToken.cdc",
+        path: "../contracts/bridge/interfaces/CrossVMToken.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
         name: "FlowEVMBridgeHandlerInterfaces",
-        path: "../contracts/bridge/FlowEVMBridgeHandlerInterfaces.cdc",
+        path: "../contracts/bridge/interfaces/FlowEVMBridgeHandlerInterfaces.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
@@ -172,25 +180,25 @@ fun setup() {
 
     err = Test.deployContract(
         name: "IEVMBridgeNFTMinter",
-        path: "../contracts/bridge/IEVMBridgeNFTMinter.cdc",
+        path: "../contracts/bridge/interfaces/IEVMBridgeNFTMinter.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
         name: "IEVMBridgeTokenMinter",
-        path: "../contracts/bridge/IEVMBridgeTokenMinter.cdc",
+        path: "../contracts/bridge/interfaces/IEVMBridgeTokenMinter.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
         name: "IFlowEVMNFTBridge",
-        path: "../contracts/bridge/IFlowEVMNFTBridge.cdc",
+        path: "../contracts/bridge/interfaces/IFlowEVMNFTBridge.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
         name: "IFlowEVMTokenBridge",
-        path: "../contracts/bridge/IFlowEVMTokenBridge.cdc",
+        path: "../contracts/bridge/interfaces/IFlowEVMTokenBridge.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
@@ -223,18 +231,18 @@ fun setup() {
     //      once `evm` events Types are available
     err = Test.deployContract(
         name: "EVMDeployer",
-        path: "../contracts/test/EVMDeployer.cdc",
+        path: "./contracts/EVMDeployer.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
     let erc721DeployResult = executeTransaction(
-        "../transactions/test/deploy_using_evm_deployer.cdc",
+        "./transactions/deploy_using_evm_deployer.cdc",
         ["erc721", getCompiledERC721Bytecode(), 0 as UInt],
         exampleERCAccount
     )
     Test.expect(erc721DeployResult, Test.beSucceeded())
     let erc20DeployResult = executeTransaction(
-        "../transactions/test/deploy_using_evm_deployer.cdc",
+        "./transactions/deploy_using_evm_deployer.cdc",
         ["erc20", getCompiledERC20Bytecode(), 0 as UInt],
         exampleERCAccount
     )
@@ -702,6 +710,53 @@ fun testBatchOnboardByEVMAddressSucceeds() {
 /* --- BRIDGING NFTS - Test bridging both Cadence- & EVM-native NFTs --- */
 
 access(all)
+fun testPauseBridgeSucceeds() {
+    // Pause the bridge
+    let pauseResult = executeTransaction(
+        "../transactions/bridge/admin/pause/update_bridge_pause_status.cdc",
+        [true],
+        bridgeAccount
+    )
+    Test.expect(pauseResult, Test.beSucceeded())
+    var isPausedResult = executeScript(
+        "../scripts/bridge/is_paused.cdc",
+        []
+    )
+    Test.expect(isPausedResult, Test.beSucceeded())
+    Test.assertEqual(true, isPausedResult.returnValue as! Bool? ?? panic("Problem getting pause status"))
+
+    var aliceOwnedIDs = getIDs(ownerAddr: alice.address, storagePathIdentifier: "cadenceExampleNFTCollection")
+    Test.assertEqual(1, aliceOwnedIDs.length)
+
+    var aliceCOAAddressHex = getCOAAddressHex(atFlowAddress: alice.address)
+
+    // Execute bridge to EVM - should fail after pausing
+    bridgeNFTToEVM(
+        signer: alice,
+        contractAddr: exampleNFTAccount.address,
+        contractName: "ExampleNFT",
+        nftID: aliceOwnedIDs[0],
+        bridgeAccountAddr: bridgeAccount.address,
+        beFailed: true
+    )
+
+    // Unpause bridging
+    let unpauseResult = executeTransaction(
+        "../transactions/bridge/admin/pause/update_bridge_pause_status.cdc",
+        [false],
+        bridgeAccount
+    )
+    Test.expect(unpauseResult, Test.beSucceeded())
+
+    isPausedResult = executeScript(
+        "../scripts/bridge/is_paused.cdc",
+        []
+    )
+    Test.expect(isPausedResult, Test.beSucceeded())
+    Test.assertEqual(false, isPausedResult.returnValue as! Bool? ?? panic("Problem getting pause status"))
+}
+
+access(all)
 fun testBridgeCadenceNativeNFTToEVMSucceeds() {
     var aliceOwnedIDs = getIDs(ownerAddr: alice.address, storagePathIdentifier: "cadenceExampleNFTCollection")
     Test.assertEqual(1, aliceOwnedIDs.length)
@@ -714,7 +769,8 @@ fun testBridgeCadenceNativeNFTToEVMSucceeds() {
         contractAddr: exampleNFTAccount.address,
         contractName: "ExampleNFT",
         nftID: aliceOwnedIDs[0],
-        bridgeAccountAddr: bridgeAccount.address
+        bridgeAccountAddr: bridgeAccount.address,
+        beFailed: false
     )
 
     let associatedEVMAddressHex = getAssociatedEVMAddressHex(with: exampleNFTIdentifier)
@@ -750,7 +806,8 @@ fun testBridgeCadenceNativeNFTFromEVMSucceeds() {
         contractAddr: exampleNFTAccount.address,
         contractName: "ExampleNFT",
         erc721ID: UInt256(mintedNFTID),
-        bridgeAccountAddr: bridgeAccount.address
+        bridgeAccountAddr: bridgeAccount.address,
+        beFailed: false
     )
 
     // Assert ownership of the bridged NFT in EVM has transferred
@@ -777,7 +834,8 @@ fun testBridgeEVMNativeNFTFromEVMSucceeds() {
         contractAddr: bridgeAccount.address,
         contractName: derivedERC721ContractName,
         erc721ID: erc721ID,
-        bridgeAccountAddr: bridgeAccount.address
+        bridgeAccountAddr: bridgeAccount.address,
+        beFailed: false
     )
 
     let aliceOwnedIDs = getIDs(ownerAddr: alice.address, storagePathIdentifier: bridgedCollectionPathIdentifier)
@@ -809,7 +867,8 @@ fun testBridgeEVMNativeNFTToEVMSucceeds() {
         contractAddr: bridgeAccount.address,
         contractName: derivedERC721ContractName,
         nftID: aliceOwnedIDs[0],
-        bridgeAccountAddr: bridgeAccount.address
+        bridgeAccountAddr: bridgeAccount.address,
+        beFailed: false
     )
 
     aliceOwnedIDs = getIDs(ownerAddr: alice.address, storagePathIdentifier: bridgedCollectionPathIdentifier)

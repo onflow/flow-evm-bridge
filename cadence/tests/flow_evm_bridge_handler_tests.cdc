@@ -72,9 +72,17 @@ fun setup() {
     )
     Test.expect(err, Test.beNil())
 
+    // Update MetadataViews contract with proposed URI & EVMBridgedMetadata view COA integration
+    // TODO: Remove once MetadataViews contract is updated in CLI's core contracts
+    var updateResult = executeTransaction(
+        "./transactions/update_contract.cdc",
+        ["MetadataViews", getMetadataViewsUpdateCode()],
+        serviceAccount
+    )
     // Update EVM contract with proposed bridge-supporting COA integration
-    let updateResult = executeTransaction(
-        "../transactions/test/update_contract.cdc",
+    // TODO: Remove once EVM contract is updated in CLI's core contracts
+    updateResult = executeTransaction(
+        "./transactions/update_contract.cdc",
         ["EVM", getEVMUpdateCode()],
         serviceAccount
     )
@@ -85,32 +93,32 @@ fun setup() {
     createCOA(signer: bridgeAccount, fundingAmount: 1_000.0)
 
     err = Test.deployContract(
-        name: "BridgePermissions",
-        path: "../contracts/bridge/BridgePermissions.cdc",
+        name: "IBridgePermissions",
+        path: "../contracts/bridge/interfaces/IBridgePermissions.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
         name: "ICrossVM",
-        path: "../contracts/bridge/ICrossVM.cdc",
+        path: "../contracts/bridge/interfaces/ICrossVM.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
         name: "CrossVMNFT",
-        path: "../contracts/bridge/CrossVMNFT.cdc",
+        path: "../contracts/bridge/interfaces/CrossVMNFT.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
         name: "CrossVMToken",
-        path: "../contracts/bridge/CrossVMToken.cdc",
+        path: "../contracts/bridge/interfaces/CrossVMToken.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
         name: "FlowEVMBridgeHandlerInterfaces",
-        path: "../contracts/bridge/FlowEVMBridgeHandlerInterfaces.cdc",
+        path: "../contracts/bridge/interfaces/FlowEVMBridgeHandlerInterfaces.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
@@ -161,25 +169,25 @@ fun setup() {
 
     err = Test.deployContract(
         name: "IEVMBridgeNFTMinter",
-        path: "../contracts/bridge/IEVMBridgeNFTMinter.cdc",
+        path: "../contracts/bridge/interfaces/IEVMBridgeNFTMinter.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
         name: "IEVMBridgeTokenMinter",
-        path: "../contracts/bridge/IEVMBridgeTokenMinter.cdc",
+        path: "../contracts/bridge/interfaces/IEVMBridgeTokenMinter.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
         name: "IFlowEVMNFTBridge",
-        path: "../contracts/bridge/IFlowEVMNFTBridge.cdc",
+        path: "../contracts/bridge/interfaces/IFlowEVMNFTBridge.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
         name: "IFlowEVMTokenBridge",
-        path: "../contracts/bridge/IFlowEVMTokenBridge.cdc",
+        path: "../contracts/bridge/interfaces/IFlowEVMTokenBridge.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
@@ -212,7 +220,7 @@ fun setup() {
     //      once `evm` events Types are available
     err = Test.deployContract(
         name: "EVMDeployer",
-        path: "../contracts/test/EVMDeployer.cdc",
+        path: "./contracts/EVMDeployer.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())
@@ -338,7 +346,7 @@ fun testEnableTokenHandlerFails() {
 access(all)
 fun testDeployERC20Succeeds() {
     let erc20DeployResult = executeTransaction(
-        "../transactions/test/deploy_using_evm_deployer.cdc",
+        "./transactions/deploy_using_evm_deployer.cdc",
         ["erc20", getCompiledERC20Bytecode(), 0 as UInt],
         exampleERCAccount
     )

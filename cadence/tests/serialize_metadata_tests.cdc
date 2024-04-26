@@ -50,7 +50,7 @@ fun testSerializeNFTSucceeds() {
     Test.expect(mintResult, Test.beSucceeded())
 
     let heightResult = executeScript(
-        "../scripts/test/get_block_height.cdc",
+        "./scripts/get_block_height.cdc",
         []
     )
     mintedBlockHeight = heightResult.returnValue! as! UInt64
@@ -140,4 +140,33 @@ fun testSerializeBothDisplaysSucceeds() {
 
     let serializedResult = SerializeMetadata.serializeFromDisplays(nftDisplay: nftDisplay, collectionDisplay: collectionDisplay)
     Test.assertEqual(expected, serializedResult!)
+}
+
+
+access(all)
+fun testDeriveSymbolSucceeds() {
+    let expectedSymbol = "TEST"
+
+    var contractName = "Te_stContract"
+
+    var symbolResult = SerializeMetadata.deriveSymbol(fromString: contractName)
+    Test.assertEqual(expectedSymbol, symbolResult)
+
+    contractName = "T_e_stContract"
+    symbolResult = SerializeMetadata.deriveSymbol(fromString: contractName)
+    Test.assertEqual(expectedSymbol, symbolResult)
+    
+    contractName = "_t_E_+*__&__stContract"
+    symbolResult = SerializeMetadata.deriveSymbol(fromString: contractName)
+    Test.assertEqual(expectedSymbol, symbolResult)
+}
+
+access(all)
+fun testDeriveSymbolFromShortStringSucceeds() {
+    let expectedSymbol = "C"
+
+    let contractName = "c"
+
+    var symbolResult = SerializeMetadata.deriveSymbol(fromString: contractName)
+    Test.assertEqual(expectedSymbol, symbolResult)
 }

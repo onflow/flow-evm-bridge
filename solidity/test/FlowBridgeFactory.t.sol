@@ -4,8 +4,8 @@ pragma solidity ^0.8.17;
 import {Test} from "forge-std/Test.sol";
 
 import {FlowBridgeFactory} from "../src/FlowBridgeFactory.sol";
-import {FlowBridgedERC721} from "../src/FlowBridgedERC721.sol";
-import {FlowBridgedERC20} from "../src/FlowBridgedERC20.sol";
+import {FlowBridgedERC721} from "../src/templates/FlowBridgedERC721.sol";
+import {FlowBridgedERC20} from "../src/templates/FlowBridgedERC20.sol";
 
 contract FlowBridgeFactoryTest is Test {
     FlowBridgeFactory internal factory;

@@ -8,45 +8,6 @@ import "EVM"
 ///
 access(all) contract CrossVMNFT {
 
-    /// A struct to represent a general case URI, used to represent the URI of the NFT where the type of URI is not
-    /// able to be determined (i.e. HTTP, IPFS, etc.)
-    ///
-    access(all) struct URI : MetadataViews.File {
-        /// The base URI prefix, if any. Not needed for all URIs, but helpful for some use cases
-        /// For example, updating a whole NFT collection's image host easily
-        access(all) let baseURI: String?
-        /// The URI value
-        /// NOTE: this is set on init as a concatenation of the baseURI and the value if baseURI != nil
-        access(self) let value: String
-
-        access(all) view fun uri(): String {
-            return self.value
-        }
-
-        init(baseURI: String?, value: String) {
-            self.baseURI = baseURI
-            self.value = baseURI != nil ? baseURI!.concat(value) : value
-        }
-    }
-
-    /// Proof of concept metadata to represent the ERC721 values of the NFT
-    ///
-    access(all) struct EVMBridgedMetadata {
-        /// The name of the NFT
-        access(all) let name: String
-        /// The symbol of the NFT
-        access(all) let symbol: String
-        /// The URI of the asset - this can either be contract-level or token-level URI depending on where the metadata
-        /// is requested. See the ViewResolver contract interface to discover how contract & resource-level metadata
-        /// requests are handled.
-        access(all) let uri: {MetadataViews.File}
-
-        init(name: String, symbol: String, uri: {MetadataViews.File}) {
-            self.name = name
-            self.symbol = symbol
-            self.uri = uri
-        }
-    }
 
     /// A simple interface for an NFT that is bridged to the EVM. This may be necessary in some cases as there is
     /// discrepancy between Flow NFT standard IDs (UInt64) and EVM NFT standard IDs (UInt256). Discrepancies on IDs

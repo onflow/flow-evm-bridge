@@ -1,6 +1,7 @@
 import "NonFungibleToken"
 import "FungibleToken"
 import "MetadataViews"
+import "FungibleTokenMetadataViews"
 import "ViewResolver"
 import "FlowToken"
 import "FlowStorageFees"
@@ -8,8 +9,10 @@ import "FlowStorageFees"
 import "EVM"
 
 import "EVMUtils"
+import "SerializeMetadata"
 import "FlowEVMBridgeConfig"
-import "BridgePermissions"
+import "CrossVMNFT"
+import "IBridgePermissions"
 
 /// This contract serves as a source of utility methods leveraged by FlowEVMBridge contracts
 //
@@ -25,6 +28,65 @@ contract FlowEVMBridgeUtils {
     /// Mapping containing contract name prefixes
     access(self)
     let contractNamePrefixes: {Type: {String: String}}
+
+    /****************
+        Constructs
+    *****************/
+
+    /// Struct used to preserve and pass around multiple values relating to Cadence asset onboarding
+    ///
+    access(all) struct CadenceOnboardingValues {
+        access(all) let contractAddress: Address
+        access(all) let name: String
+        access(all) let symbol: String
+        access(all) let identifier: String
+        access(all) let contractURI: String
+
+        init(
+            contractAddress: Address,
+            name: String,
+            symbol: String,
+            identifier: String,
+            contractURI: String
+        ) {
+            self.contractAddress = contractAddress
+            self.name = name
+            self.symbol = symbol
+            self.identifier = identifier
+            self.contractURI = contractURI
+        }
+    }
+
+    /// Struct used to preserve and pass around multiple values preventing the need to make multiple EVM calls
+    /// during EVM asset onboarding
+    ///
+    access(all) struct EVMOnboardingValues {
+        access(all) let evmContractAddress: EVM.EVMAddress
+        access(all) let name: String
+        access(all) let symbol: String
+        access(all) let decimals: UInt8?
+        access(all) let contractURI: String?
+        access(all) let cadenceContractName: String
+        access(all) let isERC721: Bool
+
+        init(
+            evmContractAddress: EVM.EVMAddress,
+            name: String,
+            symbol: String,
+            decimals: UInt8?,
+            contractURI: String?,
+            cadenceContractName: String,
+            isERC721: Bool
+        ) {
+            self.evmContractAddress = evmContractAddress
+            self.name = name
+            self.symbol = symbol
+            self.decimals = decimals
+            self.contractURI = contractURI
+            self.cadenceContractName = cadenceContractName
+            self.isERC721 = isERC721
+        }
+    }
 
     /**************************
         Public Bridge Utils
@@ -45,9 +107,9 @@ contract FlowEVMBridgeUtils {
         return storageFee + FlowEVMBridgeConfig.baseFee
     }
 
-    /// Returns whether the given type is allowed to be bridged as defined by the BridgePermissions contract interface.
-    /// If the type's defining contract does not implement BridgePermissions, the method returns true as the bridge
-    /// operates permissionlessly by default. Otherwise, the result of {BridgePermissions}.allowsBridging() is returned
+    /// Returns whether the given type is allowed to be bridged as defined by the IBridgePermissions contract interface.
+    /// If the type's defining contract does not implement IBridgePermissions, the method returns true as the bridge
+    /// operates permissionlessly by default. Otherwise, the result of {IBridgePermissions}.allowsBridging() is returned
     ///
     /// @param type: The Type of the asset to check
     ///
@@ -59,7 +121,7 @@ contract FlowEVMBridgeUtils {
             ?? panic("Could not construct contract address from type identifier: ".concat(type.identifier))
         let contractName = self.getContractName(fromType: type)
             ?? panic("Could not construct contract name from type identifier: ".concat(type.identifier))
-        if let bridgePermissions = getAccount(contractAddress).contracts.borrow<&{BridgePermissions}>(name: contractName) {
+        if let bridgePermissions = getAccount(contractAddress).contracts.borrow<&{IBridgePermissions}>(name: contractName) {
             return bridgePermissions.allowsBridging()
         }
         return true
@@ -85,7 +147,7 @@ contract FlowEVMBridgeUtils {
         if callResult.status != EVM.Status.successful {
             return true
         }
-        // Contract is BridgePermissions - return the result
+        // Contract is IBridgePermissions - return the result
         let decodedResult = EVM.decodeABI(types: [Type<Bool>()], data: callResult.data) as! [AnyStruct]
         return (decodedResult.length == 1 && decodedResult[0] as! Bool) == true ? true : false
     }
@@ -219,6 +281,130 @@ contract FlowEVMBridgeUtils {
     access(all)
     view fun getBridgeCOAEVMAddress(): EVM.EVMAddress {
         return FlowEVMBridgeUtils.borrowCOA().address()
+    }
+
+    /// Retrieves the relevant information for onboarding a Cadence asset to the bridge. This method is used to
+    /// retrieve the name, symbol, contract address, and contract URI for a given Cadence asset type. These values
+    /// are used to then deploy a corresponding EVM contract. If EVMBridgedMetadata is supported by the asset's
+    /// defining contract, the values are retrieved from that view. Otherwise, the values are derived from other
+    /// common metadata views.
+    ///
+    /// @param forAssetType: The Type of the asset to retrieve onboarding values for
+    ///
+    /// @return The CadenceOnboardingValues struct containing the asset's name, symbol, identifier, contract address,
+    ///     and contract URI
+    ///
+    access(all)
+    fun getCadenceOnboardingValues(forAssetType: Type): CadenceOnboardingValues {
+        pre {
+            self.isValidFlowAsset(type: forAssetType): "This type is not a supported Flow asset type."
+        }
+        // If not an NFT, assumed to be fungible token.
+        let isNFT = forAssetType.isSubtype(of: Type<@{NonFungibleToken.NFT}>())
+
+        // Retrieve the Cadence type's defining contract name, address, & its identifier
+        var name = FlowEVMBridgeUtils.getContractName(fromType: forAssetType)
+            ?? panic("Could not contract name from type: ".concat(forAssetType.identifier))
+        let identifier = forAssetType.identifier
+        let cadenceAddress = FlowEVMBridgeUtils.getContractAddress(fromType: forAssetType)
+            ?? panic("Could not derive contract address for token type: ".concat(identifier))
+        // Initialize asset symbol which will be assigned later
+        // based on presence of asset-defined metadata
+        var symbol: String? = nil
+        // Borrow the ViewResolver to attempt to resolve the EVMBridgedMetadata view
+        let viewResolver = getAccount(cadenceAddress).contracts.borrow<&{ViewResolver}>(name: name)!
+        var contractURI = ""
+
+        // Try to resolve the EVMBridgedMetadata
+        let bridgedMetadata = viewResolver.resolveContractView(
+                resourceType: forAssetType,
+                viewType: Type<MetadataViews.EVMBridgedMetadata>()
+            ) as! MetadataViews.EVMBridgedMetadata?
+        // Default to project-defined URI if available
+        if bridgedMetadata != nil {
+            name = bridgedMetadata!.name
+            symbol = bridgedMetadata!.symbol
+            contractURI = bridgedMetadata!.uri.uri()
+        } else {
+            if isNFT {
+                // Otherwise, serialize collection-level NFTCollectionDisplay
+                if let collectionDisplay = viewResolver.resolveContractView(
+                    resourceType: forAssetType,
+                    viewType: Type<MetadataViews.NFTCollectionDisplay>()
+                ) as! MetadataViews.NFTCollectionDisplay? {
+                    name = collectionDisplay.name
+                    let serializedDisplay = SerializeMetadata.serializeFromDisplays(nftDisplay: nil, collectionDisplay: collectionDisplay)!
+                    contractURI = "data:application/json;utf8,{".concat(serializedDisplay).concat("}")
+                }
+                if symbol == nil {
+                    symbol = SerializeMetadata.deriveSymbol(fromString: name)
+                }
+            } else {
+                let ftDisplay = viewResolver.resolveContractView(
+                    resourceType: forAssetType,
+                    viewType: Type<FungibleTokenMetadataViews.FTDisplay>()
+                ) as! FungibleTokenMetadataViews.FTDisplay?
+                if ftDisplay != nil {
+                    name = ftDisplay!.name
+                    symbol = ftDisplay!.symbol
+                }
+                if contractURI.length == 0 && ftDisplay != nil {
+                    let serializedDisplay = SerializeMetadata.serializeFTDisplay(ftDisplay!)
+                    contractURI = "data:application/json;utf8,{".concat(serializedDisplay).concat("}")
+                }
+            }
+        }
+
+        return CadenceOnboardingValues(
+            contractAddress: cadenceAddress,
+            name: name,
+            symbol: symbol!,
+            identifier: identifier,
+            contractURI: contractURI
+        )
+    }
+
+    /// Retrieves identifying information about an EVM contract related to bridge onboarding.
+    ///
+    /// @param evmContractAddress: The EVM contract address to retrieve onboarding values for
+    ///
+    /// @return The EVMOnboardingValues struct containing the asset's name, symbol, decimals, contractURI, and
+    ///    Cadence contract name as well as whether the asset is an ERC721
+    ///
+    access(all)
+    fun getEVMOnboardingValues(evmContractAddress: EVM.EVMAddress): EVMOnboardingValues {
+        // Retrieve the EVM contract's name, symbol, and contractURI
+        let name: String = self.getName(evmContractAddress: evmContractAddress)
+        let symbol: String = self.getSymbol(evmContractAddress: evmContractAddress)
+        let contractURI = self.getContractURI(evmContractAddress: evmContractAddress)
+        // Default to 18 decimals for ERC20s
+        var decimals: UInt8 = FlowEVMBridgeConfig.defaultDecimals
+
+        // Derive Cadence contract name
+        let isERC721: Bool = self.isERC721(evmContractAddress: evmContractAddress)
+        var cadenceContractName: String = ""
+        if isERC721 {
+            // Assert the contract is not mixed asset
+            let isERC20 = self.isERC20(evmContractAddress: evmContractAddress)
+            assert(!isERC20, message: "Contract is mixed asset and is not currently supported by the bridge")
+            // Derive the contract name from the ERC721 contract
+            cadenceContractName = self.deriveBridgedNFTContractName(from: evmContractAddress)
+        } else {
+            // Otherwise, treat as ERC20. Upstream bridge calls would have confirmed the contract is either ERC20 or
+            // ERC721
+            cadenceContractName = self.deriveBridgedTokenContractName(from: evmContractAddress)
+            decimals = self.getTokenDecimals(evmContractAddress: evmContractAddress)
+        }
+
+        return EVMOnboardingValues(
+            evmContractAddress: evmContractAddress,
+            name: name,
+            symbol: symbol,
+            decimals: decimals,
+            contractURI: contractURI,
+            cadenceContractName: cadenceContractName,
+            isERC721: isERC721
+        )
     }
 
     /************************
@@ -744,7 +930,7 @@ contract FlowEVMBridgeUtils {
     fun depositFee(_ feeProvider: auth(FungibleToken.Withdraw) &{FungibleToken.Provider}, feeAmount: UFix64) {
         let vault = self.account.storage.borrow<&FlowToken.Vault>(from: /storage/flowTokenVault)
             ?? panic("Could not borrow FlowToken.Vault reference")
-        
+
         let feeVault <-feeProvider.withdraw(amount: feeAmount) as! @FlowToken.Vault
         assert(feeVault.balance == feeAmount, message: "Fee provider did not return the requested fee")
 
@@ -787,7 +973,7 @@ contract FlowEVMBridgeUtils {
     access(account)
     fun mustSafeTransferERC721(erc721Address: EVM.EVMAddress, to: EVM.EVMAddress, id: UInt256) {
         let bridgeCOAAddress = self.getBridgeCOAEVMAddress()
-        
+
         let bridgePreStatus = self.isOwner(ofNFT: id, owner: bridgeCOAAddress, evmContractAddress: erc721Address)
         let toPreStatus = self.isOwner(ofNFT: id, owner: to, evmContractAddress: erc721Address)
         assert(bridgePreStatus, message: "Bridge COA does not own ERC721 requesting to be transferred")
@@ -817,7 +1003,7 @@ contract FlowEVMBridgeUtils {
     access(account)
     fun mustSafeMintERC721(erc721Address: EVM.EVMAddress, to: EVM.EVMAddress, id: UInt256, uri: String) {
         let bridgeCOAAddress = self.getBridgeCOAEVMAddress()
-        
+
         let mintResult: EVM.Result = FlowEVMBridgeUtils.call(
             signature: "safeMint(address,uint256,string)",
             targetEVMAddress: erc721Address,
@@ -838,7 +1024,7 @@ contract FlowEVMBridgeUtils {
     access(account)
     fun mustUpdateTokenURI(erc721Address: EVM.EVMAddress, id: UInt256, uri: String) {
         let bridgeCOAAddress = self.getBridgeCOAEVMAddress()
-        
+
         let updateResult: EVM.Result = FlowEVMBridgeUtils.call(
             signature: "updateTokenURI(uint256,string)",
             targetEVMAddress: erc721Address,
@@ -970,10 +1156,35 @@ contract FlowEVMBridgeUtils {
                 owner: FlowEVMBridgeUtils.getBridgeCOAEVMAddress(),
                 evmContractAddress: erc20Address
             )
-        
+
         // Confirm the transfer of the expected was successful in both sending owner and recipient escrow
         assert(ownerPostBalance == ownerPreBalance - amount, message: "Transfer to owner failed")
         assert(bridgePostBalance == bridgePreBalance + amount, message: "Transfer to bridge escrow failed")
+    }
+
+    /// Calls to the bridge factory to deploy an ERC721/ERC20 contract and returns the deployed contract address
+    ///
+    access(account)
+    fun mustDeployEVMContract(
+        name: String,
+        symbol: String,
+        cadenceAddress: Address,
+        flowIdentifier: String,
+        contractURI: String,
+        isERC721: Bool
+    ): EVM.EVMAddress {
+        let signature = isERC721 ? "deployERC721(string,string,string,string,string)" : "deployERC20(string,string,string,string,string)"
+        let deployResult: EVM.Result = FlowEVMBridgeUtils.call(
+            signature: signature,
+            targetEVMAddress: FlowEVMBridgeUtils.bridgeFactoryEVMAddress,
+            args: [name, symbol, cadenceAddress.toString(), flowIdentifier, contractURI],
+            gasLimit: 15000000,
+            value: 0.0
+        )
+        assert(deployResult.status == EVM.Status.successful, message: "EVM Token contract deployment failed")
+        let decodedResult: [AnyStruct] = EVM.decodeABI(types: [Type<EVM.EVMAddress>()], data: deployResult.data)
+        assert(decodedResult.length == 1, message: "Invalid response length")
+        return decodedResult[0] as! EVM.EVMAddress
     }
 
     init(bridgeFactoryBytecodeHex: String) {
