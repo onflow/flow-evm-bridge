@@ -141,3 +141,32 @@ fun testSerializeBothDisplaysSucceeds() {
     let serializedResult = SerializeMetadata.serializeFromDisplays(nftDisplay: nftDisplay, collectionDisplay: collectionDisplay)
     Test.assertEqual(expected, serializedResult!)
 }
+
+
+access(all)
+fun testDeriveSymbolSucceeds() {
+    let expectedSymbol = "TEST"
+
+    var contractName = "Te_stContract"
+
+    var symbolResult = SerializeMetadata.deriveSymbol(fromString: contractName)
+    Test.assertEqual(expectedSymbol, symbolResult)
+
+    contractName = "T_e_stContract"
+    symbolResult = SerializeMetadata.deriveSymbol(fromString: contractName)
+    Test.assertEqual(expectedSymbol, symbolResult)
+    
+    contractName = "_t_E_+*__&__stContract"
+    symbolResult = SerializeMetadata.deriveSymbol(fromString: contractName)
+    Test.assertEqual(expectedSymbol, symbolResult)
+}
+
+access(all)
+fun testDeriveSymbolFromShortStringSucceeds() {
+    let expectedSymbol = "C"
+
+    let contractName = "c"
+
+    var symbolResult = SerializeMetadata.deriveSymbol(fromString: contractName)
+    Test.assertEqual(expectedSymbol, symbolResult)
+}

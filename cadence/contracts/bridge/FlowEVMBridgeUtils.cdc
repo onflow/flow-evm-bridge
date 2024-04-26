@@ -325,12 +325,7 @@ contract FlowEVMBridgeUtils {
                     contractURI = "data:application/json;utf8,{".concat(serializedDisplay).concat("}")
                 }
                 if symbol == nil {
-                    symbol = SerializeMetadata.deriveSymbol(
-                            fromString: name,
-                            minLength: name.length,
-                            maxLength: nil,
-                            randomFallback: true
-                        )
+                    symbol = SerializeMetadata.deriveSymbol(fromString: name)
                 }
             } else {
                 let ftDisplay = viewResolver.resolveContractView(
