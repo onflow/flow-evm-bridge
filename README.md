@@ -179,7 +179,7 @@ return true.
 In both cases, `allowsBridging()` gates onboarding to the bridge. Once onboarded - **a permissionless operation anyone can
 execute** - the value of `allowsBridging()` is irrelevant and assets can move between VMs permissionlessly.
 
-## Under the Hood (facilitating cross-vm interactions)
+## Under the Hood
 
 For an in-depth look at the high-level architecture of the bridge, see [FLIP
 #237](https://github.com/onflow/flips/pull/233)
