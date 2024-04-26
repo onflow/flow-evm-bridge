@@ -80,7 +80,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         //
         // Withdraw from feeProvider and deposit to self
         FlowEVMBridgeUtils.depositFee(feeProvider, feeAmount: FlowEVMBridgeConfig.onboardFee)
-        
+
         /* EVM setup */
         //
         // Deploy an EVM defining contract via the FlowBridgeFactory.sol contract
@@ -152,7 +152,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         //
         // Withdraw fee from feeProvider and deposit
         FlowEVMBridgeUtils.depositFee(feeProvider, feeAmount: FlowEVMBridgeConfig.onboardFee)
-    
+
         /* Setup Cadence-defining contract */
         //
         // Deploy a defining Cadence contract to the bridge account
@@ -212,7 +212,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         let associatedAddress = FlowEVMBridgeConfig.getEVMAddressAssociated(with: tokenType)
             ?? panic("No EVMAddress found for token type")
         let isFactoryDeployed = FlowEVMBridgeUtils.isEVMContractBridgeOwned(evmContractAddress: associatedAddress)
-        
+
         /* Third-party controlled ERC721 handling */
         //
         // Not bridge-controlled, transfer existing ownership
@@ -406,7 +406,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
 
     /// Entrypoint to bridge ERC20 tokens from EVM to Cadence as FungibleToken Vaults
     ///
-    /// @param owner: The EVM address of the FT owner. Current ownership and successful transfer (via 
+    /// @param owner: The EVM address of the FT owner. Current ownership and successful transfer (via
     ///     `protectedTransferCall`) is validated before the bridge request is executed.
     /// @param calldata: Caller-provided approve() call, enabling contract COA to operate on FT in EVM contract
     /// @param amount: The amount of tokens to be bridged
@@ -601,7 +601,10 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
             evmContractAddress: deployedContractAddress,
             name: onboardingValues.name,
             symbol: onboardingValues.symbol,
-            decimals: isNFT ? nil : FlowEVMBridgeConfig.defaultDecimals
+            decimals: isNFT ? nil : FlowEVMBridgeConfig.defaultDecimals,
+            contractURI: nil,
+            cadenceContractName: FlowEVMBridgeUtils.getContractName(fromType: forAssetType)!,
+            isERC721: isNFT
         )
     }
 
@@ -612,43 +615,39 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
     ///
     access(self)
     fun deployDefiningContract(evmContractAddress: EVM.EVMAddress) {
-        // Deploy the Cadence contract defining the asset
-        // Treat as NFT if contract is ERC721, otherwise treat as FT
-        let name: String = FlowEVMBridgeUtils.getName(evmContractAddress: evmContractAddress)
-        let symbol: String = FlowEVMBridgeUtils.getSymbol(evmContractAddress: evmContractAddress)
-        let contractURI = FlowEVMBridgeUtils.getContractURI(evmContractAddress: evmContractAddress)
-        var decimals: UInt8 = FlowEVMBridgeConfig.defaultDecimals
-
-        // Derive contract name
-        let isERC721: Bool = FlowEVMBridgeUtils.isERC721(evmContractAddress: evmContractAddress)
-        var cadenceContractName: String = ""
-        if isERC721 {
-            // Assert the contract is not mixed asset
-            let isERC20 = FlowEVMBridgeUtils.isERC20(evmContractAddress: evmContractAddress)
-            assert(!isERC20, message: "Contract is mixed asset and is not currently supported by the bridge")
-            // Derive the contract name from the ERC721 contract
-            cadenceContractName = FlowEVMBridgeUtils.deriveBridgedNFTContractName(from: evmContractAddress)
-        } else {
-            cadenceContractName = FlowEVMBridgeUtils.deriveBridgedTokenContractName(from: evmContractAddress)
-            decimals = FlowEVMBridgeUtils.getTokenDecimals(evmContractAddress: evmContractAddress)
-        }
+        // Gather identifying information about the EVM contract
+        let evmOnboardingValues = FlowEVMBridgeUtils.getEVMOnboardingValues(evmContractAddress: evmContractAddress)
 
         // Get Cadence code from template & deploy to the bridge account
         let cadenceCode: [UInt8] = FlowEVMBridgeTemplates.getBridgedAssetContractCode(
-                cadenceContractName,
-                isERC721: isERC721
+                evmOnboardingValues.cadenceContractName,
+                isERC721: evmOnboardingValues.isERC721
             ) ?? panic("Problem retrieving code for Cadence-defining contract")
-        if isERC721 {
-            self.account.contracts.add(name: cadenceContractName, code: cadenceCode, name, symbol, evmContractAddress, contractURI)
+        if evmOnboardingValues.isERC721 {
+            self.account.contracts.add(
+                name: evmOnboardingValues.cadenceContractName,
+                code: cadenceCode,
+                evmOnboardingValues.name,
+                evmOnboardingValues.symbol,
+                evmContractAddress,
+                evmOnboardingValues.contractURI
+            )
         } else {
-            self.account.contracts.add(name: cadenceContractName, code: cadenceCode, name, symbol, decimals, evmContractAddress, contractURI)
+            self.account.contracts.add(
+                name: evmOnboardingValues.cadenceContractName,
+                code: cadenceCode,
+                evmOnboardingValues.name,
+                evmOnboardingValues.symbol,
+                evmOnboardingValues.decimals!,
+                evmContractAddress, evmOnboardingValues.contractURI
+            )
         }
 
         emit BridgeDefiningContractDeployed(
-            contractName: cadenceContractName,
-            assetName: name,
-            symbol: symbol,
-            isERC721: isERC721,
+            contractName: evmOnboardingValues.cadenceContractName,
+            assetName: evmOnboardingValues.name,
+            symbol: evmOnboardingValues.symbol,
+            isERC721: evmOnboardingValues.isERC721,
             evmContractAddress: EVMUtils.getEVMAddressAsHexString(address: evmContractAddress)
         )
     }
