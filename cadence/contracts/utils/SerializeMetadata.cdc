@@ -163,8 +163,7 @@ access(all) contract SerializeMetadata {
     }
 
     /// Derives a symbol for use as an ERC20 or ERC721 symbol from a given string, presumably a Cadence contract name.
-    /// Derivation is a process of removing slicing the first 4 characters of the string and converting them to 
-    /// uppercase.
+    /// Derivation is a process of slicing the first 4 characters of the string and converting them to uppercase.
     ///
     /// @param fromString: The string from which to derive a symbol
     ///

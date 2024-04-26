@@ -363,7 +363,7 @@ contract FlowEVMBridgeUtils {
         )
     }
 
-    /// Retrieves identifying information about an EVM contract address for onboarding to the bridge.
+    /// Retrieves identifying information about an EVM contract related to bridge onboarding.
     ///
     /// @param evmContractAddress: The EVM contract address to retrieve onboarding values for
     ///
@@ -1161,7 +1161,7 @@ contract FlowEVMBridgeUtils {
         assert(bridgePostBalance == bridgePreBalance + amount, message: "Transfer to bridge escrow failed")
     }
 
-    /// Calls to the bridge factory to deploy an ERC721 contract and returns the deployed contract address
+    /// Calls to the bridge factory to deploy an ERC721/ERC20 contract and returns the deployed contract address
     ///
     access(account)
     fun mustDeployEVMContract(
