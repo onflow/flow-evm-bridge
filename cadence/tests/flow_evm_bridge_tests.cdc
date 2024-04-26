@@ -713,11 +713,17 @@ access(all)
 fun testPauseBridgeSucceeds() {
     // Pause the bridge
     let pauseResult = executeTransaction(
-        "../transactions/bridge/admin/pause/pause_bridge.cdc",
-        [],
+        "../transactions/bridge/admin/pause/update_bridge_pause_status.cdc",
+        [true],
         bridgeAccount
     )
     Test.expect(pauseResult, Test.beSucceeded())
+    var isPausedResult = executeScript(
+        "../scripts/bridge/is_paused.cdc",
+        []
+    )
+    Test.expect(isPausedResult, Test.beSucceeded())
+    Test.assertEqual(true, isPausedResult.returnValue as! Bool? ?? panic("Problem getting pause status"))
 
     var aliceOwnedIDs = getIDs(ownerAddr: alice.address, storagePathIdentifier: "cadenceExampleNFTCollection")
     Test.assertEqual(1, aliceOwnedIDs.length)
@@ -736,11 +742,18 @@ fun testPauseBridgeSucceeds() {
 
     // Unpause bridging
     let unpauseResult = executeTransaction(
-        "../transactions/bridge/admin/pause/unpause_bridge.cdc",
-        [],
+        "../transactions/bridge/admin/pause/update_bridge_pause_status.cdc",
+        [false],
         bridgeAccount
     )
     Test.expect(unpauseResult, Test.beSucceeded())
+
+    isPausedResult = executeScript(
+        "../scripts/bridge/is_paused.cdc",
+        []
+    )
+    Test.expect(isPausedResult, Test.beSucceeded())
+    Test.assertEqual(false, isPausedResult.returnValue as! Bool? ?? panic("Problem getting pause status"))
 }
 
 access(all)

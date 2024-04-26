@@ -239,6 +239,9 @@ contract FlowEVMBridgeConfig {
         ///
         access(Pause)
         fun pauseBridge() {
+            if FlowEVMBridgeConfig.isPaused() {
+                return
+            }
             FlowEVMBridgeConfig.paused = true
             emit PauseStatusUpdated(paused: true)
         }
@@ -247,6 +250,9 @@ contract FlowEVMBridgeConfig {
         ///
         access(Pause)
         fun unpauseBridge() {
+            if !FlowEVMBridgeConfig.isPaused() {
+                return
+            }
             FlowEVMBridgeConfig.paused = false
             emit PauseStatusUpdated(paused: false)
         }
