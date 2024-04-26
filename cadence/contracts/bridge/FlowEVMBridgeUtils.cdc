@@ -212,6 +212,15 @@ contract FlowEVMBridgeUtils {
         return (isFlowNFT && !isFlowToken) || (!isFlowNFT && isFlowToken)
     }
 
+    /// Retrieves the bridge contract's COA EVMAddress
+    ///
+    /// @returns The EVMAddress of the bridge contract's COA orchestrating actions in FlowEVM
+    ///
+    access(all)
+    view fun getBridgeCOAEVMAddress(): EVM.EVMAddress {
+        return FlowEVMBridgeUtils.borrowCOA().address()
+    }
+
     /************************
         EVM Call Wrappers
      ************************/
@@ -436,6 +445,27 @@ contract FlowEVMBridgeUtils {
         return self.balanceOf(owner: owner, evmContractAddress: evmContractAddress) >= amount
     }
 
+    /// Retrieves the total supply of the ERC20 contract at the given EVM contract address. Reverts on EVM call failure.
+    ///
+    /// @param evmContractAddress: The EVM contract address to retrieve the total supply from
+    ///
+    /// @return the total supply of the ERC20
+    ///
+    access(all)
+    fun totalSupply(evmContractAddress: EVM.EVMAddress): UInt256 {
+        let callResult = self.call(
+            signature: "totalSupply()",
+            targetEVMAddress: evmContractAddress,
+            args: [],
+            gasLimit: 60000,
+            value: 0.0
+        )
+        assert(callResult.status == EVM.Status.successful, message: "Call to ERC20.totalSupply() failed")
+        let decodedResult = EVM.decodeABI(types: [Type<UInt256>()], data: callResult.data) as! [AnyStruct]
+        assert(decodedResult.length == 1, message: "Invalid response length")
+        return decodedResult[0] as! UInt256
+    }
+
     /************************
         Derivation Utils
      ************************/
@@ -657,9 +687,13 @@ contract FlowEVMBridgeUtils {
     /// Deposits fees to the bridge account's FlowToken Vault - helps fund asset storage
     ///
     access(account)
-    fun deposit(_ feeVault: @FlowToken.Vault) {
+    fun depositFee(_ feeProvider: auth(FungibleToken.Withdraw) &{FungibleToken.Provider}, feeAmount: UFix64) {
         let vault = self.account.storage.borrow<&FlowToken.Vault>(from: /storage/flowTokenVault)
             ?? panic("Could not borrow FlowToken.Vault reference")
+        
+        let feeVault <-feeProvider.withdraw(amount: feeAmount) as! @FlowToken.Vault
+        assert(feeVault.balance == feeAmount, message: "Fee provider did not return the requested fee")
+
         vault.deposit(from: <-feeVault)
     }
 

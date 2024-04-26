@@ -18,6 +18,7 @@ import "IFlowEVMTokenBridge"
 import "CrossVMNFT"
 import "CrossVMToken"
 import "FlowEVMBridgeConfig"
+import "FlowEVMBridgeHandlerInterfaces"
 import "FlowEVMBridgeUtils"
 import "FlowEVMBridgeNFTEscrow"
 import "FlowEVMBridgeTokenEscrow"
@@ -107,8 +108,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
             message: "This type is not supported as defined by the project's development team"
         )
         // Withdraw from feeProvider and deposit to self
-        let feeVault <-feeProvider.withdraw(amount: FlowEVMBridgeConfig.onboardFee) as! @FlowToken.Vault
-        FlowEVMBridgeUtils.deposit(<-feeVault)
+        FlowEVMBridgeUtils.depositFee(feeProvider, feeAmount: FlowEVMBridgeConfig.onboardFee)
         // Deploy an EVM defining contract via the FlowBridgeFactory.sol contract
         let onboardingValues = self.deployEVMContract(forAssetType: type)
         // Initialize bridge escrow for the asset
@@ -170,9 +170,8 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
             self.evmAddressRequiresOnboarding(address) == true,
             message: "Onboarding is not needed for this contract"
         )
-        // Withdraw from feeProvider and deposit to self
-        let feeVault <-feeProvider.withdraw(amount: FlowEVMBridgeConfig.onboardFee) as! @FlowToken.Vault
-        FlowEVMBridgeUtils.deposit(<-feeVault)
+        // Withdraw fee from feeProvider and deposit
+        FlowEVMBridgeUtils.depositFee(feeProvider, feeAmount: FlowEVMBridgeConfig.onboardFee)
         // Deploy a defining Cadence contract to the bridge account
         self.deployDefiningContract(evmContractAddress: address)
     }
@@ -215,13 +214,8 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         let storageUsed = FlowEVMBridgeNFTEscrow.lockNFT(<-token)
         // Calculate the bridge fee on current rates
         let feeAmount = FlowEVMBridgeUtils.calculateBridgeFee(bytes: storageUsed)
-        assert(
-            feeProvider.isAvailableToWithdraw(amount: feeAmount),
-            message: "Fee provider does not have balance to cover the bridge fee of ".concat(feeAmount.toString())
-        )
-        // Withdraw from feeProvider and deposit to self
-        let feeVault <-feeProvider.withdraw(amount: feeAmount) as! @FlowToken.Vault
-        FlowEVMBridgeUtils.deposit(<-feeVault)
+        // Withdraw fee from feeProvider and deposit
+        FlowEVMBridgeUtils.depositFee(feeProvider, feeAmount: feeAmount)
 
         // Does the bridge control the EVM contract associated with this type?
         let associatedAddress = FlowEVMBridgeConfig.getEVMAddressAssociated(with: tokenType)
@@ -316,8 +310,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         }
         // Withdraw from feeProvider and deposit to self
         let feeAmount = FlowEVMBridgeUtils.calculateBridgeFee(bytes: 0)
-        let feeVault <-feeProvider.withdraw(amount: feeAmount) as! @FlowToken.Vault
-        FlowEVMBridgeUtils.deposit(<-feeVault)
+        FlowEVMBridgeUtils.depositFee(feeProvider, feeAmount: feeAmount)
 
         // Get the EVMAddress of the ERC721 contract associated with the type
         let associatedAddress = FlowEVMBridgeConfig.getEVMAddressAssociated(with: type)
@@ -396,25 +389,34 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
 
         let vaultBalance = vault.balance
         var feeAmount = 0.0
+        if FlowEVMBridgeConfig.typeHasTokenHandler(vaultType) {
+            // Some tokens pre-dating bridge require special case handling - borrow handler and passthrough to fulfill
+            let handler = FlowEVMBridgeConfig.borrowTokenHandler(vaultType)
+                ?? panic("Could not retrieve handler for the given type")
+            assert(handler.isEnabled(), message: "Cannot bridge tokens of this type at this time")
 
-        // Lock the tokens if the bridge does not define them
-        if FlowEVMBridgeUtils.isCadenceNative(type: vault.getType()) {
+            handler.fulfillTokensToEVM(tokens: <-vault, to: to)
+
+            // Here we assume burning Vault in Cadence which doesn't require storage consumption
+            feeAmount = FlowEVMBridgeUtils.calculateBridgeFee(bytes: 0)
+            FlowEVMBridgeUtils.depositFee(feeProvider, feeAmount: feeAmount)
+            return
+        }
+
+        // In most all other cases, if Cadence-native then tokens must be escrowed
+        if FlowEVMBridgeUtils.isCadenceNative(type: vaultType) {
             // Lock the FT balance & calculate the extra used by the FT if any
             let storageUsed = FlowEVMBridgeTokenEscrow.lockTokens(<-vault)
             // Calculate the bridge fee on current rates
             feeAmount = FlowEVMBridgeUtils.calculateBridgeFee(bytes: storageUsed)
         } else {
+            // Since not Cadence-native, bridge defines the token - burn the vault and calculate the fee
             Burner.burn(<-vault)
             feeAmount = FlowEVMBridgeUtils.calculateBridgeFee(bytes: 0)
         }
 
-        // Withdraw from feeProvider and deposit to self
-        assert(
-            feeProvider.isAvailableToWithdraw(amount: feeAmount),
-            message: "Fee provider does not have balance to cover the bridge fee of ".concat(feeAmount.toString())
-        )
-        let feeVault <-feeProvider.withdraw(amount: feeAmount) as! @FlowToken.Vault
-        FlowEVMBridgeUtils.deposit(<-feeVault)
+        // Withdraw fee amount from feeProvider and deposit
+        FlowEVMBridgeUtils.depositFee(feeProvider, feeAmount: feeAmount)
 
         // Does the bridge control the EVM contract associated with this type?
         let associatedAddress = FlowEVMBridgeConfig.getEVMAddressAssociated(with: vaultType)
@@ -423,6 +425,8 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         let decimals = FlowEVMBridgeUtils.getTokenDecimals(evmContractAddress: associatedAddress)
         let bridgeAmount = FlowEVMBridgeUtils.ufix64ToUInt256(value: vaultBalance, decimals: decimals)
         
+        let toPreBalance = FlowEVMBridgeUtils.balanceOf(owner: to, evmContractAddress: associatedAddress)
+
         let isFactoryDeployed = FlowEVMBridgeUtils.isEVMContractBridgeOwned(evmContractAddress: associatedAddress)
         // Controlled by the bridge - mint or transfer based on the bridge's EVM contract authority
         if isFactoryDeployed {
@@ -446,6 +450,13 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
             )
             assert(callResult.status == EVM.Status.successful, message: "Tranfer to bridge recipient failed")
         }
+
+        // Ensure bridge to recipient was succcessful
+        let toPostBalance = FlowEVMBridgeUtils.balanceOf(owner: to, evmContractAddress: associatedAddress)
+        assert(
+            toPostBalance == toPreBalance + bridgeAmount,
+            message: "Transfer to bridge recipient failed"
+        )
     }
 
     /// Public entrypoint to bridge FTs from EVM to Cadence
@@ -478,8 +489,21 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         }
         // Withdraw from feeProvider and deposit to self
         let feeAmount = FlowEVMBridgeUtils.calculateBridgeFee(bytes: 0)
-        let feeVault <-feeProvider.withdraw(amount: feeAmount) as! @FlowToken.Vault
-        FlowEVMBridgeUtils.deposit(<-feeVault)
+        FlowEVMBridgeUtils.depositFee(feeProvider, feeAmount: feeAmount)
+
+        if FlowEVMBridgeConfig.typeHasTokenHandler(type) {
+            // Some tokens pre-dating bridge require special case handling - borrow handler and passthrough to fulfill
+            let handler = FlowEVMBridgeConfig.borrowTokenHandler(type)
+                ?? panic("Could not retrieve handler for the given type")
+            assert(handler.isEnabled(), message: "Cannot bridge tokens of this type at this time")
+
+            return <-handler.fulfillTokensFromEVM(
+                owner: owner,
+                type: type,
+                amount: amount,
+                protectedTransferCall: protectedTransferCall
+            )
+        }
 
         // Get the EVMAddress of the ERC20 contract associated with the type
         let associatedAddress = FlowEVMBridgeConfig.getEVMAddressAssociated(with: type)
@@ -493,9 +517,11 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         )
         assert(hasSufficientBalance, message: "Caller does not have sufficient balance to bridge requested tokens")
 
-        // Get the bridge COA's balance of the token before executing the protected transfer call
+        // Get the owner and escrow balance of the token before executing the protected transfer call
+        let bridgeCOAAddress = self.getBridgeCOAEVMAddress()
+        let ownerBalanceBefore = FlowEVMBridgeUtils.balanceOf(owner: owner, evmContractAddress: associatedAddress)
         let bridgeBalanceBefore = FlowEVMBridgeUtils.balanceOf(
-            owner: self.getBridgeCOAEVMAddress(),
+            owner: bridgeCOAAddress,
             evmContractAddress: associatedAddress
         )
 
@@ -503,10 +529,15 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         let callResult = protectedTransferCall()
         assert(callResult.status == EVM.Status.successful, message: "Transfer to bridge COA failed")
 
-        // Get the bridge COA's balance of the token before executing the protected transfer call
+        // Confirm the transfer of the expected was successful in both sending owner and recipient escrow
+        let ownerBalanceAfter = FlowEVMBridgeUtils.balanceOf(owner: owner, evmContractAddress: associatedAddress)
         let bridgeBalanceAfter = FlowEVMBridgeUtils.balanceOf(
-            owner: self.getBridgeCOAEVMAddress(),
+            owner: bridgeCOAAddress,
             evmContractAddress: associatedAddress
+        )
+        assert(
+            ownerBalanceAfter == ownerBalanceBefore - amount,
+            message: "Transfer to bridge COA failed - cannot bridge FT without bridge escrow"
         )
         assert(
             bridgeBalanceAfter == bridgeBalanceBefore + amount,
@@ -582,7 +613,8 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         if !FlowEVMBridgeUtils.isValidFlowAsset(type: type) {
             return nil
         }
-        return FlowEVMBridgeConfig.getEVMAddressAssociated(with: type) == nil
+        return FlowEVMBridgeConfig.getEVMAddressAssociated(with: type) == nil &&
+            !FlowEVMBridgeConfig.typeHasTokenHandler(type)
     }
 
     /// Returns whether an EVM-native asset needs to be onboarded to the bridge
