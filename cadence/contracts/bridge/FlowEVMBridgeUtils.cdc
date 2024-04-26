@@ -1203,6 +1203,10 @@ contract FlowEVMBridgeUtils {
             gasLimit: 15000000,
             value: EVM.Balance(attoflow: 0)
         )
-        self.bridgeFactoryEVMAddress = evmResult.deployedContractAddress
+        assert(
+            evmResult.status == EVM.Status.successful && evmResult.deployedContractAddress != nil,
+            message: "Bridge factory deployment failed"
+        )
+        self.bridgeFactoryEVMAddress = evmResult.deployedContractAddress!
     }
 }

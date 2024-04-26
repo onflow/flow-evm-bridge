@@ -23,9 +23,12 @@ access(all) contract EVMDeployer {
             gasLimit: 15_000_000,
             value: EVM.Balance(attoflow: value)
         )
-        assert(evmResult.status == EVM.Status.successful, message: "EVM deployment failed")
+        assert(
+            evmResult.status == EVM.Status.successful && evmResult.deployedContractAddress != nil,
+            message: "EVM contract deployment failed"
+        )
 
-        self.deployedAddresses[name] = evmResult.deployedContractAddress
+        self.deployedAddresses[name] = evmResult.deployedContractAddress!
     }
 
     access(self) fun borrowCOA(): auth(EVM.Deploy) &EVM.CadenceOwnedAccount {
