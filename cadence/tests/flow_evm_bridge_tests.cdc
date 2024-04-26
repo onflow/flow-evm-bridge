@@ -489,7 +489,13 @@ fun testOnboardAndBridgeNFTToEVMSucceeds() {
     Test.assertEqual(true, requiresOnboarding)
     
     // Execute bridge NFT to EVM - should also onboard the NFT type
-    bridgeNFTToEVM(signer: alice, contractAddr: exampleNFTAccount.address, contractName: "ExampleNFT", nftID: aliceID)
+    bridgeNFTToEVM(
+        signer: alice,
+        contractAddr: exampleNFTAccount.address,
+        contractName: "ExampleNFT",
+        nftID: aliceID,
+        bridgeAccountAddr: bridgeAccount.address
+    )
 
     requiresOnboarding = typeRequiresOnboardingByIdentifier(exampleNFTIdentifier)
         ?? panic("Problem getting onboarding status for type")
@@ -559,7 +565,13 @@ fun testOnboardAndBridgeTokensToEVMSucceeds() {
     Test.assertEqual(true, requiresOnboarding)
 
     // Execute bridge to EVM - should also onboard the token type
-    bridgeTokensToEVM(signer: alice, contractAddr: exampleTokenAccount.address, contractName: "ExampleToken", amount: cadenceBalance)
+    bridgeTokensToEVM(
+        signer: alice,
+        contractAddr: exampleTokenAccount.address,
+        contractName: "ExampleToken",
+        amount: cadenceBalance,
+        beFailed: false
+    )
 
     requiresOnboarding = typeRequiresOnboardingByIdentifier(exampleTokenIdentifier)
         ?? panic("Problem getting onboarding status for type")

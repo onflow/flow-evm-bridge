@@ -291,6 +291,26 @@ fun deriveBridgedTokenContractName(evmAddressHex: String): String {
     return nameResult.returnValue as! String? ?? panic("Problem getting derived contract name")
 }
 
+access(all)
+fun typeRequiresOnboardingByIdentifier(_ identifier: String): Bool? {
+    let onboardingRequiredResult: Test.ScriptResult = _executeScript(
+        "../scripts/bridge/type_requires_onboarding_by_identifier.cdc",
+        [identifier]
+    )
+    Test.expect(onboardingRequiredResult, Test.beSucceeded())
+    return onboardingRequiredResult.returnValue as! Bool? ?? panic("Problem getting onboarding requirement")
+}
+
+access(all)
+fun evmAddressRequiresOnboarding(_ addressHex: String): Bool? {
+    var onboardingRequiredResult = _executeScript(
+        "../scripts/bridge/evm_address_requires_onboarding.cdc",
+        [addressHex]
+    )
+    Test.expect(onboardingRequiredResult, Test.beSucceeded())
+    return onboardingRequiredResult.returnValue as! Bool? ?? panic("Problem getting onboarding requirement")
+}
+
 /* --- Transaction Helpers --- */
 
 access(all)
