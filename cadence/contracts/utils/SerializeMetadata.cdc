@@ -161,4 +161,85 @@ access(all) contract SerializeMetadata {
             .concat(externalLink).concat(Serialize.tryToJSONString(ftDisplay.externalURL.url)!)
             .concat("}")
     }
+
+    /// Derives a symbol for use as an ERC20 or ERC721 symbol from a given string, presumably a Cadence contract name.
+    /// Derivation is a process of removing vowels from the string, ensuring the symbol is at least the minimum length,
+    /// and at most the maximum length. If the derived symbol is shorter than the minimum length, a random symbol is
+    /// generated. Note that the method assumes a Cadence contract name is used as the input string, the characters
+    /// checked are those consistent with contract naming restrictions, i.e. lowercase letters & underscores.
+    ///
+    /// @param fromString: The string from which to derive a symbol
+    /// @param minLength: The minimum length of the derived symbol. If nil, the default min is set to 4.
+    /// @param maxLength: The maximum length of the derived symbol. If nil, the default max is set to 6.
+    /// @param randomFallback: A flag indicating whether to fallback to a random symbol if derivation fails to meet
+    ///     the minimum length specified
+    ///
+    /// @returns: A derived symbol for use as an ERC20 or ERC721 symbol
+    ///
+    access(all)
+    fun deriveSymbol(fromString: String, minLength: Int?, maxLength: Int?, randomFallback: Bool): String {
+        let defaultMinLength = 4
+        let defaultMaxLength = 6
+        
+        var symbolChars: [Character] = []
+        for char in fromString {
+            if symbolChars.length >= maxLength ?? defaultMaxLength {
+                break
+            }
+            if self.isLowerCaseVowel(char) || char == "_" {
+                continue
+            }
+            if let upperChar = self.toUpper(char) {
+                assert(upperChar.length == 1, message: "Invalid character conversion")
+                symbolChars.append(upperChar[0])
+            }
+        }
+
+        if randomFallback && symbolChars.length < minLength ?? defaultMinLength {
+            return self.getRandomSymbol(length: minLength ?? defaultMinLength)
+        } else if symbolChars.length < minLength ?? defaultMinLength {
+            panic("Derived symbol ".concat(String.fromCharacters(symbolChars)).concat(" was shorter than requested"))
+        } else {
+            return String.fromCharacters(symbolChars)
+        }
+    }
+    
+    /// Returns a random 8-character string of uppercase letters for use as a symbol for an ERC20 or ERC721 contract.
+    ///
+    /// @returns: A random string of uppercase letters of length up to 8
+    ///
+    access(all)
+    fun getRandomSymbol(length: Int?): String {
+        let r = revertibleRandom<UInt64>().toBigEndianBytes()
+        let shift: UInt8 = 65
+        let symbolUTF8: [UInt8] = []
+        for b in r {
+            symbolUTF8.append(shift + (b % 26))
+        }
+        let symbol = String.fromUTF8(symbolUTF8)!
+        return length != nil && length! <= 8 ? symbol.slice(from: 0, upTo: length!) : symbol
+    }
+
+    /// Returns whether a given character is a lowercase vowel
+    ///
+    access(self) view fun isLowerCaseVowel(_ c: Character): Bool {
+        return c == "a" || c == "e" || c == "i" || c == "o" || c == "u"
+    }
+
+    /// Returns the uppercase version of a given character if it is a lowercase letter or the character itself if it is
+    /// already uppercase. If the character is not a letter, nil is returned.
+    ///
+    access(self) view fun toUpper(_ c: Character): String? {
+        let bytes = c.utf8
+        if bytes.length != 1 {
+            return nil
+        }
+        if bytes[0] >= 97 && bytes[0] <= 122 {
+            return String.fromUTF8([bytes[0] - UInt8(32)])
+        } else if bytes[0] >= 65 && bytes[0] <= 90 {
+            return c.toString()
+        } else {
+            return nil
+        }
+    }
 }
