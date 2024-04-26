@@ -4,7 +4,7 @@ import "MetadataViews"
 
 import "EVM"
 
-/// Contract defining cross-VM NFT-related interfaces & Metadata views
+/// Contract defining cross-VM NFT-related interfaces
 ///
 access(all) contract CrossVMNFT {
 

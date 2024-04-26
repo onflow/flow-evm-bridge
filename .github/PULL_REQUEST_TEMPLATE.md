@@ -10,7 +10,7 @@ ______
 
 For contributor use:
 
-- [ ] Targeted PR against `master` branch
+- [ ] Targeted PR against `main` branch
 - [ ] Linked to Github issue with discussion and accepted design OR link to spec that describes this work.
 - [ ] Code follows the [standards mentioned here](https://github.com/onflow/flow-evm-bridge/blob/master/CONTRIBUTING.md#styleguides).
 - [ ] Updated relevant documentation 
