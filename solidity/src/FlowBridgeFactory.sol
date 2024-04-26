@@ -4,9 +4,9 @@ pragma solidity ^0.8.17;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
-import "./FlowBridgedERC721.sol";
-import "./FlowBridgedERC20.sol";
-import "./IBridgePermissions.sol";
+import "./templates/FlowBridgedERC721.sol";
+import "./templates/FlowBridgedERC20.sol";
+import "./interfaces/IBridgePermissions.sol";
 
 contract FlowBridgeFactory is Ownable {
     mapping(string => address) public flowIdentifierToContract;

@@ -8,8 +8,8 @@
 				"testing": "0000000000000007"
 			}
 		},
-		"BridgePermissions": {
-			"source": "./cadence/contracts/bridge/BridgePermissions.cdc",
+		"IBridgePermissions": {
+			"source": "./cadence/contracts/bridge/interfaces/IBridgePermissions.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"previewnet": "634acef27f871527",
@@ -25,7 +25,7 @@
 			}
 		},
 		"CrossVMNFT": {
-			"source": "./cadence/contracts/bridge/CrossVMNFT.cdc",
+			"source": "./cadence/contracts/bridge/interfaces/CrossVMNFT.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"previewnet": "634acef27f871527",
@@ -33,7 +33,7 @@
 			}
 		},
 		"CrossVMToken": {
-			"source": "./cadence/contracts/bridge/CrossVMToken.cdc",
+			"source": "./cadence/contracts/bridge/interfaces/CrossVMToken.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"previewnet": "634acef27f871527",
@@ -48,7 +48,7 @@
 			}
 		},
 		"EVMDeployer": {
-			"source": "./cadence/contracts/test/EVMDeployer.cdc",
+			"source": "./tests/contracts/EVMDeployer.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"testing": "0000000000000009"
@@ -67,6 +67,13 @@
 			"aliases": {
 				"emulator": "179b6b1cb6755e31",
 				"testing": "0000000000000008"
+			}
+		},
+		"ExampleHandledToken": {
+			"source": "./cadence/contracts/example-assets/ExampleHandledToken.cdc",
+			"aliases": {
+				"emulator": "179b6b1cb6755e31",
+				"testing": "0000000000000011"
 			}
 		},
 		"ExampleToken": {
@@ -97,6 +104,20 @@
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"previewnet": "634acef27f871527",
+				"testing": "0000000000000007"
+			}
+		},
+		"FlowEVMBridgeHandlerInterfaces": {
+			"source": "./cadence/contracts/bridge/interfaces/FlowEVMBridgeHandlerInterfaces.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"testing": "0000000000000007"
+			}
+		},
+		"FlowEVMBridgeHandlers": {
+			"source": "./cadence/contracts/bridge/FlowEVMBridgeHandlers.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
 				"testing": "0000000000000007"
 			}
 		},
@@ -164,7 +185,7 @@
 		"FungibleTokenMetadataViews": {
 			"source": "./cadence/contracts/standards/FungibleTokenMetadataViews.cdc",
 			"aliases": {
-				"emulator": "f8d6e0586b0a20c7",
+				"emulator": "0xee82856bf20e2aa6",
 				"mainnet": "f233dcee88fe0abe",
 				"previewnet": "a0225e7000ac82a9",
 				"testing": "0000000000000002",
@@ -172,7 +193,7 @@
 			}
 		},
 		"ICrossVM": {
-			"source": "./cadence/contracts/bridge/ICrossVM.cdc",
+			"source": "./cadence/contracts/bridge/interfaces/ICrossVM.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"previewnet": "634acef27f871527",
@@ -180,7 +201,7 @@
 			}
 		},
 		"IEVMBridgeNFTMinter": {
-			"source": "./cadence/contracts/bridge/IEVMBridgeNFTMinter.cdc",
+			"source": "./cadence/contracts/bridge/interfaces/IEVMBridgeNFTMinter.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"previewnet": "634acef27f871527",
@@ -188,7 +209,7 @@
 			}
 		},
 		"IEVMBridgeTokenMinter": {
-			"source": "./cadence/contracts/bridge/IEVMBridgeTokenMinter.cdc",
+			"source": "./cadence/contracts/bridge/interfaces/IEVMBridgeTokenMinter.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"previewnet": "634acef27f871527",
@@ -196,7 +217,7 @@
 			}
 		},
 		"IFlowEVMNFTBridge": {
-			"source": "./cadence/contracts/bridge/IFlowEVMNFTBridge.cdc",
+			"source": "./cadence/contracts/bridge/interfaces/IFlowEVMNFTBridge.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"previewnet": "634acef27f871527",
@@ -204,7 +225,7 @@
 			}
 		},
 		"IFlowEVMTokenBridge": {
-			"source": "./cadence/contracts/bridge/IFlowEVMTokenBridge.cdc",
+			"source": "./cadence/contracts/bridge/interfaces/IFlowEVMTokenBridge.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"previewnet": "634acef27f871527",
@@ -326,7 +347,7 @@
 				"ScopedFTProviders",
 				"Serialize",
 				"SerializeMetadata",
-				"BridgePermissions",
+				"IBridgePermissions",
 				"ICrossVM",
 				"CrossVMNFT",
 				"CrossVMToken",
@@ -348,7 +369,16 @@
 				"IEVMBridgeTokenMinter",
 				"IFlowEVMNFTBridge",
 				"IFlowEVMTokenBridge",
-				"FlowEVMBridge"
+				"FlowEVMBridge",
+				{
+					"name": "FlowEVMBridgeAccessor",
+					"args": [
+						{
+							"type": "Address",
+							"value": "0xb6763b4399a888c8"
+						}
+					]
+				}
 			]
 		}
 	}

@@ -180,7 +180,7 @@ access(all) contract {{CONTRACT_NAME}} : ICrossVM, IEVMBridgeTokenMinter, Fungib
             Type<FungibleTokenMetadataViews.FTDisplay>(),
             Type<FungibleTokenMetadataViews.FTVaultData>(),
             Type<FungibleTokenMetadataViews.TotalSupply>(),
-            Type<CrossVMNFT.EVMBridgedMetadata>()
+            Type<MetadataViews.EVMBridgedMetadata>()
         ]
     }
 
@@ -229,11 +229,11 @@ access(all) contract {{CONTRACT_NAME}} : ICrossVM, IEVMBridgeTokenMinter, Fungib
                 return FungibleTokenMetadataViews.TotalSupply(
                     totalSupply: self.totalSupply
                 )
-            case Type<CrossVMNFT.EVMBridgedMetadata>():
-                return CrossVMNFT.EVMBridgedMetadata(
+            case Type<MetadataViews.EVMBridgedMetadata>():
+                return MetadataViews.EVMBridgedMetadata(
                     name: self.name,
                     symbol: self.symbol,
-                    uri: self.contractURI != nil ? CrossVMNFT.URI(baseURI: nil, value: self.contractURI!) : CrossVMNFT.URI(baseURI: nil, value: "")
+                    uri: self.contractURI != nil ? MetadataViews.URI(baseURI: nil, value: self.contractURI!) : MetadataViews.URI(baseURI: nil, value: "")
                 )
         }
         return nil

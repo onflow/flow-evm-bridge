@@ -161,4 +161,43 @@ access(all) contract SerializeMetadata {
             .concat(externalLink).concat(Serialize.tryToJSONString(ftDisplay.externalURL.url)!)
             .concat("}")
     }
+
+    /// Derives a symbol for use as an ERC20 or ERC721 symbol from a given string, presumably a Cadence contract name.
+    /// Derivation is a process of slicing the first 4 characters of the string and converting them to uppercase.
+    ///
+    /// @param fromString: The string from which to derive a symbol
+    ///
+    /// @returns: A derived symbol for use as an ERC20 or ERC721 symbol based on the provided string, presumably a
+    ///    Cadence contract name
+    ///
+    access(all) view fun deriveSymbol(fromString: String): String {
+        let defaultLen = 4
+        let len = fromString.length < defaultLen ? fromString.length : defaultLen
+        return self.toUpper(fromString, upTo: len)
+    }
+
+    /// Returns the uppercase alphanumeric version of a given string.
+    ///
+    access(self) view fun toUpper(_ str: String, upTo: Int?): String {
+        let len = upTo ?? str.length
+        var upper: String = ""
+        for char in str {
+            if upper.length == len {
+                break
+            }
+            let bytes = char.utf8
+            if bytes.length != 1 {
+                continue
+            }
+            if bytes[0] >= 97 && bytes[0] <= 122 {
+                let upperChar = String.fromUTF8([bytes[0] - UInt8(32)])!
+                upper = upper.concat(upperChar)
+            } else if bytes[0] >= 65 && bytes[0] <= 90 {
+                upper = upper.concat(char.toString())
+            } else {
+                continue
+            }
+        }
+        return upper
+    }
 }

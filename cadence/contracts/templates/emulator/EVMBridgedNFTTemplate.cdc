@@ -66,7 +66,7 @@ access(all) contract {{CONTRACT_NAME}} : ICrossVM, IEVMBridgeNFTMinter, NonFungi
         /// Returns the metadata view types supported by this NFT
         access(all) view fun getViews(): [Type] {
             return [
-                Type<CrossVMNFT.EVMBridgedMetadata>(),
+                Type<MetadataViews.EVMBridgedMetadata>(),
                 Type<MetadataViews.Serial>(),
                 Type<MetadataViews.NFTCollectionData>(),
                 Type<MetadataViews.NFTCollectionDisplay>()
@@ -90,11 +90,11 @@ access(all) contract {{CONTRACT_NAME}} : ICrossVM, IEVMBridgeNFTMinter, NonFungi
             switch view {
                 // We don't know what kind of file the URI represents (IPFS v HTTP), so we can't resolve Display view
                 // with the URI as thumbnail - we may a new standard view for EVM NFTs - this is interim
-                case Type<CrossVMNFT.EVMBridgedMetadata>():
-                    return CrossVMNFT.EVMBridgedMetadata(
+                case Type<MetadataViews.EVMBridgedMetadata>():
+                    return MetadataViews.EVMBridgedMetadata(
                         name: self.getName(),
                         symbol: self.getSymbol(),
-                        uri: CrossVMNFT.URI(baseURI: nil, value: self.tokenURI())
+                        uri: MetadataViewsa.URI(baseURI: nil, value: self.tokenURI())
                     )
                 case Type<MetadataViews.Serial>():
                     return MetadataViews.Serial(
@@ -281,7 +281,7 @@ access(all) contract {{CONTRACT_NAME}} : ICrossVM, IEVMBridgeNFTMinter, NonFungi
         return [
             Type<MetadataViews.NFTCollectionData>(),
             Type<MetadataViews.NFTCollectionDisplay>(),
-            Type<CrossVMNFT.EVMBridgedMetadata>()
+            Type<MetadataViews.EVMBridgedMetadata>()
         ]
     }
 
@@ -319,11 +319,11 @@ access(all) contract {{CONTRACT_NAME}} : ICrossVM, IEVMBridgeNFTMinter, NonFungi
                     bannerImage: media,
                     socials: {}
                 )
-            case Type<CrossVMNFT.EVMBridgedMetadata>():
-                return CrossVMNFT.EVMBridgedMetadata(
+            case Type<MetadataViews.EVMBridgedMetadata>():
+                return MetadataViews.EVMBridgedMetadata(
                     name: self.name,
                     symbol: self.symbol,
-                    uri: self.contractURI != nil ? CrossVMNFT.URI(baseURI: nil, value: self.contractURI!) : CrossVMNFT.URI(baseURI: nil, value: "")
+                    uri: self.contractURI != nil ? MetadataViewsa.URI(baseURI: nil, value: self.contractURI!) : MetadataViewsa.URI(baseURI: nil, value: "")
                 )
         }
         return nil
