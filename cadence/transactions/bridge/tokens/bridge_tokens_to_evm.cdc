@@ -13,8 +13,8 @@ import "FlowEVMBridgeUtils"
 
 /// Bridges a Vault from the signer's storage to the signer's COA in EVM.Account.
 ///
-/// NOTE: The Vault being bridged must have first been onboarded to the bridge. This can be checked for with the method
-///     FlowEVMBridge.typeRequiresOnboarding(type): Bool?
+/// NOTE: This transaction also onboards the Vault to the bridge if necessary which may incur additional fees
+///     than bridging an asset that has already been onboarded.
 ///
 /// @param tokenContractAddress: The Flow account address hosting the FT-defining Cadence contract
 /// @param tokenContractName: The name of the Vault-defining Cadence contract
@@ -24,6 +24,7 @@ transaction(tokenContractAddress: Address, tokenContractName: String, amount: UF
 
     let sentVault: @{FungibleToken.Vault}
     let coa: auth(EVM.Bridge) &EVM.CadenceOwnedAccount
+    let requiresOnboarding: Bool
     let scopedProvider: @ScopedFTProviders.ScopedFTProvider
 
     prepare(signer: auth(CopyValue, BorrowValue, IssueStorageCapabilityController, PublishCapability, SaveValue) &Account) {
@@ -51,9 +52,15 @@ transaction(tokenContractAddress: Address, tokenContractName: String, amount: UF
         self.sentVault <- vault.withdraw(amount: amount)
         let withdrawnStorageUsage = signer.storage.used
         // Approximate the bridge fee based on the difference in storage usage with some buffer
-        let approxFee = FlowEVMBridgeUtils.calculateBridgeFee(
+        var approxFee = FlowEVMBridgeUtils.calculateBridgeFee(
                 bytes: currentStorageUsage - withdrawnStorageUsage
             ) * 1.10
+        // Determine if the Vault requires onboarding - this impacts the fee required
+        self.requiresOnboarding = FlowEVMBridge.typeRequiresOnboarding(self.sentVault.getType())
+            ?? panic("Bridge does not support this asset type")
+        if self.requiresOnboarding {
+            approxFee = approxFee + FlowEVMBridgeConfig.onboardFee
+        }
 
         /* --- Configure a ScopedFTProvider --- */
         //
@@ -77,6 +84,13 @@ transaction(tokenContractAddress: Address, tokenContractName: String, amount: UF
     }
 
     execute {
+        if self.requiresOnboarding {
+            // Onboard the Vault to the bridge
+            FlowEVMBridge.onboardByType(
+                self.sentVault.getType(),
+                feeProvider: &self.scopedProvider as auth(FungibleToken.Withdraw) &{FungibleToken.Provider}
+            )
+        }
         // Execute the bridge
         self.coa.depositTokens(
             vault: <-self.sentVault,
