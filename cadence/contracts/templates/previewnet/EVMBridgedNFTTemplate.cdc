@@ -6,13 +6,13 @@ import FlowToken from 0x4445e7ad11568276
 
 import EVM from 0xb6763b4399a888c8
 
-import ICrossVM from 0x634acef27f871527
-import IEVMBridgeNFTMinter from 0x634acef27f871527
-import FlowEVMBridgeNFTEscrow from 0x634acef27f871527
-import FlowEVMBridgeConfig from 0x634acef27f871527
-import FlowEVMBridgeUtils from 0x634acef27f871527
-import FlowEVMBridge from 0x634acef27f871527
-import CrossVMNFT from 0x634acef27f871527
+import ICrossVM from 0x7d29f084fc7b2b84
+import IEVMBridgeNFTMinter from 0x7d29f084fc7b2b84
+import FlowEVMBridgeNFTEscrow from 0x7d29f084fc7b2b84
+import FlowEVMBridgeConfig from 0x7d29f084fc7b2b84
+import FlowEVMBridgeUtils from 0x7d29f084fc7b2b84
+import FlowEVMBridge from 0x7d29f084fc7b2b84
+import CrossVMNFT from 0x7d29f084fc7b2b84
 
 /// This contract is a template used by FlowEVMBridge to define EVM-native NFTs bridged from Flow EVM to Flow.
 /// Upon deployment of this contract, the contract name is derived as a function of the asset type (here an ERC721 aka
