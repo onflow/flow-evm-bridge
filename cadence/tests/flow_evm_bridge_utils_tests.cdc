@@ -158,8 +158,8 @@ fun testZeroUInt256ToUFix64Succeeds() {
 
 access(all)
 fun testZeroUFix64ToUInt256Succeeds() {
-    let zeroUFixAmount: UFix64 = 0.00002547
-    let zeroUIntAmount: UInt256 = 25_470_000_000_000
+    let zeroUFixAmount: UFix64 = 0.0
+    let zeroUIntAmount: UInt256 = 0
 
     let actualUIntAmount = ufix64ToUInt256(zeroUFixAmount, decimals: 18)
     Test.assertEqual(zeroUIntAmount, actualUIntAmount)
