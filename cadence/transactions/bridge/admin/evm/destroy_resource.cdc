@@ -1,5 +1,3 @@
-import "Burner"
-
 /// Destroys the resource at the given storage path.
 ///
 transaction(resourceStoragePath: StoragePath) {
