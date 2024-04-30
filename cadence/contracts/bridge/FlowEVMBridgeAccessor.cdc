@@ -141,36 +141,6 @@ contract FlowEVMBridgeAccessor {
                 protectedTransferCall: callback
             )
         }
-
-        /// Returns a BridgeRouter resource so a Capability on this BridgeAccessor can be stored in the BridgeRouter
-        ///
-        access(EVM.Bridge) fun createBridgeRouter(): @BridgeRouter {
-            return <-create BridgeRouter()
-        }
-    }
-
-    /// BridgeRouter implementation used by the EVM contract to capture a BridgeAccessor Capability and route bridge
-    /// calls from COA resources to the FlowEVMBridge contract
-    ///
-    access(all) resource BridgeRouter : EVM.BridgeRouter {
-        /// Capability to the BridgeAccessor resource, initialized to nil
-        access(self) var bridgeAccessorCap: Capability<auth(EVM.Bridge) &{EVM.BridgeAccessor}>?
-
-        init() {
-            self.bridgeAccessorCap = nil
-        }
-
-        /// Returns an EVM.Bridge entitled reference to the underlying BridgeAccessor resource
-        ///
-        access(EVM.Bridge) view fun borrowBridgeAccessor(): auth(EVM.Bridge) &{EVM.BridgeAccessor} {
-            let cap = self.bridgeAccessorCap ?? panic("BridgeAccessor Capabaility is not yet set")
-            return cap.borrow() ?? panic("Problem retrieving BridgeAccessor reference")
-        }
-
-        /// Sets the BridgeAccessor Capability in the BridgeRouter
-        access(EVM.Bridge) fun setBridgeAccessor(_ accessorCap: Capability<auth(EVM.Bridge) &{EVM.BridgeAccessor}>) {
-            self.bridgeAccessorCap = accessorCap
-        }
     }
 
     init(publishToEVMAccount: Address) {

@@ -609,33 +609,49 @@ contract EVM {
         ): @{FungibleToken.Vault}
     }
 
-    /// Interface which captures a Capability to the bridge Accessor, saving it within the BridgeRouter resource
-    access(all)
-    resource interface BridgeRouter {
+    /// BridgeRouter captures a BridgeAccessor Capability and routes bridge calls from COAs to the BridgeAccessor
+    access(all) resource BridgeRouter {
+        /// Capability to the BridgeAccessor resource, initialized to nil
+        access(self) var bridgeAccessorCap: Capability<auth(Bridge) &{BridgeAccessor}>?
 
-        /// Returns a reference to the BridgeAccessor designated for internal bridge requests
-        access(Bridge) view fun borrowBridgeAccessor(): auth(Bridge) &{BridgeAccessor}
+        init() {
+            self.bridgeAccessorCap = nil
+        }
 
-        /// Sets the BridgeAccessor Capability in the BridgeRouter
-        access(Bridge) fun setBridgeAccessor(_ accessor: Capability<auth(Bridge) &{BridgeAccessor}>) {
+        /// Returns an EVMBridge entitled reference to the underlying BridgeAccessor resource
+        access(Bridge) view fun borrowBridgeAccessor(): auth(Bridge) &{BridgeAccessor} {
+            let cap = self.bridgeAccessorCap ?? panic("BridgeAccessor Capabaility is not yet set")
+            return cap.borrow() ?? panic("Problem retrieving BridgeAccessor reference")
+        }
+
+        /// Sets the BridgeAccessor Capability
+        access(Bridge) fun setBridgeAccessor(_ accessorCap: Capability<auth(Bridge) &{BridgeAccessor}>) {
             pre {
-                accessor.check(): "Invalid BridgeAccessor Capability provided"
+                accessorCap.check(): "Invalid BridgeAccessor Capability provided"
                 emit BridgeAccessorUpdated(
                     routerType: self.getType(),
                     routerUUID: self.uuid,
                     routerAddress: self.owner?.address ?? panic("Router must have an owner to be identified"),
-                    accessorType: accessor.borrow()!.getType(),
-                    accessorUUID: accessor.borrow()!.uuid,
-                    accessorAddress: accessor.address
+                    accessorType: accessorCap.borrow()!.getType(),
+                    accessorUUID: accessorCap.borrow()!.uuid,
+                    accessorAddress: accessorCap.address
                 )
             }
+            self.bridgeAccessorCap = accessorCap
         }
+    }
+
+    access(all) fun initBridgeRouter() {
+        pre {
+            self.account.storage.type(at: /storage/evmBridgeRouter) == nil: "BridgeRouter has already been initialized"
+        }
+        self.account.storage.save(<-create BridgeRouter(), to: /storage/evmBridgeRouter)
     }
 
     /// Returns a reference to the BridgeAccessor designated for internal bridge requests
     access(self)
     view fun borrowBridgeAccessor(): auth(Bridge) &{BridgeAccessor} {
-        return self.account.storage.borrow<auth(Bridge) &{BridgeRouter}>(from: /storage/evmBridgeRouter)
+        return self.account.storage.borrow<auth(Bridge) &BridgeRouter>(from: /storage/evmBridgeRouter)
             ?.borrowBridgeAccessor()
             ?? panic("Could not borrow reference to the EVM bridge")
     }

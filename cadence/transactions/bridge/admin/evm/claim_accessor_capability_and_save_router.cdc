@@ -11,7 +11,7 @@ import "FlowEVMBridgeAccessor"
 transaction(name: String, provider: Address) {
 
     let accessorCap: Capability<auth(EVM.Bridge) &FlowEVMBridgeAccessor.BridgeAccessor>
-    let routerRef: auth(EVM.Bridge) &{EVM.BridgeRouter}
+    let routerRef: auth(EVM.Bridge) &EVM.BridgeRouter
 
     prepare(signer: auth(BorrowValue, ClaimInboxCapability, SaveValue) &Account) {
         let routerStoragePath = /storage/evmBridgeRouter
@@ -29,11 +29,12 @@ transaction(name: String, provider: Address) {
             message: "Collision where BridgeRouter will be stored"
         )
 
-        let router <-self.accessorCap.borrow()!.createBridgeRouter()
-        signer.storage.save(<-router, to: routerStoragePath)
+        if signer.storage.type(at: routerStoragePath) == nil {
+            EVM.initBridgeRouter()
+        }
 
         // Borrow the router from storage and set the BridgeAccessor Capability
-        self.routerRef = signer.storage.borrow<auth(EVM.Bridge) &{EVM.BridgeRouter}>(from: routerStoragePath)
+        self.routerRef = signer.storage.borrow<auth(EVM.Bridge) &EVM.BridgeRouter>(from: routerStoragePath)
             ?? panic("BridgeRouter not found in storage")
     }
 
