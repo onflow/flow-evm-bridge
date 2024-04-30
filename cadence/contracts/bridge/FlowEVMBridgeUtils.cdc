@@ -883,7 +883,6 @@ contract FlowEVMBridgeUtils {
         let fractionalMultiplier = self.ufixPow(base: 0.1, exponent: decimals - e - fractionalReduction)
         let scaledFractional = UFix64(fractional) * fractionalMultiplier
 
-        assert(scaledFractional < 1.0, message: "Scaled fractional exceeds 1.0")
         return scaledFractional
     }
 
