@@ -256,8 +256,8 @@ contract FlowEVMBridgeUtils {
     ///
     access(all)
     fun isValidEVMAsset(evmContractAddress: EVM.EVMAddress): Bool {
-        let isERC721 = FlowEVMBridgeUtils.isERC721(evmContractAddress: evmContractAddress)
-        let isERC20 = FlowEVMBridgeUtils.isERC20(evmContractAddress: evmContractAddress)
+        let isERC721 = self.isERC721(evmContractAddress: evmContractAddress)
+        let isERC20 = self.isERC20(evmContractAddress: evmContractAddress)
         return (isERC721 && !isERC20) || (!isERC721 && isERC20)
     }
 
@@ -280,7 +280,7 @@ contract FlowEVMBridgeUtils {
     ///
     access(all)
     view fun getBridgeCOAEVMAddress(): EVM.EVMAddress {
-        return FlowEVMBridgeUtils.borrowCOA().address()
+        return self.borrowCOA().address()
     }
 
     /// Retrieves the relevant information for onboarding a Cadence asset to the bridge. This method is used to
@@ -303,10 +303,10 @@ contract FlowEVMBridgeUtils {
         let isNFT = forAssetType.isSubtype(of: Type<@{NonFungibleToken.NFT}>())
 
         // Retrieve the Cadence type's defining contract name, address, & its identifier
-        var name = FlowEVMBridgeUtils.getContractName(fromType: forAssetType)
+        var name = self.getContractName(fromType: forAssetType)
             ?? panic("Could not contract name from type: ".concat(forAssetType.identifier))
         let identifier = forAssetType.identifier
-        let cadenceAddress = FlowEVMBridgeUtils.getContractAddress(fromType: forAssetType)
+        let cadenceAddress = self.getContractAddress(fromType: forAssetType)
             ?? panic("Could not derive contract address for token type: ".concat(identifier))
         // Initialize asset symbol which will be assigned later
         // based on presence of asset-defined metadata
@@ -607,7 +607,7 @@ contract FlowEVMBridgeUtils {
     fun erc721Exists(erc721Address: EVM.EVMAddress, id: UInt256): Bool {
         let existsResponse = EVM.decodeABI(
                 types: [Type<Bool>()],
-                data: FlowEVMBridgeUtils.call(
+                data: self.call(
                     signature: "exists(uint256)",
                     targetEVMAddress: erc721Address,
                     args: [id],
@@ -793,31 +793,82 @@ contract FlowEVMBridgeUtils {
         return r
     }
 
+    /// Raises the fixed point base to the power of the exponent
+    ///
+    access(all)
+    view fun ufixPow(base: UFix64, exponent: UInt8): UFix64 {
+        if exponent == 0 {
+            return 1.0
+        }
+
+        var r = base
+        var exp: UInt8 = 1
+        while exp < exponent {
+            r = r * base
+            exp = exp + 1
+        }
+
+        return r
+    }
+
     /// Converts a UInt256 to a UFix64
     ///
     access(all)
     view fun uint256ToUFix64(value: UInt256, decimals: UInt8): UFix64 {
-        let scaleFactor: UInt256 = self.pow(base: 10, exponent: decimals)
-        let scaledValue: UInt256 = value / scaleFactor
+        // Calculate scale factors for the integer and fractional parts
+        let absoluteScaleFactor = self.pow(base: 10, exponent: decimals)
+
+        // Separate the integer and fractional parts of the value
+        let scaledValue = value / absoluteScaleFactor
+        var fractional = value % absoluteScaleFactor
+
+        var e: UInt8 = 0
+        while fractional > 0 {
+            if fractional % 10 == 0 {
+                fractional = fractional / 10
+                e = e + 1
+            } else {
+                break
+            }
+        }
 
         assert(
-            scaledValue < UInt256(UInt64.max),
-            message: "Value ".concat(value.toString()).concat(" exceeds max UFix64 value")
+            scaledValue < UInt256(UFix64.max),
+            message: "Scaled integer value ".concat(value.toString()).concat(" exceeds max UFix64 value")
+        )
+        assert(
+            fractional < UInt256(UFix64.max),
+            message: "Fractional ".concat(value.toString()).concat(" exceeds max UFix64 value")
         )
 
-        return UFix64(scaledValue)
+        // Scale and add fractional part
+        let fractionalMultiplier = self.ufixPow(base: 0.1, exponent: decimals - e)
+        let scaledFractional: UFix64 = UFix64(fractional) * fractionalMultiplier
+        assert(scaledFractional < 1.0, message: "Scaled fractional exceeds 1.0")
+
+        return UFix64(scaledValue) + scaledFractional
     }
 
     /// Converts a UFix64 to a UInt256
     //
     access(all)
-    view fun ufix64ToUInt256(value: UFix64, decimals: UInt8): UInt256 {
-        let integerPart: UInt64 = UInt64(value)
-        var r = UInt256(integerPart)
+    fun ufix64ToUInt256(value: UFix64, decimals: UInt8): UInt256 {
+        // Default to 10e8 scale, catching instances where decimals are less than default and scale appropriately
+        let ufixScaleExp: UInt8 = decimals < 8 ? decimals : 8
+        var ufixScale = self.ufixPow(base: 10.0, exponent: ufixScaleExp)
 
-        var multiplier: UInt256 = self.pow(base:10, exponent: decimals)
-        return r * multiplier
+        // Separate the fractional and integer parts of the UFix64
+        let integer = UInt256(value)
+        var fractional = (value % 1.0) * ufixScale
+
+        // Calculate the scale for integer and fractional parts
+        var integerMultiplier: UInt256 = self.pow(base:10, exponent: decimals)
+        let fractionalMultiplierExp: UInt8 = decimals < 8 ? decimals : decimals - 8
+        var fractionalMultiplier: UInt256 = self.pow(base:10, exponent: fractionalMultiplierExp)
+
+        return integer > 0 ? integer * integerMultiplier + UInt256(fractional) : fractionalMultiplier * UInt256(fractional)
     }
+
 
     /// Returns the value as a UInt64 if it fits, otherwise panics
     ///
@@ -979,7 +1030,7 @@ contract FlowEVMBridgeUtils {
         assert(bridgePreStatus, message: "Bridge COA does not own ERC721 requesting to be transferred")
         assert(!toPreStatus, message: "Recipient already owns ERC721 attempting to be transferred")
         
-        let transferResult: EVM.Result = FlowEVMBridgeUtils.call(
+        let transferResult: EVM.Result = self.call(
             signature: "safeTransferFrom(address,address,uint256)",
             targetEVMAddress: erc721Address,
             args: [bridgeCOAAddress, to, id],
@@ -1004,7 +1055,7 @@ contract FlowEVMBridgeUtils {
     fun mustSafeMintERC721(erc721Address: EVM.EVMAddress, to: EVM.EVMAddress, id: UInt256, uri: String) {
         let bridgeCOAAddress = self.getBridgeCOAEVMAddress()
 
-        let mintResult: EVM.Result = FlowEVMBridgeUtils.call(
+        let mintResult: EVM.Result = self.call(
             signature: "safeMint(address,uint256,string)",
             targetEVMAddress: erc721Address,
             args: [to, id, uri],
@@ -1025,7 +1076,7 @@ contract FlowEVMBridgeUtils {
     fun mustUpdateTokenURI(erc721Address: EVM.EVMAddress, id: UInt256, uri: String) {
         let bridgeCOAAddress = self.getBridgeCOAEVMAddress()
 
-        let updateResult: EVM.Result = FlowEVMBridgeUtils.call(
+        let updateResult: EVM.Result = self.call(
             signature: "updateTokenURI(uint256,string)",
             targetEVMAddress: erc721Address,
             args: [id, uri],
@@ -1063,9 +1114,9 @@ contract FlowEVMBridgeUtils {
     ///
     access(account)
     fun mustMintERC20(to: EVM.EVMAddress, amount: UInt256, erc20Address: EVM.EVMAddress) {
-        let toPreBalance = FlowEVMBridgeUtils.balanceOf(owner: to, evmContractAddress: erc20Address)
+        let toPreBalance = self.balanceOf(owner: to, evmContractAddress: erc20Address)
         // Mint tokens to the recipient
-        let mintResult: EVM.Result = FlowEVMBridgeUtils.call(
+        let mintResult: EVM.Result = self.call(
             signature: "mint(address,uint256)",
             targetEVMAddress: erc20Address,
             args: [to, amount],
@@ -1074,7 +1125,7 @@ contract FlowEVMBridgeUtils {
         )
         assert(mintResult.status == EVM.Status.successful, message: "Mint to bridge ERC20 contract failed")
         // Ensure bridge to recipient was succcessful
-        let toPostBalance = FlowEVMBridgeUtils.balanceOf(owner: to, evmContractAddress: erc20Address)
+        let toPostBalance = self.balanceOf(owner: to, evmContractAddress: erc20Address)
         assert(
             toPostBalance == toPreBalance + amount,
             message: "Recipient didn't receive minted ERC20 tokens during bridging"
@@ -1088,14 +1139,14 @@ contract FlowEVMBridgeUtils {
     fun mustTransferERC20(to: EVM.EVMAddress, amount: UInt256, erc20Address: EVM.EVMAddress) {
         let bridgeCOAAddress = self.getBridgeCOAEVMAddress()
 
-        let toPreBalance = FlowEVMBridgeUtils.balanceOf(owner: to, evmContractAddress: erc20Address)
-        let escrowPreBalance = FlowEVMBridgeUtils.balanceOf(
+        let toPreBalance = self.balanceOf(owner: to, evmContractAddress: erc20Address)
+        let escrowPreBalance = self.balanceOf(
             owner: bridgeCOAAddress,
             evmContractAddress: erc20Address
         )
 
         // Transfer tokens to the recipient
-        let transferResult: EVM.Result = FlowEVMBridgeUtils.call(
+        let transferResult: EVM.Result = self.call(
             signature: "transfer(address,uint256)",
             targetEVMAddress: erc20Address,
             args: [to, amount],
@@ -1105,8 +1156,8 @@ contract FlowEVMBridgeUtils {
         assert(transferResult.status == EVM.Status.successful, message: "transfer call to ERC20 contract failed")
 
         // Ensure bridge to recipient was succcessful
-        let toPostBalance = FlowEVMBridgeUtils.balanceOf(owner: to, evmContractAddress: erc20Address)
-        let escrowPostBalance = FlowEVMBridgeUtils.balanceOf(
+        let toPostBalance = self.balanceOf(owner: to, evmContractAddress: erc20Address)
+        let escrowPostBalance = self.balanceOf(
             owner: bridgeCOAAddress,
             evmContractAddress: erc20Address
         )
@@ -1132,7 +1183,7 @@ contract FlowEVMBridgeUtils {
         protectedTransferCall: fun (): EVM.Result
     ) {
         // Ensure the caller is has sufficient balance to bridge the requested amount
-        let hasSufficientBalance = FlowEVMBridgeUtils.hasSufficientBalance(
+        let hasSufficientBalance = self.hasSufficientBalance(
             amount: amount,
             owner: owner,
             evmContractAddress: erc20Address
@@ -1140,9 +1191,9 @@ contract FlowEVMBridgeUtils {
         assert(hasSufficientBalance, message: "Caller does not have sufficient balance to bridge requested tokens")
 
         // Get the owner and escrow balances before transfer
-        let ownerPreBalance = FlowEVMBridgeUtils.balanceOf(owner: owner, evmContractAddress: erc20Address)
-        let bridgePreBalance = FlowEVMBridgeUtils.balanceOf(
-                owner: FlowEVMBridgeUtils.getBridgeCOAEVMAddress(),
+        let ownerPreBalance = self.balanceOf(owner: owner, evmContractAddress: erc20Address)
+        let bridgePreBalance = self.balanceOf(
+                owner: self.getBridgeCOAEVMAddress(),
                 evmContractAddress: erc20Address
             )
 
@@ -1151,9 +1202,9 @@ contract FlowEVMBridgeUtils {
         assert(transferResult.status == EVM.Status.successful, message: "Transfer via callback failed")
 
         // Get the resulting balances after transfer
-        let ownerPostBalance = FlowEVMBridgeUtils.balanceOf(owner: owner, evmContractAddress: erc20Address)
-        let bridgePostBalance = FlowEVMBridgeUtils.balanceOf(
-                owner: FlowEVMBridgeUtils.getBridgeCOAEVMAddress(),
+        let ownerPostBalance = self.balanceOf(owner: owner, evmContractAddress: erc20Address)
+        let bridgePostBalance = self.balanceOf(
+                owner: self.getBridgeCOAEVMAddress(),
                 evmContractAddress: erc20Address
             )
 
@@ -1174,9 +1225,9 @@ contract FlowEVMBridgeUtils {
         isERC721: Bool
     ): EVM.EVMAddress {
         let signature = isERC721 ? "deployERC721(string,string,string,string,string)" : "deployERC20(string,string,string,string,string)"
-        let deployResult: EVM.Result = FlowEVMBridgeUtils.call(
+        let deployResult: EVM.Result = self.call(
             signature: signature,
-            targetEVMAddress: FlowEVMBridgeUtils.bridgeFactoryEVMAddress,
+            targetEVMAddress: self.bridgeFactoryEVMAddress,
             args: [name, symbol, cadenceAddress.toString(), flowIdentifier, contractURI],
             gasLimit: 15000000,
             value: 0.0
