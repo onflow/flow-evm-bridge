@@ -19,7 +19,7 @@
 		"Burner": {
 			"source": "./cadence/contracts/standards/Burner.cdc",
 			"aliases": {
-				"emulator": "ee82856bf20e2aa6",
+				"emulator": "f8d6e0586b0a20c7",
 				"previewnet": "b6763b4399a888c8",
 				"testing": "0000000000000001"
 			}
