@@ -146,3 +146,21 @@ fun testDustUFix64ToUInt256Succeeds() {
     let actualUIntAmount = ufix64ToUInt256(dustUFixAmount, decimals: 18)
     Test.assert(actualUIntAmount == dustUIntAmount && actualUIntAmount > 0)
 }
+
+access(all)
+fun testZeroUInt256ToUFix64Succeeds() {
+    let zeroUFixAmount: UFix64 = 0.0
+    let zeroUIntAmount: UInt256 = 0
+
+    let actualUFixAmount = uint256ToUFix64(zeroUIntAmount, decimals: 18)
+    Test.assertEqual(zeroUFixAmount, actualUFixAmount)
+}
+
+access(all)
+fun testZeroUFix64ToUInt256Succeeds() {
+    let zeroUFixAmount: UFix64 = 0.00002547
+    let zeroUIntAmount: UInt256 = 25_470_000_000_000
+
+    let actualUIntAmount = ufix64ToUInt256(zeroUFixAmount, decimals: 18)
+    Test.assertEqual(zeroUIntAmount, actualUIntAmount)
+}
