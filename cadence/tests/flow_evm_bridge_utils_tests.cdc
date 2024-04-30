@@ -122,7 +122,6 @@ fun testReducedPrecisionUInt256ToUFix64Succeeds() {
 access(all)
 fun testReducedPrecisionUFix64ToUInt256Succeeds() {
     let uintAmount: UInt256 = 24_244_814_054_591
-    // let uintAmount: UInt256 = 24_299_405_000_000
     let ufixAmount: UFix64 = 24_244_814.05459154
 
     let actualUIntAmount = ufix64ToUInt256(ufixAmount, decimals: 6)
@@ -200,7 +199,7 @@ access(all)
 fun testlargeFractionalUFix64ToUInt256Succeeds() {
     let largeFractionalUFixAmount: UFix64 = 1.99785982
     let largeFractionalUIntAmount: UInt256 = 1_997_859_820_000_000_000
-    // let largeFractionalUIntAmount: UInt256 = 1_000_000_000_099_785_982
+    // let largeFractionalUIntAmount: UInt256 = 1,997,859,820,000,000,000
 
     log("testlargeFractionalUFix64ToUInt256Succeeds")
 

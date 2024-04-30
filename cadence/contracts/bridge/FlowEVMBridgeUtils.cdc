@@ -828,7 +828,6 @@ contract FlowEVMBridgeUtils {
             message: "Scaled integer value ".concat(value.toString()).concat(" exceeds max UFix64 value")
         )
 
-
         return UFix64(scaledValue) + scaledFractional
     }
 
@@ -844,16 +843,23 @@ contract FlowEVMBridgeUtils {
         let integer = UInt256(value)
         var fractional = (value % 1.0) * ufixScale
 
-        // Calculate the scale for integer and fractional parts
+        // Calculate the multiplier for integer and fractional parts
         var integerMultiplier: UInt256 = self.pow(base:10, exponent: decimals)
-        let fractionalMultiplierExp: UInt8 = decimals < 8 ? decimals : decimals - 8
+        let fractionalMultiplierExp: UInt8 = decimals < 8 ? 0 : decimals - 8
         var fractionalMultiplier: UInt256 = self.pow(base:10, exponent: fractionalMultiplierExp)
 
-        return integer > 0 ? integer * integerMultiplier + UInt256(fractional) : fractionalMultiplier * UInt256(fractional)
+        // Scale and sum the parts
+        return integer * integerMultiplier + UInt256(fractional) * fractionalMultiplier
     }
 
+    /// Converts a UInt256 fractional value with the given decimal places to a scaled UFix64. Note that UFix64 has
+    /// decimal precision of 8 places so converted values may lose precision and be rounded down.
+    ///
     access(all)
     view fun uint256FractionalToScaledUFix64Decimals(value: UInt256, decimals: UInt8): UFix64 {
+        post {
+            result < 1.0: "Scaled fractional exceeds 1.0"
+        }
         var fractional = value
         // Reduce fractional values with trailing zeros
         var e: UInt8 = 0
@@ -866,17 +872,18 @@ contract FlowEVMBridgeUtils {
             }
         }
 
-        // fractional is too long - since UFix64 has 8 decimal places, truncate and assign the first 8 digits
+        // fractional is too long - since UFix64 has 8 decimal places, truncate to maintain only the first 8 digis
         var fractionalReduction: UInt8 = 0
         while fractional > 99999999 {
             fractional = fractional / 10
             fractionalReduction = fractionalReduction + 1
         }
 
+        // Scale the fractional part
         let fractionalMultiplier = self.ufixPow(base: 0.1, exponent: decimals - e - fractionalReduction)
         let scaledFractional = UFix64(fractional) * fractionalMultiplier
-        assert(scaledFractional < 1.0, message: "Scaled fractional exceeds 1.0")
 
+        assert(scaledFractional < 1.0, message: "Scaled fractional exceeds 1.0")
         return scaledFractional
     }
 
