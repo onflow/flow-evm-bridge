@@ -823,7 +823,7 @@ contract FlowEVMBridgeUtils {
         var fractional = value % absoluteScaleFactor
 
         var e: UInt8 = 0
-        while true {
+        while fractional > 0 {
             if fractional % 10 == 0 {
                 fractional = fractional / 10
                 e = e + 1
