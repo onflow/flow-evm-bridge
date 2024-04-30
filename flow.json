@@ -343,23 +343,15 @@
 						}
 					]
 				},
+				"FlowEVMBridgeHandlerInterfaces",
+				"FlowEVMBridgeHandlers",
 				"FlowEVMBridgeNFTEscrow",
 				"FlowEVMBridgeTokenEscrow",
 				"FlowEVMBridgeTemplates",
 				"IEVMBridgeNFTMinter",
 				"IEVMBridgeTokenMinter",
 				"IFlowEVMNFTBridge",
-				"IFlowEVMTokenBridge",
-				"FlowEVMBridge",
-				{
-					"name": "FlowEVMBridgeAccessor",
-					"args": [
-						{
-							"type": "Address",
-							"value": "0xb6763b4399a888c8"
-						}
-					]
-				}
+				"IFlowEVMTokenBridge"
 			]
 		}
 	}
