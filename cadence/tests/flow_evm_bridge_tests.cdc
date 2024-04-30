@@ -502,7 +502,8 @@ fun testOnboardAndBridgeNFTToEVMSucceeds() {
         contractAddr: exampleNFTAccount.address,
         contractName: "ExampleNFT",
         nftID: aliceID,
-        bridgeAccountAddr: bridgeAccount.address
+        bridgeAccountAddr: bridgeAccount.address,
+        beFailed: false
     )
 
     requiresOnboarding = typeRequiresOnboardingByIdentifier(exampleNFTIdentifier)
