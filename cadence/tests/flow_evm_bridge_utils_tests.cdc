@@ -115,7 +115,7 @@ fun testReducedPrecisionUInt256ToUFix64Succeeds() {
     let ufixAmount: UFix64 = 24_244_814.05459100
 
     let actualUFixAmount = uint256ToUFix64(uintAmount, decimals: 6)
-    Test.assert(actualUFixAmount == ufixAmount)
+    Test.assertEqual(ufixAmount, actualUFixAmount)
 }
 
 // Converting from UFix64 to UInt256 with reduced point precision (6 vs. 8) should round down
@@ -125,7 +125,7 @@ fun testReducedPrecisionUFix64ToUInt256Succeeds() {
     let ufixAmount: UFix64 = 24_244_814.05459154
 
     let actualUIntAmount = ufix64ToUInt256(ufixAmount, decimals: 6)
-    Test.assert(actualUIntAmount == uintAmount)
+    Test.assertEqual(uintAmount, actualUIntAmount)
 }
 
 access(all)
@@ -134,8 +134,8 @@ fun testDustUInt256ToUFix64Succeeds() {
     let dustUIntAmount: UInt256 = 25_470_000_000_000
 
     let actualUFixAmount = uint256ToUFix64(dustUIntAmount, decimals: 18)
-    assert(actualUFixAmount <= dustUFixAmount, message: "Actual UFix amount greater: ".concat(actualUFixAmount.toString()))
-    assert(actualUFixAmount > 0.0, message: "Actual UFix zero: ".concat(actualUFixAmount.toString()))
+    Test.assertEqual(dustUFixAmount, actualUFixAmount)
+    Test.assert(actualUFixAmount > 0.0)
 }
 
 access(all)
@@ -144,7 +144,8 @@ fun testDustUFix64ToUInt256Succeeds() {
     let dustUIntAmount: UInt256 = 25_470_000_000_000
 
     let actualUIntAmount = ufix64ToUInt256(dustUFixAmount, decimals: 18)
-    Test.assert(actualUIntAmount == dustUIntAmount && actualUIntAmount > 0)
+    Test.assertEqual(dustUIntAmount, actualUIntAmount)
+    Test.assert(actualUIntAmount > 0)
 }
 
 access(all)
@@ -163,4 +164,45 @@ fun testZeroUFix64ToUInt256Succeeds() {
 
     let actualUIntAmount = ufix64ToUInt256(zeroUFixAmount, decimals: 18)
     Test.assertEqual(zeroUIntAmount, actualUIntAmount)
+}
+
+access(all)
+fun testNonFractionalUInt256ToUFix64Succeeds() {
+    let nonFractionalUFixAmount: UFix64 = 100.0
+    let nonFractionalUIntAmount: UInt256 = 100_000_000_000_000_000_000
+
+    let actualUFixAmount = uint256ToUFix64(nonFractionalUIntAmount, decimals: 18)
+    Test.assertEqual(nonFractionalUFixAmount, actualUFixAmount)
+}
+
+access(all)
+fun testNonFractionalUFix64ToUInt256Succeeds() {
+    let nonFractionalUFixAmount: UFix64 = 100.0
+    let nonFractionalUIntAmount: UInt256 = 100_000_000_000_000_000_000
+
+    let actualUIntAmount = ufix64ToUInt256(nonFractionalUFixAmount, decimals: 18)
+    Test.assertEqual(nonFractionalUIntAmount, actualUIntAmount)
+}
+
+access(all)
+fun testLargeFractionalUInt256ToUFix64Succeeds() {
+    let largeFractionalUFixAmount: UFix64 = 1.99785982
+    let largeFractionalUIntAmount: UInt256 = 1_997_859_829_999_999_999
+
+    log("testLargeFractionalUInt256ToUFix64Succeeds")
+
+    let actualUFixAmount = uint256ToUFix64(largeFractionalUIntAmount, decimals: 18)
+    Test.assertEqual(largeFractionalUFixAmount, actualUFixAmount)
+}
+
+access(all)
+fun testlargeFractionalUFix64ToUInt256Succeeds() {
+    let largeFractionalUFixAmount: UFix64 = 1.99785982
+    let largeFractionalUIntAmount: UInt256 = 1_997_859_820_000_000_000
+    // let largeFractionalUIntAmount: UInt256 = 1,997,859,820,000,000,000
+
+    log("testlargeFractionalUFix64ToUInt256Succeeds")
+
+    let actualUIntAmount = ufix64ToUInt256(largeFractionalUFixAmount, decimals: 18)
+    Test.assertEqual(largeFractionalUIntAmount, actualUIntAmount)
 }
