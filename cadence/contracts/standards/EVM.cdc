@@ -618,7 +618,7 @@ contract EVM {
             self.bridgeAccessorCap = nil
         }
 
-        /// Returns an EVMBridge entitled reference to the underlying BridgeAccessor resource
+        /// Returns a Bridge entitled reference to the underlying BridgeAccessor resource
         access(Bridge) view fun borrowBridgeAccessor(): auth(Bridge) &{BridgeAccessor} {
             let cap = self.bridgeAccessorCap ?? panic("BridgeAccessor Capabaility is not yet set")
             return cap.borrow() ?? panic("Problem retrieving BridgeAccessor reference")
@@ -641,6 +641,7 @@ contract EVM {
         }
     }
 
+    /// Initializes the BridgeRouter resource. Can only be executed if there is not already a BridgeRouter resource.
     access(all) fun initBridgeRouter() {
         pre {
             self.account.storage.type(at: /storage/evmBridgeRouter) == nil: "BridgeRouter has already been initialized"
