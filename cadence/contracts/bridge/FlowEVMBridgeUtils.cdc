@@ -821,7 +821,47 @@ contract FlowEVMBridgeUtils {
         // Separate the integer and fractional parts of the value
         let scaledValue = value / absoluteScaleFactor
         var fractional = value % absoluteScaleFactor
+        let scaledFractional = self.uint256FractionalToScaledUFix64Decimals(value: fractional, decimals: decimals)
 
+        assert(
+            scaledValue < UInt256(UFix64.max),
+            message: "Scaled integer value ".concat(value.toString()).concat(" exceeds max UFix64 value")
+        )
+
+        return UFix64(scaledValue) + scaledFractional
+    }
+
+    /// Converts a UFix64 to a UInt256
+    //
+    access(all)
+    view fun ufix64ToUInt256(value: UFix64, decimals: UInt8): UInt256 {
+        // Default to 10e8 scale, catching instances where decimals are less than default and scale appropriately
+        let ufixScaleExp: UInt8 = decimals < 8 ? decimals : 8
+        var ufixScale = self.ufixPow(base: 10.0, exponent: ufixScaleExp)
+
+        // Separate the fractional and integer parts of the UFix64
+        let integer = UInt256(value)
+        var fractional = (value % 1.0) * ufixScale
+
+        // Calculate the multiplier for integer and fractional parts
+        var integerMultiplier: UInt256 = self.pow(base:10, exponent: decimals)
+        let fractionalMultiplierExp: UInt8 = decimals < 8 ? 0 : decimals - 8
+        var fractionalMultiplier: UInt256 = self.pow(base:10, exponent: fractionalMultiplierExp)
+
+        // Scale and sum the parts
+        return integer * integerMultiplier + UInt256(fractional) * fractionalMultiplier
+    }
+
+    /// Converts a UInt256 fractional value with the given decimal places to a scaled UFix64. Note that UFix64 has
+    /// decimal precision of 8 places so converted values may lose precision and be rounded down.
+    ///
+    access(all)
+    view fun uint256FractionalToScaledUFix64Decimals(value: UInt256, decimals: UInt8): UFix64 {
+        post {
+            result < 1.0: "Scaled fractional exceeds 1.0"
+        }
+        var fractional = value
+        // Reduce fractional values with trailing zeros
         var e: UInt8 = 0
         while fractional > 0 {
             if fractional % 10 == 0 {
@@ -832,41 +872,18 @@ contract FlowEVMBridgeUtils {
             }
         }
 
-        assert(
-            scaledValue < UInt256(UFix64.max),
-            message: "Scaled integer value ".concat(value.toString()).concat(" exceeds max UFix64 value")
-        )
-        assert(
-            fractional < UInt256(UFix64.max),
-            message: "Fractional ".concat(value.toString()).concat(" exceeds max UFix64 value")
-        )
+        // fractional is too long - since UFix64 has 8 decimal places, truncate to maintain only the first 8 digis
+        var fractionalReduction: UInt8 = 0
+        while fractional > 99999999 {
+            fractional = fractional / 10
+            fractionalReduction = fractionalReduction + 1
+        }
 
-        // Scale and add fractional part
-        let fractionalMultiplier = self.ufixPow(base: 0.1, exponent: decimals - e)
-        let scaledFractional: UFix64 = UFix64(fractional) * fractionalMultiplier
-        assert(scaledFractional < 1.0, message: "Scaled fractional exceeds 1.0")
+        // Scale the fractional part
+        let fractionalMultiplier = self.ufixPow(base: 0.1, exponent: decimals - e - fractionalReduction)
+        let scaledFractional = UFix64(fractional) * fractionalMultiplier
 
-        return UFix64(scaledValue) + scaledFractional
-    }
-
-    /// Converts a UFix64 to a UInt256
-    //
-    access(all)
-    fun ufix64ToUInt256(value: UFix64, decimals: UInt8): UInt256 {
-        // Default to 10e8 scale, catching instances where decimals are less than default and scale appropriately
-        let ufixScaleExp: UInt8 = decimals < 8 ? decimals : 8
-        var ufixScale = self.ufixPow(base: 10.0, exponent: ufixScaleExp)
-
-        // Separate the fractional and integer parts of the UFix64
-        let integer = UInt256(value)
-        var fractional = (value % 1.0) * ufixScale
-
-        // Calculate the scale for integer and fractional parts
-        var integerMultiplier: UInt256 = self.pow(base:10, exponent: decimals)
-        let fractionalMultiplierExp: UInt8 = decimals < 8 ? decimals : decimals - 8
-        var fractionalMultiplier: UInt256 = self.pow(base:10, exponent: fractionalMultiplierExp)
-
-        return integer > 0 ? integer * integerMultiplier + UInt256(fractional) : fractionalMultiplier * UInt256(fractional)
+        return scaledFractional
     }
 
 
@@ -1029,7 +1046,7 @@ contract FlowEVMBridgeUtils {
         let toPreStatus = self.isOwner(ofNFT: id, owner: to, evmContractAddress: erc721Address)
         assert(bridgePreStatus, message: "Bridge COA does not own ERC721 requesting to be transferred")
         assert(!toPreStatus, message: "Recipient already owns ERC721 attempting to be transferred")
-        
+
         let transferResult: EVM.Result = self.call(
             signature: "safeTransferFrom(address,address,uint256)",
             targetEVMAddress: erc721Address,
