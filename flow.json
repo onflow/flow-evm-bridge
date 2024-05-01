@@ -8,18 +8,10 @@
 				"testing": "0000000000000007"
 			}
 		},
-		"IBridgePermissions": {
-			"source": "./cadence/contracts/bridge/interfaces/IBridgePermissions.cdc",
-			"aliases": {
-				"emulator": "f8d6e0586b0a20c7",
-				"previewnet": "634acef27f871527",
-				"testing": "0000000000000007"
-			}
-		},
 		"Burner": {
 			"source": "./cadence/contracts/standards/Burner.cdc",
 			"aliases": {
-				"emulator": "ee82856bf20e2aa6",
+				"emulator": "f8d6e0586b0a20c7",
 				"previewnet": "b6763b4399a888c8",
 				"testing": "0000000000000001"
 			}
@@ -62,24 +54,21 @@
 				"testing": "0000000000000007"
 			}
 		},
-		"ExampleNFT": {
-			"source": "./cadence/contracts/example-assets/ExampleNFT.cdc",
-			"aliases": {
-				"emulator": "179b6b1cb6755e31",
-				"testing": "0000000000000008"
-			}
-		},
 		"ExampleHandledToken": {
 			"source": "./cadence/contracts/example-assets/ExampleHandledToken.cdc",
 			"aliases": {
-				"emulator": "179b6b1cb6755e31",
 				"testing": "0000000000000011"
+			}
+		},
+		"ExampleNFT": {
+			"source": "./cadence/contracts/example-assets/ExampleNFT.cdc",
+			"aliases": {
+				"testing": "0000000000000008"
 			}
 		},
 		"ExampleToken": {
 			"source": "./cadence/contracts/example-assets/ExampleToken.cdc",
 			"aliases": {
-				"emulator": "179b6b1cb6755e31",
 				"testing": "0000000000000010"
 			}
 		},
@@ -185,11 +174,19 @@
 		"FungibleTokenMetadataViews": {
 			"source": "./cadence/contracts/standards/FungibleTokenMetadataViews.cdc",
 			"aliases": {
-				"emulator": "0xee82856bf20e2aa6",
+				"emulator": "ee82856bf20e2aa6",
 				"mainnet": "f233dcee88fe0abe",
 				"previewnet": "a0225e7000ac82a9",
 				"testing": "0000000000000002",
 				"testnet": "9a0766d93b6608b7"
+			}
+		},
+		"IBridgePermissions": {
+			"source": "./cadence/contracts/bridge/interfaces/IBridgePermissions.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"previewnet": "634acef27f871527",
+				"testing": "0000000000000007"
 			}
 		},
 		"ICrossVM": {
@@ -311,18 +308,6 @@
 			"address": "0ae53cb6e3f42a79",
 			"key": "c1e4c9d9dca9e4d5e9b0b5a9a8e8b9c5d6f4a8b9c5d6f4a8b9c5d6f4a8b9c5d6"
 		},
-		"emulator-ft": {
-			"address": "ee82856bf20e2aa6",
-			"key": "686779d775e5fcbf8d2f4a85cb4c53525d02b7ef53230d180fc16f35d9b7d025"
-		},
-		"erc721": {
-			"address": "e03daebed8ca0615",
-			"key": "bf602a4cdffb5610a008622f6601ba7059f8a6f533d7489457deb3d45875acb0"
-		},
-		"example-nft": {
-			"address": "179b6b1cb6755e31",
-			"key": "96dfbadf086daa187100a24b1fd2b709b702954bbd030a394148e11bcbb799ef"
-		},
 		"flow-evm-bridge-previewnet": {
 			"address": "634acef27f871527",
 			"key": {
@@ -330,10 +315,6 @@
 				"hashAlgorithm": "SHA2_256",
 				"resourceID": "projects/dl-flow-admin/locations/global/keyRings/flow-vm-bridge/cryptoKeys/flow-fvm-evm-bridge-previewnet/cryptoKeyVersions/1"
 			}
-		},
-		"user": {
-			"address": "f3fcd2c1a78f5eee",
-			"key": "bce84aae316aec618888e5bdd24a3c8b8af46896c1ebe457e2f202a4a9c43075"
 		}
 	},
 	"deployments": {
@@ -362,23 +343,15 @@
 						}
 					]
 				},
+				"FlowEVMBridgeHandlerInterfaces",
+				"FlowEVMBridgeHandlers",
 				"FlowEVMBridgeNFTEscrow",
 				"FlowEVMBridgeTokenEscrow",
 				"FlowEVMBridgeTemplates",
 				"IEVMBridgeNFTMinter",
 				"IEVMBridgeTokenMinter",
 				"IFlowEVMNFTBridge",
-				"IFlowEVMTokenBridge",
-				"FlowEVMBridge",
-				{
-					"name": "FlowEVMBridgeAccessor",
-					"args": [
-						{
-							"type": "Address",
-							"value": "0xb6763b4399a888c8"
-						}
-					]
-				}
+				"IFlowEVMTokenBridge"
 			]
 		}
 	}

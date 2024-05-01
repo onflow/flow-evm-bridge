@@ -398,6 +398,8 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
                 vaultBalance,
                 erc20Address: associatedAddress
             )
+        assert(bridgeAmount > UInt256(0), message: "Amount to bridge must be greater than 0")
+
         // Determine if the EVM contract is bridge-owned - affects how tokens are transmitted to recipient
         let isFactoryDeployed = FlowEVMBridgeUtils.isEVMContractBridgeOwned(evmContractAddress: associatedAddress)
 
@@ -469,6 +471,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         let definingContractName = FlowEVMBridgeUtils.getContractName(fromType: type)!
         // Convert the amount to a ufix64 so the amount can be settled on the Cadence side
         let ufixAmount = FlowEVMBridgeUtils.convertERC20AmountToCadenceAmount(amount, erc20Address: associatedAddress)
+        assert(ufixAmount > 0.0, message: "Amount to bridge must be greater than 0")
 
         /* Execute the transfer call and make needed state assertions */
         //

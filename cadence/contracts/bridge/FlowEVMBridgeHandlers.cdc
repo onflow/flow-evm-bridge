@@ -105,6 +105,8 @@ access(all) contract FlowEVMBridgeHandlers {
             let amount = tokens.balance
             let uintAmount = FlowEVMBridgeUtils.convertCadenceAmountToERC20Amount(amount, erc20Address: evmAddress)
 
+            assert(uintAmount > UInt256(0), message: "Amount to bridge must be greater than 0")
+
             Burner.burn(<-tokens)
 
             FlowEVMBridgeUtils.mustTransferERC20(to: to, amount: uintAmount, erc20Address: evmAddress)
@@ -134,6 +136,7 @@ access(all) contract FlowEVMBridgeHandlers {
                     amount,
                     erc20Address: evmAddress
                 )
+            assert(ufixAmount > 0.0, message: "Amount to bridge must be greater than 0")
 
             FlowEVMBridgeUtils.mustEscrowERC20(
                 owner: owner,
