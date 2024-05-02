@@ -14,7 +14,7 @@ addresses:
 
 |Network|Address|
 |---|---|
-|PreviewNet|`0x634acef27f871527`|
+|PreviewNet|`0x7d29f084fc7b2b84`|
 |Testnet|TBD|
 |Mainnet|TBD|
 
