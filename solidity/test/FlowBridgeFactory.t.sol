@@ -2,7 +2,7 @@
 pragma solidity ^0.8.17;
 
 import {Test} from "forge-std/Test.sol";
-import "forge-std/console.sol";
+import {console} from "forge-std/console.sol";
 
 import {FlowBridgeDeploymentRegistry} from "../src/FlowBridgeDeploymentRegistry.sol";
 import {FlowEVMBridgedERC721Deployer} from "../src/FlowEVMBridgedERC721Deployer.sol";
@@ -12,8 +12,6 @@ import {FlowEVMBridgedERC721} from "../src/templates/FlowEVMBridgedERC721.sol";
 import {FlowEVMBridgedERC20} from "../src/templates/FlowEVMBridgedERC20.sol";
 
 contract FlowBridgeFactoryTest is Test {
-    address foundryTestOwner;
-
     FlowBridgeFactory internal factory;
     FlowBridgeDeploymentRegistry internal registry;
     FlowEVMBridgedERC20Deployer internal erc20Deployer;
@@ -32,9 +30,6 @@ contract FlowBridgeFactoryTest is Test {
     address deployedERC721Address;
 
     function setUp() public virtual {
-        foundryTestOwner = address(0xb4c79daB8f259C7Aee6E5b2Aa729821864227e84);
-
-        factory = new FlowBridgeFactory();
         name = "name";
         symbol = "symbol";
         flowNFTAddress = "flowNFTAddress";
@@ -42,6 +37,8 @@ contract FlowBridgeFactoryTest is Test {
         flowTokenAddress = "flowTokenAddress";
         flowTokenIdentifier = "flowTokenIdentifier";
         contractURI = "contractURI";
+
+        factory = new FlowBridgeFactory();
 
         registry = new FlowBridgeDeploymentRegistry();
         erc20Deployer = new FlowEVMBridgedERC20Deployer();
@@ -144,7 +141,7 @@ contract FlowBridgeFactoryTest is Test {
         assertEq(factoryOwner, erc20Owner);
     }
 
-    function test_SuccessfulMint() public {
+    function test_MintERC721() public {
         address recipient = address(27);
         uint256 tokenId = 42;
         string memory uri = "MOCK_URI";
@@ -152,5 +149,14 @@ contract FlowBridgeFactoryTest is Test {
 
         address owner = deployedERC721Contract.ownerOf(tokenId);
         assertEq(owner, recipient);
+    }
+
+    function test_MintERC20() public {
+        address recipient = address(27);
+        uint256 amount = 100e18;
+        deployedERC20Contract.mint(recipient, amount);
+
+        uint256 balance = deployedERC20Contract.balanceOf(recipient);
+        assertEq(balance, amount);
     }
 }
