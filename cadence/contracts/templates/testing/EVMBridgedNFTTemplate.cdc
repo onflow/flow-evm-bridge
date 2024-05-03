@@ -130,7 +130,7 @@ access(all) contract {{CONTRACT_NAME}} : ICrossVM, IEVMBridgeNFTMinter, NonFungi
     /// This resource holds associated NFTs, and serves queries about stored NFTs
     access(all) resource Collection : CrossVMNFT.EVMNFTCollection {
         /// dictionary of NFT conforming tokens indexed on their ID
-        access(contract) var ownedNFTs: @{UInt64: {{CONTRACT_NAME}}.NFT}
+        access(all) var ownedNFTs: @{UInt64: {NonFungibleToken.NFT}}
         /// Mapping of EVM IDs to Flow NFT IDs
         access(contract) let evmIDToFlowID: {UInt256: UInt64}
 
@@ -169,7 +169,7 @@ access(all) contract {{CONTRACT_NAME}} : ICrossVM, IEVMBridgeNFTMinter, NonFungi
         }
 
         /// Removes an NFT from the collection and moves it to the caller
-        access(NonFungibleToken.Withdraw | NonFungibleToken.Owner) fun withdraw(withdrawID: UInt64): @{NonFungibleToken.NFT} {
+        access(NonFungibleToken.Withdraw) fun withdraw(withdrawID: UInt64): @{NonFungibleToken.NFT} {
             let token <- self.ownedNFTs.remove(key: withdrawID)
                 ?? panic("Could not withdraw an NFT with the provided ID from the collection")
 
@@ -177,7 +177,7 @@ access(all) contract {{CONTRACT_NAME}} : ICrossVM, IEVMBridgeNFTMinter, NonFungi
         }
 
         /// Withdraws an NFT from the collection by its EVM ID
-        access(NonFungibleToken.Withdraw | NonFungibleToken.Owner) fun withdrawByEVMID(_ id: UInt256): @{NonFungibleToken.NFT} {
+        access(NonFungibleToken.Withdraw) fun withdrawByEVMID(_ id: UInt256): @{NonFungibleToken.NFT} {
             return <- self.withdraw(withdrawID: 
                 self.getCadenceID(from: id) ?? panic("Could not withdraw an NFT with the provided EVM ID from the collection")
             )
