@@ -2,6 +2,7 @@ import "FungibleToken"
 import "FlowToken"
 
 import "EVM"
+import "EVMUtils"
 
 /// Deploys a compiled solidity contract from bytecode to the EVM, with the signer's COA as the deployer
 ///
@@ -48,7 +49,7 @@ transaction(bytecode: String, gasLimit: UInt64, value: UFix64) {
            value: valueBalance
         )
         assert(
-            evmResult.status == EVM.Status.successful && evmResult.deployedContractAddress != nil,
+            evmResult.status == EVM.Status.successful && evmResult.deployedContract != nil,
             message: "Bridge factory deployment failed"
         )
     }

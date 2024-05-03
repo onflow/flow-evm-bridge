@@ -1255,7 +1255,7 @@ contract FlowEVMBridgeUtils {
         return decodedResult[0] as! EVM.EVMAddress
     }
 
-    init(bridgeFactoryBytecodeHex: String) {
+    init(bridgeFactoryAddressHex: String) {
         self.delimiter = "_"
         self.contractNamePrefixes = {
             Type<@{NonFungibleToken.NFT}>(): {
@@ -1265,21 +1265,7 @@ contract FlowEVMBridgeUtils {
                 "bridged": "EVMVMBridgedToken"
             }
         }
-
-        // Deploy the FlowBridgeFactory.sol contract from provided bytecode and capture the deployed address
-        let coa = self.account.storage.borrow<auth(EVM.Deploy) &EVM.CadenceOwnedAccount>(from: /storage/evm)
-            ?? panic("Could not borrow COA reference")
-        let evmResult = coa.deploy(
-            code: bridgeFactoryBytecodeHex.decodeHex(),
-            gasLimit: 15_000_000,
-            value: EVM.Balance(attoflow: 0)
-        )
-
-        assert(
-            evmResult.status == EVM.Status.successful,
-            message: "Bridge factory deployment failed"
-        )
-
-        self.bridgeFactoryEVMAddress = evmResult.deployedContract ?? panic("Deployed contract address is nil")
+        self.bridgeFactoryEVMAddress = EVMUtils.getEVMAddressFromHexString(address: bridgeFactoryAddressHex)
+            ?? panic("Invalid EVM address hex")
     }
 }

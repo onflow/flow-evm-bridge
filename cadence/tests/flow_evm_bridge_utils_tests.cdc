@@ -1,6 +1,8 @@
 import Test
 import BlockchainHelpers
 
+import "EVM"
+
 import "test_helpers.cdc"
 
 access(all) let serviceAccount = Test.serviceAccount()
@@ -87,10 +89,19 @@ fun setup() {
         arguments: []
     )
     Test.expect(err, Test.beNil())
+    let deploymentResult = executeTransaction(
+        "../transactions/evm/deploy.cdc",
+        [getCompiledFactoryBytecode(), 15_000_000, 0.0],
+        bridgeAccount
+    )
+    let evts = Test.eventsOfType(Type<EVM.TransactionExecuted>())
+    Test.assertEqual(2, evts.length)
+    let factoryDeploymentEvent = evts[0] as! EVM.TransactionExecuted
+    let factoryAddressHex = factoryDeploymentEvent.contractAddress
     err = Test.deployContract(
         name: "FlowEVMBridgeUtils",
         path: "../contracts/bridge/FlowEVMBridgeUtils.cdc",
-        arguments: [getCompiledFactoryBytecode()]
+        arguments: [factoryAddressHex.slice(from: 2, upTo: factoryAddressHex.length)]
     )
     Test.expect(err, Test.beNil())
 }
@@ -175,8 +186,6 @@ fun testLargeFractionalUInt256ToUFix64Succeeds() {
     let largeFractionalUFixAmount: UFix64 = 1.99785982
     let largeFractionalUIntAmount: UInt256 = 1_997_859_829_999_999_999
 
-    log("testLargeFractionalUInt256ToUFix64Succeeds")
-
     let actualUFixAmount = uint256ToUFix64(largeFractionalUIntAmount, decimals: 18)
     Test.assertEqual(largeFractionalUFixAmount, actualUFixAmount)
 }
@@ -186,8 +195,6 @@ fun testlargeFractionalUFix64ToUInt256Succeeds() {
     let largeFractionalUFixAmount: UFix64 = 1.99785982
     let largeFractionalUIntAmount: UInt256 = 1_997_859_820_000_000_000
     // let largeFractionalUIntAmount: UInt256 = 1,997,859,820,000,000,000
-
-    log("testlargeFractionalUFix64ToUInt256Succeeds")
 
     let actualUIntAmount = ufix64ToUInt256(largeFractionalUFixAmount, decimals: 18)
     Test.assertEqual(largeFractionalUIntAmount, actualUIntAmount)
