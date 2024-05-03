@@ -1265,16 +1265,21 @@ contract FlowEVMBridgeUtils {
                 "bridged": "EVMVMBridgedToken"
             }
         }
+
         // Deploy the FlowBridgeFactory.sol contract from provided bytecode and capture the deployed address
-        let evmResult = self.borrowCOA().deploy(
+        let coa = self.account.storage.borrow<auth(EVM.Deploy) &EVM.CadenceOwnedAccount>(from: /storage/evm)
+            ?? panic("Could not borrow COA reference")
+        let evmResult = coa.deploy(
             code: bridgeFactoryBytecodeHex.decodeHex(),
             gasLimit: 15000000,
             value: EVM.Balance(attoflow: 0)
         )
+
         assert(
-            evmResult.status == EVM.Status.successful && evmResult.deployedContractAddress != nil,
+            evmResult.status == EVM.Status.successful && evmResult.deployedContract != nil,
             message: "Bridge factory deployment failed"
         )
-        self.bridgeFactoryEVMAddress = evmResult.deployedContractAddress!
+
+        self.bridgeFactoryEVMAddress = evmResult.deployedContract!
     }
 }

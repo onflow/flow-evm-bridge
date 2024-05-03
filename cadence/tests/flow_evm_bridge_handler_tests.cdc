@@ -72,21 +72,6 @@ fun setup() {
     )
     Test.expect(err, Test.beNil())
 
-    // Update MetadataViews contract with proposed URI & EVMBridgedMetadata view COA integration
-    // TODO: Remove once MetadataViews contract is updated in CLI's core contracts
-    var updateResult = executeTransaction(
-        "./transactions/update_contract.cdc",
-        ["MetadataViews", getMetadataViewsUpdateCode()],
-        serviceAccount
-    )
-    // Update EVM contract with proposed bridge-supporting COA integration
-    // TODO: Remove once EVM contract is updated in CLI's core contracts
-    updateResult = executeTransaction(
-        "./transactions/update_contract.cdc",
-        ["EVM", getEVMUpdateCode()],
-        serviceAccount
-    )
-    Test.expect(updateResult, Test.beSucceeded())
     // Transfer bridge account some $FLOW
     transferFlow(signer: serviceAccount, recipient: bridgeAccount.address, amount: 10_000.0)
     // Configure bridge account with a COA
