@@ -205,7 +205,7 @@ fun setup() {
     Test.expect(err, Test.beNil())
 
     let claimAccessorResult = executeTransaction(
-        "../transactions/bridge/admin/evm/claim_accessor_capability_and_save_router.cdc",
+        "../transactions/bridge/admin/evm-integration/claim_accessor_capability_and_save_router.cdc",
         ["FlowEVMBridgeAccessor", bridgeAccount.address],
         serviceAccount
     )

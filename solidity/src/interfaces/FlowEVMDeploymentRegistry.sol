@@ -56,9 +56,9 @@ abstract contract FlowEVMDeploymentRegistry is IFlowEVMDeploymentRegistry, ERC16
     /**
      * @dev Check if a contract address is a registered deployment
      *
-     * @param contractAddr The address of the deployed contract in question
+     * @param cadenceIdentifier The Cadence type identifier in question
      *
-     * @return True if the contract address is associated with a Cadence type identifier
+     * @return True if the contract address is associated with a Cadence type identifier as a registered deployment
      */
     function isRegisteredDeployment(string memory cadenceIdentifier) external view returns (bool) {
         return cadenceIdentifierToContract[cadenceIdentifier] != address(0);
@@ -69,7 +69,7 @@ abstract contract FlowEVMDeploymentRegistry is IFlowEVMDeploymentRegistry, ERC16
      *
      * @param contractAddr The address of the contract in question
      *
-     * @return True if the contract address is associated with a Cadence type identifier
+     * @return True if the contract address is associated with a Cadence type identifier as a registered deployment
      */
     function isRegisteredDeployment(address contractAddr) external view returns (bool) {
         return bytes(contractToCadenceIdentifier[contractAddr]).length != 0;

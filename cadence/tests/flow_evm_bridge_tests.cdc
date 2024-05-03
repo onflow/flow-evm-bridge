@@ -139,11 +139,43 @@ fun setup() {
         arguments: []
     )
     Test.expect(err, Test.beNil())
+    // Deploy registry
+    let registryDeploymentResult = executeTransaction(
+        "../transactions/evm/deploy.cdc",
+        [getRegistryBytecode(), 15_000_000, 0.0],
+        bridgeAccount
+    )
+    Test.expect(registryDeploymentResult, Test.beSucceeded())
+    // Deploy ERC20Deployer
+    let erc20DeployerDeploymentResult = executeTransaction(
+        "../transactions/evm/deploy.cdc",
+        [getERC20DeployerBytecode(), 15_000_000, 0.0],
+        bridgeAccount
+    )
+    Test.expect(erc20DeployerDeploymentResult, Test.beSucceeded())
+    // Deploy ERC721Deployer
+    let erc721DeployerDeploymentResult = executeTransaction(
+        "../transactions/evm/deploy.cdc",
+        [getERC721DeployerBytecode(), 15_000_000, 0.0],
+        bridgeAccount
+    )
+    Test.expect(erc721DeployerDeploymentResult, Test.beSucceeded())
     err = Test.deployContract(
         name: "FlowEVMBridgeUtils",
         path: "../contracts/bridge/FlowEVMBridgeUtils.cdc",
         arguments: [getCompiledFactoryBytecode()]
     )
+    // Set factory as registrar in registry
+    let setRegistrarResult = executeTransaction(
+        "../transactions/evm/set_registrar.cdc",
+        [registryDeploymentResult.events[0].data as! Address],
+        bridgeAccount
+    )
+    // Set registry as registry in factory
+    // Set factory as delegatedDeployer in erc20Deployer
+    // Set factory as delegatedDeployer in erc721Deployer
+    // add erc20Deployer under "ERC20" tag to factory
+    // add erc721Deployer under "ERC721" tag to factory
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
         name: "FlowEVMBridgeNFTEscrow",
@@ -216,7 +248,7 @@ fun setup() {
     Test.expect(err, Test.beNil())
 
     let claimAccessorResult = executeTransaction(
-        "../transactions/bridge/admin/evm/claim_accessor_capability_and_save_router.cdc",
+        "../transactions/bridge/admin/evm-integration/claim_accessor_capability_and_save_router.cdc",
         ["FlowEVMBridgeAccessor", bridgeAccount.address],
         serviceAccount
     )
