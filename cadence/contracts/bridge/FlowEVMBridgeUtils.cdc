@@ -21,7 +21,7 @@ contract FlowEVMBridgeUtils {
 
     /// Address of the bridge factory Solidity contract
     access(all)
-    let bridgeFactoryEVMAddress: EVM.EVMAddress
+    var bridgeFactoryEVMAddress: EVM.EVMAddress
     /// Delimeter used to derive contract names
     access(self)
     let delimiter: String

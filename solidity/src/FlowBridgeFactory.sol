@@ -4,71 +4,45 @@ pragma solidity ^0.8.17;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
-import "./templates/FlowBridgedERC721.sol";
-import "./templates/FlowBridgedERC20.sol";
 import "./interfaces/IBridgePermissions.sol";
+import "./FlowEVMDeploymentRegistry.sol";
+import "./interfaces/IFlowEVMBridgeDeployer.sol";
 
 contract FlowBridgeFactory is Ownable {
-    mapping(string => address) public flowIdentifierToContract;
-    mapping(address => string) public contractToflowIdentifier;
+    address public deploymentRegistry;
+    mapping(string => address) public deployers;
 
     constructor() Ownable(msg.sender) {}
 
-    event ERC20Deployed(
-        address contractAddress, string name, string symbol, string flowTokenAddress, string flowTokenIdentifier
-    );
-    event ERC721Deployed(
-        address contractAddress, string name, string symbol, string flowNFTAddress, string flowNFTIdentifier
-    );
-
-    // Function to deploy a new ERC721 contract
-    function deployERC20(
+    function deploy(
+        string memory tag,
         string memory name,
         string memory symbol,
-        string memory flowTokenAddress,
-        string memory flowTokenIdentifier,
+        string memory cadenceAddress,
+        string memory cadenceIdentifier,
         string memory contractURI
     ) public onlyOwner returns (address) {
-        FlowBridgedERC20 newERC20 =
-            new FlowBridgedERC20(super.owner(), name, symbol, flowTokenAddress, flowTokenIdentifier, contractURI);
+        address deployerAddress = deployers[tag];
+        _requireIsValidDeployer(deployerAddress);
+        IFlowEVMBridgeDeployer deployer = IFlowEVMBridgeDeployer(deployerAddress);
 
-        flowIdentifierToContract[flowTokenIdentifier] = address(newERC20);
-        contractToflowIdentifier[address(newERC20)] = flowTokenIdentifier;
+        address newContract = deployer.deploy(name, symbol, cadenceAddress, cadenceIdentifier, contractURI);
 
-        emit ERC20Deployed(address(newERC20), name, symbol, flowTokenAddress, flowTokenIdentifier);
+        _registerDeployment(cadenceIdentifier, newContract);
 
-        return address(newERC20);
+        return newContract;
     }
 
-    // Function to deploy a new ERC721 contract
-    function deployERC721(
-        string memory name,
-        string memory symbol,
-        string memory flowNFTAddress,
-        string memory flowNFTIdentifier,
-        string memory contractURI
-    ) public onlyOwner returns (address) {
-        FlowBridgedERC721 newERC721 =
-            new FlowBridgedERC721(super.owner(), name, symbol, flowNFTAddress, flowNFTIdentifier, contractURI);
-
-        flowIdentifierToContract[flowNFTIdentifier] = address(newERC721);
-        contractToflowIdentifier[address(newERC721)] = flowNFTIdentifier;
-
-        emit ERC721Deployed(address(newERC721), name, symbol, flowNFTAddress, flowNFTIdentifier);
-
-        return address(newERC721);
+    function getCadenceIdentifier(address contractAddr) public view returns (string memory) {
+        return FlowEVMDeploymentRegistry(deploymentRegistry).getCadenceIdentifier(contractAddr);
     }
 
-    function getFlowAssetIdentifier(address contractAddr) public view returns (string memory) {
-        return contractToflowIdentifier[contractAddr];
+    function getContractAddress(string memory cadenceIdentifier) public view returns (address) {
+        return FlowEVMDeploymentRegistry(deploymentRegistry).getContractAddress(cadenceIdentifier);
     }
 
-    function getContractAddress(string memory flowNFTIdentifier) public view returns (address) {
-        return flowIdentifierToContract[flowNFTIdentifier];
-    }
-
-    function isFactoryDeployed(address contractAddr) public view returns (bool) {
-        return bytes(contractToflowIdentifier[contractAddr]).length != 0;
+    function isBridgeDeployed(address contractAddr) public view returns (bool) {
+        return FlowEVMDeploymentRegistry(deploymentRegistry).isRegisteredDeployment(contractAddr);
     }
 
     function isERC20(address contractAddr) public view returns (bool) {
@@ -106,5 +80,62 @@ contract FlowBridgeFactory is Ownable {
         } catch {
             return false;
         }
+    }
+
+    function getRegistry() public view returns (address) {
+        return deploymentRegistry;
+    }
+
+    function getDeployer(string memory tag) public view returns (address) {
+        return deployers[tag];
+    }
+
+    function setDeploymentRegistry(address _deploymentRegistry) external onlyOwner {
+        _requireIsValidRegistry(_deploymentRegistry);
+        deploymentRegistry = _deploymentRegistry;
+    }
+
+    function addDeployer(string memory tag, address deployerAddress) external onlyOwner {
+        _requireIsValidDeployer(deployerAddress);
+        require(deployers[tag] == address(0), "FlowBridgeFactory: Deployer already registered");
+        deployers[tag] = deployerAddress;
+    }
+
+    function upsertDeployer(string memory tag, address deployerAddress) external onlyOwner {
+        _requireIsValidDeployer(deployerAddress);
+        deployers[tag] = deployerAddress;
+    }
+
+    function _registerDeployment(string memory cadenceIdentifier, address contractAddr) private {
+        FlowEVMDeploymentRegistry registry = FlowEVMDeploymentRegistry(deploymentRegistry);
+        registry.registerDeployment(cadenceIdentifier, contractAddr);
+    }
+
+    function _requireIsValidRegistry(address registryAddr) internal view {
+        _requireNotZeroAddress(registryAddr);
+        require(
+            _implementsInterface(registryAddr, type(IFlowEVMDeploymentRegistry).interfaceId),
+            "FlowBridgeFactory: Invalid registry"
+        );
+    }
+
+    function _requireIsValidDeployer(address contractAddr) internal view {
+        _requireNotZeroAddress(contractAddr);
+        require(
+            _implementsInterface(contractAddr, type(IFlowEVMBridgeDeployer).interfaceId),
+            "FlowBridgeFactory: Invalid deployer"
+        );
+    }
+
+    function _implementsInterface(address contractAddr, bytes4 interfaceId) internal view returns (bool) {
+        try ERC165(contractAddr).supportsInterface(interfaceId) returns (bool support) {
+            return support;
+        } catch {
+            return false;
+        }
+    }
+
+    function _requireNotZeroAddress(address addr) internal pure {
+        require(addr != address(0), "FlowBridgeFactory: Zero address");
     }
 }
