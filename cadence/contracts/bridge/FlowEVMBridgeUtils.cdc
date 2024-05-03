@@ -1271,15 +1271,15 @@ contract FlowEVMBridgeUtils {
             ?? panic("Could not borrow COA reference")
         let evmResult = coa.deploy(
             code: bridgeFactoryBytecodeHex.decodeHex(),
-            gasLimit: 15000000,
+            gasLimit: 15_000_000,
             value: EVM.Balance(attoflow: 0)
         )
 
         assert(
-            evmResult.status == EVM.Status.successful && evmResult.deployedContract != nil,
+            evmResult.status == EVM.Status.successful,
             message: "Bridge factory deployment failed"
         )
 
-        self.bridgeFactoryEVMAddress = evmResult.deployedContract!
+        self.bridgeFactoryEVMAddress = evmResult.deployedContract ?? panic("Deployed contract address is nil")
     }
 }

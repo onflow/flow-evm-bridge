@@ -92,6 +92,7 @@ fun setup() {
         path: "../contracts/bridge/FlowEVMBridgeUtils.cdc",
         arguments: [getCompiledFactoryBytecode()]
     )
+    Test.expect(err, Test.beNil())
 }
 
 access(all)
