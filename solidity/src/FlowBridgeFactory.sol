@@ -34,7 +34,7 @@ contract FlowBridgeFactory is Ownable {
     /**
      * @dev Emitted when the deployment registry is updated
      */
-    event DeploymentRegistryUpdated(address registryAddress);
+    event DeploymentRegistryUpdated(address oldAddress, address newAddress);
 
     constructor() Ownable(msg.sender) {}
 
@@ -183,6 +183,9 @@ contract FlowBridgeFactory is Ownable {
      */
     function setDeploymentRegistry(address _deploymentRegistry) public onlyOwner {
         _requireIsValidRegistry(_deploymentRegistry);
+
+        DeploymentRegistryUpdated(deploymentRegistry, _deploymentRegistry);
+
         deploymentRegistry = _deploymentRegistry;
     }
 

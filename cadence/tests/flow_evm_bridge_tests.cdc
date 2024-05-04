@@ -28,6 +28,11 @@ access(all) var mintedNFTID: UInt64 = 0
 access(all) let exampleTokenIdentifier = "A.0000000000000010.ExampleToken.Vault"
 access(all) let exampleTokenMintAmount = 100.0
 
+// Bridge-related EVM contract values
+access(all) var registryAddressHex: String = ""
+access(all) var erc20DeployerAddressHex: String = ""
+access(all) var erc721DeployerAddressHex: String = ""
+
 // ERC721 values
 access(all) var erc721AddressHex: String = ""
 access(all) let erc721Name = "NAME"
@@ -127,40 +132,55 @@ fun setup() {
         arguments: []
     )
     Test.expect(err, Test.beNil())
+
     // Deploy registry
     let registryDeploymentResult = executeTransaction(
         "../transactions/evm/deploy.cdc",
-        [getRegistryBytecode(), 15_000_000, 0.0],
+        [getRegistryBytecode(), UInt64(15_000_000), 0.0],
         bridgeAccount
     )
     Test.expect(registryDeploymentResult, Test.beSucceeded())
     // Deploy ERC20Deployer
     let erc20DeployerDeploymentResult = executeTransaction(
         "../transactions/evm/deploy.cdc",
-        [getERC20DeployerBytecode(), 15_000_000, 0.0],
+        [getERC20DeployerBytecode(), UInt64(15_000_000), 0.0],
         bridgeAccount
     )
     Test.expect(erc20DeployerDeploymentResult, Test.beSucceeded())
     // Deploy ERC721Deployer
     let erc721DeployerDeploymentResult = executeTransaction(
         "../transactions/evm/deploy.cdc",
-        [getERC721DeployerBytecode(), 15_000_000, 0.0],
+        [getERC721DeployerBytecode(), UInt64(15_000_000), 0.0],
         bridgeAccount
     )
     Test.expect(erc721DeployerDeploymentResult, Test.beSucceeded())
+    // Assign contract addresses
     var evts = Test.eventsOfType(Type<EVM.TransactionExecuted>())
-    Test.assertEqual(2, evts.length)
+    Test.assertEqual(5, evts.length)
+    let registryDeploymentEvent = evts[2] as! EVM.TransactionExecuted
+    let erc20DeployerDeploymentEvent = evts[3] as! EVM.TransactionExecuted
+    let erc721DeployerDeploymentEvent = evts[4] as! EVM.TransactionExecuted
+    registryAddressHex = registryDeploymentEvent.contractAddress.slice(from: 2, upTo: registryDeploymentEvent.contractAddress.length).toLower()
+    erc20DeployerAddressHex = erc20DeployerDeploymentEvent.contractAddress.slice(from: 2, upTo: erc20DeployerDeploymentEvent.contractAddress.length).toLower()
+    erc721DeployerAddressHex = erc721DeployerDeploymentEvent.contractAddress.slice(from: 2, upTo: erc721DeployerDeploymentEvent.contractAddress.length).toLower()
+    Test.assertEqual(registryAddressHex.length, 40)
+    Test.assertEqual(erc20DeployerAddressHex.length, 40)
+    Test.assertEqual(erc721DeployerAddressHex.length, 40)
+
+    // Deploy factory
     let deploymentResult = executeTransaction(
         "../transactions/evm/deploy.cdc",
         [getCompiledFactoryBytecode(), UInt64(15_000_000), 0.0],
         bridgeAccount
     )
     Test.expect(deploymentResult, Test.beSucceeded())
+    // Assign the factory contract address
     evts = Test.eventsOfType(Type<EVM.TransactionExecuted>())
-    Test.assertEqual(3, evts.length)
-    let factoryDeploymentEvent = evts[2] as! EVM.TransactionExecuted
+    Test.assertEqual(6, evts.length)
+    let factoryDeploymentEvent = evts[5] as! EVM.TransactionExecuted
+    let factoryAddressHex = factoryDeploymentEvent.contractAddress.slice(from: 2, upTo: factoryDeploymentEvent.contractAddress.length).toLower()
+    Test.assertEqual(factoryAddressHex.length, 40)
 
-    let factoryAddressHex = factoryDeploymentEvent.contractAddress
     err = Test.deployContract(
         name: "FlowEVMBridgeUtils",
         path: "../contracts/bridge/FlowEVMBridgeUtils.cdc",
@@ -168,16 +188,46 @@ fun setup() {
     )
     // Set factory as registrar in registry
     let setRegistrarResult = executeTransaction(
-        "../transactions/evm/set_registrar.cdc",
-        [registryDeploymentResult.events[0].data as! Address],
+        "../transactions/bridge/admin/evm/set_registrar.cdc",
+        [registryAddressHex, factoryAddressHex],
         bridgeAccount
     )
+    Test.expect(setRegistrarResult, Test.beSucceeded())
     // Set registry as registry in factory
+    let setRegistryResult = executeTransaction(
+        "../transactions/bridge/admin/evm/set_deployment_registry.cdc",
+        [registryAddressHex],
+        bridgeAccount
+    )
+    Test.expect(setRegistryResult, Test.beSucceeded())
     // Set factory as delegatedDeployer in erc20Deployer
+    var setDelegatedDeployerResult = executeTransaction(
+        "../transactions/bridge/admin/evm/set_delegated_deployer.cdc",
+        [erc20DeployerAddressHex],
+        bridgeAccount
+    )
+    Test.expect(setDelegatedDeployerResult, Test.beSucceeded())
     // Set factory as delegatedDeployer in erc721Deployer
+    setDelegatedDeployerResult = executeTransaction(
+        "../transactions/bridge/admin/evm/set_delegated_deployer.cdc",
+        [erc721DeployerAddressHex],
+        bridgeAccount
+    )
+    Test.expect(setDelegatedDeployerResult, Test.beSucceeded())
     // add erc20Deployer under "ERC20" tag to factory
+    var addDeployerResult = executeTransaction(
+        "../transactions/bridge/admin/evm/add_deployer.cdc",
+        ["ERC20", erc20DeployerAddressHex],
+        bridgeAccount
+    )
+    Test.expect(addDeployerResult, Test.beSucceeded())
     // add erc721Deployer under "ERC721" tag to factory
-    Test.expect(err, Test.beNil())
+    addDeployerResult = executeTransaction(
+        "../transactions/bridge/admin/evm/add_deployer.cdc",
+        ["ERC721", erc721DeployerAddressHex],
+        bridgeAccount
+    )
+    Test.expect(addDeployerResult, Test.beSucceeded())
     err = Test.deployContract(
         name: "FlowEVMBridgeNFTEscrow",
         path: "../contracts/bridge/FlowEVMBridgeNFTEscrow.cdc",

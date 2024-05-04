@@ -3,11 +3,6 @@ import "EVM"
 import "EVMUtils"
 import "FlowEVMBridgeUtils"
 
-/// Sets the registrar address for the provided FlowBridgeDeploymentRegistry address. Should be called by the owner of
-/// the registry contract.
-///
-/// @param registryEVMAddressHex The EVM address of the FlowBridgeDeploymentRegistry contract.
-///
 transaction(registryEVMAddressHex: String) {
     
     let coa: auth(Call) &CadenceOwnedAccount
@@ -22,10 +17,10 @@ transaction(registryEVMAddressHex: String) {
             ?? panic("Could not convert registry address to EVM address")
         
         let callResult = self.coa.call(
-            to: registryEVMAddress,
+            to: FlowEVMBridgeUtils.bridgeFactoryEVMAddress,
             data: EVM.encodeABIWithSignature(
-                "setRegistrar(address)",
-                [FlowEVMBridgeUtils.bridgeFactoryEVMAddress]
+                "setDeploymentRegistry(address)",
+                [registryEVMAddress]
             ),
             gasLimit: 15_000_000,
             value: EVM.Balance(attoflow: 0)
