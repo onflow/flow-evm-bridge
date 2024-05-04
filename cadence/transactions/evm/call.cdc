@@ -8,7 +8,7 @@ transaction(evmContractAddressHex: String, calldata: String, gasLimit: UInt64, v
     let coa: auth(EVM.Call) &EVM.CadenceOwnedAccount
 
     prepare(signer: auth(BorrowValue) &Account) {
-        let evmAddressBytes: [UInt8] = evmContractAddressHex.decodeHex()
+        let evmAddressBytes: [UInt8] = evmContractAddressHex.toLower().decodeHex()
         self.evmAddress = EVM.EVMAddress(
                 bytes: [
                     evmAddressBytes[0], evmAddressBytes[1], evmAddressBytes[2], evmAddressBytes[3], evmAddressBytes[4],

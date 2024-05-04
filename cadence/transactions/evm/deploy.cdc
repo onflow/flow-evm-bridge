@@ -2,7 +2,6 @@ import "FungibleToken"
 import "FlowToken"
 
 import "EVM"
-import "EVMUtils"
 
 /// Deploys a compiled solidity contract from bytecode to the EVM, with the signer's COA as the deployer
 ///
