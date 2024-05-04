@@ -4,6 +4,7 @@ import BlockchainHelpers
 import "FungibleToken"
 import "NonFungibleToken"
 import "FlowStorageFees"
+import "EVM"
 
 import "test_helpers.cdc"
 
@@ -20,6 +21,7 @@ access(all) let exampleTokenMinterIdentifier = "A.0000000000000011.ExampleHandle
 access(all) let exampleTokenMintAmount = 100.0
 
 // ERC20 values
+access(all) var erc20AddressHex: String = ""
 access(all) let erc20MintAmount: UInt256 = 100_000_000_000_000_000_000
 
 // Fee initialiazation values
@@ -72,21 +74,6 @@ fun setup() {
     )
     Test.expect(err, Test.beNil())
 
-    // Update MetadataViews contract with proposed URI & EVMBridgedMetadata view COA integration
-    // TODO: Remove once MetadataViews contract is updated in CLI's core contracts
-    var updateResult = executeTransaction(
-        "./transactions/update_contract.cdc",
-        ["MetadataViews", getMetadataViewsUpdateCode()],
-        serviceAccount
-    )
-    // Update EVM contract with proposed bridge-supporting COA integration
-    // TODO: Remove once EVM contract is updated in CLI's core contracts
-    updateResult = executeTransaction(
-        "./transactions/update_contract.cdc",
-        ["EVM", getEVMUpdateCode()],
-        serviceAccount
-    )
-    Test.expect(updateResult, Test.beSucceeded())
     // Transfer bridge account some $FLOW
     transferFlow(signer: serviceAccount, recipient: bridgeAccount.address, amount: 10_000.0)
     // Configure bridge account with a COA
@@ -128,10 +115,23 @@ fun setup() {
         arguments: []
     )
     Test.expect(err, Test.beNil())
+
+    // Deploy FlowBridgeFactory.sol
+    let deploymentResult = executeTransaction(
+        "../transactions/evm/deploy.cdc",
+        [getCompiledFactoryBytecode(), 15_000_000, 0.0],
+        bridgeAccount
+    )
+    // Get the deployed contract address from the latest EVM event
+    let evts = Test.eventsOfType(Type<EVM.TransactionExecuted>())
+    Test.assertEqual(2, evts.length)
+    let factoryDeploymentEvent = evts[0] as! EVM.TransactionExecuted
+    let factoryAddressHex = factoryDeploymentEvent.contractAddress
+
     err = Test.deployContract(
         name: "FlowEVMBridgeUtils",
         path: "../contracts/bridge/FlowEVMBridgeUtils.cdc",
-        arguments: [getCompiledFactoryBytecode()]
+        arguments: [factoryAddressHex.slice(from: 2, upTo: factoryAddressHex.length)]
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
@@ -215,15 +215,6 @@ fun setup() {
     transferFlow(signer: serviceAccount, recipient: exampleERCAccount.address, amount: 1_000.0)
     createCOA(signer: exampleERCAccount, fundingAmount: 10.0)
 
-    // Deploy the ERC20 from EVMDeployer (simply to capture deploye EVM contract address)
-    // TODO: Replace this contract with the `deployedContractAddress` value emitted on deployment
-    //      once `evm` events Types are available
-    err = Test.deployContract(
-        name: "EVMDeployer",
-        path: "./contracts/EVMDeployer.cdc",
-        arguments: []
-    )
-    Test.expect(err, Test.beNil())
     err = Test.deployContract(
         name: "ExampleHandledToken",
         path: "../contracts/example-assets/ExampleHandledToken.cdc",
@@ -346,21 +337,26 @@ fun testEnableTokenHandlerFails() {
 access(all)
 fun testDeployERC20Succeeds() {
     let erc20DeployResult = executeTransaction(
-        "./transactions/deploy_using_evm_deployer.cdc",
-        ["erc20", getCompiledERC20Bytecode(), 0 as UInt],
+        "../transactions/evm/deploy.cdc",
+        [getCompiledERC20Bytecode(), UInt64(15_000_000), 0.0],
         exampleERCAccount
     )
     Test.expect(erc20DeployResult, Test.beSucceeded())
 
-    let erc20AddressHex = getDeployedAddressFromDeployer(name: "erc20")
+    let evts = Test.eventsOfType(Type<EVM.TransactionExecuted>())
+    Test.assertEqual(7, evts.length)
+    let erc20DeploymentEvent = evts[6] as! EVM.TransactionExecuted
+    // remove 0x prefix
+    erc20AddressHex = erc20DeploymentEvent.contractAddress.slice(
+            from: 2,
+            upTo: erc20DeploymentEvent.contractAddress.length
+        ).toLower()
 }
 
 // Set the TokenHandler's targetEVMAddress to the deployed ERC20 contract address
 // This will filter requests to onboard the ERC20 to the bridge as the Cadence-nat
 access(all)
 fun testSetHandlerTargetEVMAddressSucceeds() {
-    let erc20AddressHex = getDeployedAddressFromDeployer(name: "erc20")
-
     let setHandlerTargetResult = executeTransaction(
         "../transactions/bridge/admin/token-handler/set_handler_target_evm_address.cdc",
         [exampleTokenIdentifier, erc20AddressHex],
@@ -383,7 +379,6 @@ fun testMintERC20ToBridgeEscrowSucceeds() {
             contractName: "ExampleHandledToken",
             vaultIdentifier: exampleTokenIdentifier
         ) ?? panic("Problem getting total supply of Cadence tokens")
-    let erc20AddressHex = getDeployedAddressFromDeployer(name: "erc20")
 
     // Convert total supply UFix64 to UInt256 for ERC20 minting
     let uintTotalSupply = ufix64ToUInt256(exampleTokenTotalSupply, decimals: defaultDecimals)
@@ -403,7 +398,6 @@ fun testMintERC20ToBridgeEscrowSucceeds() {
 access(all)
 fun testMintERC20ToArbitraryRecipientSucceeds() {
     let aliceCOAAddressHex = getCOAAddressHex(atFlowAddress: alice.address)
-    let erc20AddressHex = getDeployedAddressFromDeployer(name: "erc20")
 
     let mintERC20Result = executeTransaction(
         "../transactions/example-assets/evm-assets/mint_erc20.cdc",
@@ -441,7 +435,6 @@ fun testOnboardHandledTokenByTypeFails() {
 // Since the erc20 Address has a TokenHandler, onboarding should fail
 access(all)
 fun testOnboardHandledERC20ByEVMAddressFails() {
-    let erc20AddressHex = getDeployedAddressFromDeployer(name: "erc20")
 
     var onboaringRequiredResult = executeScript(
         "../scripts/bridge/evm_address_requires_onboarding.cdc",
@@ -484,7 +477,6 @@ fun testBridgeHandledCadenceNativeTokenToEVMFails() {
 // Bridging frrom EVM before TokenHandler is enabled should fail
 access(all)
 fun testBridgeHandledCadenceNativeTokenFromEVMFails() {
-    let erc20AddressHex = getDeployedAddressFromDeployer(name: "erc20")
     let aliceCOAAddressHex = getCOAAddressHex(atFlowAddress: alice.address)
 
     // Confirm ownership on EVM side with Alice COA as owner of ERC721 representation
@@ -518,7 +510,6 @@ access(all)
 fun testBridgeHandledCadenceNativeTokenToEVMFirstSucceeds() {
     snapshot = getCurrentBlockHeight()
 
-    let erc20AddressHex = getDeployedAddressFromDeployer(name: "erc20")
     let erc20TotalSupplyBefore = getEVMTotalSupply(erc20AddressHex: erc20AddressHex)
 
     // Alice was the only recipient, so their balance should be the total supply
@@ -569,7 +560,6 @@ fun testBridgeHandledCadenceNativeTokenToEVMFirstSucceeds() {
 // With all funds now in EVM, we can test bridging back to Cadence
 access(all)
 fun testBridgeHandledCadenceNativeTokenFromEVMSecondSucceeds() {
-    let erc20AddressHex = getDeployedAddressFromDeployer(name: "erc20")
     let aliceCOAAddressHex = getCOAAddressHex(atFlowAddress: alice.address)
 
     let erc20TotalSupplyBefore = getEVMTotalSupply(erc20AddressHex: erc20AddressHex)
@@ -609,10 +599,9 @@ fun testBridgeHandledCadenceNativeTokenFromEVMFirstSucceeds() {
     // Reset to snapshot before bridging between VMs
     Test.reset(to: snapshot)
 
-    let erc20AddressHex = getDeployedAddressFromDeployer(name: "erc20")
     let aliceCOAAddressHex = getCOAAddressHex(atFlowAddress: alice.address)
 
-    var erc20TotalSupplyBefore = getEVMTotalSupply(erc20AddressHex: getDeployedAddressFromDeployer(name: "erc20"))
+    var erc20TotalSupplyBefore = getEVMTotalSupply(erc20AddressHex: erc20AddressHex)
     let cadenceTotalSupplyBefore = getCadenceTotalSupply(
             contractAddress: exampleHandledTokenAccount.address,
             contractName: "ExampleHandledToken",
@@ -673,7 +662,6 @@ fun testBridgeHandledCadenceNativeTokenFromEVMFirstSucceeds() {
 // Now return all liquidity back to EVM
 access(all)
 fun testBridgeHandledCadenceNativeTokenToEVMSecondSucceeds() {
-    let erc20AddressHex = getDeployedAddressFromDeployer(name: "erc20")
     let aliceCOAAddressHex = getCOAAddressHex(atFlowAddress: alice.address)
 
     let erc20TotalSupplyBefore = getEVMTotalSupply(erc20AddressHex: erc20AddressHex)

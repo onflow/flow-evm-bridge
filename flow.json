@@ -39,13 +39,6 @@
 				"previewnet": "b6763b4399a888c8"
 			}
 		},
-		"EVMDeployer": {
-			"source": "./tests/contracts/EVMDeployer.cdc",
-			"aliases": {
-				"emulator": "f8d6e0586b0a20c7",
-				"testing": "0000000000000009"
-			}
-		},
 		"EVMUtils": {
 			"source": "./cadence/contracts/utils/EVMUtils.cdc",
 			"aliases": {

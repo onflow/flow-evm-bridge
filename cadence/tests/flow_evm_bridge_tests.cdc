@@ -6,6 +6,7 @@ import "NonFungibleToken"
 import "ExampleNFT"
 import "ExampleToken"
 import "FlowStorageFees"
+import "EVM"
 
 import "test_helpers.cdc"
 
@@ -28,12 +29,14 @@ access(all) let exampleTokenIdentifier = "A.0000000000000010.ExampleToken.Vault"
 access(all) let exampleTokenMintAmount = 100.0
 
 // ERC721 values
+access(all) var erc721AddressHex: String = ""
 access(all) let erc721Name = "NAME"
 access(all) let erc721Symbol = "SYMBOL"
 access(all) let erc721ID: UInt256 = 42
 access(all) let erc721URI = "URI"
 
 // ERC20 values
+access(all) var erc20AddressHex: String = ""
 access(all) let erc20MintAmount: UInt256 = 100_000_000_000_000_000_000 // 100.0 as uint256 (100e18)
 
 // Fee initialiazation values
@@ -83,21 +86,6 @@ fun setup() {
     )
     Test.expect(err, Test.beNil())
 
-    // Update MetadataViews contract with proposed URI & EVMBridgedMetadata view COA integration
-    // TODO: Remove once MetadataViews contract is updated in CLI's core contracts
-    var updateResult = executeTransaction(
-        "./transactions/update_contract.cdc",
-        ["MetadataViews", getMetadataViewsUpdateCode()],
-        serviceAccount
-    )
-    // Update EVM contract with proposed bridge-supporting COA integration
-    // TODO: Remove once EVM contract is updated in CLI's core contracts
-    updateResult = executeTransaction(
-        "./transactions/update_contract.cdc",
-        ["EVM", getEVMUpdateCode()],
-        serviceAccount
-    )
-    Test.expect(updateResult, Test.beSucceeded())
     // Transfer bridge account some $FLOW
     transferFlow(signer: serviceAccount, recipient: bridgeAccount.address, amount: 10_000.0)
     // Configure bridge account with a COA
@@ -160,10 +148,23 @@ fun setup() {
         bridgeAccount
     )
     Test.expect(erc721DeployerDeploymentResult, Test.beSucceeded())
+    var evts = Test.eventsOfType(Type<EVM.TransactionExecuted>())
+    Test.assertEqual(2, evts.length)
+    let deploymentResult = executeTransaction(
+        "../transactions/evm/deploy.cdc",
+        [getCompiledFactoryBytecode(), UInt64(15_000_000), 0.0],
+        bridgeAccount
+    )
+    Test.expect(deploymentResult, Test.beSucceeded())
+    evts = Test.eventsOfType(Type<EVM.TransactionExecuted>())
+    Test.assertEqual(3, evts.length)
+    let factoryDeploymentEvent = evts[2] as! EVM.TransactionExecuted
+
+    let factoryAddressHex = factoryDeploymentEvent.contractAddress
     err = Test.deployContract(
         name: "FlowEVMBridgeUtils",
         path: "../contracts/bridge/FlowEVMBridgeUtils.cdc",
-        arguments: [getCompiledFactoryBytecode()]
+        arguments: [factoryAddressHex.slice(from: 2, upTo: factoryAddressHex.length).toLower()]
     )
     // Set factory as registrar in registry
     let setRegistrarResult = executeTransaction(
@@ -258,27 +259,6 @@ fun setup() {
     transferFlow(signer: serviceAccount, recipient: exampleERCAccount.address, amount: 1_000.0)
     createCOA(signer: exampleERCAccount, fundingAmount: 10.0)
 
-    // Deploy the ERC20/721 from EVMDeployer (simply to capture deploye EVM contract address)
-    // TODO: Replace this contract with the `deployedContractAddress` value emitted on deployment
-    //      once `evm` events Types are available
-    err = Test.deployContract(
-        name: "EVMDeployer",
-        path: "./contracts/EVMDeployer.cdc",
-        arguments: []
-    )
-    Test.expect(err, Test.beNil())
-    let erc721DeployResult = executeTransaction(
-        "./transactions/deploy_using_evm_deployer.cdc",
-        ["erc721", getCompiledERC721Bytecode(), 0 as UInt],
-        exampleERCAccount
-    )
-    Test.expect(erc721DeployResult, Test.beSucceeded())
-    let erc20DeployResult = executeTransaction(
-        "./transactions/deploy_using_evm_deployer.cdc",
-        ["erc20", getCompiledERC20Bytecode(), 0 as UInt],
-        exampleERCAccount
-    )
-    Test.expect(erc20DeployResult, Test.beSucceeded())
     err = Test.deployContract(
         name: "ExampleNFT",
         path: "../contracts/example-assets/ExampleNFT.cdc",
@@ -294,6 +274,48 @@ fun setup() {
 }
 
 /* --- ASSET & ACCOUNT SETUP - Configure test accounts with assets to bridge --- */
+
+access(all)
+fun testDeployERC721Succeeds() {
+    let erc721DeployResult = executeTransaction(
+        "../transactions/evm/deploy.cdc",
+        [getCompiledERC721Bytecode(), UInt64(15_000_000), 0.0],
+        exampleERCAccount
+    )
+    Test.expect(erc721DeployResult, Test.beSucceeded())
+    
+    // Get ERC721 & ERC20 deployed contract addresses
+    let evts = Test.eventsOfType(Type<EVM.TransactionExecuted>())
+    Test.assertEqual(6, evts.length)
+
+    let erc721DeploymentEvent = evts[5] as! EVM.TransactionExecuted
+    erc721AddressHex = erc721DeploymentEvent.contractAddress.slice(from: 2, upTo: erc721DeploymentEvent.contractAddress.length).toLower()
+    
+    Test.assertEqual(40, erc721AddressHex.length)
+
+    log("ERC721 Address: ".concat(erc721AddressHex))
+}
+
+access(all)
+fun testDeployERC20Succeeds() {
+    let erc20DeployResult = executeTransaction(
+        "../transactions/evm/deploy.cdc",
+        [getCompiledERC20Bytecode(), UInt64(15_000_000), 0.0],
+        exampleERCAccount
+    )
+    Test.expect(erc20DeployResult, Test.beSucceeded())
+    
+    // Get ERC721 & ERC20 deployed contract addresses
+    let evts = Test.eventsOfType(Type<EVM.TransactionExecuted>())
+    Test.assertEqual(7, evts.length)
+
+    let erc20DeploymentEvent = evts[6] as! EVM.TransactionExecuted
+    erc20AddressHex = erc20DeploymentEvent.contractAddress.slice(from: 2, upTo: erc20DeploymentEvent.contractAddress.length).toLower()
+
+    Test.assertEqual(40, erc20AddressHex.length)
+    
+    log("ERC20 Address: ".concat(erc20AddressHex))
+}
 
 access(all)
 fun testCreateCOASucceeds() {
@@ -392,7 +414,7 @@ fun testMintExampleTokenSucceeds() {
 access(all)
 fun testMintERC721Succeeds() {
     let aliceCOAAddressHex = getCOAAddressHex(atFlowAddress: alice.address)
-    let erc721AddressHex = getDeployedAddressFromDeployer(name: "erc721")
+
     Test.assertEqual(40, erc721AddressHex.length)
 
     let mintERC721Result = executeTransaction(
@@ -409,8 +431,6 @@ fun testMintERC721Succeeds() {
 access(all)
 fun testMintERC20Succeeds() {
     let aliceCOAAddressHex = getCOAAddressHex(atFlowAddress: alice.address)
-    let erc20AddressHex = getDeployedAddressFromDeployer(name: "erc20")
-    Test.assertEqual(40, erc20AddressHex.length)
 
     let mintERC20Result = executeTransaction(
         "../transactions/example-assets/evm-assets/mint_erc20.cdc",
@@ -481,7 +501,6 @@ fun testUpdateBridgeFeesSucceeds() {
 
     actualCalculated = calculateBridgeFee(bytesUsed: bytesUsed)
     Test.assertEqual(expectedFinalFee, actualCalculated)
-
 }
 
 /* --- ONBOARDING - Test asset onboarding to the bridge --- */
@@ -686,8 +705,6 @@ access(all)
 fun testOnboardERC721ByEVMAddressSucceeds() {
     snapshot = getCurrentBlockHeight()
 
-    let erc721AddressHex = getDeployedAddressFromDeployer(name: "erc721")
-    Test.assertEqual(40, erc721AddressHex.length)
 
     var requiresOnboarding = evmAddressRequiresOnboarding(erc721AddressHex)
         ?? panic("Problem getting onboarding requirement")
@@ -714,8 +731,6 @@ fun testOnboardERC721ByEVMAddressSucceeds() {
 
 access(all)
 fun testOnboardERC20ByEVMAddressSucceeds() {
-    let erc20AddressHex = getDeployedAddressFromDeployer(name: "erc20")
-    Test.assertEqual(40, erc20AddressHex.length)
 
     var requiresOnboarding = evmAddressRequiresOnboarding(erc20AddressHex)
         ?? panic("Problem getting onboarding requirement")
@@ -745,10 +760,6 @@ fun testBatchOnboardByEVMAddressSucceeds() {
     Test.assert(snapshot != 0, message: "Expected snapshot to be taken before onboarding any EVM contracts")
     Test.reset(to: snapshot)
 
-    let erc721AddressHex = getDeployedAddressFromDeployer(name: "erc721")
-    let erc20AddressHex = getDeployedAddressFromDeployer(name: "erc20")
-    Test.assertEqual(40, erc721AddressHex.length)
-    Test.assertEqual(40, erc20AddressHex.length)
 
     var erc721RequiresOnboarding = evmAddressRequiresOnboarding(erc721AddressHex)
         ?? panic("Problem getting onboarding requirement")
@@ -901,8 +912,6 @@ fun testBridgeCadenceNativeNFTFromEVMSucceeds() {
 
 access(all)
 fun testBridgeEVMNativeNFTFromEVMSucceeds() {
-    let erc721AddressHex = getDeployedAddressFromDeployer(name: "erc721")
-    Test.assertEqual(40, erc721AddressHex.length)
 
     let derivedERC721ContractName = deriveBridgedNFTContractName(evmAddressHex: erc721AddressHex)
     let bridgedCollectionPathIdentifier = derivedERC721ContractName.concat("Collection")
@@ -931,8 +940,6 @@ fun testBridgeEVMNativeNFTFromEVMSucceeds() {
 
 access(all)
 fun testBridgeEVMNativeNFTToEVMSucceeds() {
-    let erc721AddressHex = getDeployedAddressFromDeployer(name: "erc721")
-    Test.assertEqual(40, erc721AddressHex.length)
 
     let derivedERC721ContractName = deriveBridgedNFTContractName(evmAddressHex: erc721AddressHex)
     let bridgedCollectionPathIdentifier = derivedERC721ContractName.concat("Collection")
@@ -1031,8 +1038,6 @@ fun testBridgeCadenceNativeTokenFromEVMSucceeds() {
 
 access(all)
 fun testBridgeEVMNativeTokenFromEVMSucceeds() {
-    let erc20AddressHex = getDeployedAddressFromDeployer(name: "erc20")
-    Test.assertEqual(40, erc20AddressHex.length)
 
     let derivedERC20ContractName = deriveBridgedTokenContractName(evmAddressHex: erc20AddressHex)
     let bridgedVaultPathIdentifier = derivedERC20ContractName.concat("Vault")
@@ -1074,8 +1079,6 @@ fun testBridgeEVMNativeTokenFromEVMSucceeds() {
 
 access(all)
 fun testBridgeEVMNativeTokenToEVMSucceeds() {
-    let erc20AddressHex = getDeployedAddressFromDeployer(name: "erc20")
-    Test.assertEqual(40, erc20AddressHex.length)
 
     let derivedERC20ContractName = deriveBridgedTokenContractName(evmAddressHex: erc20AddressHex)
     let bridgedVaultPathIdentifier = derivedERC20ContractName.concat("Vault")
