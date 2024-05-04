@@ -244,10 +244,7 @@ access(all) contract {{CONTRACT_NAME}} : ICrossVM, IEVMBridgeNFTMinter, NonFungi
 
         /// Borrow the view resolver for the specified NFT ID
         access(all) view fun borrowViewResolver(id: UInt64): &{ViewResolver.Resolver}? {
-            if let nft = &self.ownedNFTs[id] as &{{CONTRACT_NAME}}.NFT? {
-                return nft as &{ViewResolver.Resolver}
-            }
-            return nil
+            return &self.ownedNFTs[id] as &{ViewResolver.Resolver}? ?? nil
         }
 
         /// Creates an empty collection

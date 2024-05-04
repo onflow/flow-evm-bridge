@@ -127,14 +127,17 @@ fun setup() {
         arguments: []
     )
     Test.expect(err, Test.beNil())
-    let deploymentResult = executeTransaction(
-        "../transactions/evm/deploy.cdc",
-        [getCompiledFactoryBytecode(), 15_000_000, 0.0],
-        bridgeAccount
-    )
     var evts = Test.eventsOfType(Type<EVM.TransactionExecuted>())
     Test.assertEqual(2, evts.length)
-    let factoryDeploymentEvent = evts[0] as! EVM.TransactionExecuted
+    let deploymentResult = executeTransaction(
+        "../transactions/evm/deploy.cdc",
+        [getCompiledFactoryBytecode(), UInt64(15_000_000), 0.0],
+        bridgeAccount
+    )
+    Test.expect(deploymentResult, Test.beSucceeded())
+    evts = Test.eventsOfType(Type<EVM.TransactionExecuted>())
+    Test.assertEqual(3, evts.length)
+    let factoryDeploymentEvent = evts[2] as! EVM.TransactionExecuted
 
     let factoryAddressHex = factoryDeploymentEvent.contractAddress
     err = Test.deployContract(
@@ -251,9 +254,9 @@ fun testDeployERC721Succeeds() {
     
     // Get ERC721 & ERC20 deployed contract addresses
     let evts = Test.eventsOfType(Type<EVM.TransactionExecuted>())
-    Test.assertEqual(5, evts.length)
+    Test.assertEqual(6, evts.length)
 
-    let erc721DeploymentEvent = evts[4] as! EVM.TransactionExecuted
+    let erc721DeploymentEvent = evts[5] as! EVM.TransactionExecuted
     erc721AddressHex = erc721DeploymentEvent.contractAddress.slice(from: 2, upTo: erc721DeploymentEvent.contractAddress.length).toLower()
     
     Test.assertEqual(40, erc721AddressHex.length)
@@ -272,9 +275,9 @@ fun testDeployERC20Succeeds() {
     
     // Get ERC721 & ERC20 deployed contract addresses
     let evts = Test.eventsOfType(Type<EVM.TransactionExecuted>())
-    Test.assertEqual(6, evts.length)
+    Test.assertEqual(7, evts.length)
 
-    let erc20DeploymentEvent = evts[5] as! EVM.TransactionExecuted
+    let erc20DeploymentEvent = evts[6] as! EVM.TransactionExecuted
     erc20AddressHex = erc20DeploymentEvent.contractAddress.slice(from: 2, upTo: erc20DeploymentEvent.contractAddress.length).toLower()
 
     Test.assertEqual(40, erc20AddressHex.length)
@@ -466,7 +469,6 @@ fun testUpdateBridgeFeesSucceeds() {
 
     actualCalculated = calculateBridgeFee(bytesUsed: bytesUsed)
     Test.assertEqual(expectedFinalFee, actualCalculated)
-
 }
 
 /* --- ONBOARDING - Test asset onboarding to the bridge --- */
