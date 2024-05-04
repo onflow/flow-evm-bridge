@@ -10,7 +10,7 @@ import "FlowEVMBridgeUtils"
 ///
 transaction(registryEVMAddressHex: String) {
     
-    let coa: auth(Call) &CadenceOwnedAccount
+    let coa: auth(EVM.Call) &EVM.CadenceOwnedAccount
     
     prepare(signer: auth(BorrowValue) &Account) {
         self.coa = signer.storage.borrow<auth(EVM.Call) &EVM.CadenceOwnedAccount>(from: /storage/evm)
@@ -30,6 +30,6 @@ transaction(registryEVMAddressHex: String) {
             gasLimit: 15_000_000,
             value: EVM.Balance(attoflow: 0)
         )
-        assert(callResult.success == EVM.Status.successful, message: "Failed to set delegated deployer")
+        assert(callResult.status == EVM.Status.successful, message: "Failed to set registrar")
     }
 }
