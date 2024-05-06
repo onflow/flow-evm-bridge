@@ -19,7 +19,7 @@ transaction(deployerTag: String, deployerEVMAddressHex: String) {
         let callResult = self.coa.call(
             to: FlowEVMBridgeUtils.bridgeFactoryEVMAddress,
             data: EVM.encodeABIWithSignature(
-                "addDeployer(string, address)",
+                "addDeployer(string,address)",
                 [deployerTag, deployerEVMAddress]
             ),
             gasLimit: 15_000_000,

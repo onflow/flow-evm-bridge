@@ -125,13 +125,12 @@ fun setup() {
     // Get the deployed contract address from the latest EVM event
     let evts = Test.eventsOfType(Type<EVM.TransactionExecuted>())
     Test.assertEqual(2, evts.length)
-    let factoryDeploymentEvent = evts[0] as! EVM.TransactionExecuted
-    let factoryAddressHex = factoryDeploymentEvent.contractAddress
+    let factoryAddressHex = getEVMAddressHexFromEvents(evts, idx: 0)
 
     err = Test.deployContract(
         name: "FlowEVMBridgeUtils",
         path: "../contracts/bridge/FlowEVMBridgeUtils.cdc",
-        arguments: [factoryAddressHex.slice(from: 2, upTo: factoryAddressHex.length)]
+        arguments: [factoryAddressHex]
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
@@ -345,12 +344,7 @@ fun testDeployERC20Succeeds() {
 
     let evts = Test.eventsOfType(Type<EVM.TransactionExecuted>())
     Test.assertEqual(7, evts.length)
-    let erc20DeploymentEvent = evts[6] as! EVM.TransactionExecuted
-    // remove 0x prefix
-    erc20AddressHex = erc20DeploymentEvent.contractAddress.slice(
-            from: 2,
-            upTo: erc20DeploymentEvent.contractAddress.length
-        ).toLower()
+    erc20AddressHex = getEVMAddressHexFromEvents(evts, idx: 6)
 }
 
 // Set the TokenHandler's targetEVMAddress to the deployed ERC20 contract address

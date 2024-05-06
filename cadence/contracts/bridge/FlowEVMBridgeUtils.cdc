@@ -188,7 +188,7 @@ contract FlowEVMBridgeUtils {
     fun isEVMContractBridgeOwned(evmContractAddress: EVM.EVMAddress): Bool {
         // Ask the bridge factory if the given contract address was deployed by the bridge
         let callResult = self.call(
-                signature: "isFactoryDeployed(address)",
+                signature: "isBridgeDeployed(address)",
                 targetEVMAddress: self.bridgeFactoryEVMAddress,
                 args: [evmContractAddress],
                 gasLimit: 60000,
@@ -1241,11 +1241,11 @@ contract FlowEVMBridgeUtils {
         contractURI: String,
         isERC721: Bool
     ): EVM.EVMAddress {
-        let signature = isERC721 ? "deployERC721(string,string,string,string,string)" : "deployERC20(string,string,string,string,string)"
+        let deployerTag = isERC721 ? "ERC721" : "ERC20"
         let deployResult: EVM.Result = self.call(
-            signature: signature,
+            signature: "deploy(string,string,string,string,string,string)",
             targetEVMAddress: self.bridgeFactoryEVMAddress,
-            args: [name, symbol, cadenceAddress.toString(), flowIdentifier, contractURI],
+            args: [deployerTag, name, symbol, cadenceAddress.toString(), flowIdentifier, contractURI],
             gasLimit: 15000000,
             value: 0.0
         )
