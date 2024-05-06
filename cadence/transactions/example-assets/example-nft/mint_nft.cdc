@@ -50,11 +50,15 @@ transaction(
         // Create the royalty details
         var count = 0
         var royalties: [MetadataViews.Royalty] = []
+        log(royaltyBeneficiaries.length)
         while royaltyBeneficiaries.length > count {
             let beneficiary = royaltyBeneficiaries[count]
             let beneficiaryCapability = getAccount(beneficiary).capabilities.get<&{FungibleToken.Receiver}>(
                     MetadataViews.getRoyaltyReceiverPublicPath()
-                ) ?? panic("Beneficiary does not have Receiver configured at RoyaltyReceiverPublicPath")
+                )
+            if !beneficiaryCapability.check() {
+                panic("Beneficiary does not have Receiver configured at RoyaltyReceiverPublicPath")
+            }
 
             royalties.append(
                 MetadataViews.Royalty(

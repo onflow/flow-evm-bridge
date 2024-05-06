@@ -1255,7 +1255,7 @@ contract FlowEVMBridgeUtils {
         return decodedResult[0] as! EVM.EVMAddress
     }
 
-    init(bridgeFactoryBytecodeHex: String) {
+    init(bridgeFactoryAddressHex: String) {
         self.delimiter = "_"
         self.contractNamePrefixes = {
             Type<@{NonFungibleToken.NFT}>(): {
@@ -1265,11 +1265,7 @@ contract FlowEVMBridgeUtils {
                 "bridged": "EVMVMBridgedToken"
             }
         }
-        // Deploy the FlowBridgeFactory.sol contract from provided bytecode and capture the deployed address
-        self.bridgeFactoryEVMAddress = self.borrowCOA().deploy(
-            code: bridgeFactoryBytecodeHex.decodeHex(),
-            gasLimit: 15000000,
-            value: EVM.Balance(attoflow: 0)
-        )
+        self.bridgeFactoryEVMAddress = EVMUtils.getEVMAddressFromHexString(address: bridgeFactoryAddressHex.toLower())
+            ?? panic("Invalid EVM address hex")
     }
 }
