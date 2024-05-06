@@ -184,7 +184,7 @@ contract FlowBridgeFactory is Ownable {
     function setDeploymentRegistry(address _deploymentRegistry) public onlyOwner {
         _requireIsValidRegistry(_deploymentRegistry);
 
-        DeploymentRegistryUpdated(deploymentRegistry, _deploymentRegistry);
+        emit DeploymentRegistryUpdated(deploymentRegistry, _deploymentRegistry);
 
         deploymentRegistry = _deploymentRegistry;
     }
