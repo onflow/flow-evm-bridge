@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
-import "./interfaces/FlowEVMDeploymentRegistry.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {ERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
+import {FlowEVMDeploymentRegistry} from "./interfaces/FlowEVMDeploymentRegistry.sol";
 
 /**
  * @title FlowBridgeDeploymentRegistry

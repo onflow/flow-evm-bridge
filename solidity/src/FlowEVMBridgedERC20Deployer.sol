@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
-import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
-import "./interfaces/IFlowEVMBridgeDeployer.sol";
-import "./templates/FlowEVMBridgedERC20.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import {ERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
+import {IFlowEVMBridgeDeployer} from "./interfaces/IFlowEVMBridgeDeployer.sol";
+import {FlowEVMBridgedERC20} from "./templates/FlowEVMBridgedERC20.sol";
 
 /**
  * @title FlowEVMBridgedERC20Deployer
@@ -16,7 +16,7 @@ import "./templates/FlowEVMBridgedERC20.sol";
 contract FlowEVMBridgedERC20Deployer is IFlowEVMBridgeDeployer, ERC165, Ownable {
     // The address of the delegated deployer who can deploy new contracts
     address public delegatedDeployer;
-    
+
     /**
      * @dev Event emitted when a new ERC20 contract is deployed via this deployer
      */

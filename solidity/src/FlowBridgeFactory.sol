@@ -11,7 +11,12 @@ import {FlowEVMDeploymentRegistry} from "./interfaces/FlowEVMDeploymentRegistry.
 
 /**
  * @title FlowBridgeFactory
- * @dev Factory contract to deploy new FlowEVM bridge contracts, defining Cadence-native assets in EVM
+ * @dev Factory contract to deploy new FlowEVM bridge contracts, defining Cadence-native assets in EVM. Cadence & EVM
+ * contract associations are maintained in a deployment registry. This factory is enabled to deploy contracts via
+ * registered deployer implementations, each of which handle the deployment of a single templated contract indexed by
+ * a human-readable deployer tag. This setup modularizes each key component of the EVM side of the Flow EVM VM bridge,
+ * allowing new asset types to be added by simply adding a new deployer implementation or updated factory contract
+ * to be swapped out without affecting the underlying associations between Cadence and EVM contracts.
  */
 contract FlowBridgeFactory is Ownable {
     // Address of the deployment registry where deployed contract associations are registered

@@ -21,7 +21,6 @@ transaction(amount: UFix64) {
         let coa <- EVM.createCadenceOwnedAccount()
         coa.deposit(from: <-self.sentVault)
 
-        log(coa.balance().inFLOW())
         let storagePath = StoragePath(identifier: "evm")!
         let publicPath = PublicPath(identifier: "evm")!
         self.auth.storage.save<@EVM.CadenceOwnedAccount>(<-coa, to: storagePath)

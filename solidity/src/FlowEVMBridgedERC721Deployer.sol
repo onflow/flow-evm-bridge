@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
-import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
-import "./interfaces/IFlowEVMBridgeDeployer.sol";
-import "./templates/FlowEVMBridgedERC721.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import {ERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
+import {IFlowEVMBridgeDeployer} from "./interfaces/IFlowEVMBridgeDeployer.sol";
+import {FlowEVMBridgedERC721} from "./templates/FlowEVMBridgedERC721.sol";
 
 /**
  * @title FlowEVMBridgedERC721Deployer
