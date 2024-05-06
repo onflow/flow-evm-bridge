@@ -3,8 +3,8 @@ import "EVM"
 import "EVMUtils"
 import "FlowEVMBridgeUtils"
 
-/// Sets the registrar address for the provided FlowBridgeDeploymentRegistry address. Should be called by the owner of
-/// the registry contract.
+/// Sets the bridge factory contract address as the registrar for the provided FlowBridgeDeploymentRegistry address.
+/// Should be called by the owner of the registry contract.
 ///
 /// @param registryEVMAddressHex The EVM address of the FlowBridgeDeploymentRegistry contract.
 ///
