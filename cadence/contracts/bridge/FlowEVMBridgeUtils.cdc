@@ -863,6 +863,9 @@ contract FlowEVMBridgeUtils {
     ///
     access(all)
     view fun uint256FractionalToScaledUFix64Decimals(value: UInt256, decimals: UInt8): UFix64 {
+        pre {
+            self.getNumberOfDigits(value) <= decimals: "Fractional exceeds decimal places"
+        }
         post {
             result < 1.0: "Scaled fractional exceeds 1.0"
         }
@@ -885,6 +888,19 @@ contract FlowEVMBridgeUtils {
     access(all)
     view fun uint256ToUInt64(value: UInt256): UInt64 {
         return value <= UInt256(UInt64.max) ? UInt64(value) : panic("Value too large to fit into UInt64")
+    }
+
+    /// Returns the number of digits in the given UInt256
+    ///
+    access(all)
+    view fun getNumberOfDigits(_ value: UInt256): UInt8 {
+        var tmp = value
+        var digits: UInt8 = 0
+        while tmp > 0 {
+            tmp = tmp / 10
+            digits = digits + 1
+        }
+        return digits
     }
 
     /***************************
