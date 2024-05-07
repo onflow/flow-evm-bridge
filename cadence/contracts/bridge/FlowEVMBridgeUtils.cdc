@@ -866,23 +866,16 @@ contract FlowEVMBridgeUtils {
         post {
             result < 1.0: "Scaled fractional exceeds 1.0"
         }
-        var fractional = value
-        var digits = self.getNumberOfDigits(value)
-        let leadingZeros = decimals - digits
 
-        // fractional is too long - since UFix64 has 8 decimal places, truncate to maintain only the first 8 digis
-        var fractionalReduction: UInt8 = 0
-        while fractional > 99999999 {
-            fractional = fractional / 10
-            fractionalReduction = fractionalReduction + 1
+        var fractional = value
+        // Truncate fractional to the first 8 decimal places
+        if decimals >= 8 {
+            fractional = fractional / self.pow(base: 10, exponent: decimals - 8)
         }
 
         // Scale the fractional part
         let fractionalMultiplier = self.ufixPow(base: 0.1, exponent: decimals < 8 ? decimals : 8)
         var scaledFractional = UFix64(fractional) * fractionalMultiplier
-        if leadingZeros > 0 && decimals >= 8 {
-            scaledFractional = scaledFractional * self.ufixPow(base: 0.1, exponent: leadingZeros)
-        }
 
         return scaledFractional
     }
@@ -892,19 +885,6 @@ contract FlowEVMBridgeUtils {
     access(all)
     view fun uint256ToUInt64(value: UInt256): UInt64 {
         return value <= UInt256(UInt64.max) ? UInt64(value) : panic("Value too large to fit into UInt64")
-    }
-
-    /// Returns the number of digits in the given UInt256
-    ///
-    access(all)
-    view fun getNumberOfDigits(_ value: UInt256): UInt8 {
-        var tmp = value
-        var digits: UInt8 = 0
-        while tmp > 0 {
-            tmp = tmp / 10
-            digits = digits + 1
-        }
-        return digits
     }
 
     /***************************
