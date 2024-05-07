@@ -811,26 +811,6 @@ contract FlowEVMBridgeUtils {
         return r
     }
 
-    /// Converts a UInt256 to a UFix64
-    ///
-    access(all)
-    view fun uint256ToUFix64(value: UInt256, decimals: UInt8): UFix64 {
-        // Calculate scale factors for the integer and fractional parts
-        let absoluteScaleFactor = self.pow(base: 10, exponent: decimals)
-
-        // Separate the integer and fractional parts of the value
-        let scaledValue = value / absoluteScaleFactor
-        var fractional = value % absoluteScaleFactor
-        let scaledFractional = self.uint256FractionalToScaledUFix64Decimals(value: fractional, decimals: decimals)
-
-        assert(
-            scaledValue < UInt256(UFix64.max),
-            message: "Scaled integer value ".concat(value.toString()).concat(" exceeds max UFix64 value")
-        )
-
-        return UFix64(scaledValue) + scaledFractional
-    }
-
     /// Converts a UFix64 to a UInt256
     //
     access(all)
@@ -852,46 +832,77 @@ contract FlowEVMBridgeUtils {
         return integer * integerMultiplier + UInt256(fractional) * fractionalMultiplier
     }
 
+    /// Converts a UInt256 to a UFix64
+    ///
+    access(all)
+    view fun uint256ToUFix64(value: UInt256, decimals: UInt8): UFix64 {
+        // Calculate scale factors for the integer and fractional parts
+        let absoluteScaleFactor = self.pow(base: 10, exponent: decimals)
+
+        // Separate the integer and fractional parts of the value
+        let scaledValue = value / absoluteScaleFactor
+        var fractional = value % absoluteScaleFactor
+        // Scale the fractional part
+        let scaledFractional = self.uint256FractionalToScaledUFix64Decimals(value: fractional, decimals: decimals)
+
+        // Ensure the parts do not exceed the max UFix64 value before conversion
+        assert(
+            scaledValue <= UInt256(UFix64.max),
+            message: "Scaled integer value ".concat(value.toString()).concat(" exceeds max UFix64 value")
+        )
+        assert(
+            scaledValue == UInt256(UFix64.max) ? scaledFractional < 0.09551616 : true,
+            message: "Scaled integer value ".concat(value.toString()).concat(" exceeds max UFix64 value")
+        )
+
+        return UFix64(scaledValue) + scaledFractional
+    }
+
     /// Converts a UInt256 fractional value with the given decimal places to a scaled UFix64. Note that UFix64 has
     /// decimal precision of 8 places so converted values may lose precision and be rounded down.
     ///
     access(all)
     view fun uint256FractionalToScaledUFix64Decimals(value: UInt256, decimals: UInt8): UFix64 {
-        post {
-            result < 1.0: "Scaled fractional exceeds 1.0"
+        pre {
+            self.getNumberOfDigits(value) <= decimals: "Fractional digits exceed the defined decimal places"
         }
-        var fractional = value
-        // Reduce fractional values with trailing zeros
-        var e: UInt8 = 0
-        while fractional > 0 {
-            if fractional % 10 == 0 {
-                fractional = fractional / 10
-                e = e + 1
-            } else {
-                break
-            }
+        post {
+            result < 1.0: "Resulting scaled fractional exceeds 1.0"
         }
 
-        // fractional is too long - since UFix64 has 8 decimal places, truncate to maintain only the first 8 digis
-        var fractionalReduction: UInt8 = 0
-        while fractional > 99999999 {
-            fractional = fractional / 10
-            fractionalReduction = fractionalReduction + 1
+        var fractional = value
+        // Truncate fractional to the first 8 decimal places which is the max precision for UFix64
+        if decimals >= 8 {
+            fractional = fractional / self.pow(base: 10, exponent: decimals - 8)
+        }
+        // Return early if the truncated fractional part is now 0
+        if fractional == 0 {
+            return 0.0
         }
 
         // Scale the fractional part
-        let fractionalMultiplier = self.ufixPow(base: 0.1, exponent: decimals - e - fractionalReduction)
-        let scaledFractional = UFix64(fractional) * fractionalMultiplier
-
-        return scaledFractional
+        let fractionalMultiplier = self.ufixPow(base: 0.1, exponent: decimals < 8 ? decimals : 8)
+        return UFix64(fractional) * fractionalMultiplier
     }
-
 
     /// Returns the value as a UInt64 if it fits, otherwise panics
     ///
     access(all)
     view fun uint256ToUInt64(value: UInt256): UInt64 {
         return value <= UInt256(UInt64.max) ? UInt64(value) : panic("Value too large to fit into UInt64")
+    }
+
+    /// Returns the number of digits in the given UInt256
+    ///
+    access(all)
+    view fun getNumberOfDigits(_ value: UInt256): UInt8 {
+        var tmp = value
+        var digits: UInt8 = 0
+        while tmp > 0 {
+            tmp = tmp / 10
+            digits = digits + 1
+        }
+        return digits
     }
 
     /***************************
