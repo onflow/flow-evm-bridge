@@ -96,12 +96,11 @@ fun setup() {
     )
     let evts = Test.eventsOfType(Type<EVM.TransactionExecuted>())
     Test.assertEqual(2, evts.length)
-    let factoryDeploymentEvent = evts[0] as! EVM.TransactionExecuted
-    let factoryAddressHex = factoryDeploymentEvent.contractAddress
+    let factoryAddressHex = getEVMAddressHexFromEvents(evts, idx: 0)
     err = Test.deployContract(
         name: "FlowEVMBridgeUtils",
         path: "../contracts/bridge/FlowEVMBridgeUtils.cdc",
-        arguments: [factoryAddressHex.slice(from: 2, upTo: factoryAddressHex.length)]
+        arguments: [factoryAddressHex]
     )
     Test.expect(err, Test.beNil())
 }

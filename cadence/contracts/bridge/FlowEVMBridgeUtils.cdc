@@ -256,9 +256,16 @@ contract FlowEVMBridgeUtils {
     ///
     access(all)
     fun isValidEVMAsset(evmContractAddress: EVM.EVMAddress): Bool {
-        let isERC721 = self.isERC721(evmContractAddress: evmContractAddress)
-        let isERC20 = self.isERC20(evmContractAddress: evmContractAddress)
-        return (isERC721 && !isERC20) || (!isERC721 && isERC20)
+        let callResult = self.call(
+            signature: "isValidAsset(address)",
+            targetEVMAddress: self.bridgeFactoryEVMAddress,
+            args: [evmContractAddress],
+            gasLimit: 100000,
+            value: 0.0
+        )
+        let decodedResult = EVM.decodeABI(types: [Type<Bool>()], data: callResult.data)
+        assert(decodedResult.length == 1, message: "Invalid response length")
+        return decodedResult[0] as! Bool
     }
 
     /// Returns whether the given type is either an NFT or FT exclusively
@@ -271,7 +278,7 @@ contract FlowEVMBridgeUtils {
     view fun isValidFlowAsset(type: Type): Bool {
         let isFlowNFT = type.isSubtype(of: Type<@{NonFungibleToken.NFT}>())
         let isFlowToken = type.isSubtype(of: Type<@{FungibleToken.Vault}>())
-        return (isFlowNFT && !isFlowToken) || (!isFlowNFT && isFlowToken)
+        return isFlowNFT != isFlowToken
     }
 
     /// Retrieves the bridge contract's COA EVMAddress

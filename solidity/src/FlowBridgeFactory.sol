@@ -19,7 +19,12 @@ import {FlowEVMDeploymentRegistry} from "./interfaces/FlowEVMDeploymentRegistry.
  * to be swapped out without affecting the underlying associations between Cadence and EVM contracts.
  */
 contract FlowBridgeFactory is Ownable {
-    // Address of the deployment registry where deployed contract associations are registered
+    // Address of the deployment registry where deployed contract associations are registered. Note that this is a
+    // registry for EVM contracts deployed by the bridge factory and does not include those EVM-native contracts that
+    // have been onboarded to the bridge via Cadence contracts. The global source of truth is found in the Cadence
+    // side of the bridge, however this registry and publicly accessible methods can serve as a source of truth
+    // within EVM. Given some EVM contract, its bridge-supported Cadence type association can be found (and vice-versa)
+    // by querying this contract, thus preventing impersonation attacks.
     address private deploymentRegistry;
     // Mapping of deployer tags to their implementation addresses
     mapping(string => address) private deployers;
@@ -159,6 +164,17 @@ contract FlowBridgeFactory is Ownable {
         } catch {
             return false;
         }
+    }
+
+    /**
+     * @dev Determines if a contract is a valid asset by checking if it is either an ERC20 or ERC721 implementation
+     *
+     * @param contractAddr The address of the contract to check
+     *
+     * @return True if the contract is a valid asset, false otherwise
+     */
+    function isValidAsset(address contractAddr) public view returns (bool) {
+        return isERC20(contractAddr) != isERC721(contractAddr);
     }
 
     /**
