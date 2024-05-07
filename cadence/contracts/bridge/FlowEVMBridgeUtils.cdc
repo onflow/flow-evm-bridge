@@ -845,7 +845,7 @@ contract FlowEVMBridgeUtils {
         // Scale the fractional part
         let scaledFractional = self.uint256FractionalToScaledUFix64Decimals(value: fractional, decimals: decimals)
 
-        // Ensure the parts do not exceed the max UFix64 value
+        // Ensure the parts do not exceed the max UFix64 value before conversion
         assert(
             scaledValue <= UInt256(UFix64.max),
             message: "Scaled integer value ".concat(value.toString()).concat(" exceeds max UFix64 value")
@@ -864,23 +864,25 @@ contract FlowEVMBridgeUtils {
     access(all)
     view fun uint256FractionalToScaledUFix64Decimals(value: UInt256, decimals: UInt8): UFix64 {
         pre {
-            self.getNumberOfDigits(value) <= decimals: "Fractional exceeds decimal places"
+            self.getNumberOfDigits(value) <= decimals: "Fractional digits exceed the defined decimal places"
         }
         post {
-            result < 1.0: "Scaled fractional exceeds 1.0"
+            result < 1.0: "Resulting scaled fractional exceeds 1.0"
         }
 
         var fractional = value
-        // Truncate fractional to the first 8 decimal places
+        // Truncate fractional to the first 8 decimal places which is the max precision for UFix64
         if decimals >= 8 {
             fractional = fractional / self.pow(base: 10, exponent: decimals - 8)
+        }
+        // Return early if the truncated fractional part is now 0
+        if fractional == 0 {
+            return 0.0
         }
 
         // Scale the fractional part
         let fractionalMultiplier = self.ufixPow(base: 0.1, exponent: decimals < 8 ? decimals : 8)
-        var scaledFractional = UFix64(fractional) * fractionalMultiplier
-
-        return scaledFractional
+        return UFix64(fractional) * fractionalMultiplier
     }
 
     /// Returns the value as a UInt64 if it fits, otherwise panics
