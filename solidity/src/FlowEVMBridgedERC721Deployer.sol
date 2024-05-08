@@ -10,7 +10,7 @@ import {FlowEVMBridgedERC721} from "./templates/FlowEVMBridgedERC721.sol";
 
 /**
  * @title FlowEVMBridgedERC721Deployer
- * @dev A contract to deploy FlowEVMBridgedERC721 contracts with named associations to Cadence contracts. Only the
+ * @dev A contract to deploy FlowEVMBridgedERC721 contracts with named associations to Cadence resource types. Only the
  * delegated deployer can deploy new contracts. This contract is used by the Flow EVM bridge to deploy and define
  * bridged ERC721 tokens which are defined natively in Cadence.
  */

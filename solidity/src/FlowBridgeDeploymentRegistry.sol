@@ -7,7 +7,8 @@ import {FlowEVMDeploymentRegistry} from "./interfaces/FlowEVMDeploymentRegistry.
 
 /**
  * @title FlowBridgeDeploymentRegistry
- * @dev A contract to manage the deployment of Flow EVM contracts and their association with Cadence contracts
+ * @dev A contract to manage the association between bridged Flow EVM contracts and a corresponding Cadence resource type. 
+ * Deployment of new bridged Flow EVM contracts is handled in `FlowBridgeFactory`.
  */
 contract FlowBridgeDeploymentRegistry is FlowEVMDeploymentRegistry, Ownable {
     constructor() Ownable(msg.sender) {

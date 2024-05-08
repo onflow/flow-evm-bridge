@@ -277,7 +277,7 @@ contract FlowEVMBridgeUtils {
     access(all)
     view fun isValidFlowAsset(type: Type): Bool {
         let isFlowNFT = type.isSubtype(of: Type<@{NonFungibleToken.NFT}>())
-        let isFlowToken = type.isSubtype(of: Type<@{FungibleToken.Vault}>())
+        let isFlowFungibleToken = type.isSubtype(of: Type<@{FungibleToken.Vault}>())
         return isFlowNFT != isFlowToken
     }
 
