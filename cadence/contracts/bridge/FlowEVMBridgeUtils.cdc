@@ -275,10 +275,10 @@ contract FlowEVMBridgeUtils {
     /// @return True if the type is either an NFT or FT, false otherwise
     ///
     access(all)
-    view fun isValidFlowAsset(type: Type): Bool {
-        let isFlowNFT = type.isSubtype(of: Type<@{NonFungibleToken.NFT}>())
-        let isFlowFungibleToken = type.isSubtype(of: Type<@{FungibleToken.Vault}>())
-        return isFlowNFT != isFlowToken
+    view fun isValidCadenceAsset(type: Type): Bool {
+        let isCadenceNFT = type.isSubtype(of: Type<@{NonFungibleToken.NFT}>())
+        let isCadenceFungibleToken = type.isSubtype(of: Type<@{FungibleToken.Vault}>())
+        return isCadenceNFT != isCadenceFungibleToken
     }
 
     /// Retrieves the bridge contract's COA EVMAddress
@@ -304,7 +304,7 @@ contract FlowEVMBridgeUtils {
     access(all)
     fun getCadenceOnboardingValues(forAssetType: Type): CadenceOnboardingValues {
         pre {
-            self.isValidFlowAsset(type: forAssetType): "This type is not a supported Flow asset type."
+            self.isValidCadenceAsset(type: forAssetType): "This type is not a supported Flow asset type."
         }
         // If not an NFT, assumed to be fungible token.
         let isNFT = forAssetType.isSubtype(of: Type<@{NonFungibleToken.NFT}>())
@@ -726,7 +726,7 @@ contract FlowEVMBridgeUtils {
     ///
     access(all)
     view fun deriveEscrowStoragePath(fromType: Type): StoragePath? {
-        if !self.isValidFlowAsset(type: fromType) {
+        if !self.isValidCadenceAsset(type: fromType) {
             return nil
         }
         var prefix = ""
