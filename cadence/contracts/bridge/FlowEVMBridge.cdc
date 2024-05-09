@@ -550,7 +550,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
     ///
     access(all)
     view fun typeRequiresOnboarding(_ type: Type): Bool? {
-        if !FlowEVMBridgeUtils.isValidFlowAsset(type: type) {
+        if !FlowEVMBridgeUtils.isValidCadenceAsset(type: type) {
             return nil
         }
         return FlowEVMBridgeConfig.getEVMAddressAssociated(with: type) == nil &&
@@ -590,7 +590,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
     access(self)
     fun deployEVMContract(forAssetType: Type): FlowEVMBridgeUtils.EVMOnboardingValues {
         pre {
-            FlowEVMBridgeUtils.isValidFlowAsset(type: forAssetType):
+            FlowEVMBridgeUtils.isValidCadenceAsset(type: forAssetType):
                 "Asset type is not supported by the bridge"
         }
         let isNFT = forAssetType.isSubtype(of: Type<@{NonFungibleToken.NFT}>())

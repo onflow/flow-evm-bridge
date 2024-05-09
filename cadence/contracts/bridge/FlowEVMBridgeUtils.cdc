@@ -21,7 +21,7 @@ contract FlowEVMBridgeUtils {
 
     /// Address of the bridge factory Solidity contract
     access(all)
-    let bridgeFactoryEVMAddress: EVM.EVMAddress
+    var bridgeFactoryEVMAddress: EVM.EVMAddress
     /// Delimeter used to derive contract names
     access(self)
     let delimiter: String
@@ -188,7 +188,7 @@ contract FlowEVMBridgeUtils {
     fun isEVMContractBridgeOwned(evmContractAddress: EVM.EVMAddress): Bool {
         // Ask the bridge factory if the given contract address was deployed by the bridge
         let callResult = self.call(
-                signature: "isFactoryDeployed(address)",
+                signature: "isBridgeDeployed(address)",
                 targetEVMAddress: self.bridgeFactoryEVMAddress,
                 args: [evmContractAddress],
                 gasLimit: 60000,
@@ -256,9 +256,16 @@ contract FlowEVMBridgeUtils {
     ///
     access(all)
     fun isValidEVMAsset(evmContractAddress: EVM.EVMAddress): Bool {
-        let isERC721 = self.isERC721(evmContractAddress: evmContractAddress)
-        let isERC20 = self.isERC20(evmContractAddress: evmContractAddress)
-        return (isERC721 && !isERC20) || (!isERC721 && isERC20)
+        let callResult = self.call(
+            signature: "isValidAsset(address)",
+            targetEVMAddress: self.bridgeFactoryEVMAddress,
+            args: [evmContractAddress],
+            gasLimit: 100000,
+            value: 0.0
+        )
+        let decodedResult = EVM.decodeABI(types: [Type<Bool>()], data: callResult.data)
+        assert(decodedResult.length == 1, message: "Invalid response length")
+        return decodedResult[0] as! Bool
     }
 
     /// Returns whether the given type is either an NFT or FT exclusively
@@ -268,10 +275,10 @@ contract FlowEVMBridgeUtils {
     /// @return True if the type is either an NFT or FT, false otherwise
     ///
     access(all)
-    view fun isValidFlowAsset(type: Type): Bool {
-        let isFlowNFT = type.isSubtype(of: Type<@{NonFungibleToken.NFT}>())
-        let isFlowToken = type.isSubtype(of: Type<@{FungibleToken.Vault}>())
-        return (isFlowNFT && !isFlowToken) || (!isFlowNFT && isFlowToken)
+    view fun isValidCadenceAsset(type: Type): Bool {
+        let isCadenceNFT = type.isSubtype(of: Type<@{NonFungibleToken.NFT}>())
+        let isCadenceFungibleToken = type.isSubtype(of: Type<@{FungibleToken.Vault}>())
+        return isCadenceNFT != isCadenceFungibleToken
     }
 
     /// Retrieves the bridge contract's COA EVMAddress
@@ -297,7 +304,7 @@ contract FlowEVMBridgeUtils {
     access(all)
     fun getCadenceOnboardingValues(forAssetType: Type): CadenceOnboardingValues {
         pre {
-            self.isValidFlowAsset(type: forAssetType): "This type is not a supported Flow asset type."
+            self.isValidCadenceAsset(type: forAssetType): "This type is not a supported Flow asset type."
         }
         // If not an NFT, assumed to be fungible token.
         let isNFT = forAssetType.isSubtype(of: Type<@{NonFungibleToken.NFT}>())
@@ -719,7 +726,7 @@ contract FlowEVMBridgeUtils {
     ///
     access(all)
     view fun deriveEscrowStoragePath(fromType: Type): StoragePath? {
-        if !self.isValidFlowAsset(type: fromType) {
+        if !self.isValidCadenceAsset(type: fromType) {
             return nil
         }
         var prefix = ""
@@ -811,26 +818,6 @@ contract FlowEVMBridgeUtils {
         return r
     }
 
-    /// Converts a UInt256 to a UFix64
-    ///
-    access(all)
-    view fun uint256ToUFix64(value: UInt256, decimals: UInt8): UFix64 {
-        // Calculate scale factors for the integer and fractional parts
-        let absoluteScaleFactor = self.pow(base: 10, exponent: decimals)
-
-        // Separate the integer and fractional parts of the value
-        let scaledValue = value / absoluteScaleFactor
-        var fractional = value % absoluteScaleFactor
-        let scaledFractional = self.uint256FractionalToScaledUFix64Decimals(value: fractional, decimals: decimals)
-
-        assert(
-            scaledValue < UInt256(UFix64.max),
-            message: "Scaled integer value ".concat(value.toString()).concat(" exceeds max UFix64 value")
-        )
-
-        return UFix64(scaledValue) + scaledFractional
-    }
-
     /// Converts a UFix64 to a UInt256
     //
     access(all)
@@ -852,46 +839,77 @@ contract FlowEVMBridgeUtils {
         return integer * integerMultiplier + UInt256(fractional) * fractionalMultiplier
     }
 
+    /// Converts a UInt256 to a UFix64
+    ///
+    access(all)
+    view fun uint256ToUFix64(value: UInt256, decimals: UInt8): UFix64 {
+        // Calculate scale factors for the integer and fractional parts
+        let absoluteScaleFactor = self.pow(base: 10, exponent: decimals)
+
+        // Separate the integer and fractional parts of the value
+        let scaledValue = value / absoluteScaleFactor
+        var fractional = value % absoluteScaleFactor
+        // Scale the fractional part
+        let scaledFractional = self.uint256FractionalToScaledUFix64Decimals(value: fractional, decimals: decimals)
+
+        // Ensure the parts do not exceed the max UFix64 value before conversion
+        assert(
+            scaledValue <= UInt256(UFix64.max),
+            message: "Scaled integer value ".concat(value.toString()).concat(" exceeds max UFix64 value")
+        )
+        assert(
+            scaledValue == UInt256(UFix64.max) ? scaledFractional < 0.09551616 : true,
+            message: "Scaled integer value ".concat(value.toString()).concat(" exceeds max UFix64 value")
+        )
+
+        return UFix64(scaledValue) + scaledFractional
+    }
+
     /// Converts a UInt256 fractional value with the given decimal places to a scaled UFix64. Note that UFix64 has
     /// decimal precision of 8 places so converted values may lose precision and be rounded down.
     ///
     access(all)
     view fun uint256FractionalToScaledUFix64Decimals(value: UInt256, decimals: UInt8): UFix64 {
-        post {
-            result < 1.0: "Scaled fractional exceeds 1.0"
+        pre {
+            self.getNumberOfDigits(value) <= decimals: "Fractional digits exceed the defined decimal places"
         }
-        var fractional = value
-        // Reduce fractional values with trailing zeros
-        var e: UInt8 = 0
-        while fractional > 0 {
-            if fractional % 10 == 0 {
-                fractional = fractional / 10
-                e = e + 1
-            } else {
-                break
-            }
+        post {
+            result < 1.0: "Resulting scaled fractional exceeds 1.0"
         }
 
-        // fractional is too long - since UFix64 has 8 decimal places, truncate to maintain only the first 8 digis
-        var fractionalReduction: UInt8 = 0
-        while fractional > 99999999 {
-            fractional = fractional / 10
-            fractionalReduction = fractionalReduction + 1
+        var fractional = value
+        // Truncate fractional to the first 8 decimal places which is the max precision for UFix64
+        if decimals >= 8 {
+            fractional = fractional / self.pow(base: 10, exponent: decimals - 8)
+        }
+        // Return early if the truncated fractional part is now 0
+        if fractional == 0 {
+            return 0.0
         }
 
         // Scale the fractional part
-        let fractionalMultiplier = self.ufixPow(base: 0.1, exponent: decimals - e - fractionalReduction)
-        let scaledFractional = UFix64(fractional) * fractionalMultiplier
-
-        return scaledFractional
+        let fractionalMultiplier = self.ufixPow(base: 0.1, exponent: decimals < 8 ? decimals : 8)
+        return UFix64(fractional) * fractionalMultiplier
     }
-
 
     /// Returns the value as a UInt64 if it fits, otherwise panics
     ///
     access(all)
     view fun uint256ToUInt64(value: UInt256): UInt64 {
         return value <= UInt256(UInt64.max) ? UInt64(value) : panic("Value too large to fit into UInt64")
+    }
+
+    /// Returns the number of digits in the given UInt256
+    ///
+    access(all)
+    view fun getNumberOfDigits(_ value: UInt256): UInt8 {
+        var tmp = value
+        var digits: UInt8 = 0
+        while tmp > 0 {
+            tmp = tmp / 10
+            digits = digits + 1
+        }
+        return digits
     }
 
     /***************************
@@ -1241,11 +1259,11 @@ contract FlowEVMBridgeUtils {
         contractURI: String,
         isERC721: Bool
     ): EVM.EVMAddress {
-        let signature = isERC721 ? "deployERC721(string,string,string,string,string)" : "deployERC20(string,string,string,string,string)"
+        let deployerTag = isERC721 ? "ERC721" : "ERC20"
         let deployResult: EVM.Result = self.call(
-            signature: signature,
+            signature: "deploy(string,string,string,string,string,string)",
             targetEVMAddress: self.bridgeFactoryEVMAddress,
-            args: [name, symbol, cadenceAddress.toString(), flowIdentifier, contractURI],
+            args: [deployerTag, name, symbol, cadenceAddress.toString(), flowIdentifier, contractURI],
             gasLimit: 15000000,
             value: 0.0
         )

@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
-import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
-import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
-import "./IBridgePermissions.sol";
+import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import {ERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
+import {IBridgePermissions} from "./IBridgePermissions.sol";
 
 /**
  * @dev Contract for which implementation is checked by the Flow VM bridge as an opt-out mechanism

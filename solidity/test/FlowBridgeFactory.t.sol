@@ -3,14 +3,20 @@ pragma solidity ^0.8.17;
 
 import {Test} from "forge-std/Test.sol";
 
+import {FlowBridgeDeploymentRegistry} from "../src/FlowBridgeDeploymentRegistry.sol";
+import {FlowEVMBridgedERC721Deployer} from "../src/FlowEVMBridgedERC721Deployer.sol";
+import {FlowEVMBridgedERC20Deployer} from "../src/FlowEVMBridgedERC20Deployer.sol";
 import {FlowBridgeFactory} from "../src/FlowBridgeFactory.sol";
-import {FlowBridgedERC721} from "../src/templates/FlowBridgedERC721.sol";
-import {FlowBridgedERC20} from "../src/templates/FlowBridgedERC20.sol";
+import {FlowEVMBridgedERC721} from "../src/templates/FlowEVMBridgedERC721.sol";
+import {FlowEVMBridgedERC20} from "../src/templates/FlowEVMBridgedERC20.sol";
 
 contract FlowBridgeFactoryTest is Test {
     FlowBridgeFactory internal factory;
-    FlowBridgedERC721 internal deployedERC721Contract;
-    FlowBridgedERC20 internal deployedERC20Contract;
+    FlowBridgeDeploymentRegistry internal registry;
+    FlowEVMBridgedERC20Deployer internal erc20Deployer;
+    FlowEVMBridgedERC721Deployer internal erc721Deployer;
+    FlowEVMBridgedERC20 internal deployedERC20Contract;
+    FlowEVMBridgedERC721 internal deployedERC721Contract;
 
     string name;
     string symbol;
@@ -19,11 +25,10 @@ contract FlowBridgeFactoryTest is Test {
     string flowTokenAddress;
     string flowTokenIdentifier;
     string contractURI;
-    address deployedERC721Address;
     address deployedERC20Address;
+    address deployedERC721Address;
 
     function setUp() public virtual {
-        factory = new FlowBridgeFactory();
         name = "name";
         symbol = "symbol";
         flowNFTAddress = "flowNFTAddress";
@@ -32,15 +37,46 @@ contract FlowBridgeFactoryTest is Test {
         flowTokenIdentifier = "flowTokenIdentifier";
         contractURI = "contractURI";
 
-        deployedERC721Address = factory.deployERC721(name, symbol, flowNFTAddress, flowNFTIdentifier, contractURI);
-        deployedERC20Address = factory.deployERC20(name, symbol, flowTokenAddress, flowTokenIdentifier, contractURI);
-        deployedERC721Contract = FlowBridgedERC721(deployedERC721Address);
-        deployedERC20Contract = FlowBridgedERC20(deployedERC20Address);
+        factory = new FlowBridgeFactory();
+
+        registry = new FlowBridgeDeploymentRegistry();
+        erc20Deployer = new FlowEVMBridgedERC20Deployer();
+        erc721Deployer = new FlowEVMBridgedERC721Deployer();
+
+        factory.setDeploymentRegistry(address(registry));
+        registry.setRegistrar(address(factory));
+
+        erc20Deployer.setDelegatedDeployer(address(factory));
+        erc721Deployer.setDelegatedDeployer(address(factory));
+
+        factory.addDeployer("ERC20", address(erc20Deployer));
+        factory.addDeployer("ERC721", address(erc721Deployer));
+
+        deployedERC20Address = factory.deploy("ERC20", name, symbol, flowTokenAddress, flowTokenIdentifier, contractURI);
+        deployedERC721Address = factory.deploy("ERC721", name, symbol, flowNFTAddress, flowNFTIdentifier, contractURI);
+
+        deployedERC20Contract = FlowEVMBridgedERC20(deployedERC20Address);
+        deployedERC721Contract = FlowEVMBridgedERC721(deployedERC721Address);
+    }
+
+    function test_RegistryIsNonZero() public {
+        address registryAddress = factory.getRegistry();
+        assertNotEq(registryAddress, address(0));
+    }
+
+    function test_GetERC20Deployer() public {
+        address erc20DeployerAddress = factory.getDeployer("ERC20");
+        assertEq(erc20DeployerAddress, address(erc20Deployer));
+    }
+
+    function test_GetERC721Deployer() public {
+        address erc721DeployerAddress = factory.getDeployer("ERC721");
+        assertEq(erc721DeployerAddress, address(erc721Deployer));
     }
 
     function test_DeployERC721() public {
-        bool isFactoryDeployed = factory.isFactoryDeployed(deployedERC721Address);
-        assertEq(isFactoryDeployed, true);
+        bool isBridgeDeployed = factory.isBridgeDeployed(deployedERC721Address);
+        assertEq(isBridgeDeployed, true);
     }
 
     function test_IsERC721True() public {
@@ -54,8 +90,8 @@ contract FlowBridgeFactoryTest is Test {
     }
 
     function test_DeployERC20() public {
-        bool isFactoryDeployed = factory.isFactoryDeployed(deployedERC20Address);
-        assertEq(isFactoryDeployed, true);
+        bool isBridgeDeployed = factory.isBridgeDeployed(deployedERC20Address);
+        assertEq(isBridgeDeployed, true);
     }
 
     function test_IsERC20True() public {
@@ -104,7 +140,7 @@ contract FlowBridgeFactoryTest is Test {
         assertEq(factoryOwner, erc20Owner);
     }
 
-    function test_SuccessfulMint() public {
+    function test_MintERC721() public {
         address recipient = address(27);
         uint256 tokenId = 42;
         string memory uri = "MOCK_URI";
@@ -112,5 +148,14 @@ contract FlowBridgeFactoryTest is Test {
 
         address owner = deployedERC721Contract.ownerOf(tokenId);
         assertEq(owner, recipient);
+    }
+
+    function test_MintERC20() public {
+        address recipient = address(27);
+        uint256 amount = 100e18;
+        deployedERC20Contract.mint(recipient, amount);
+
+        uint256 balance = deployedERC20Contract.balanceOf(recipient);
+        assertEq(balance, amount);
     }
 }
