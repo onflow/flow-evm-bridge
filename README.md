@@ -3,8 +3,6 @@
 
 # Flow EVM Bridge
 
-> :warning: Upcoming breaking changes may result in updated deployment addresses and redirection of bridge requests.
-
 This repo contains contracts enabling bridging of fungible & non-fungible tokens between Cadence and EVM.
 
 ## Deployments
