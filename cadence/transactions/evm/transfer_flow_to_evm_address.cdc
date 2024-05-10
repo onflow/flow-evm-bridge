@@ -6,43 +6,35 @@ import "EVM"
 import "EVMUtils"
 
 /// Transfers $FLOW from the signer's account Cadence Flow balance to the recipient's hex-encoded EVM address.
-/// Note that a COA must have a $FLOW balance in EVM before transferring value to another EVM address.
 ///
 transaction(recipientEVMAddressHex: String, amount: UFix64, gasLimit: UInt64) {
 
-    let coa: auth(EVM.Withdraw, EVM.Call) &EVM.CadenceOwnedAccount
-    let recipientEVMAddress: EVM.EVMAddress
     var sentVault: @FlowToken.Vault
+    let recipientEVMAddress: EVM.EVMAddress
+    let recipientPreBalance: UFix64
 
     prepare(signer: auth(BorrowValue, SaveValue) &Account) {
-        if signer.storage.type(at: /storage/evm) == nil {
-            signer.storage.save(<-EVM.createCadenceOwnedAccount(), to: /storage/evm)
-        }
-        self.coa = signer.storage.borrow<auth(EVM.Withdraw, EVM.Call) &EVM.CadenceOwnedAccount>(from: /storage/evm)
-            ?? panic("Could not borrow reference to the signer's bridged account")
-
+        // Borrow a reference to the signer's FlowToken.Vault and withdraw the amount
         let vaultRef = signer.storage.borrow<auth(FungibleToken.Withdraw) &FlowToken.Vault>(
                 from: /storage/flowTokenVault
             ) ?? panic("Could not borrow reference to the owner's Vault!")
         self.sentVault <- vaultRef.withdraw(amount: amount) as! @FlowToken.Vault
 
+        // Get the recipient's EVM address
         self.recipientEVMAddress = EVMUtils.getEVMAddressFromHexString(address: recipientEVMAddressHex)
             ?? panic("Invalid recipient EVM address")
+
+        // Get the recipient's balance before the transfer to check the amount transferred
+        self.recipientPreBalance = self.recipientEVMAddress.balance().inFLOW()
     }
 
     execute {
-        self.coa.deposit(from: <-self.sentVault)
-        if self.recipientEVMAddress.bytes == self.coa.address().bytes {
-            return
-        }
-        let valueBalance = EVM.Balance(attoflow: 0)
-        valueBalance.setFLOW(flow: amount)
-        let callResult = self.coa.call(
-            to: self.recipientEVMAddress,
-            data: [],
-            gasLimit: gasLimit,
-            value: valueBalance
-        )
-        assert(callResult.status == EVM.Status.successful, message: "Transfer to recipient failed")
+        // Deposit the amount to the recipient's EVM address
+        self.recipientEVMAddress.deposit(from: <-self.sentVault)
+    }
+
+    post {
+        self.recipientEVMAddress.balance().inFLOW() == self.recipientPreBalance + amount:
+            "Problem transferring value to EVM address"
     }
 }
