@@ -3,8 +3,6 @@
 
 # Flow EVM Bridge
 
-> :warning: Upcoming breaking changes may result in updated deployment addresses and redirection of bridge requests.
-
 This repo contains contracts enabling bridging of fungible & non-fungible tokens between Cadence and EVM.
 
 ## Deployments
@@ -12,11 +10,13 @@ This repo contains contracts enabling bridging of fungible & non-fungible tokens
 PreviewNet is currently the only EVM-enabled network on Flow. The bridge in this repo are deployed to the following
 addresses:
 
-|Network|Address|
-|---|---|
-|PreviewNet|`0x7d29f084fc7b2b84`|
-|Testnet|TBD|
-|Mainnet|TBD|
+|Contracts|PreviewNet|Testnet|Mainnet|
+|---|---|---|---|
+|All Cadence Bridge contracts|`0x715c57f7a59bc39b`|TBD|TBD|
+|[`FlowEVMBridgeFactory.sol`](./solidity/src/FlowBridgeFactory.sol)|`0xf23c8619603434f7f71659820193c8e491feb1d9`|TBD|TBD|
+|[`FlowEVMBridgeDeploymentRegistry.sol`](./solidity/src/FlowEVMBridgeDeploymentRegistry.sol)|`0x544ef4ed9209ebe6989bed9e543632512afb25de`|TBD|TBD|
+|[`FlowEVMBridgedERC20Deployer.sol`](./solidity/src/FlowEVMBridgedERC20Deployer.sol)|`0xc5577d2935ef0556b37358d8b92aa578f1e7564e`|TBD|TBD|
+|[`FlowEVMBridgedERC721Deployer.sol`](./solidity/src/FlowEVMBridgedERC721Deployer.sol)|`0xd5bf043e8d5e6e007ebfdefebef7f4c96de5d40a`|TBD|TBD|
 
 ## Interacting with the bridge
 
@@ -165,7 +165,7 @@ NFT in escrow for the bridge to transfer on fulfillment of the NFT back to EVM. 
 opt-out of bridging, but **importantly must do so before the asset has been onboarded to the bridge**.
 
 For Solidity contracts, opting out is as simple as extending the [`BridgePermissions.sol` abstract
-contract](./solidity/src/BridgePermissions.sol) which defaults `allowsBridging()` to false. The bridge explicitly checks
+contract](./solidity/src/interfaces/BridgePermissions.sol) which defaults `allowsBridging()` to false. The bridge explicitly checks
 for the implementation of `IBridgePermissions` and the value of `allowsBridging()` to validate that the contract has not
 opted out of bridging.
 

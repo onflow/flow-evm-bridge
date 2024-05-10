@@ -180,6 +180,13 @@ fun setup() {
         arguments: [factoryAddressHex]
     )
     Test.expect(err, Test.beNil())
+
+    err = Test.deployContract(
+        name: "FlowEVMBridgeHandlers",
+        path: "../contracts/bridge/FlowEVMBridgeHandlers.cdc",
+        arguments: []
+    )
+    Test.expect(err, Test.beNil())
     
     /* Integrate EVM bridge contract */
 
