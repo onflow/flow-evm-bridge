@@ -36,7 +36,7 @@ access(all) contract EVMUtils {
         if address.length != 40 {
             return nil
         }
-        var addressBytes: [UInt8] = address.decodeHex()
+        var addressBytes: [UInt8] = address.toLower().decodeHex()
         if addressBytes.length != 20 {
             return nil
         }
