@@ -182,7 +182,7 @@ execute** - the value of `allowsBridging()` is irrelevant and assets can move be
 ## Under the Hood
 
 For an in-depth look at the high-level architecture of the bridge, see [FLIP
-#237](https://github.com/onflow/flips/pull/233)
+#237](https://github.com/onflow/flips/blob/main/application/20231222-evm-vm-bridge.md)
 
 ### Additional Resources
 
