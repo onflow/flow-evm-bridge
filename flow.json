@@ -36,7 +36,8 @@
 			"source": "./cadence/contracts/standards/EVM.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
-				"previewnet": "b6763b4399a888c8"
+				"previewnet": "b6763b4399a888c8",
+				"testnet": "8c5303eaa26202d6"
 			}
 		},
 		"EVMUtils": {
@@ -310,12 +311,17 @@
 				"hashAlgorithm": "SHA2_256",
 				"resourceID": "projects/dl-flow-admin/locations/global/keyRings/flow-vm-bridge/cryptoKeys/flow-fvm-evm-bridge-previewnet/cryptoKeyVersions/1"
 			}
+		},
+		"flow-evm-bridge-testnet": {
+			"address": "dfc20aee650fcbdf",
+			"key": {
+				"type": "google-kms",
+				"hashAlgorithm": "SHA2_256",
+				"resourceID": "projects/dl-flow-admin/locations/global/keyRings/flow-vm-bridge/cryptoKeys/flow-fvm-evm-bridge-testnet/cryptoKeyVersions/1"
+			}
 		}
 	},
 	"deployments": {
-		"emulator": {
-			"emulator-account": []
-		},
 		"previewnet": {
 			"flow-evm-bridge-previewnet": [
 				"FlowEVMBridgeHandlerInterfaces",
@@ -357,6 +363,11 @@
 						}
 					]
 				}
+			]
+		},
+		"testnet": {
+			"flow-evm-bridge-testnet": [
+				"FlowEVMBridgeHandlerInterfaces"
 			]
 		}
 	}
