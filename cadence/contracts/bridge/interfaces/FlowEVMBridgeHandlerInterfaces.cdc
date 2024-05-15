@@ -37,7 +37,7 @@ access(all) contract FlowEVMBridgeHandlerInterfaces {
     ///
     access(all) resource interface HandlerInfo {
         /// Returns whether the Handler is enabled
-        access(all)	view fun isEnabled(): Bool
+        access(all) view fun isEnabled(): Bool
         /// Returns the Cadence type handled by the Handler, nil if not set
         access(all) view fun getTargetType(): Type?
         /// Returns the EVM address handled by the Handler, nil if not set

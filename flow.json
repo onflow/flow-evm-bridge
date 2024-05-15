@@ -335,14 +335,23 @@
 		}
 	},
 	"networks": {
+		"crescendo": "access.crescendo.nodes.onflow.org:9000",
 		"emulator": "127.0.0.1:3569",
 		"mainnet": "access.mainnet.nodes.onflow.org:9000",
 		"previewnet": "access.previewnet.nodes.onflow.org:9000",
 		"testing": "127.0.0.1:3569",
-		"testnet": "access.devnet.nodes.onflow.org:9000",
-		"crescendo": "access.crescendo.nodes.onflow.org:9000"
+		"testnet": "access.devnet.nodes.onflow.org:9000"
 	},
 	"accounts": {
+		"crescendo-service-account": {
+			"address": "8c5303eaa26202d6",
+			"key": {
+				"type": "file",
+				"signatureAlgorithm": "ECDSA_secp256k1",
+				"hashAlgorithm": "SHA2_256",
+				"location": "./crescendo-service-account.pkey"
+			}
+		},
 		"emulator-account": {
 			"address": "f8d6e0586b0a20c7",
 			"key": "fe809cc837ddcd7e761a482721c050aae43657448db859f4eb8fc421e9609938"
@@ -354,6 +363,15 @@
 		"emulator-flow-evm-bridge": {
 			"address": "179b6b1cb6755e31",
 			"key": "b6e36eb8ed7679984609f75dbbccd3489f13dd8fefc1d4f64c3a7a17b3304045"
+		},
+		"emulator-service-account": {
+			"address": "f8d6e0586b0a20c7",
+			"key": {
+				"type": "file",
+				"signatureAlgorithm": "ECDSA_secp256k1",
+				"hashAlgorithm": "SHA2_256",
+				"location": "./crescendo-service-account.pkey"
+			}
 		},
 		"previewnet-flow-evm-bridge": {
 			"address": "715c57f7a59bc39b",
@@ -370,17 +388,14 @@
 				"hashAlgorithm": "SHA2_256",
 				"resourceID": "projects/dl-flow-admin/locations/global/keyRings/flow-vm-bridge/cryptoKeys/flow-fvm-evm-bridge-testnet/cryptoKeyVersions/1"
 			}
-		},
-		"crescendo-flow-evm-bridge": {
-			"address": "dfc20aee650fcbdf",
-			"key": {
-				"type": "file",
-				"location": "./crescendo-flow-evm-bridge.pkey",
-				"index": 1
-			}
 		}
 	},
 	"deployments": {
+		"emulator": {
+			"emulator-flow-evm-bridge": [
+				"EVMUtils"
+			]
+		},
 		"previewnet": {
 			"previewnet-flow-evm-bridge": [
 				"FlowEVMBridgeHandlerInterfaces",
