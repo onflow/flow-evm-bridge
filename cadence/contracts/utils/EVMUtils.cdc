@@ -33,13 +33,20 @@ access(all) contract EVMUtils {
     ///
     access(all)
     fun getEVMAddressFromHexString(address: String): EVM.EVMAddress? {
-        if address.length != 40 {
+        pre {
+            address.length == 40 || address.length == 42: "Invalid hex string length"
+        }
+        // Remove the 0x prefix if it exists
+        let sanitized = (address[1] == "x" ? address.split(separator: "x")[1] : address).toLower()
+        if sanitized.length != 40 {
             return nil
         }
-        var addressBytes: [UInt8] = address.toLower().decodeHex()
+        // Decode the hex string
+        var addressBytes: [UInt8] = address.decodeHex()
         if addressBytes.length != 20 {
             return nil
         }
+        // Return the EVM address from the decoded hex string
         return EVM.EVMAddress(bytes: [
             addressBytes[0], addressBytes[1], addressBytes[2], addressBytes[3],
             addressBytes[4], addressBytes[5], addressBytes[6], addressBytes[7],
