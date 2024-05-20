@@ -17,7 +17,7 @@ import (
  * This script is used to configure the bridge contracts on various networks.
  * The following assumptions about the bridge account are made:
  * - The bridge account is named "NETWORK-flow-evm-bridge" in the flow.json
- * - The bridge account has a balance to cover funding a COA with 10.0 FLOW tokens (if necessary)
+ * - The bridge account has a balance to cover funding a COA with 1.0 FLOW tokens (if necessary)
  * - The bridge account has enough FLOW to cover the storage required for the deployed contracts
  */
 
@@ -51,21 +51,14 @@ var contracts = []string{
 func main() {
 	network := getSpecifiedNetwork()
 
-	// Log the current working directory
 	dir, err := os.Getwd()
 	checkNoErr(err)
-	// Create the filepath for 4 levels up from current working directory as the root of this project
-	projectRoot := filepath.Dir(filepath.Dir(filepath.Dir(filepath.Dir((dir)))))
-	// Assign flow config path
-	flowConfigPath := filepath.Join(projectRoot, "flow.json")
-	// Assign Cadence base path as projectRoot/cadence
-	root := filepath.Join(projectRoot, "cadence")
 
 	ctx := context.Background()
 	o := Overflow(
 		WithNetwork(network),
-		WithFlowConfig(flowConfigPath),
-		WithBasePath(root),
+		WithTransactionFolderName("cadence/transactions"),
+		WithScriptFolderName("cadence/scripts"),
 		WithExistingEmulator(),
 	)
 
@@ -89,7 +82,8 @@ func main() {
 	/// Deploy factory ///
 	//
 	// Get the Cadence args json for the factory deployment args
-	factoryArgsPath := filepath.Join(root, "args/deploy-factory-args.json")
+	// factoryArgsPath := filepath.Join(root, "args/deploy-factory-args.json")
+	factoryArgsPath := filepath.Join(dir, "cadence/args/deploy-factory-args.json")
 	// Retrieve the bytecode from the JSON args
 	// Future implementations should use flowkit to handle this after fixing dependency issues
 	factoryBytecode := getBytecodeFromArgsJSON(factoryArgsPath)
@@ -107,7 +101,8 @@ func main() {
 	/// Deploy registry ///
 	//
 	// Get the Cadence args json for the factory deployment args
-	registryArgsPath := filepath.Join(root, "args/deploy-deployment-registry-args.json")
+	// registryArgsPath := filepath.Join(root, "args/deploy-deployment-registry-args.json")
+	registryArgsPath := filepath.Join(dir, "cadence/args/deploy-deployment-registry-args.json")
 	// Retrieve the bytecode from the JSON args
 	// Future implementations should use flowkit to handle this after fixing dependency issues
 	registryBytecode := getBytecodeFromArgsJSON(registryArgsPath)
@@ -123,7 +118,8 @@ func main() {
 
 	/// Deploy ERC20 deployer ///
 	//
-	erc20DeployerArgsPath := filepath.Join(root, "args/deploy-erc20-deployer-args.json")
+	// erc20DeployerArgsPath := filepath.Join(root, "args/deploy-erc20-deployer-args.json")
+	erc20DeployerArgsPath := filepath.Join(dir, "cadence/args/deploy-erc20-deployer-args.json")
 	erc20DeployerBytecode := getBytecodeFromArgsJSON(erc20DeployerArgsPath)
 	erc20DeployerDeployment := o.Tx("evm/deploy",
 		WithSigner("flow-evm-bridge"),
@@ -138,7 +134,8 @@ func main() {
 
 	/// Deploy ERC721 deployer ///
 	//
-	erc721DeployerArgsPath := filepath.Join(root, "args/deploy-erc721-deployer-args.json")
+	// erc721DeployerArgsPath := filepath.Join(root, "args/deploy-erc721-deployer-args.json")
+	erc721DeployerArgsPath := filepath.Join(dir, "cadence/args/deploy-erc721-deployer-args.json")
 	erc721DeployerBytecode := getBytecodeFromArgsJSON(erc721DeployerArgsPath)
 	erc721DeployerDeployment := o.Tx("evm/deploy",
 		WithSigner("flow-evm-bridge"),
@@ -158,7 +155,8 @@ func main() {
 	for _, name := range contracts {
 		contract, err := o.State.Config().Contracts.ByName(name)
 		checkNoErr(err)
-		contractPath := filepath.Join(projectRoot, contract.Location)
+		// contractPath := filepath.Join(projectRoot, contract.Location)
+		contractPath := filepath.Join(dir, contract.Location)
 		contractCode, err := os.ReadFile(contractPath)
 		checkNoErr(err)
 
@@ -182,8 +180,19 @@ func main() {
 	checkNoErr(pauseResult.Err)
 	log.Printf("Bridge paused, configuring token handlers...")
 
+	// TODO: Blocked on FiatToken staging - uncomment once the updated contract is staged & migrated
 	// Add TokenHandler for specified Types
-	// TODO
+	// fiatToken, err := o.State.Config().Contracts.ByName("FiatToken")
+	// checkNoErr(err)
+	// fiatTokenAddress := fiatToken.Aliases.ByNetwork(o.GetNetwork()).Address
+	// fiatTokenVaultIdentifier := "A." + fiatTokenAddress.String() + ".FiatToken.Vault"
+	// fiatTokenMinterIdentifier := "A." + fiatTokenAddress.String() + ".FiatToken.MinterResource"
+	// handlerCreationResult := o.Tx("bridge/admin/token-handler/create_cadence_native_token_handler",
+	// 	WithSigner("flow-evm-bridge"),
+	// 	WithArg("vaultIdentifier", fiatTokenVaultIdentifier),
+	// 	WithArg("minterIdentifier", fiatTokenMinterIdentifier),
+	// )
+	// checkNoErr(handlerCreationResult.Err)
 
 	log.Printf("Token handlers configured...continuing EVM setup...")
 
@@ -230,6 +239,7 @@ func main() {
 		WithArg("deployerTag", "ERC721"),
 		WithArg("deployerEVMAddressHex", erc721DeployerAddr),
 	)
+	checkNoErr(addDeployerResult.Err)
 
 	log.Printf("EVM contract setup complete...integrating with EVM contract...")
 
@@ -238,7 +248,8 @@ func main() {
 	// Deploy FlowEVMBridgeAccessor, providing EVM contract host (network service account) as argument
 	accessorContract, err := o.State.Config().Contracts.ByName("FlowEVMBridgeAccessor")
 	checkNoErr(err)
-	accessorPath := filepath.Join(projectRoot, accessorContract.Location)
+	// accessorPath := filepath.Join(projectRoot, accessorContract.Location)
+	accessorPath := filepath.Join(dir, accessorContract.Location)
 	accessorCode, err := os.ReadFile(accessorPath)
 	checkNoErr(err)
 	evmConfigAddr, err := o.State.Config().Contracts.ByName("EVM")
@@ -249,15 +260,12 @@ func main() {
 	checkNoErr(err)
 
 	// Integrate the EVM contract with the BridgeAccessor
-	// bridgeContract, err := o.State.Config().Contracts.ByName("FlowEVMBridge")
-	// checkNoErr(err)
-	// bridgeAddr := bridgeContract.Aliases.ByNetwork(o.GetNetwork()).Address
-	// integrateResult := o.Tx("bridge/admin/evm-integration/claim_accessor_capability_and_save_router",
-	// 	WithSigner("service-account"),
-	// 	WithArg("name", "FlowEVMBridgeAccessor"),
-	// 	WithArg("provider", bridgeAddr),
-	// )
-	// checkNoErr(integrateResult.Err)
+	integrateResult := o.Tx("bridge/admin/evm-integration/claim_accessor_capability_and_save_router",
+		WithSigner("service-account"),
+		WithArg("name", "FlowEVMBridgeAccessor"),
+		WithArg("provider", o.Address("FlowEVMBridge")),
+	)
+	checkNoErr(integrateResult.Err)
 
 	log.Printf("EVM integration complete...setting fees...")
 
@@ -274,14 +282,10 @@ func main() {
 	)
 	checkNoErr(baseFeeResult.Err)
 
-	log.Printf("Fees set...unpausing bridge...")
+	/* --- COMPLETE --- */
 
-	// Unpause the bridge if everything was successful
-	// pauseResult = o.Tx("bridge/admin/pause/update_bridge_pause_status",
-	// WithSigner("flow-evm-bridge"),
-	// WithArg("pause", false),
-	// )
-	// checkNoErr(pauseResult.Err)
+	// TODO: Try to pull args JSON from local file once flowkit ParseJSON is fixed
+
 	log.Printf("Done! Setup ALMOST complete....")
 	log.Printf("NFT & Token templates MUST be added MANUALLY, EVM contract integrated, and then UNPAUSE bridge...")
 }

@@ -41,8 +41,10 @@
 		"EVM": {
 			"source": "./cadence/contracts/standards/EVM.cdc",
 			"aliases": {
+				"crescendo": "8c5303eaa26202d6",
 				"emulator": "f8d6e0586b0a20c7",
 				"previewnet": "b6763b4399a888c8",
+				"mainnet": "0xe467b9dd11fa00df",
 				"testnet": "8c5303eaa26202d6"
 			}
 		},
@@ -335,7 +337,7 @@
 		}
 	},
 	"networks": {
-		"crescendo": "access.crescendo.nodes.onflow.org:9000",
+		"crescendo": "access-001.migrationtestnet1.nodes.onflow.org:9000",
 		"emulator": "127.0.0.1:3569",
 		"mainnet": "access.mainnet.nodes.onflow.org:9000",
 		"previewnet": "access.previewnet.nodes.onflow.org:9000",
@@ -349,7 +351,8 @@
 				"type": "file",
 				"signatureAlgorithm": "ECDSA_secp256k1",
 				"hashAlgorithm": "SHA2_256",
-				"location": "./crescendo-service-account.pkey"
+				"location": "./crescendo-service-account.pkey",
+				"index": 2
 			}
 		},
 		"emulator-account": {
@@ -362,7 +365,10 @@
 		},
 		"emulator-flow-evm-bridge": {
 			"address": "179b6b1cb6755e31",
-			"key": "b6e36eb8ed7679984609f75dbbccd3489f13dd8fefc1d4f64c3a7a17b3304045"
+			"key": {
+				"type": "file",
+				"location": "./crescendo-flow-evm-bridge.pkey"
+			}
 		},
 		"emulator-service-account": {
 			"address": "f8d6e0586b0a20c7",
@@ -370,7 +376,8 @@
 				"type": "file",
 				"signatureAlgorithm": "ECDSA_secp256k1",
 				"hashAlgorithm": "SHA2_256",
-				"location": "./crescendo-service-account.pkey"
+				"location": "./crescendo-service-account.pkey",
+				"index": 1
 			}
 		},
 		"previewnet-flow-evm-bridge": {
@@ -388,14 +395,17 @@
 				"hashAlgorithm": "SHA2_256",
 				"resourceID": "projects/dl-flow-admin/locations/global/keyRings/flow-vm-bridge/cryptoKeys/flow-fvm-evm-bridge-testnet/cryptoKeyVersions/1"
 			}
+		},
+		"crescendo-flow-evm-bridge": {
+			"address": "dfc20aee650fcbdf",
+			"key": {
+				"type": "file",
+				"location": "./crescendo-flow-evm-bridge.pkey",
+				"index": 1
+			}
 		}
 	},
 	"deployments": {
-		"emulator": {
-			"emulator-flow-evm-bridge": [
-				"EVMUtils"
-			]
-		},
 		"previewnet": {
 			"previewnet-flow-evm-bridge": [
 				"FlowEVMBridgeHandlerInterfaces",
