@@ -25,12 +25,14 @@ transaction(evmContractAddressHex: String, recipientAddressHex: String, amount: 
     }
 
     execute {
-        self.coa.call(
+        let calldata = EVM.encodeABIWithSignature("transfer(address,uint256)", [self.recipientAddress, amount])
+        let callResult = self.coa.call(
             to: self.evmContractAddress,
-            data: EVM.encodeABIWithSignature("transfer(address,uint256)", [self.recipientAddress, amount]),
+            data: calldata,
             gasLimit: 15_000_000,
             value: EVM.Balance(attoflow: 0)
         )
+        assert(callResult.status == EVM.Status.successful, message: "Call to ERC20 contract failed")
         self.postBalance = FlowEVMBridgeUtils.balanceOf(owner: self.coa.address(), evmContractAddress: self.evmContractAddress)
     }
 
