@@ -371,23 +371,6 @@
 			"address": "0ae53cb6e3f42a79",
 			"key": "c1e4c9d9dca9e4d5e9b0b5a9a8e8b9c5d6f4a8b9c5d6f4a8b9c5d6f4a8b9c5d6"
 		},
-		"emulator-flow-evm-bridge": {
-			"address": "179b6b1cb6755e31",
-			"key": {
-				"type": "file",
-				"location": "./crescendo-flow-evm-bridge.pkey"
-			}
-		},
-		"emulator-service-account": {
-			"address": "f8d6e0586b0a20c7",
-			"key": {
-				"type": "file",
-				"signatureAlgorithm": "ECDSA_secp256k1",
-				"hashAlgorithm": "SHA2_256",
-				"location": "./crescendo-service-account.pkey",
-				"index": 1
-			}
-		},
 		"previewnet-flow-evm-bridge": {
 			"address": "715c57f7a59bc39b",
 			"key": {
@@ -428,15 +411,7 @@
 				"CrossVMNFT",
 				"CrossVMToken",
 				"FlowEVMBridgeConfig",
-				{
-					"name": "FlowEVMBridgeUtils",
-					"args": [
-						{
-							"type": "String",
-							"value": "f23c8619603434f7f71659820193c8e491feb1d9"
-						}
-					]
-				},
+				"FlowEVMBridgeUtils",
 				"FlowEVMBridgeHandlers",
 				"FlowEVMBridgeNFTEscrow",
 				"FlowEVMBridgeTokenEscrow",
@@ -496,15 +471,7 @@
 				"CrossVMNFT",
 				"CrossVMToken",
 				"FlowEVMBridgeConfig",
-				{
-					"name": "FlowEVMBridgeUtils",
-					"args": [
-						{
-							"type": "String",
-							"value": "f23c8619603434f7f71659820193c8e491feb1d9"
-						}
-					]
-				},
+				"FlowEVMBridgeUtils",
 				"FlowEVMBridgeHandlers",
 				"FlowEVMBridgeNFTEscrow",
 				"FlowEVMBridgeTokenEscrow",
