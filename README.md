@@ -87,8 +87,8 @@ that moving $FLOW to EVM is built into the `EVMAddress` object so any requests b
 leverage this interface; however, moving $FLOW from EVM to Cadence must be done through the COA resource.
 
 Below are transactions relevant to bridging fungible tokens:
-- [`bridge_tokens_to_evm.cdc`](./cadence/transactions/bridge/ft/bridge_tokens_to_evm.cdc)
-- [`bridge_tokens_from_evm.cdc`](./cadence/transactions/bridge/ft/bridge_tokens_from_evm.cdc)
+- [`bridge_tokens_to_evm.cdc`](./cadence/transactions/bridge/tokens/bridge_tokens_to_evm.cdc)
+- [`bridge_tokens_from_evm.cdc`](./cadence/transactions/bridge/tokens/bridge_tokens_from_evm.cdc)
 
 
 ## Prep Your Assets for Bridging
