@@ -22,9 +22,9 @@ import (
  * - The bridge account has enough FLOW to cover the storage required for the deployed contracts
  */
 
-// Overflow prefixes signer names with the current network - e.g. "emulator-flow-evm-bridge"
+// Overflow prefixes signer names with the current network - e.g. "crescendo-flow-evm-bridge"
 // Ensure accounts in flow.json are named accordingly
-var networks = []string{"emulator", "previewnet", "crescendo", "testnet", "mainnet"}
+var networks = []string{"previewnet", "crescendo", "testnet", "mainnet"}
 
 // Pulled from flow.json deployments. Specified here as some contracts have init arg values that
 // are emitted in transaction events and cannot be hardcoded in the deployment config section
@@ -68,6 +68,20 @@ func main() {
 		WithScriptFolderName("cadence/scripts"),
 		WithGlobalPrintOptions(WithTransactionUrl()),
 	)
+
+	// Check if the script is a dry run
+	if checkDryRun() {
+		log.Printf("Dry run detected...running setup script in dry run mode")
+		// Run the dry run transaction
+		serviceDryRunResult := o.Tx("bridge/admin/dry_run", WithSigner("service-account"))
+		checkNoErr(serviceDryRunResult.Err)
+		log.Printf("Service Account dry run run successful...")
+		bridgeDryRunResult := o.Tx("bridge/admin/dry_run", WithSigner("flow-evm-bridge"))
+		checkNoErr(bridgeDryRunResult.Err)
+		log.Printf("Bridge Account dry run run successful...")
+		log.Printf("Dry run complete...exiting script")
+		return
+	}
 
 	// Create a COA in the bridge account if one does not already exist
 	bridgeCOAHex, err := o.Script("evm/get_evm_address_string", WithArg("flowAddress", o.Address("flow-evm-bridge"))).GetAsInterface()
@@ -325,6 +339,13 @@ func main() {
 	checkNoErr(unpauseResult.Err)
 
 	log.Printf("SETUP COMPLETE! Bridge is now unpaused and ready for use.")
+}
+
+func checkDryRun() bool {
+	if len(os.Args) < 3 {
+		return false
+	}
+	return os.Args[2] == "--dry-run"
 }
 
 // Parses the network argument from the command line
