@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -59,7 +60,7 @@ func main() {
 		WithNetwork(network),
 		WithTransactionFolderName("cadence/transactions"),
 		WithScriptFolderName("cadence/scripts"),
-		WithExistingEmulator(),
+		WithGlobalPrintOptions(WithTransactionUrl()),
 	)
 
 	// Create a COA in the bridge account if one does not already exist
@@ -67,7 +68,8 @@ func main() {
 	checkNoErr(err)
 	if bridgeCOAHex == nil {
 		// no COA found, create a COA in the bridge account
-		o.Tx("evm/create_account", WithSigner("flow-evm-bridge"), WithArg("amount", 1.0))
+		coaCreationTxn := o.Tx("evm/create_account", WithSigner("flow-evm-bridge"), WithArg("amount", 1.0))
+		checkNoErr(coaCreationTxn.Err)
 		bridgeCOAHex, err = o.Script("evm/get_evm_address_string", WithArg("flowAddress", o.Address("flow-evm-bridge"))).GetAsInterface()
 		checkNoErr(err)
 	}
@@ -112,6 +114,7 @@ func main() {
 		WithArg("gasLimit", gasLimit),
 		WithArg("value", deploymentValue),
 	)
+	checkNoErr(registryDeployment.Err)
 	registryAddr := getContractAddressFromEVMEvent(registryDeployment)
 
 	log.Printf("Registry deployed to address: %s", factoryAddr)
@@ -153,6 +156,9 @@ func main() {
 	log.Printf("Deploying Cadence contracts...")
 	// Iterate over contracts in the contracts map
 	for _, name := range contracts {
+
+		log.Printf("Deploying contract: %s...", name)
+
 		contract, err := o.State.Config().Contracts.ByName(name)
 		checkNoErr(err)
 		// contractPath := filepath.Join(projectRoot, contract.Location)
@@ -167,7 +173,7 @@ func main() {
 			args = []cadence.Value{}
 		}
 
-		err = o.AddContract(ctx, "flow-evm-bridge", contractCode, args, contractPath, false)
+		err = o.AddContract(ctx, "flow-evm-bridge", contractCode, args, contractPath, true)
 		checkNoErr(err)
 	}
 	log.Printf("Cadence contracts deployed...Pausing bridge for setup...")
@@ -197,6 +203,8 @@ func main() {
 	log.Printf("Token handlers configured...continuing EVM setup...")
 
 	/* --- Finish EVM Contract Setup --- */
+
+	log.Printf("Integrating EVM-side bridge contracts...")
 
 	// Set the factory as registrar in the registry
 	setRegistrarResult := o.Tx("bridge/admin/evm/set_registrar",
@@ -241,7 +249,7 @@ func main() {
 	)
 	checkNoErr(addDeployerResult.Err)
 
-	log.Printf("EVM contract setup complete...integrating with EVM contract...")
+	log.Printf("Cross-VM bridge contract integration complete...integrating with EVM contract...")
 
 	/* --- EVM Contract Integration --- */
 
@@ -284,20 +292,49 @@ func main() {
 
 	/* --- COMPLETE --- */
 
-	// TODO: Try to pull args JSON from local file once flowkit ParseJSON is fixed
+	log.Printf("Bridge setup complete...Adding bridged Token & NFT templates")
 
-	log.Printf("Done! Setup ALMOST complete....")
-	log.Printf("NFT & Token templates MUST be added MANUALLY, EVM contract integrated, and then UNPAUSE bridge...")
+	// TODO: Try to pull args JSON from local file once flowkit ParseJSON is fixed
+	tokenChunkPath := filepath.Join(
+		dir,
+		"cadence/args/bridged-token-code-chunks-args-"+network+".json",
+	)
+	nftChunkPath := filepath.Join(dir, "cadence/args/bridged-token-code-chunks-args-"+network+".json")
+	tokenChunks := getCodeChunksFromArgsJSON(tokenChunkPath)
+	nftChunks := getCodeChunksFromArgsJSON(nftChunkPath)
+	tokenChunkUpsert := o.Tx("bridge/admin/templates/upsert_contract_code_chunks",
+		WithSigner("flow-evm-bridge"),
+		WithArg("forTemplate", "bridgedToken"),
+		WithArg("newChunks", tokenChunks),
+	)
+	checkNoErr(tokenChunkUpsert.Err)
+	nftChunkUpsert := o.Tx("bridge/admin/templates/upsert_contract_code_chunks",
+		WithSigner("flow-evm-bridge"),
+		WithArg("forTemplate", "bridgedNFT"),
+		WithArg("newChunks", nftChunks),
+	)
+	checkNoErr(nftChunkUpsert.Err)
+
+	log.Printf("Templates have been added...Unpausing bridge...")
+
+	// Unpause the bridge
+	unpauseResult := o.Tx("bridge/admin/pause/update_bridge_pause_status",
+		WithSigner("flow-evm-bridge"),
+		WithArg("pause", false),
+	)
+	checkNoErr(unpauseResult.Err)
+
+	log.Printf("SETUP COMPLETE! Bridge is now unpaused and ready for use.")
 }
 
 func getSpecifiedNetwork() string {
 	if len(os.Args) < 2 {
-		log.Fatal("Please provide a network as an argument")
+		log.Fatal("Please provide a network as an argument: ", networks)
 	}
 	network := os.Args[1]
 
 	if !slices.Contains(networks, network) {
-		log.Fatal("Please provide a valid network as an argument")
+		log.Fatal("Please provide a valid network as an argument: ", networks)
 	}
 	return network
 }
@@ -321,6 +358,56 @@ func getBytecodeFromArgsJSON(path string) string {
 	checkNoErr(err)
 
 	return args[0]["value"]
+}
+
+type Element struct {
+	Type  string      `json:"type"`
+	Value interface{} `json:"value"`
+}
+
+func getCodeChunksFromArgsJSON(path string) []string {
+	file, err := os.Open(path)
+	if err != nil {
+		log.Fatalf("Failed opening file: %s", err)
+	}
+	defer file.Close()
+
+	byteValue, _ := ioutil.ReadAll(file)
+
+	var elements []Element
+	json.Unmarshal(byteValue, &elements)
+
+	secondElement := elements[1]
+
+	// Check if the second element is of type "Array"
+	if secondElement.Type != "Array" {
+		log.Fatalf("Second element is not of type Array")
+	}
+
+	// Assert that the value is a slice of interfaces
+	values, ok := secondElement.Value.([]interface{})
+	if !ok {
+		log.Fatalf("Failed to assert value to []interface{}")
+	}
+
+	var strArr []string
+	for _, v := range values {
+		// Assert that the value is a map
+		valueMap, ok := v.(map[string]interface{})
+		if !ok {
+			log.Fatalf("Failed to assert value to map[string]interface{}")
+		}
+
+		// Get the "value" from the map and assert it to string
+		str, ok := valueMap["value"].(string)
+		if !ok {
+			log.Fatalf("Failed to assert value to string")
+		}
+
+		strArr = append(strArr, str)
+	}
+
+	return strArr
 }
 
 func checkNoErr(err error) {

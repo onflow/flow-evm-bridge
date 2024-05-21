@@ -13,6 +13,7 @@
 		"Burner": {
 			"source": "./cadence/contracts/standards/Burner.cdc",
 			"aliases": {
+				"crescendo": "9a0766d93b6608b7",
 				"emulator": "f8d6e0586b0a20c7",
 				"previewnet": "b6763b4399a888c8",
 				"testing": "0000000000000001"
@@ -169,6 +170,7 @@
 		"FlowStorageFees": {
 			"source": "./cadence/contracts/standards/FlowStorageFees.cdc",
 			"aliases": {
+				"crescendo": "8c5303eaa26202d6",
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "e467b9dd11fa00df",
 				"previewnet": "b6763b4399a888c8",
@@ -179,6 +181,7 @@
 		"FlowToken": {
 			"source": "./cadence/contracts/standards/FlowToken.cdc",
 			"aliases": {
+				"crescendo": "7e60df042a9c0868",
 				"emulator": "0ae53cb6e3f42a79",
 				"mainnet": "1654653399040a61",
 				"previewnet": "4445e7ad11568276",
@@ -188,6 +191,7 @@
 		"FungibleToken": {
 			"source": "./cadence/contracts/standards/FungibleToken.cdc",
 			"aliases": {
+				"crescendo": "9a0766d93b6608b7",
 				"emulator": "ee82856bf20e2aa6",
 				"mainnet": "f233dcee88fe0abe",
 				"previewnet": "a0225e7000ac82a9",
@@ -198,6 +202,7 @@
 		"FungibleTokenMetadataViews": {
 			"source": "./cadence/contracts/standards/FungibleTokenMetadataViews.cdc",
 			"aliases": {
+				"crescendo": "9a0766d93b6608b7",
 				"emulator": "ee82856bf20e2aa6",
 				"mainnet": "f233dcee88fe0abe",
 				"previewnet": "a0225e7000ac82a9",
@@ -268,6 +273,7 @@
 		"MetadataViews": {
 			"source": "./cadence/contracts/standards/MetadataViews.cdc",
 			"aliases": {
+				"crescendo": "631e88ae7f1d7c20",
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "1d7e57aa55817448",
 				"previewnet": "b6763b4399a888c8",
@@ -278,6 +284,7 @@
 		"NonFungibleToken": {
 			"source": "./cadence/contracts/standards/NonFungibleToken.cdc",
 			"aliases": {
+				"crescendo": "631e88ae7f1d7c20",
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "1d7e57aa55817448",
 				"previewnet": "b6763b4399a888c8",
@@ -328,6 +335,7 @@
 		"ViewResolver": {
 			"source": "./cadence/contracts/standards/ViewResolver.cdc",
 			"aliases": {
+				"crescendo": "631e88ae7f1d7c20",
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "1d7e57aa55817448",
 				"previewnet": "b6763b4399a888c8",
@@ -406,6 +414,40 @@
 		}
 	},
 	"deployments": {
+		"crescendo": {
+			"testnet-flow-evm-bridge": [
+				"FlowEVMBridgeHandlerInterfaces",
+				"ArrayUtils",
+				"StringUtils",
+				"ScopedFTProviders",
+				"EVMUtils",
+				"Serialize",
+				"SerializeMetadata",
+				"IBridgePermissions",
+				"ICrossVM",
+				"CrossVMNFT",
+				"CrossVMToken",
+				"FlowEVMBridgeConfig",
+				{
+					"name": "FlowEVMBridgeUtils",
+					"args": [
+						{
+							"type": "String",
+							"value": "f23c8619603434f7f71659820193c8e491feb1d9"
+						}
+					]
+				},
+				"FlowEVMBridgeHandlers",
+				"FlowEVMBridgeNFTEscrow",
+				"FlowEVMBridgeTokenEscrow",
+				"FlowEVMBridgeTemplates",
+				"IEVMBridgeNFTMinter",
+				"IEVMBridgeTokenMinter",
+				"IFlowEVMNFTBridge",
+				"IFlowEVMTokenBridge",
+				"FlowEVMBridge"
+			]
+		},
 		"previewnet": {
 			"previewnet-flow-evm-bridge": [
 				"FlowEVMBridgeHandlerInterfaces",
@@ -442,7 +484,36 @@
 		},
 		"testnet": {
 			"testnet-flow-evm-bridge": [
-				"FlowEVMBridgeHandlerInterfaces"
+				"FlowEVMBridgeHandlerInterfaces",
+				"ArrayUtils",
+				"StringUtils",
+				"ScopedFTProviders",
+				"EVMUtils",
+				"Serialize",
+				"SerializeMetadata",
+				"IBridgePermissions",
+				"ICrossVM",
+				"CrossVMNFT",
+				"CrossVMToken",
+				"FlowEVMBridgeConfig",
+				{
+					"name": "FlowEVMBridgeUtils",
+					"args": [
+						{
+							"type": "String",
+							"value": "f23c8619603434f7f71659820193c8e491feb1d9"
+						}
+					]
+				},
+				"FlowEVMBridgeHandlers",
+				"FlowEVMBridgeNFTEscrow",
+				"FlowEVMBridgeTokenEscrow",
+				"FlowEVMBridgeTemplates",
+				"IEVMBridgeNFTMinter",
+				"IEVMBridgeTokenMinter",
+				"IFlowEVMNFTBridge",
+				"IFlowEVMTokenBridge",
+				"FlowEVMBridge"
 			]
 		}
 	}
