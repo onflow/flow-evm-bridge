@@ -22,8 +22,12 @@ import (
  * - The bridge account has enough FLOW to cover the storage required for the deployed contracts
  */
 
+// Overflow prefixes signer names with the current network - e.g. "emulator-flow-evm-bridge"
+// Ensure accounts in flow.json are named accordingly
 var networks = []string{"emulator", "previewnet", "crescendo", "testnet", "mainnet"}
 
+// Pulled from flow.json deployments. Specified here as some contracts have init arg values that
+// are emitted in transaction events and cannot be hardcoded in the deployment config section
 var contracts = []string{
 	"FlowEVMBridgeHandlerInterfaces",
 	"ArrayUtils",
@@ -49,6 +53,8 @@ var contracts = []string{
 	"FlowEVMBridge",
 }
 
+// To run, execute the following command:
+// go run main.go $NETWORK
 func main() {
 	network := getSpecifiedNetwork()
 
@@ -73,7 +79,6 @@ func main() {
 		bridgeCOAHex, err = o.Script("evm/get_evm_address_string", WithArg("flowAddress", o.Address("flow-evm-bridge"))).GetAsInterface()
 		checkNoErr(err)
 	}
-	// coaCreated := coaCreation.MarshalEventsWithName("CadenceOwnedAccountCreated", cadence.ConstantSizedArrayType{})
 	log.Printf("Bridge COA has EVM address: %s", bridgeCOAHex)
 
 	/* --- EVM Configuration --- */
@@ -84,7 +89,6 @@ func main() {
 	/// Deploy factory ///
 	//
 	// Get the Cadence args json for the factory deployment args
-	// factoryArgsPath := filepath.Join(root, "args/deploy-factory-args.json")
 	factoryArgsPath := filepath.Join(dir, "cadence/args/deploy-factory-args.json")
 	// Retrieve the bytecode from the JSON args
 	// Future implementations should use flowkit to handle this after fixing dependency issues
@@ -103,7 +107,6 @@ func main() {
 	/// Deploy registry ///
 	//
 	// Get the Cadence args json for the factory deployment args
-	// registryArgsPath := filepath.Join(root, "args/deploy-deployment-registry-args.json")
 	registryArgsPath := filepath.Join(dir, "cadence/args/deploy-deployment-registry-args.json")
 	// Retrieve the bytecode from the JSON args
 	// Future implementations should use flowkit to handle this after fixing dependency issues
@@ -121,7 +124,6 @@ func main() {
 
 	/// Deploy ERC20 deployer ///
 	//
-	// erc20DeployerArgsPath := filepath.Join(root, "args/deploy-erc20-deployer-args.json")
 	erc20DeployerArgsPath := filepath.Join(dir, "cadence/args/deploy-erc20-deployer-args.json")
 	erc20DeployerBytecode := getBytecodeFromArgsJSON(erc20DeployerArgsPath)
 	erc20DeployerDeployment := o.Tx("evm/deploy",
@@ -137,7 +139,6 @@ func main() {
 
 	/// Deploy ERC721 deployer ///
 	//
-	// erc721DeployerArgsPath := filepath.Join(root, "args/deploy-erc721-deployer-args.json")
 	erc721DeployerArgsPath := filepath.Join(dir, "cadence/args/deploy-erc721-deployer-args.json")
 	erc721DeployerBytecode := getBytecodeFromArgsJSON(erc721DeployerArgsPath)
 	erc721DeployerDeployment := o.Tx("evm/deploy",
@@ -161,7 +162,6 @@ func main() {
 
 		contract, err := o.State.Config().Contracts.ByName(name)
 		checkNoErr(err)
-		// contractPath := filepath.Join(projectRoot, contract.Location)
 		contractPath := filepath.Join(dir, contract.Location)
 		contractCode, err := os.ReadFile(contractPath)
 		checkNoErr(err)
@@ -327,6 +327,8 @@ func main() {
 	log.Printf("SETUP COMPLETE! Bridge is now unpaused and ready for use.")
 }
 
+// Parses the network argument from the command line
+// e.g. go run main.go $NETWORK
 func getSpecifiedNetwork() string {
 	if len(os.Args) < 2 {
 		log.Fatal("Please provide a network as an argument: ", networks)
@@ -339,6 +341,7 @@ func getSpecifiedNetwork() string {
 	return network
 }
 
+// Extracts the deployed contract address from the TransactionExecuted event
 func getContractAddressFromEVMEvent(res *OverflowResult) string {
 	evts := res.GetEventsWithName("TransactionExecuted")
 	contractAddr := evts[0].Fields["contractAddress"]
@@ -348,6 +351,8 @@ func getContractAddressFromEVMEvent(res *OverflowResult) string {
 	return strings.ToLower(strings.Split(contractAddr.(string), "x")[1])
 }
 
+// Reads the JSON file at the specified path and returns the compiled solidity bytecode where the
+// bytecode is the first element in the JSON array as a Cadence JSON string
 func getBytecodeFromArgsJSON(path string) string {
 	argsData, err := os.ReadFile(path)
 	checkNoErr(err)
@@ -365,6 +370,8 @@ type Element struct {
 	Value interface{} `json:"value"`
 }
 
+// Reads the JSON file at the specified path and returns the code chunks where the code chunks are
+// the second element in the JSON array as Cadence JSON string array
 func getCodeChunksFromArgsJSON(path string) []string {
 	file, err := os.Open(path)
 	if err != nil {
