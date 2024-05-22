@@ -26,3 +26,6 @@ coverage.lcov
 
 # Local configs
 local.flow.json
+
+# Local
+.DS_Store

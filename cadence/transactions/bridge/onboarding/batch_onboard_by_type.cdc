@@ -8,7 +8,8 @@ import "EVM"
 import "FlowEVMBridge"
 import "FlowEVMBridgeConfig"
 
-/// This transaction onboards the asset type to the bridge, configuring the bridge to move assets between environments
+/// This transaction onboards ERC20/ERC721 assets to the bridge, configuring the bridge to move assets between
+/// environments
 /// NOTE: This must be done before bridging a Cadence-native asset to EVM
 ///
 /// @param types: The Cadence types of the bridgeable asset to onboard to the bridge

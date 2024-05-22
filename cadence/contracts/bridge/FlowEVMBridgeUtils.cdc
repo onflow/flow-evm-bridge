@@ -1284,6 +1284,6 @@ contract FlowEVMBridgeUtils {
             }
         }
         self.bridgeFactoryEVMAddress = EVMUtils.getEVMAddressFromHexString(address: bridgeFactoryAddressHex.toLower())
-            ?? panic("Invalid EVM address hex")
+            ?? panic("Invalid EVM address hex: ".concat(bridgeFactoryAddressHex))
     }
 }

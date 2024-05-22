@@ -12,7 +12,7 @@ addresses:
 
 |Contracts|PreviewNet|Testnet|Mainnet|
 |---|---|---|---|
-|All Cadence Bridge contracts|`0x715c57f7a59bc39b`|TBD|TBD|
+|All Cadence Bridge contracts|`0x715c57f7a59bc39b`|`0xdfc20aee650fcbdf`|TBD|
 |[`FlowEVMBridgeFactory.sol`](./solidity/src/FlowBridgeFactory.sol)|`0xf23c8619603434f7f71659820193c8e491feb1d9`|TBD|TBD|
 |[`FlowEVMBridgeDeploymentRegistry.sol`](./solidity/src/FlowEVMBridgeDeploymentRegistry.sol)|`0x544ef4ed9209ebe6989bed9e543632512afb25de`|TBD|TBD|
 |[`FlowEVMBridgedERC20Deployer.sol`](./solidity/src/FlowEVMBridgedERC20Deployer.sol)|`0xc5577d2935ef0556b37358d8b92aa578f1e7564e`|TBD|TBD|
@@ -87,8 +87,8 @@ that moving $FLOW to EVM is built into the `EVMAddress` object so any requests b
 leverage this interface; however, moving $FLOW from EVM to Cadence must be done through the COA resource.
 
 Below are transactions relevant to bridging fungible tokens:
-- [`bridge_tokens_to_evm.cdc`](./cadence/transactions/bridge/ft/bridge_tokens_to_evm.cdc)
-- [`bridge_tokens_from_evm.cdc`](./cadence/transactions/bridge/ft/bridge_tokens_from_evm.cdc)
+- [`bridge_tokens_to_evm.cdc`](./cadence/transactions/bridge/tokens/bridge_tokens_to_evm.cdc)
+- [`bridge_tokens_from_evm.cdc`](./cadence/transactions/bridge/tokens/bridge_tokens_from_evm.cdc)
 
 
 ## Prep Your Assets for Bridging
