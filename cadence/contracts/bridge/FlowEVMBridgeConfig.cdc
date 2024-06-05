@@ -128,7 +128,7 @@ contract FlowEVMBridgeConfig {
     access(account)
     view fun evmAddressHasTokenHandler(_ evmAddress: EVM.EVMAddress): Bool {
         let associatedType = self.getTypeAssociated(with: evmAddress)
-        return associatedType == nil ? self.typeHasTokenHandler(associatedType!) : false
+        return associatedType != nil ? self.typeHasTokenHandler(associatedType!) : false
     }
 
     /// Adds a TokenHandler to the bridge configuration
