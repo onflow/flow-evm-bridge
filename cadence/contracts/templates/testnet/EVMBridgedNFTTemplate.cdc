@@ -1,18 +1,18 @@
-import NonFungibleToken from 0xb6763b4399a888c8
-import MetadataViews from 0xb6763b4399a888c8
-import ViewResolver from 0xb6763b4399a888c8
-import FungibleToken from 0xa0225e7000ac82a9
-import FlowToken from 0x4445e7ad11568276
+import NonFungibleToken from 0x631e88ae7f1d7c20
+import MetadataViews from 0x631e88ae7f1d7c20
+import ViewResolver from 0x631e88ae7f1d7c20
+import FungibleToken from 0x9a0766d93b6608b7
+import FlowToken from 0x7e60df042a9c0868
 
-import EVM from 0xb6763b4399a888c8
+import EVM from 0x8c5303eaa26202d6
 
-import ICrossVM from 0x715c57f7a59bc39b
-import IEVMBridgeNFTMinter from 0x715c57f7a59bc39b
-import FlowEVMBridgeNFTEscrow from 0x715c57f7a59bc39b
-import FlowEVMBridgeConfig from 0x715c57f7a59bc39b
-import FlowEVMBridgeUtils from 0x715c57f7a59bc39b
-import FlowEVMBridge from 0x715c57f7a59bc39b
-import CrossVMNFT from 0x715c57f7a59bc39b
+import ICrossVM from 0xdfc20aee650fcbdf
+import IEVMBridgeNFTMinter from 0xdfc20aee650fcbdf
+import FlowEVMBridgeNFTEscrow from 0xdfc20aee650fcbdf
+import FlowEVMBridgeConfig from 0xdfc20aee650fcbdf
+import FlowEVMBridgeUtils from 0xdfc20aee650fcbdf
+import FlowEVMBridge from 0xdfc20aee650fcbdf
+import CrossVMNFT from 0xdfc20aee650fcbdf
 
 /// This contract is a template used by FlowEVMBridge to define EVM-native NFTs bridged from Flow EVM to Flow.
 /// Upon deployment of this contract, the contract name is derived as a function of the asset type (here an ERC721 aka
