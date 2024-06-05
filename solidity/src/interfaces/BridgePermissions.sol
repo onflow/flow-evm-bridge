@@ -46,7 +46,7 @@ abstract contract BridgePermissions is ERC165, IBridgePermissions {
      * Emits a {PermissionsUpdated} event.
      */
     function _setPermissions(bool permissions) internal {
-        permissions = permissions;
+        _permissions = permissions;
         emit PermissionsUpdated(permissions);
     }
 }
