@@ -3,14 +3,22 @@ import "FlowToken"
 import "MetadataViews"
 import "FungibleTokenMetadataViews"
 
+/// Custom struct to store Fungible Token vault info
 access(all)
 struct FTVaultInfo {
+    /// The name of the Fungible Token
     access(all) let name: String
+    /// The symbol of the Fungible Token
     access(all) let symbol: String
+    /// The balance of the Fungible Token
     access(all) var balance: UFix64
+    /// The address of the Fungible Token contract
     access(all) let tokenContractAddress: Address
+    /// The name of the Fungible Token contract
     access(all) let tokenContractName: String
+    /// The storage path of the Fungible Token vault
     access(all) let storagePath: StoragePath
+    /// The receiver path of the Fungible Token vault
     access(all) let receiverPath: PublicPath
 
     init(
@@ -31,11 +39,21 @@ struct FTVaultInfo {
         self.receiverPath = receiverPath
     }
 
+    /// Updates the balance of the Fungible Token vault
     access(all) fun updateBalance(delta: UFix64) {
         self.balance = self.balance + delta
     }
 }
 
+/// Returns a FTVaultInfo struct with the provided data
+///
+/// @param vaultType: The type of the Fungible Token vault
+/// @param balance: The balance of the Fungible Token vault
+/// @param display: The FTDisplay view of the Fungible Token vault
+/// @param data: The FTVaultData view of the Fungible Token vault
+///
+/// @return FTVaultInfo: The FTVaultInfo struct with the provided data
+///
 access(all)
 fun getVaultInfo(
     vaultType: Type,
@@ -59,6 +77,11 @@ fun getVaultInfo(
     )
 }
 
+/// Returns a mapping of all Fungible Token vaults stored in the account's storage indexed by their type
+///
+/// @param address: The address of the account to query
+///
+/// @return {Type: FTVaultInfo}: A mapping of vault types to their respective info
 access(all)
 fun main(address: Address): {Type: FTVaultInfo} {
     let acct = getAuthAccount<auth(BorrowValue) &Account>(address)
