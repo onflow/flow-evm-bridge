@@ -413,6 +413,12 @@ fun testMintExampleNFTSucceeds() {
         alice
     )
     Test.expect(setupCollectionResult, Test.beSucceeded())
+    let hasCollection = executeScript(
+        "../scripts/nft/has_collection_configured.cdc",
+        [exampleNFTIdentifier, alice.address]
+    )
+    Test.expect(hasCollection, Test.beSucceeded())
+    Test.assertEqual(true, hasCollection.returnValue as! Bool? ?? panic("Problem getting collection status"))
 
     let mintExampleNFTResult = executeTransaction(
         "../transactions/example-assets/example-nft/mint_nft.cdc",
@@ -440,6 +446,12 @@ fun testMintExampleTokenSucceeds() {
         alice
     )
     Test.expect(setupVaultResult, Test.beSucceeded())
+    let hasVault = executeScript(
+        "../scripts/tokens/has_vault_configured.cdc",
+        [exampleTokenIdentifier, alice.address]
+    )
+    Test.expect(hasVault, Test.beSucceeded())
+    Test.assertEqual(true, hasVault.returnValue as! Bool? ?? panic("Problem getting vault status"))
 
     let mintExampleTokenResult = executeTransaction(
         "../transactions/example-assets/example-token/mint_tokens.cdc",
