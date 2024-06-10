@@ -179,6 +179,16 @@ func main() {
 		contractCode, err := os.ReadFile(contractPath)
 		checkNoErr(err)
 
+		// If the contract is already deployed as-is, skip deployment
+		a, err := o.GetAccount(ctx, "flow-evm-bridge")
+		checkNoErr(err)
+		log.Printf("Checking if contract %s is already deployed...", name)
+		if a.Contracts[name] != nil {
+			log.Printf("Contract %s already deployed, skipping...", name)
+			continue
+		}
+		log.Printf("Contract %s not found on %s, deploying...", name, network)
+
 		var args []cadence.Value
 		if name == "FlowEVMBridgeUtils" {
 			args = []cadence.Value{cadence.String(factoryAddr)}
@@ -197,23 +207,8 @@ func main() {
 		WithArg("pause", true),
 	)
 	checkNoErr(pauseResult.Err)
-	log.Printf("Bridge paused, configuring token handlers...")
 
-	// TODO: Blocked on FiatToken staging - uncomment once the updated contract is staged & migrated
-	// Add TokenHandler for specified Types
-	// fiatToken, err := o.State.Config().Contracts.ByName("FiatToken")
-	// checkNoErr(err)
-	// fiatTokenAddress := fiatToken.Aliases.ByNetwork(o.GetNetwork()).Address
-	// fiatTokenVaultIdentifier := "A." + fiatTokenAddress.String() + ".FiatToken.Vault"
-	// fiatTokenMinterIdentifier := "A." + fiatTokenAddress.String() + ".FiatToken.MinterResource"
-	// handlerCreationResult := o.Tx("bridge/admin/token-handler/create_cadence_native_token_handler",
-	// 	WithSigner("flow-evm-bridge"),
-	// 	WithArg("vaultIdentifier", fiatTokenVaultIdentifier),
-	// 	WithArg("minterIdentifier", fiatTokenMinterIdentifier),
-	// )
-	// checkNoErr(handlerCreationResult.Err)
-
-	log.Printf("Token handlers configured...continuing EVM setup...")
+	// TODO: Add any TokenHandlers here if needed
 
 	/* --- Finish EVM Contract Setup --- */
 
