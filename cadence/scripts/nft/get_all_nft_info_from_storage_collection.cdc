@@ -20,7 +20,7 @@ struct NFTInfo {
         id: UInt64,
         name: String,
         symbol: String?,
-        thumbnail: String,
+        thumbnail: String?,
         uri: String?,
         collectionStoragePath: StoragePath,
         receiverPublicPath: PublicPath
@@ -56,8 +56,7 @@ fun getNFTInfoFromCollection(_ collection: &{NonFungibleToken.Collection}): {UIn
         let display = nft!.resolveView(Type<MetadataViews.Display>()) as! MetadataViews.Display?
         let bridged = nft!.resolveView(Type<MetadataViews.EVMBridgedMetadata>()) as! MetadataViews.EVMBridgedMetadata?
 
-        // Skip if basic metadata is not available
-        if data == nil || display == nil {
+        if data == nil || (display == nil && bridged == nil) {
             continue
         }
 
@@ -65,9 +64,9 @@ fun getNFTInfoFromCollection(_ collection: &{NonFungibleToken.Collection}): {UIn
             key: id,
             NFTInfo(
                 id: id,
-                name: display!.name,
+                name: display?.name ?? bridged?.name ?? panic("Problem resolving NFT name"),
                 symbol: bridged?.symbol,
-                thumbnail: display!.thumbnail.uri(),
+                thumbnail: display?.thumbnail?.uri(),
                 uri: bridged?.uri?.uri(),
                 collectionStoragePath: data!.storagePath,
                 receiverPublicPath: data!.publicPath
