@@ -49,7 +49,7 @@ transaction(bytecode: String, gasLimit: UInt64, value: UFix64) {
         )
         assert(
             evmResult.status == EVM.Status.successful && evmResult.deployedContract != nil,
-            message: "Bridge factory deployment failed"
+            message: "EVM deployment failed with error code: ".concat(evmResult.errorCode.toString())
         )
     }
 }
