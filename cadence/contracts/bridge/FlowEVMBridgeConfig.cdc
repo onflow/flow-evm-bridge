@@ -111,6 +111,10 @@ contract FlowEVMBridgeConfig {
     ///
     access(account)
     fun associateType(_ type: Type, with evmAddress: EVM.EVMAddress) {
+        pre {
+            self.getEVMAddressAssociated(with: type) == nil: "Type already associated with an EVMAddress"
+            self.getTypeAssociated(with: evmAddress) == nil: "EVMAddress already associated with a Type"
+        }
         self.typeToEVMAddress[type] = evmAddress
         let evmAddressHex = EVMUtils.getEVMAddressAsHexString(address: evmAddress)
         self.evmAddressHexToType[evmAddressHex] = type
