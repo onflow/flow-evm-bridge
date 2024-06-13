@@ -4,6 +4,7 @@ import "FlowToken"
 
 import "EVM"
 
+import "FlowEVMBridgeConfig"
 import "FlowEVMBridge"
 
 /// This contract defines a mechanism for routing bridge requests from the EVM contract to the Flow-EVM bridge contract
@@ -66,7 +67,7 @@ contract FlowEVMBridgeAccessor {
                         "safeTransferFrom(address,address,uint256)",
                         [caller.address(), FlowEVMBridge.getBridgeCOAEVMAddress(), id]
                     ),
-                    gasLimit: 15000000,
+                    gasLimit: FlowEVMBridgeConfig.gasLimit,
                     value: EVM.Balance(attoflow: 0)
                 )
             }
@@ -128,7 +129,7 @@ contract FlowEVMBridgeAccessor {
                         "transfer(address,uint256)",
                         [FlowEVMBridge.getBridgeCOAEVMAddress(), amount]
                     ),
-                    gasLimit: 15000000,
+                    gasLimit: FlowEVMBridgeConfig.gasLimit,
                     value: EVM.Balance(attoflow: 0)
                 )
             }
