@@ -264,6 +264,14 @@ contract FlowBridgeFactory is Ownable {
     }
 
     /**
+     * @dev Overrides Ownable.renounceOwnership function to prevent ownership renouncement as it is required to retain
+     * bridge functionality
+     */
+    function renounceOwnership() public virtual override onlyOwner {
+        revert("FlowBridgeFactory: Ownership cannot be renounced");
+    }
+
+    /**
      * @dev Registers a new deployment in the deployment registry
      *
      * @param cadenceIdentifier The Cadence identifier of the deployed contract
