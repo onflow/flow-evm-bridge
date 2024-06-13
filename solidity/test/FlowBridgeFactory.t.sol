@@ -59,52 +59,52 @@ contract FlowBridgeFactoryTest is Test {
         deployedERC721Contract = FlowEVMBridgedERC721(deployedERC721Address);
     }
 
-    function test_RegistryIsNonZero() public {
+    function test_RegistryIsNonZero() public view {
         address registryAddress = factory.getRegistry();
         assertNotEq(registryAddress, address(0));
     }
 
-    function test_GetERC20Deployer() public {
+    function test_GetERC20Deployer() public view {
         address erc20DeployerAddress = factory.getDeployer("ERC20");
         assertEq(erc20DeployerAddress, address(erc20Deployer));
     }
 
-    function test_GetERC721Deployer() public {
+    function test_GetERC721Deployer() public view {
         address erc721DeployerAddress = factory.getDeployer("ERC721");
         assertEq(erc721DeployerAddress, address(erc721Deployer));
     }
 
-    function test_DeployERC721() public {
+    function test_DeployERC721() public view {
         bool isBridgeDeployed = factory.isBridgeDeployed(deployedERC721Address);
         assertEq(isBridgeDeployed, true);
     }
 
-    function test_IsERC721True() public {
+    function test_IsERC721True() public view {
         bool isERC721 = factory.isERC721(deployedERC721Address);
         assertEq(isERC721, true);
     }
 
-    function test_IsERC721False() public {
+    function test_IsERC721False() public view {
         bool isERC721 = factory.isERC721(deployedERC20Address);
         assertEq(isERC721, false);
     }
 
-    function test_DeployERC20() public {
+    function test_DeployERC20() public view {
         bool isBridgeDeployed = factory.isBridgeDeployed(deployedERC20Address);
         assertEq(isBridgeDeployed, true);
     }
 
-    function test_IsERC20True() public {
+    function test_IsERC20True() public view {
         bool isERC20 = factory.isERC20(deployedERC20Address);
         assertEq(isERC20, true);
     }
 
-    function test_IsERC20False() public {
+    function test_IsERC20False() public view {
         bool isERC20 = factory.isERC20(deployedERC721Address);
         assertEq(isERC20, false);
     }
 
-    function test_ValidateDeployedERC721Address() public {
+    function test_ValidateDeployedERC721Address() public view {
         string memory _name = deployedERC721Contract.name();
         string memory _symbol = deployedERC721Contract.symbol();
         string memory _flowNFTAddress = deployedERC721Contract.flowNFTAddress();
@@ -122,7 +122,7 @@ contract FlowBridgeFactoryTest is Test {
         assertEq(factoryOwner, erc721Owner);
     }
 
-    function test_ValidateDeployedERC20Address() public {
+    function test_ValidateDeployedERC20Address() public view {
         string memory _name = deployedERC20Contract.name();
         string memory _symbol = deployedERC20Contract.symbol();
         string memory _flowTokenAddress = deployedERC20Contract.getFlowTokenAddress();
