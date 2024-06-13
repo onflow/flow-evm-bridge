@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.17;
+pragma solidity 0.8.24;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
@@ -7,7 +7,7 @@ import {FlowEVMDeploymentRegistry} from "./interfaces/FlowEVMDeploymentRegistry.
 
 /**
  * @title FlowBridgeDeploymentRegistry
- * @dev A contract to manage the association between bridged Flow EVM contracts and a corresponding Cadence resource type. 
+ * @dev A contract to manage the association between bridged Flow EVM contracts and a corresponding Cadence resource type.
  * Deployment of new bridged Flow EVM contracts is handled in `FlowBridgeFactory`.
  */
 contract FlowBridgeDeploymentRegistry is FlowEVMDeploymentRegistry, Ownable {
