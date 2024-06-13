@@ -5,7 +5,6 @@ import "ScopedFTProviders"
 
 import "EVM"
 
-import "EVMUtils"
 import "FlowEVMBridge"
 import "FlowEVMBridgeConfig"
 
@@ -13,7 +12,7 @@ import "FlowEVMBridgeConfig"
 /// environments
 /// NOTE: This must be done before bridging a Cadence-native NFT to EVM
 ///
-/// @param addressesAsHex: Array of EVM contract addresses (as hex string without 0x prefix) defining the 
+/// @param addressesAsHex: Array of EVM contract addresses defining the 
 ///     bridgeable asset to be onboarded
 ///
 transaction(addressesAsHex: [String]) {
@@ -50,7 +49,7 @@ transaction(addressesAsHex: [String]) {
         // Iterate over provided array
         for addressHex in addressesAsHex {
             // Convert hex string to EVMAddress
-            let address = EVMUtils.getEVMAddressFromHexString(address: addressHex)
+            let address = EVM.addressFromString(addressHex)
             // Continue if the hex is not a valid EVM address or if the address is already onboarded
             if address == nil || FlowEVMBridge.evmAddressRequiresOnboarding(address!) != true {
                 continue

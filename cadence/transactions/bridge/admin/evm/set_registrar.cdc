@@ -1,6 +1,5 @@
 import "EVM"
 
-import "EVMUtils"
 import "FlowEVMBridgeUtils"
 
 /// Sets the bridge factory contract address as the registrar for the provided FlowBridgeDeploymentRegistry address.
@@ -18,8 +17,7 @@ transaction(registryEVMAddressHex: String) {
     }
 
     execute {
-        let registryEVMAddress = EVMUtils.getEVMAddressFromHexString(address: registryEVMAddressHex)
-            ?? panic("Could not convert registry address to EVM address")
+        let registryEVMAddress = EVM.addressFromString(registryEVMAddressHex)
         
         let callResult = self.coa.call(
             to: registryEVMAddress,

@@ -1,4 +1,5 @@
-import "EVMUtils"
+import "EVM"
+
 import "FlowEVMBridge"
 
 /// Returns whether a EVM contract needs to be onboarded to the FlowEVMBridge
@@ -15,10 +16,9 @@ access(all) fun main(evmAddresses: [String]): {String: Bool?} {
         if results[addressHex] != nil {
             continue
         }
-        if let address = EVMUtils.getEVMAddressFromHexString(address: addressHex) {
-            let requiresOnboarding = FlowEVMBridge.evmAddressRequiresOnboarding(address)
-            results.insert(key: addressHex, requiresOnboarding)
-        }
+        let address = EVM.addressFromString(addressHex)
+        let requiresOnboarding = FlowEVMBridge.evmAddressRequiresOnboarding(address)
+        results.insert(key: addressHex, requiresOnboarding)
     }
     return results
 }

@@ -1,6 +1,5 @@
 import "EVM"
 
-import "EVMUtils"
 import "FlowEVMBridgeHandlerInterfaces"
 import "FlowEVMBridgeConfig"
 

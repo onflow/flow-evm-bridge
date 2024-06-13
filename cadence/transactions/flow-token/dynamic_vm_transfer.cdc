@@ -3,8 +3,6 @@ import "FlowToken"
 
 import "EVM"
 
-import "EVMUtils"
-
 // Transfers $FLOW from the signer's account to the recipient's address, determining the target VM based on the format
 // of the recipient's hex address. Note that the sender's funds are sourced by default from the target VM, pulling any
 // difference from the alternate VM if available. e.g. Transfers to Flow addresses will first attempt to withdraw from
@@ -33,7 +31,7 @@ transaction(addressString: String, amount: UFix64) {
         // Define optional recipients for both VMs
         self.receiver = nil
         let cadenceRecipient = Address.fromString(addressString)
-        self.evmRecipient = cadenceRecipient == nil ? EVMUtils.getEVMAddressFromHexString(address: addressString) : nil
+        self.evmRecipient = cadenceRecipient == nil ? EVM.addressFromString(addressString) : nil
         // Validate exactly one target address is assigned
         if cadenceRecipient != nil && self.evmRecipient != nil {
             panic("Malformed recipient address - assignable as both Cadence and EVM addresses")
