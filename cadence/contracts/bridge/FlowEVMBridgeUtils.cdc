@@ -139,7 +139,7 @@ contract FlowEVMBridgeUtils {
             signature: "allowsBridging()",
             targetEVMAddress: address,
             args: [],
-            gasLimit: 60000,
+            gasLimit: FlowEVMBridgeConfig.gasLimit,
             value: 0.0
         )
         // Contract doesn't support the method - proceed permissionlessly
@@ -190,7 +190,7 @@ contract FlowEVMBridgeUtils {
                 signature: "isBridgeDeployed(address)",
                 targetEVMAddress: self.bridgeFactoryEVMAddress,
                 args: [evmContractAddress],
-                gasLimit: 60000,
+                gasLimit: FlowEVMBridgeConfig.gasLimit,
                 value: 0.0
             )
 
@@ -213,7 +213,7 @@ contract FlowEVMBridgeUtils {
             signature: "isERC721(address)",
             targetEVMAddress: self.bridgeFactoryEVMAddress,
             args: [evmContractAddress],
-            gasLimit: 100000,
+            gasLimit: FlowEVMBridgeConfig.gasLimit,
             value: 0.0
         )
 
@@ -236,7 +236,7 @@ contract FlowEVMBridgeUtils {
             signature: "isERC20(address)",
             targetEVMAddress: self.bridgeFactoryEVMAddress,
             args: [evmContractAddress],
-            gasLimit: 100000,
+            gasLimit: FlowEVMBridgeConfig.gasLimit,
             value: 0.0
         )
 
@@ -259,7 +259,7 @@ contract FlowEVMBridgeUtils {
             signature: "isValidAsset(address)",
             targetEVMAddress: self.bridgeFactoryEVMAddress,
             args: [evmContractAddress],
-            gasLimit: 100000,
+            gasLimit: FlowEVMBridgeConfig.gasLimit,
             value: 0.0
         )
         let decodedResult = EVM.decodeABI(types: [Type<Bool>()], data: callResult.data)
@@ -430,7 +430,7 @@ contract FlowEVMBridgeUtils {
             signature: "name()",
             targetEVMAddress: evmContractAddress,
             args: [],
-            gasLimit: 60000,
+            gasLimit: FlowEVMBridgeConfig.gasLimit,
             value: 0.0
         )
 
@@ -454,7 +454,7 @@ contract FlowEVMBridgeUtils {
             signature: "symbol()",
             targetEVMAddress: evmContractAddress,
             args: [],
-            gasLimit: 60000,
+            gasLimit: FlowEVMBridgeConfig.gasLimit,
             value: 0.0
         )
         assert(callResult.status == EVM.Status.successful, message: "Call for EVM asset symbol failed")
@@ -477,7 +477,7 @@ contract FlowEVMBridgeUtils {
             signature: "tokenURI(uint256)",
             targetEVMAddress: evmContractAddress,
             args: [id],
-            gasLimit: 60000,
+            gasLimit: FlowEVMBridgeConfig.gasLimit,
             value: 0.0
         )
 
@@ -500,7 +500,7 @@ contract FlowEVMBridgeUtils {
             signature: "contractURI()",
             targetEVMAddress: evmContractAddress,
             args: [],
-            gasLimit: 60000,
+            gasLimit: FlowEVMBridgeConfig.gasLimit,
             value: 0.0
         )
         if callResult.status != EVM.Status.successful {
@@ -522,7 +522,7 @@ contract FlowEVMBridgeUtils {
                 signature: "decimals()",
                 targetEVMAddress: evmContractAddress,
                 args: [],
-                gasLimit: 60000,
+                gasLimit: FlowEVMBridgeConfig.gasLimit,
                 value: 0.0
             )
 
@@ -562,7 +562,7 @@ contract FlowEVMBridgeUtils {
         let callResult = self.borrowCOA().call(
                 to: evmContractAddress,
                 data: calldata,
-                gasLimit: 12000000,
+                gasLimit: FlowEVMBridgeConfig.gasLimit,
                 value: EVM.Balance(attoflow: 0)
             )
         assert(callResult.status == EVM.Status.successful, message: "Call to ERC721.ownerOf(uint256) failed")
@@ -588,7 +588,7 @@ contract FlowEVMBridgeUtils {
             signature: "getApproved(uint256)",
             targetEVMAddress: evmContractAddress,
             args: [ofNFT],
-            gasLimit: 12000000,
+            gasLimit: FlowEVMBridgeConfig.gasLimit,
             value: 0.0
         )
         assert(callResult.status == EVM.Status.successful, message: "Call to ERC721.getApproved(uint256) failed")
@@ -617,7 +617,7 @@ contract FlowEVMBridgeUtils {
                     signature: "exists(uint256)",
                     targetEVMAddress: erc721Address,
                     args: [id],
-                    gasLimit: 12000000,
+                    gasLimit: FlowEVMBridgeConfig.gasLimit,
                     value: 0.0
                 ).data,
             )
@@ -639,7 +639,7 @@ contract FlowEVMBridgeUtils {
             signature: "balanceOf(address)",
             targetEVMAddress: evmContractAddress,
             args: [owner],
-            gasLimit: 60000,
+            gasLimit: FlowEVMBridgeConfig.gasLimit,
             value: 0.0
         )
         assert(callResult.status == EVM.Status.successful, message: "Call to ERC20.balanceOf(address) failed")
@@ -674,7 +674,7 @@ contract FlowEVMBridgeUtils {
             signature: "totalSupply()",
             targetEVMAddress: evmContractAddress,
             args: [],
-            gasLimit: 60000,
+            gasLimit: FlowEVMBridgeConfig.gasLimit,
             value: 0.0
         )
         assert(callResult.status == EVM.Status.successful, message: "Call to ERC20.totalSupply() failed")
@@ -1068,7 +1068,7 @@ contract FlowEVMBridgeUtils {
             signature: "safeTransferFrom(address,address,uint256)",
             targetEVMAddress: erc721Address,
             args: [bridgeCOAAddress, to, id],
-            gasLimit: 15000000,
+            gasLimit: FlowEVMBridgeConfig.gasLimit,
             value: 0.0
         )
         assert(
@@ -1093,7 +1093,7 @@ contract FlowEVMBridgeUtils {
             signature: "safeMint(address,uint256,string)",
             targetEVMAddress: erc721Address,
             args: [to, id, uri],
-            gasLimit: 15000000,
+            gasLimit: FlowEVMBridgeConfig.gasLimit,
             value: 0.0
         )
         assert(mintResult.status == EVM.Status.successful, message: "Mint to bridge recipient failed")
@@ -1114,7 +1114,7 @@ contract FlowEVMBridgeUtils {
             signature: "updateTokenURI(uint256,string)",
             targetEVMAddress: erc721Address,
             args: [id, uri],
-            gasLimit: 15000000,
+            gasLimit: FlowEVMBridgeConfig.gasLimit,
             value: 0.0
         )
         assert(updateResult.status == EVM.Status.successful, message: "URI update failed")
@@ -1154,7 +1154,7 @@ contract FlowEVMBridgeUtils {
             signature: "mint(address,uint256)",
             targetEVMAddress: erc20Address,
             args: [to, amount],
-            gasLimit: 15000000,
+            gasLimit: FlowEVMBridgeConfig.gasLimit,
             value: 0.0
         )
         assert(mintResult.status == EVM.Status.successful, message: "Mint to bridge ERC20 contract failed")
@@ -1184,7 +1184,7 @@ contract FlowEVMBridgeUtils {
             signature: "transfer(address,uint256)",
             targetEVMAddress: erc20Address,
             args: [to, amount],
-            gasLimit: 15000000,
+            gasLimit: FlowEVMBridgeConfig.gasLimit,
             value: 0.0
         )
         assert(transferResult.status == EVM.Status.successful, message: "transfer call to ERC20 contract failed")
@@ -1263,7 +1263,7 @@ contract FlowEVMBridgeUtils {
             signature: "deploy(string,string,string,string,string,string)",
             targetEVMAddress: self.bridgeFactoryEVMAddress,
             args: [deployerTag, name, symbol, cadenceAddress.toString(), flowIdentifier, contractURI],
-            gasLimit: 15000000,
+            gasLimit: FlowEVMBridgeConfig.gasLimit,
             value: 0.0
         )
         assert(deployResult.status == EVM.Status.successful, message: "EVM Token contract deployment failed")

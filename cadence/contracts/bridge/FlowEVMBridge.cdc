@@ -501,7 +501,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
             signature: "burn(uint256)",
             targetEVMAddress: associatedAddress,
             args: [amount],
-            gasLimit: 15000000,
+            gasLimit: FlowEVMBridgeConfig.gasLimit,
             value: 0.0
         )
         assert(burnResult.status == EVM.Status.successful, message: "Burn of EVM tokens failed")

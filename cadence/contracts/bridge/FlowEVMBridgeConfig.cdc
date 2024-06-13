@@ -13,6 +13,7 @@ contract FlowEVMBridgeConfig {
         Entitlements
     *******************/
 
+    access(all) entitlement Gas
     access(all) entitlement Fee
     access(all) entitlement Pause
 
@@ -29,6 +30,8 @@ contract FlowEVMBridgeConfig {
     /// Default ERC20.decimals() value
     access(all)
     let defaultDecimals: UInt8
+    access(all)
+    var gasLimit: UInt64
     /// Flag enabling pausing of bridge operations
     access(self)
     var paused: Bool
@@ -214,6 +217,15 @@ contract FlowEVMBridgeConfig {
             handler.setMinter(<-minter)
         }
 
+        /// Sets the gas limit for all EVM calls related to bridge operations
+        ///
+        /// @param lim the new gas limit
+        ///
+        access(Gas)
+        fun setGasLimit(_ limit: UInt64) {
+            FlowEVMBridgeConfig.gasLimit = limit
+        }
+
         /// Updates the onboarding fee
         ///
         /// @param new: UFix64 - new onboarding fee
@@ -321,6 +333,7 @@ contract FlowEVMBridgeConfig {
         self.onboardFee = 0.0
         self.baseFee = 0.0
         self.defaultDecimals = 18
+        self.gasLimit = 15_000_000
         self.paused = false
 
         // Although $FLOW does not have ERC20 address, we associate the the Vault with the EVM address from which
