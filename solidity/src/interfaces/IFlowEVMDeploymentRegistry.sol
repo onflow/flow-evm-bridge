@@ -10,6 +10,16 @@ import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
  */
 interface IFlowEVMDeploymentRegistry is IERC165 {
     /**
+     * @dev Event emitted when a new entity is authorized to register deployments
+     */
+    event RegistrarAuthorized(address indexed registrar);
+
+    /**
+     * @dev Event emitted when a new deployment is registered
+     */
+    event DeploymentRegistered(address indexed contractAddr, string cadenceIdentifier);
+
+    /**
      * @dev Get the Cadence type identifier associated with a contract address
      */
     function getCadenceIdentifier(address contractAddr) external view returns (string memory);

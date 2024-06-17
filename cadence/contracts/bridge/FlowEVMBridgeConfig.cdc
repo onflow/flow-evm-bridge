@@ -77,6 +77,10 @@ contract FlowEVMBridgeConfig {
     ///
     access(all)
     event PauseStatusUpdated(paused: Bool)
+    /// Emitted whenever an association is updated
+    ///
+    access(all)
+    event AssociationUpdated(type: Type, evmAddress: String)
 
     /*************
         Getters
@@ -118,6 +122,8 @@ contract FlowEVMBridgeConfig {
         self.typeToEVMAddress[type] = evmAddress
         let evmAddressHex = EVMUtils.getEVMAddressAsHexString(address: evmAddress)
         self.evmAddressHexToType[evmAddressHex] = type
+
+        emit AssociationUpdated(type: type, evmAddress: evmAddressHex)
     }
 
     /// Returns whether the given Type has a TokenHandler configured
