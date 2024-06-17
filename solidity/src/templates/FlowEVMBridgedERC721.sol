@@ -6,23 +6,32 @@ import {ERC721URIStorage} from "@openzeppelin/contracts/token/ERC721/extensions/
 import {ERC721Enumerable} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import {ERC721Burnable} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {ICrossVM} from "../interfaces/ICrossVM.sol";
 
-contract FlowEVMBridgedERC721 is ERC721, ERC721URIStorage, ERC721Burnable, ERC721Enumerable, Ownable {
-    string public flowNFTAddress;
-    string public flowNFTIdentifier;
+contract FlowEVMBridgedERC721 is ERC721, ERC721URIStorage, ERC721Burnable, ERC721Enumerable, Ownable, ICrossVM {
+    string public cadenceNFTAddress;
+    string public cadenceNFTIdentifier;
     string public contractMetadata;
 
     constructor(
         address owner,
         string memory name,
         string memory symbol,
-        string memory _flowNFTAddress,
-        string memory _flowNFTIdentifier,
+        string memory _cadenceNFTAddress,
+        string memory _cadenceNFTIdentifier,
         string memory _contractMetadata
     ) ERC721(name, symbol) Ownable(owner) {
-        flowNFTAddress = _flowNFTAddress;
-        flowNFTIdentifier = _flowNFTIdentifier;
+        cadenceNFTAddress = _cadenceNFTAddress;
+        cadenceNFTIdentifier = _cadenceNFTIdentifier;
         contractMetadata = _contractMetadata;
+    }
+
+    function getCadenceAddress() external view returns (string memory) {
+        return cadenceNFTAddress;
+    }
+
+    function getCadenceIdentifier() external view returns (string memory) {
+        return cadenceNFTIdentifier;
     }
 
     function safeMint(address to, uint256 tokenId, string memory uri) public onlyOwner {
@@ -36,14 +45,6 @@ contract FlowEVMBridgedERC721 is ERC721, ERC721URIStorage, ERC721Burnable, ERC72
 
     function contractURI() public view returns (string memory) {
         return contractMetadata;
-    }
-
-    function getFlowNFTAddress() public view returns (string memory) {
-        return flowNFTAddress;
-    }
-
-    function getFlowNFTIdentifier() public view returns (string memory) {
-        return flowNFTIdentifier;
     }
 
     function tokenURI(uint256 tokenId) public view override(ERC721, ERC721URIStorage) returns (string memory) {
