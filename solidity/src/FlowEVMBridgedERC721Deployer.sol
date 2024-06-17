@@ -18,13 +18,6 @@ contract FlowEVMBridgedERC721Deployer is ERC165, IFlowEVMBridgeDeployer, Ownable
     // The address of the delegated deployer who can deploy new contracts
     address public delegatedDeployer;
 
-    /**
-     * @dev Event emitted when a new ERC721 contract is deployed via this deployer
-     */
-    event ERC721Deployed(
-        address contractAddress, string name, string symbol, string cadenceNFTAddress, string cadenceNFTIdentifier
-    );
-
     constructor() Ownable(msg.sender) {}
 
     /**
@@ -65,7 +58,7 @@ contract FlowEVMBridgedERC721Deployer is ERC165, IFlowEVMBridgeDeployer, Ownable
         FlowEVMBridgedERC721 newERC721 =
             new FlowEVMBridgedERC721(super.owner(), name, symbol, cadenceAddress, cadenceIdentifier, contractURI);
 
-        emit ERC721Deployed(address(newERC721), name, symbol, cadenceAddress, cadenceIdentifier);
+        emit Deployed(address(newERC721), name, symbol, cadenceAddress, cadenceIdentifier);
 
         return address(newERC721);
     }
@@ -78,5 +71,7 @@ contract FlowEVMBridgedERC721Deployer is ERC165, IFlowEVMBridgeDeployer, Ownable
     function setDelegatedDeployer(address _delegatedDeployer) external onlyOwner {
         require(_delegatedDeployer != address(0), "FlowEVMBridgedERC721Deployer: Invalid delegated deployer address");
         delegatedDeployer = _delegatedDeployer;
+
+        emit DeployerAuthorized(_delegatedDeployer);
     }
 }
