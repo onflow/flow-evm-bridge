@@ -106,6 +106,8 @@ abstract contract FlowEVMDeploymentRegistry is IFlowEVMDeploymentRegistry, ERC16
 
         cadenceIdentifierToContract[cadenceIdentifier] = contractAddr;
         contractToCadenceIdentifier[contractAddr] = cadenceIdentifier;
+
+        emit DeploymentRegistered(contractAddr, cadenceIdentifier);
     }
 
     /**
@@ -114,5 +116,7 @@ abstract contract FlowEVMDeploymentRegistry is IFlowEVMDeploymentRegistry, ERC16
     function _setRegistrar(address _registrar) internal {
         require(_registrar != address(0), "FlowEVMDeploymentRegistry: Registrar cannot be 0");
         registrar = _registrar;
+
+        emit RegistrarAuthorized(_registrar);
     }
 }
