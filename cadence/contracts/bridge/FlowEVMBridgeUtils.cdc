@@ -397,8 +397,12 @@ contract FlowEVMBridgeUtils {
             // Derive the contract name from the ERC721 contract
             cadenceContractName = self.deriveBridgedNFTContractName(from: evmContractAddress)
         } else {
-            // Otherwise, treat as ERC20. Upstream bridge calls would have confirmed the contract is either ERC20 or
-            // ERC721
+            // Otherwise, treat as ERC20
+            let isERC20 = self.isERC20(evmContractAddress: evmContractAddress)
+            assert(
+                isERC20,
+                message: "Contract ".concat(evmContractAddress.toString()).concat("defines an asset that is not currently supported by the bridge")
+            )
             cadenceContractName = self.deriveBridgedTokenContractName(from: evmContractAddress)
             decimals = self.getTokenDecimals(evmContractAddress: evmContractAddress)
         }
