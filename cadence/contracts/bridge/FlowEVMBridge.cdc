@@ -8,7 +8,6 @@ import "FlowToken"
 
 import "EVM"
 
-import "EVMUtils"
 import "IBridgePermissions"
 import "ICrossVM"
 import "IEVMBridgeNFTMinter"
@@ -121,7 +120,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         emit Onboarded(
             type: type,
             cadenceContractAddress: FlowEVMBridgeUtils.getContractAddress(fromType: type)!,
-            evmContractAddress: EVMUtils.getEVMAddressAsHexString(address: onboardingValues.evmContractAddress)
+            evmContractAddress: onboardingValues.evmContractAddress.toString()
         )
     }
 
@@ -659,7 +658,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
             assetName: evmOnboardingValues.name,
             symbol: evmOnboardingValues.symbol,
             isERC721: evmOnboardingValues.isERC721,
-            evmContractAddress: EVMUtils.getEVMAddressAsHexString(address: evmContractAddress)
+            evmContractAddress: evmContractAddress.toString()
         )
     }
 }

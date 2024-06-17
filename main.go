@@ -33,7 +33,6 @@ var contracts = []string{
 	"ArrayUtils",
 	"StringUtils",
 	"ScopedFTProviders",
-	"EVMUtils",
 	"Serialize",
 	"SerializeMetadata",
 	"IBridgePermissions",
