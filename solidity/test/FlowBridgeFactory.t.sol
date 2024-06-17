@@ -20,10 +20,10 @@ contract FlowBridgeFactoryTest is Test {
 
     string name;
     string symbol;
-    string flowNFTAddress;
-    string flowNFTIdentifier;
-    string flowTokenAddress;
-    string flowTokenIdentifier;
+    string cadenceNFTAddress;
+    string cadenceNFTIdentifier;
+    string cadenceTokenAddress;
+    string cadenceTokenIdentifier;
     string contractURI;
     address deployedERC20Address;
     address deployedERC721Address;
@@ -31,10 +31,10 @@ contract FlowBridgeFactoryTest is Test {
     function setUp() public virtual {
         name = "name";
         symbol = "symbol";
-        flowNFTAddress = "flowNFTAddress";
-        flowNFTIdentifier = "flowNFTIdentifier";
-        flowTokenAddress = "flowTokenAddress";
-        flowTokenIdentifier = "flowTokenIdentifier";
+        cadenceNFTAddress = "cadenceNFTAddress";
+        cadenceNFTIdentifier = "cadenceNFTIdentifier";
+        cadenceTokenAddress = "cadenceTokenAddress";
+        cadenceTokenIdentifier = "cadenceTokenIdentifier";
         contractURI = "contractURI";
 
         factory = new FlowBridgeFactory();
@@ -52,8 +52,8 @@ contract FlowBridgeFactoryTest is Test {
         factory.addDeployer("ERC20", address(erc20Deployer));
         factory.addDeployer("ERC721", address(erc721Deployer));
 
-        deployedERC20Address = factory.deploy("ERC20", name, symbol, flowTokenAddress, flowTokenIdentifier, contractURI);
-        deployedERC721Address = factory.deploy("ERC721", name, symbol, flowNFTAddress, flowNFTIdentifier, contractURI);
+        deployedERC20Address = factory.deploy("ERC20", name, symbol, cadenceTokenAddress, cadenceTokenIdentifier, contractURI);
+        deployedERC721Address = factory.deploy("ERC721", name, symbol, cadenceNFTAddress, cadenceNFTIdentifier, contractURI);
 
         deployedERC20Contract = FlowEVMBridgedERC20(deployedERC20Address);
         deployedERC721Contract = FlowEVMBridgedERC721(deployedERC721Address);
@@ -107,14 +107,14 @@ contract FlowBridgeFactoryTest is Test {
     function test_ValidateDeployedERC721Address() public view {
         string memory _name = deployedERC721Contract.name();
         string memory _symbol = deployedERC721Contract.symbol();
-        string memory _flowNFTAddress = deployedERC721Contract.flowNFTAddress();
-        string memory _flowNFTIdentifier = deployedERC721Contract.flowNFTIdentifier();
+        string memory _cadenceNFTAddress = deployedERC721Contract.getCadenceAddress();
+        string memory _cadenceNFTIdentifier = deployedERC721Contract.getCadenceIdentifier();
         string memory _contractURI = deployedERC721Contract.contractURI();
 
         assertEq(_name, name);
         assertEq(_symbol, symbol);
-        assertEq(_flowNFTAddress, flowNFTAddress);
-        assertEq(_flowNFTIdentifier, flowNFTIdentifier);
+        assertEq(_cadenceNFTAddress, cadenceNFTAddress);
+        assertEq(_cadenceNFTIdentifier, cadenceNFTIdentifier);
         assertEq(_contractURI, contractURI);
 
         address factoryOwner = factory.owner();
@@ -125,14 +125,14 @@ contract FlowBridgeFactoryTest is Test {
     function test_ValidateDeployedERC20Address() public view {
         string memory _name = deployedERC20Contract.name();
         string memory _symbol = deployedERC20Contract.symbol();
-        string memory _flowTokenAddress = deployedERC20Contract.getFlowTokenAddress();
-        string memory _flowTokenIdentifier = deployedERC20Contract.flowTokenIdentifier();
+        string memory _cadenceTokenAddress = deployedERC20Contract.getCadenceAddress();
+        string memory _cadenceTokenIdentifier = deployedERC20Contract.getCadenceIdentifier();
         string memory _contractURI = deployedERC20Contract.contractURI();
 
         assertEq(_name, name);
         assertEq(_symbol, symbol);
-        assertEq(_flowTokenAddress, flowTokenAddress);
-        assertEq(_flowTokenIdentifier, flowTokenIdentifier);
+        assertEq(_cadenceTokenAddress, cadenceTokenAddress);
+        assertEq(_cadenceTokenIdentifier, cadenceTokenIdentifier);
         assertEq(_contractURI, contractURI);
 
         address factoryOwner = factory.owner();

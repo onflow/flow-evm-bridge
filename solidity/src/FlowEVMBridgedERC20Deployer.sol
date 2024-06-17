@@ -13,7 +13,7 @@ import {FlowEVMBridgedERC20} from "./templates/FlowEVMBridgedERC20.sol";
  * delegated deployer can deploy new contracts. This contract is used by the Flow EVM bridge to deploy and define
  * bridged ERC20 tokens which are defined natively in Cadence.
  */
-contract FlowEVMBridgedERC20Deployer is IFlowEVMBridgeDeployer, ERC165, Ownable {
+contract FlowEVMBridgedERC20Deployer is ERC165, IFlowEVMBridgeDeployer, Ownable {
     // The address of the delegated deployer who can deploy new contracts
     address public delegatedDeployer;
 
@@ -38,7 +38,8 @@ contract FlowEVMBridgedERC20Deployer is IFlowEVMBridgeDeployer, ERC165, Ownable 
      * @dev ERC165 introspection
      */
     function supportsInterface(bytes4 interfaceId) public view override(IERC165, ERC165) returns (bool) {
-        return interfaceId == type(IFlowEVMBridgeDeployer).interfaceId || super.supportsInterface(interfaceId);
+        return interfaceId == type(IFlowEVMBridgeDeployer).interfaceId || interfaceId == type(Ownable).interfaceId
+            || super.supportsInterface(interfaceId);
     }
 
     /**
