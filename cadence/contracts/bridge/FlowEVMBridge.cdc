@@ -182,6 +182,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
             !FlowEVMBridgeConfig.isPaused(): "Bridge operations are currently paused"
             !token.isInstance(Type<@{FungibleToken.Vault}>()): "Mixed asset types are not yet supported"
             self.typeRequiresOnboarding(token.getType()) == false: "NFT must first be onboarded"
+            FlowEVMBridgeConfig.isTypePaused(token.getType()) == false: "Bridging is currently paused for this NFT"
         }
         /* Gather identifying information */
         //
@@ -266,6 +267,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
             !FlowEVMBridgeConfig.isPaused(): "Bridge operations are currently paused"
             !type.isSubtype(of: Type<@{FungibleToken.Vault}>()): "Mixed asset types are not yet supported"
             self.typeRequiresOnboarding(type) == false: "NFT must first be onboarded"
+            FlowEVMBridgeConfig.isTypePaused(type) == false: "Bridging is currently paused for this NFT"
         }
         /* Provision fee */
         //
@@ -339,6 +341,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
             !FlowEVMBridgeConfig.isPaused(): "Bridge operations are currently paused"
             !vault.isInstance(Type<@{NonFungibleToken.NFT}>()): "Mixed asset types are not yet supported"
             self.typeRequiresOnboarding(vault.getType()) == false: "FT must first be onboarded"
+            FlowEVMBridgeConfig.isTypePaused(vault.getType()) == false: "Bridging is currently paused for this token"
         }
         /* Handle $FLOW requests via EVM interface & return */
         //
@@ -438,6 +441,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
             !type.isSubtype(of: Type<@{NonFungibleToken.Collection}>()): "Mixed asset types are not yet supported"
             !type.isInstance(Type<@FlowToken.Vault>()): "Must use the CadenceOwnedAccount interface to bridge $FLOW from EVM"
             self.typeRequiresOnboarding(type) == false: "NFT must first be onboarded"
+            FlowEVMBridgeConfig.isTypePaused(type) == false: "Bridging is currently paused for this token"
         }
         /* Provision fees */
         //

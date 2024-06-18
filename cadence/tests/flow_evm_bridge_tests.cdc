@@ -758,7 +758,6 @@ access(all)
 fun testOnboardERC721ByEVMAddressSucceeds() {
     snapshot = getCurrentBlockHeight()
 
-
     var requiresOnboarding = evmAddressRequiresOnboarding(erc721AddressHex)
         ?? panic("Problem getting onboarding requirement")
     Test.assertEqual(true, requiresOnboarding)
@@ -988,6 +987,54 @@ fun testBridgeEVMNativeNFTFromEVMSucceeds() {
     Test.expect(evmIDResult, Test.beSucceeded())
     let evmID = evmIDResult.returnValue as! UInt256? ?? panic("Problem getting EVM ID")
     Test.assertEqual(erc721ID, evmID)
+}
+
+
+access(all)
+fun testPauseByTypeSucceeds() {
+    // Pause the bridge
+    let pauseResult = executeTransaction(
+        "../transactions/bridge/admin/pause/update_type_pause_status.cdc",
+        [exampleNFTIdentifier, true],
+        bridgeAccount
+    )
+    Test.expect(pauseResult, Test.beSucceeded())
+    var isPausedResult = executeScript(
+        "../scripts/bridge/is_type_paused.cdc",
+        [exampleNFTIdentifier]
+    )
+    Test.expect(isPausedResult, Test.beSucceeded())
+    Test.assertEqual(true, isPausedResult.returnValue as! Bool? ?? panic("Problem getting pause status"))
+
+    var aliceOwnedIDs = getIDs(ownerAddr: alice.address, storagePathIdentifier: "cadenceExampleNFTCollection")
+    Test.assertEqual(1, aliceOwnedIDs.length)
+
+    var aliceCOAAddressHex = getCOAAddressHex(atFlowAddress: alice.address)
+
+    // Execute bridge to EVM - should fail after pausing
+    bridgeNFTToEVM(
+        signer: alice,
+        contractAddr: exampleNFTAccount.address,
+        contractName: "ExampleNFT",
+        nftID: aliceOwnedIDs[0],
+        bridgeAccountAddr: bridgeAccount.address,
+        beFailed: true
+    )
+
+    // Unpause bridging
+    let unpauseResult = executeTransaction(
+        "../transactions/bridge/admin/pause/update_type_pause_status.cdc",
+        [exampleNFTIdentifier, false],
+        bridgeAccount
+    )
+    Test.expect(unpauseResult, Test.beSucceeded())
+
+    isPausedResult = executeScript(
+        "../scripts/bridge/is_type_paused.cdc",
+        [exampleNFTIdentifier]
+    )
+    Test.expect(isPausedResult, Test.beSucceeded())
+    Test.assertEqual(false, isPausedResult.returnValue as! Bool? ?? panic("Problem getting pause status"))
 }
 
 access(all)
