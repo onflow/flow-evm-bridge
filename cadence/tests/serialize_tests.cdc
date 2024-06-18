@@ -3,10 +3,15 @@ import BlockchainHelpers
 
 import "Serialize"
 
-access(all)
-let admin = Test.getAccount(0x0000000000000007)
-access(all)
-let alice = Test.createAccount()
+access(all) let admin = Test.getAccount(0x0000000000000007)
+access(all) let alice = Test.createAccount()
+
+access(all) struct NonSerializable {
+    access(all) let foo: String
+    init() {
+        self.foo = "foo"
+    }
+}
 
 access(all)
 fun setup() {
@@ -189,13 +194,17 @@ fun testBoolTryToJSONStringSucceeds() {
 access(all)
 fun testArrayToJSONStringSucceeds() {
     let arr: [AnyStruct] = [
+            NonSerializable(),
             127,
             255,
             "Hello, World!",
             "c",
             Address(0x0000000000000007),
+            NonSerializable(),
             UFix64.max,
-            true
+            true,
+            NonSerializable(),
+            NonSerializable()
         ]
 
     let expected = "[\"127\", \"255\", \"Hello, World!\", \"c\", \"0x0000000000000007\", \"184467440737.09551615\", \"true\"]"
@@ -206,10 +215,23 @@ fun testArrayToJSONStringSucceeds() {
 }
 
 access(all)
+fun testEmptyArrayToJSONStringSucceeds() {
+    let arr: [AnyStruct] = []
+
+    let expected = "[]"
+    
+    var actual = Serialize.arrayToJSONString(arr)
+
+    Test.assertEqual(expected, actual!)
+}
+
+access(all)
 fun testDictToJSONStringSucceeds() {
     let dict: {String: AnyStruct} = {
+            "bar": NonSerializable(),
             "bool": true,
-            "arr": [ 127, "Hello, World!" ]
+            "arr": [ 127, "Hello, World!" ],
+            "foo": NonSerializable()
         }
 
     // Mapping values can be indexed in arbitrary order, so we need to check for all possible outputs
@@ -225,4 +247,18 @@ fun testDictToJSONStringSucceeds() {
     actual = Serialize.dictToJSONString(dict: dict, excludedNames: ["bool"])
     expectedOne = "{\"arr\": [\"127\", \"Hello, World!\"]}"
     Test.assertEqual(true, expectedOne == actual!)
+}
+
+access(all)
+fun testEmptyDictToJSONStringSucceeds() {
+    let dict: {String: AnyStruct} = {}
+
+    // Mapping values can be indexed in arbitrary order, so we need to check for all possible outputs
+    var expected: String = "{}"
+    
+    var actual: String? = Serialize.dictToJSONString(dict: dict, excludedNames: nil)
+    Test.assertEqual(expected, actual!)
+    
+    actual = Serialize.tryToJSONString(dict)
+    Test.assertEqual(expected, actual!)
 }

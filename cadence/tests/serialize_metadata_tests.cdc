@@ -164,3 +164,23 @@ fun testDeriveSymbolFromShortStringSucceeds() {
     var symbolResult = SerializeMetadata.deriveSymbol(fromString: contractName)
     Test.assertEqual(expectedSymbol, symbolResult)
 }
+
+access(all)
+fun testToUpperSucceeds() {
+    let expected = "BTC2"
+
+    let contractName = " Btc2contract"
+
+    let actual = SerializeMetadata.toUpperAlphaNumerical(contractName, upTo: 4)
+    Test.assertEqual(expected, actual)
+}
+
+access(all)
+fun testToUpperExceedingStringLengthSucceeds() {
+    let expected = "BTC2CONTRACT"
+
+    let contractName = " Btc2contract"
+
+    let actual = SerializeMetadata.toUpperAlphaNumerical(contractName, upTo: contractName.length + 1)
+    Test.assertEqual(expected, actual)
+}
