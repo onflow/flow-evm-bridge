@@ -83,7 +83,6 @@ contract Serialize {
             default:
                 return nil
         }
-
     }
 
     /// Returns a serialized representation of the given array or nil if the value is not serializable
@@ -91,12 +90,18 @@ contract Serialize {
     access(all)
     fun arrayToJSONString(_ arr: [AnyStruct]): String? {
         var serializedArr = "["
+        let arrLength = arr.length
         for i, element in arr {
             let serializedElement = self.tryToJSONString(element)
             if serializedElement == nil {
-                return nil
+                if i == arrLength - 1 && serializedArr.length > 1 && serializedArr[serializedArr.length - 2] == "," {
+                    // Remove trailing comma as this element could not be serialized
+                    serializedArr = serializedArr.slice(from: 0, upTo: serializedArr.length - 2)
+                }
+                continue
             }
             serializedArr = serializedArr.concat(serializedElement!)
+            // Add a comma if there are more elements to serialize
             if i < arr.length - 1 {
                 serializedArr = serializedArr.concat(", ")
             }
@@ -116,10 +121,15 @@ contract Serialize {
             }
         }
         var serializedDict = "{"
+        let dictLength = dict.length
         for i, key in dict.keys {
             let serializedValue = self.tryToJSONString(dict[key]!)
             if serializedValue == nil {
-                return nil
+                if i == dictLength - 1  && serializedDict.length > 1 && serializedDict[serializedDict.length - 2] == "," {
+                    // Remove trailing comma as this element could not be serialized
+                    serializedDict = serializedDict.slice(from: 0, upTo: serializedDict.length - 2)
+                }
+                continue
             }
             serializedDict = serializedDict.concat(self.tryToJSONString(key)!).concat(": ").concat(serializedValue!)
             if i < dict.length - 1 {
