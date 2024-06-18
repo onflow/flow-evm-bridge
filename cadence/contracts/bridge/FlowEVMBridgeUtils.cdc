@@ -126,8 +126,7 @@ contract FlowEVMBridgeUtils {
         return true
     }
 
-    /// Returns whether the given address has opted out of enabling bridging for its defined assets. Reverts on EVM call
-    /// failure.
+    /// Returns whether the given address has opted out of enabling bridging for its defined assets
     ///
     /// @param address: The EVM contract address to check
     ///
@@ -224,7 +223,8 @@ contract FlowEVMBridgeUtils {
         return decodedResult[0] as! Bool
     }
 
-    /// Identifies if an asset is ERC20
+    /// Identifies if an asset is ERC20 as far as is possible without true EVM type introspection. Reverts on EVM call
+    /// failure.
     ///
     /// @param evmContractAddress: The EVM contract address to check
     ///
@@ -492,7 +492,7 @@ contract FlowEVMBridgeUtils {
         return decodedResult[0] as! String
     }
 
-    /// Retrieves the contract URI from the given EVM contract address. Reverts on EVM call failure.
+    /// Retrieves the contract URI from the given EVM contract address. Returns nil on EVM call failure.
     ///
     /// @param evmContractAddress: The EVM contract address to retrieve the contractURI from
     ///
@@ -688,7 +688,8 @@ contract FlowEVMBridgeUtils {
     }
 
     /// Converts the given amount of ERC20 tokens to the equivalent amount in FLOW tokens based on the ERC20s decimals
-    /// value. Reverts on EVM call failure.
+    /// value. Note that may be some loss of decimal precision as UFix64 supports precision for 8 decimal places.
+    /// Reverts on EVM call failure.
     ///
     /// @param amount: The amount of ERC20 tokens to convert
     /// @param erc20Address: The EVM contract address of the ERC20 token
@@ -704,7 +705,8 @@ contract FlowEVMBridgeUtils {
     }
 
     /// Converts the given amount of Cadence fungible tokens to the equivalent amount in ERC20 tokens based on the
-    /// ERC20s decimals. Reverts on EVM call failure.
+    /// ERC20s decimals. Note that there may be some loss of decimal precision as UFix64 supports precision for 8 
+    /// decimal places. Reverts on EVM call failure.
     ///
     /// @param amount: The amount of Cadence fungible tokens to convert
     /// @param erc20Address: The EVM contract address of the ERC20 token
