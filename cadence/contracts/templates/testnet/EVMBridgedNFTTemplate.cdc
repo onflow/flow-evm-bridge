@@ -315,9 +315,9 @@ access(all) contract {{CONTRACT_NAME}} : ICrossVM, IEVMBridgeNFTMinter, NonFungi
                     mediaType: "image/svg+xml"
                 )
                 return MetadataViews.NFTCollectionDisplay(
-                    name: "The FlowVM Bridged NFT Collection",
+                    name: self.name,
                     description: "This collection was bridged from Flow EVM.",
-                    externalURL: MetadataViews.ExternalURL("https://bridge.flow.com/nft"),
+                    externalURL: MetadataViews.ExternalURL("https://port.flow.com/"),
                     squareImage: media,
                     bannerImage: media,
                     socials: {}
