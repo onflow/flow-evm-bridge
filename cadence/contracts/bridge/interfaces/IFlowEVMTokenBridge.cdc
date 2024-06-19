@@ -12,8 +12,9 @@ access(all) contract interface IFlowEVMTokenBridge {
     /// Broadcasts fungible tokens were bridged from Cadence to EVM
     access(all)
     event BridgedTokensToEVM(
-        type: Type,
+        type: String,
         amount: UFix64,
+        bridgedUUID: UInt64,
         to: String,
         evmContractAddress: String,
         bridgeAddress: Address
@@ -21,8 +22,9 @@ access(all) contract interface IFlowEVMTokenBridge {
     /// Broadcasts fungible tokens were bridged from EVM to Cadence
     access(all)
     event BridgedTokensFromEVM(
-        type: Type,
+        type: String,
         amount: UInt256,
+        bridgedUUID: UInt64,
         caller: String,
         evmContractAddress: String,
         bridgeAddress: Address
@@ -60,8 +62,9 @@ access(all) contract interface IFlowEVMTokenBridge {
     ) {
         pre {
             emit BridgedTokensToEVM(
-                type: vault.getType(),
+                type: vault.getType().identifier,
                 amount: vault.balance,
+                bridgedUUID: vault.uuid,
                 to: to.toString(),
                 evmContractAddress: self.getAssociatedEVMAddress(with: vault.getType())?.toString()
                     ?? panic("Could not find EVM Contract address associated with provided NFT"),
@@ -93,8 +96,9 @@ access(all) contract interface IFlowEVMTokenBridge {
     ): @{FungibleToken.Vault} {
         post {
             emit BridgedTokensFromEVM(
-                type: result.getType(),
+                type: result.getType().identifier,
                 amount: amount,
+                bridgedUUID: result.uuid,
                 caller: owner.toString(),
                 evmContractAddress: self.getAssociatedEVMAddress(with: result.getType())?.toString()
                     ?? panic("Could not find EVM Contract address associated with provided Vault"),
