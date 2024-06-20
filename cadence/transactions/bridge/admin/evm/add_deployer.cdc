@@ -10,18 +10,20 @@ import "FlowEVMBridgeUtils"
 /// @param deployerEVMAddressHex: The EVM address of the deployer contract as a hex string, without the '0x' prefix
 ///
 transaction(deployerTag: String, deployerEVMAddressHex: String) {
-    
+
     let coa: auth(EVM.Call) &EVM.CadenceOwnedAccount
-    
+    var postDeployer: EVM.EVMAddress?
+
     prepare(signer: auth(BorrowValue) &Account) {
         self.coa = signer.storage.borrow<auth(EVM.Call) &EVM.CadenceOwnedAccount>(from: /storage/evm)
             ?? panic("Could not borrow COA from provided gateway address")
+
+        self.postDeployer = nil
     }
 
     execute {
-        let deployerEVMAddress = EVMUtils.getEVMAddressFromHexString(address: deployerEVMAddressHex)
-            ?? panic("Could not convert deployer contract address to EVM address")
-        
+        // Execute the call
+        let deployerEVMAddress = EVM.addressFromString(deployerEVMAddressHex)
         let callResult = self.coa.call(
             to: FlowEVMBridgeUtils.bridgeFactoryEVMAddress,
             data: EVM.encodeABIWithSignature(
@@ -32,5 +34,28 @@ transaction(deployerTag: String, deployerEVMAddressHex: String) {
             value: EVM.Balance(attoflow: 0)
         )
         assert(callResult.status == EVM.Status.successful, message: "Failed to add deployer")
+
+        // Confirm the deployer was added under the tag
+        let postDeployerResult = self.coa.call(
+            to: FlowEVMBridgeUtils.bridgeFactoryEVMAddress,
+            data: EVM.encodeABIWithSignature(
+                "getDeployer(string)",
+                [deployerTag]
+            ),
+            gasLimit: 15_000_000,
+            value: EVM.Balance(attoflow: 0)
+        )
+        assert(postDeployerResult.status == EVM.Status.successful, message: "Failed to get deployer")
+
+        let decodedResult = EVM.decodeABI(
+                types: [Type<EVM.EVMAddress>()],
+                data: postDeployerResult.data
+            ) as! [AnyStruct]
+        assert(decodedResult.length == 1, message: "Invalid response from getDeployer call")
+        self.postDeployer = decodedResult[0] as! EVM.EVMAddress
+    }
+
+    post {
+        self.postDeployer!.toString() == deployerEVMAddressHex: "Deployer was not properly configured"
     }
 }
