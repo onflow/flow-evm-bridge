@@ -92,11 +92,9 @@ contract FlowEVMBridgeUtils {
         Public Bridge Utils
      **************************/
 
-    /// Calculates the fee bridge fee based on the given storage usage. If includeBase is true, the base fee is included
-    /// in the resulting calculation.
+    /// Calculates the fee bridge fee based on the given storage usage + the current base fee.
     ///
     /// @param used: The amount of storage used by the asset
-    /// @param includeBase: Whether to include the base fee in the calculation
     ///
     /// @return The calculated fee amount
     ///
@@ -468,7 +466,7 @@ contract FlowEVMBridgeUtils {
         return decodedResult[0] as! String
     }
 
-    /// Retrieves the NFT/FT symbol from the given EVM contract address - applies for both ERC20 & ERC721
+    /// Retrieves the tokenURI for the given NFT ID from the given EVM contract address. Reverts on EVM call failure.
     /// Reverts on EVM call failure.
     ///
     /// @param evmContractAddress: The EVM contract address to retrieve the tokenURI from
@@ -486,7 +484,7 @@ contract FlowEVMBridgeUtils {
             value: 0.0
         )
 
-        assert(callResult.status == EVM.Status.successful, message: "Call for EVM asset symbol failed")
+        assert(callResult.status == EVM.Status.successful, message: "Call to EVM for tokenURI failed")
         let decodedResult = EVM.decodeABI(types: [Type<String>()], data: callResult.data) as! [AnyStruct]
         assert(decodedResult.length == 1, message: "Invalid response length")
 
@@ -563,12 +561,12 @@ contract FlowEVMBridgeUtils {
     ///
     access(all)
     fun isOwner(ofNFT: UInt256, owner: EVM.EVMAddress, evmContractAddress: EVM.EVMAddress): Bool {
-        let calldata = EVM.encodeABIWithSignature("ownerOf(uint256)", [ofNFT])
-        let callResult = self.borrowCOA().call(
-                to: evmContractAddress,
-                data: calldata,
+        let callResult = self.call(
+                signature: "ownerOf(uint256)",
+                targetEVMAddress: evmContractAddress,
+                args: [ofNFT],
                 gasLimit: FlowEVMBridgeConfig.gasLimit,
-                value: EVM.Balance(attoflow: 0)
+                value: 0.0
             )
         assert(callResult.status == EVM.Status.successful, message: "Call to ERC721.ownerOf(uint256) failed")
         let decodedCallResult = EVM.decodeABI(types: [Type<EVM.EVMAddress>()], data: callResult.data)
@@ -632,11 +630,11 @@ contract FlowEVMBridgeUtils {
 
     /// Returns the ERC20 balance of the owner at the given ERC20 contract address. Reverts on EVM call failure.
     ///
-    /// @param amount: The amount to check if the owner has enough balance to cover
     /// @param owner: The owner address to query
     /// @param evmContractAddress: The ERC20 contract address to query
     ///
-    /// @return true if the owner's balance >= amount, false otherwise
+    /// @return The UInt256 balance of the owner at the ERC20 contract address. Callers may wish to convert the return
+    ///     value to a UFix64 via convertERC20AmountToCadenceAmount, though note there may be a loss of precision.
     ///
     access(all)
     fun balanceOf(owner: EVM.EVMAddress, evmContractAddress: EVM.EVMAddress): UInt256 {
@@ -863,6 +861,7 @@ contract FlowEVMBridgeUtils {
             scaledValue <= UInt256(UFix64.max),
             message: "Scaled integer value ".concat(value.toString()).concat(" exceeds max UFix64 value")
         )
+        /// Check for the max value that can be converted to a UFix64 without overflowing
         assert(
             scaledValue == UInt256(UFix64.max) ? scaledFractional < 0.09551616 : true,
             message: "Scaled integer value ".concat(value.toString()).concat(" exceeds max UFix64 value")

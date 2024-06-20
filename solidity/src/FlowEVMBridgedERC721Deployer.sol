@@ -56,7 +56,7 @@ contract FlowEVMBridgedERC721Deployer is ERC165, IFlowEVMBridgeDeployer, Ownable
         string memory contractURI
     ) external onlyDelegatedDeployer returns (address) {
         FlowEVMBridgedERC721 newERC721 =
-            new FlowEVMBridgedERC721(super.owner(), name, symbol, cadenceAddress, cadenceIdentifier, contractURI);
+            new FlowEVMBridgedERC721(owner(), name, symbol, cadenceAddress, cadenceIdentifier, contractURI);
 
         emit Deployed(address(newERC721), name, symbol, cadenceAddress, cadenceIdentifier);
 

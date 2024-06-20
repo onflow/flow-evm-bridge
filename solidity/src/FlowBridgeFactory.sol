@@ -32,19 +32,19 @@ contract FlowBridgeFactory is Ownable {
     /**
      * @dev Emitted when a deployer is added to the factory
      */
-    event DeployerAdded(string tag, address deployerAddress);
+    event DeployerAdded(string indexed tag, address deployerAddress);
     /**
      * @dev Emitted when a deployer is updated in the factory
      */
-    event DeployerUpdated(string tag, address oldAddress, address newAddress);
+    event DeployerUpdated(string indexed tag, address oldAddress, address newAddress);
     /**
      * @dev Emitted when a deployer is removed from the factory
      */
-    event DeployerRemoved(string tag, address oldAddress);
+    event DeployerRemoved(string indexed tag, address oldAddress);
     /**
      * @dev Emitted when the deployment registry is updated
      */
-    event DeploymentRegistryUpdated(address oldAddress, address newAddress);
+    event DeploymentRegistryUpdated(address indexed oldAddress, address indexed newAddress);
 
     constructor() Ownable(msg.sender) {}
 
