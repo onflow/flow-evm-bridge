@@ -52,4 +52,9 @@ transaction(identifier: String) {
         )
         destroy self.scopedProvider
     }
+
+    post {
+        FlowEVMBridge.typeRequiresOnboarding(self.type) == false:
+            "Asset ".concat(identifier).concat(" was not onboarded to the bridge.")
+    }
 }
