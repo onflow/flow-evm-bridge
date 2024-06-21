@@ -5,15 +5,13 @@ import "ScopedFTProviders"
 
 import "EVM"
 
-import "EVMUtils"
 import "FlowEVMBridge"
 import "FlowEVMBridgeConfig"
 
 /// This transaction onboards the NFT type to the bridge, configuring the bridge to move NFTs between environments
 /// NOTE: This must be done before bridging a Cadence-native NFT to EVM
 ///
-/// @param contractAddressHex: The EVM address of the contract (as hex string without 0x prefix) defining the 
-///     bridgeable asset to be onboarded
+/// @param contractAddressHex: The EVM address of the contract defining the bridgeable asset to be onboarded
 ///
 transaction(contractAddressHex: String) {
 
@@ -23,8 +21,7 @@ transaction(contractAddressHex: String) {
     prepare(signer: auth(CopyValue, BorrowValue, IssueStorageCapabilityController, PublishCapability, SaveValue) &Account) {
         /* --- Construct EVMAddress from hex string (no leading `"0x"`) --- */
         //
-        self.contractAddress = EVMUtils.getEVMAddressFromHexString(address: contractAddressHex)
-            ?? panic("Invalid EVM address string provided")
+        self.contractAddress = EVM.addressFromString(contractAddressHex)
 
         /* --- Configure a ScopedFTProvider --- */
         //

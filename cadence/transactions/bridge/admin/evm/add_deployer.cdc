@@ -1,13 +1,12 @@
 import "EVM"
 
-import "EVMUtils"
 import "FlowEVMBridgeUtils"
 
 /// This transaction adds the given EVM address as a deployer in the bridge factory contract, indexed on the
 /// provided tag.
 ///
 /// @param deployerTag: The tag to index the deployer with - e.g. ERC20, ERC721, etc.
-/// @param deployerEVMAddressHex: The EVM address of the deployer contract as a hex string, without the '0x' prefix
+/// @param deployerEVMAddressHex: The EVM address of the deployer contract as a hex string
 ///
 transaction(deployerTag: String, deployerEVMAddressHex: String) {
 

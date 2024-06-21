@@ -8,7 +8,6 @@ import "FlowStorageFees"
 
 import "EVM"
 
-import "EVMUtils"
 import "SerializeMetadata"
 import "FlowEVMBridgeConfig"
 import "CrossVMNFT"
@@ -765,7 +764,7 @@ contract FlowEVMBridgeUtils {
     view fun deriveBridgedNFTContractName(from evmContract: EVM.EVMAddress): String {
         return self.contractNamePrefixes[Type<@{NonFungibleToken.NFT}>()]!["bridged"]!
             .concat(self.delimiter)
-            .concat("0x".concat(EVMUtils.getEVMAddressAsHexString(address: evmContract)))
+            .concat(evmContract.toString())
     }
 
     /// Derives the Cadence contract name for a given EVM fungible token of the form
@@ -779,7 +778,7 @@ contract FlowEVMBridgeUtils {
     view fun deriveBridgedTokenContractName(from evmContract: EVM.EVMAddress): String {
         return self.contractNamePrefixes[Type<@{FungibleToken.Vault}>()]!["bridged"]!
             .concat(self.delimiter)
-            .concat("0x".concat(EVMUtils.getEVMAddressAsHexString(address: evmContract)))
+            .concat(evmContract.toString())
     }
 
     /****************
@@ -1288,7 +1287,6 @@ contract FlowEVMBridgeUtils {
                 "bridged": "EVMVMBridgedToken"
             }
         }
-        self.bridgeFactoryEVMAddress = EVMUtils.getEVMAddressFromHexString(address: bridgeFactoryAddressHex.toLower())
-            ?? panic("Invalid EVM address hex: ".concat(bridgeFactoryAddressHex))
+        self.bridgeFactoryEVMAddress = EVM.addressFromString(bridgeFactoryAddressHex.toLower())
     }
 }

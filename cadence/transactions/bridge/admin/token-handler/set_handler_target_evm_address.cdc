@@ -1,6 +1,5 @@
 import "EVM"
 
-import "EVMUtils"
 import "FlowEVMBridgeHandlerInterfaces"
 import "FlowEVMBridgeConfig"
 
@@ -22,8 +21,7 @@ transaction(targetTypeIdentifier: String, targetEVMAddressHex: String) {
     execute {
         let targetType = CompositeType(targetTypeIdentifier)
             ?? panic("Invalid Type identifier provided")
-        let targetEVMAddress = EVMUtils.getEVMAddressFromHexString(address: targetEVMAddressHex)
-            ?? panic("Invalid EVM Address provided")
+        let targetEVMAddress = EVM.addressFromString(targetEVMAddressHex)
         self.admin.setHandlerTargetEVMAddress(
             targetType: targetType,
             targetEVMAddress: targetEVMAddress

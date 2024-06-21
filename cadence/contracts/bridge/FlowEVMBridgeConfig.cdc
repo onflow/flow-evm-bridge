@@ -2,7 +2,6 @@ import "EVM"
 
 import "FlowToken"
 
-import "EVMUtils"
 import "FlowEVMBridgeHandlerInterfaces"
 
 /// This contract is used to store configuration information shared by FlowEVMBridge contracts
@@ -119,7 +118,7 @@ contract FlowEVMBridgeConfig {
     ///
     access(all)
     view fun getTypeAssociated(with evmAddress: EVM.EVMAddress): Type? {
-        let evmAddressHex = EVMUtils.getEVMAddressAsHexString(address: evmAddress)
+        let evmAddressHex = evmAddress.toString()
         return self.evmAddressHexToType[evmAddressHex]
     }
 
@@ -171,7 +170,7 @@ contract FlowEVMBridgeConfig {
         let type = handler.getTargetType()!
         var targetEVMAddressHex: String? = nil
         if let targetEVMAddress = handler.getTargetEVMAddress() {
-            targetEVMAddressHex = EVMUtils.getEVMAddressAsHexString(address: targetEVMAddress)
+            targetEVMAddressHex = targetEVMAddress.toString()
 
             let associatedType = self.getTypeAssociated(with: targetEVMAddress)
             assert(
@@ -387,7 +386,7 @@ contract FlowEVMBridgeConfig {
 
             emit HandlerConfigured(
                 targetType: targetType,
-                targetEVMAddress: EVMUtils.getEVMAddressAsHexString(address: targetEVMAddress),
+                targetEVMAddress: targetEVMAddress.toString(),
                 isEnabled: handler.isEnabled()
             )
         }
@@ -405,9 +404,8 @@ contract FlowEVMBridgeConfig {
                 ?? panic("No handler found for target Type")
             handler.enableBridging()
 
-            let targetEVMAddressHex = EVMUtils.getEVMAddressAsHexString(
-                    address: handler.getTargetEVMAddress() ?? panic("Handler cannot be enabled without a target EVM Address")
-                )
+            let targetEVMAddressHex = handler.getTargetEVMAddress()?.toString()
+                ?? panic("Handler cannot be enabled without a target EVM Address")
 
             emit HandlerConfigured(
                 targetType: handler.getTargetType()!,

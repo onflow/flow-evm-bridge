@@ -1,12 +1,11 @@
 import "EVM"
 
-import "EVMUtils"
 import "FlowEVMBridgeUtils"
 
 /// Sets the bridge factory contract address as a delegated deployer in the provided deployer contract. This enables the
 /// factory contract to deploy new contracts via the deployer contract.
 ///
-/// @param deployerEVMAddressHex The EVM address of the deployer contract as a hex string without the '0x' prefix
+/// @param deployerEVMAddressHex The EVM address of the deployer contract as a hex string
 ///
 transaction(deployerEVMAddressHex: String) {
 

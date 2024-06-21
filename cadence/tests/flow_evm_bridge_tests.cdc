@@ -84,12 +84,6 @@ fun setup() {
         arguments: []
     )
     Test.expect(err, Test.beNil())
-    err = Test.deployContract(
-        name: "EVMUtils",
-        path: "../contracts/utils/EVMUtils.cdc",
-        arguments: []
-    )
-    Test.expect(err, Test.beNil())
 
     // Transfer bridge account some $FLOW
     transferFlow(signer: serviceAccount, recipient: bridgeAccount.address, amount: 10_000.0)
