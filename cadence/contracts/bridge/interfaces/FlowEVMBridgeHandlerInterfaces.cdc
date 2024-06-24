@@ -28,7 +28,7 @@ access(all) contract FlowEVMBridgeHandlerInterfaces {
     
     /// Event emitted when a handler is enabled between a Cadence type and an EVM address
     access(all) event HandlerEnabled(handlerType: String, targetType: String, targetEVMAddress: String)
-    access(all) event MinterSet(handlerType: String, targetType: String?, targetEVMAddress: String?, minterType: String, )
+    access(all) event MinterSet(handlerType: String, targetType: String?, targetEVMAddress: String?, minterType: String)
 
     /****************
         Constructs
