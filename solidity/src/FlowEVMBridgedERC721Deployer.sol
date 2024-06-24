@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.17;
+pragma solidity 0.8.24;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
@@ -14,16 +14,9 @@ import {FlowEVMBridgedERC721} from "./templates/FlowEVMBridgedERC721.sol";
  * delegated deployer can deploy new contracts. This contract is used by the Flow EVM bridge to deploy and define
  * bridged ERC721 tokens which are defined natively in Cadence.
  */
-contract FlowEVMBridgedERC721Deployer is IFlowEVMBridgeDeployer, ERC165, Ownable {
+contract FlowEVMBridgedERC721Deployer is ERC165, IFlowEVMBridgeDeployer, Ownable {
     // The address of the delegated deployer who can deploy new contracts
     address public delegatedDeployer;
-
-    /**
-     * @dev Event emitted when a new ERC721 contract is deployed via this deployer
-     */
-    event ERC721Deployed(
-        address contractAddress, string name, string symbol, string cadenceNFTAddress, string cadenceNFTIdentifier
-    );
 
     constructor() Ownable(msg.sender) {}
 
@@ -39,7 +32,8 @@ contract FlowEVMBridgedERC721Deployer is IFlowEVMBridgeDeployer, ERC165, Ownable
      * @dev ERC165 introspection
      */
     function supportsInterface(bytes4 interfaceId) public view override(IERC165, ERC165) returns (bool) {
-        return interfaceId == type(IFlowEVMBridgeDeployer).interfaceId || super.supportsInterface(interfaceId);
+        return interfaceId == type(IFlowEVMBridgeDeployer).interfaceId || interfaceId == type(Ownable).interfaceId
+            || super.supportsInterface(interfaceId);
     }
 
     /**
@@ -62,9 +56,9 @@ contract FlowEVMBridgedERC721Deployer is IFlowEVMBridgeDeployer, ERC165, Ownable
         string memory contractURI
     ) external onlyDelegatedDeployer returns (address) {
         FlowEVMBridgedERC721 newERC721 =
-            new FlowEVMBridgedERC721(super.owner(), name, symbol, cadenceAddress, cadenceIdentifier, contractURI);
+            new FlowEVMBridgedERC721(owner(), name, symbol, cadenceAddress, cadenceIdentifier, contractURI);
 
-        emit ERC721Deployed(address(newERC721), name, symbol, cadenceAddress, cadenceIdentifier);
+        emit Deployed(address(newERC721), name, symbol, cadenceAddress, cadenceIdentifier);
 
         return address(newERC721);
     }
@@ -77,5 +71,7 @@ contract FlowEVMBridgedERC721Deployer is IFlowEVMBridgeDeployer, ERC165, Ownable
     function setDelegatedDeployer(address _delegatedDeployer) external onlyOwner {
         require(_delegatedDeployer != address(0), "FlowEVMBridgedERC721Deployer: Invalid delegated deployer address");
         delegatedDeployer = _delegatedDeployer;
+
+        emit DeployerAuthorized(_delegatedDeployer);
     }
 }

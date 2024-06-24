@@ -204,9 +204,15 @@ access(all) contract {{CONTRACT_NAME}} : ICrossVM, IEVMBridgeNFTMinter, NonFungi
             return self.evmIDToFlowID.keys
         }
 
-        /// Returns the Cadence NFT.id for the given EVM NFT ID if
+        /// Returns the Cadence NFT.id for the given EVM NFT ID if it exists in the collection
         access(all) view fun getCadenceID(from evmID: UInt256): UInt64? {
-            return self.evmIDToFlowID[evmID] ?? UInt64(evmID)
+            if self.evmIDToFlowID[evmID] != nil {
+                return self.evmIDToFlowID[evmID]
+            } else if evmID < UInt256(UInt64.max) && self.borrowNFT(UInt64(evmID)) != nil {
+                return UInt64(evmID)
+            } else {
+                return nil
+            }
         }
 
         /// Returns the EVM NFT ID associated with the Cadence NFT ID. The goal is to retrieve the ERC721 ID value.
@@ -309,9 +315,9 @@ access(all) contract {{CONTRACT_NAME}} : ICrossVM, IEVMBridgeNFTMinter, NonFungi
                     mediaType: "image/svg+xml"
                 )
                 return MetadataViews.NFTCollectionDisplay(
-                    name: "The FlowVM Bridged NFT Collection",
+                    name: self.name,
                     description: "This collection was bridged from Flow EVM.",
-                    externalURL: MetadataViews.ExternalURL("https://bridge.flow.com/nft"),
+                    externalURL: MetadataViews.ExternalURL("https://port.flow.com/"),
                     squareImage: media,
                     bannerImage: media,
                     socials: {}

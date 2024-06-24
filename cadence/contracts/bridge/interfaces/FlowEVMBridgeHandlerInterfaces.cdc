@@ -49,7 +49,8 @@ access(all) contract FlowEVMBridgeHandlerInterfaces {
     /// Administrative interface for Handler configuration
     ///
     access(all) resource interface HandlerAdmin : HandlerInfo {
-        /// Sets the target Cadence Type handled by this resource
+        /// Sets the target Cadence Type handled by this resource. Once the targe type is set - whether by this method
+        /// or on initialization - this setter will fail.
         access(Admin) fun setTargetType(_ type: Type) {
             pre {
                 self.getTargetType() == nil: "Target Type has already been set"
@@ -111,7 +112,7 @@ access(all) contract FlowEVMBridgeHandlerInterfaces {
     /// Handler interface for bridging FungibleToken assets. Implementations should be stored within the bridge account
     /// and called be the bridge contract for bridging operations on the Handler's target Type and EVM contract.
     ///
-    access(all) resource interface TokenHandler : HandlerInfo, HandlerAdmin {
+    access(all) resource interface TokenHandler : HandlerAdmin {
         /// Fulfills a request to bridge tokens from the Cadence side to the EVM side
         access(account) fun fulfillTokensToEVM(
             tokens: @{FungibleToken.Vault},

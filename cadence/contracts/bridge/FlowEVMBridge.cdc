@@ -182,6 +182,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
             !FlowEVMBridgeConfig.isPaused(): "Bridge operations are currently paused"
             !token.isInstance(Type<@{FungibleToken.Vault}>()): "Mixed asset types are not yet supported"
             self.typeRequiresOnboarding(token.getType()) == false: "NFT must first be onboarded"
+            FlowEVMBridgeConfig.isTypePaused(token.getType()) == false: "Bridging is currently paused for this NFT"
         }
         /* Gather identifying information */
         //
@@ -266,6 +267,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
             !FlowEVMBridgeConfig.isPaused(): "Bridge operations are currently paused"
             !type.isSubtype(of: Type<@{FungibleToken.Vault}>()): "Mixed asset types are not yet supported"
             self.typeRequiresOnboarding(type) == false: "NFT must first be onboarded"
+            FlowEVMBridgeConfig.isTypePaused(type) == false: "Bridging is currently paused for this NFT"
         }
         /* Provision fee */
         //
@@ -338,7 +340,8 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         pre {
             !FlowEVMBridgeConfig.isPaused(): "Bridge operations are currently paused"
             !vault.isInstance(Type<@{NonFungibleToken.NFT}>()): "Mixed asset types are not yet supported"
-            self.typeRequiresOnboarding(vault.getType()) == false: "FT must first be onboarded"
+            self.typeRequiresOnboarding(vault.getType()) == false: "FungibleToken must first be onboarded"
+            FlowEVMBridgeConfig.isTypePaused(vault.getType()) == false: "Bridging is currently paused for this token"
         }
         /* Handle $FLOW requests via EVM interface & return */
         //
@@ -437,7 +440,8 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
             !FlowEVMBridgeConfig.isPaused(): "Bridge operations are currently paused"
             !type.isSubtype(of: Type<@{NonFungibleToken.Collection}>()): "Mixed asset types are not yet supported"
             !type.isInstance(Type<@FlowToken.Vault>()): "Must use the CadenceOwnedAccount interface to bridge $FLOW from EVM"
-            self.typeRequiresOnboarding(type) == false: "NFT must first be onboarded"
+            self.typeRequiresOnboarding(type) == false: "FungibleToken must first be onboarded"
+            FlowEVMBridgeConfig.isTypePaused(type) == false: "Bridging is currently paused for this token"
         }
         /* Provision fees */
         //
@@ -501,7 +505,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
             signature: "burn(uint256)",
             targetEVMAddress: associatedAddress,
             args: [amount],
-            gasLimit: 15000000,
+            gasLimit: FlowEVMBridgeConfig.gasLimit,
             value: 0.0
         )
         assert(burnResult.status == EVM.Status.successful, message: "Burn of EVM tokens failed")
@@ -528,17 +532,6 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
     access(all)
     view fun getBridgeCOAEVMAddress(): EVM.EVMAddress {
         return FlowEVMBridgeUtils.borrowCOA().address()
-    }
-
-    /// Retrieves the EVM address of the contract related to the given type, assuming it has been onboarded.
-    ///
-    /// @param type: The Cadence Type of the asset
-    ///
-    /// @returns The EVMAddress of the contract defining the asset
-    ///
-    access(all)
-    fun getAssetEVMContractAddress(type: Type): EVM.EVMAddress? {
-        return FlowEVMBridgeConfig.getEVMAddressAssociated(with: type)
     }
 
     /// Returns whether an asset needs to be onboarded to the bridge
@@ -612,7 +605,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
             name: onboardingValues.name,
             symbol: onboardingValues.symbol,
             decimals: isNFT ? nil : FlowEVMBridgeConfig.defaultDecimals,
-            contractURI: nil,
+            contractURI: onboardingValues.contractURI,
             cadenceContractName: FlowEVMBridgeUtils.getContractName(fromType: forAssetType)!,
             isERC721: isNFT
         )
