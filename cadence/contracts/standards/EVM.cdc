@@ -50,6 +50,8 @@ contract EVM {
         payload: String,
         // code indicating a specific validation (201-300) or execution (301-400) error
         errorCode: UInt16,
+        // a human-readable message about the error (if any)
+        errorMessage: String,
         // the amount of gas transaction used
         gasConsumed: UInt64,
         // if transaction was a deployment contains a newly deployed contract address
@@ -59,23 +61,44 @@ contract EVM {
         // block height in which transaction was inclued
         blockHeight: UInt64,
         // block hash in which transaction was included
-        blockHash: String
+        blockHash: String,
+        /// captures the hex encoded data that is returned from
+        /// the evm. For contract deployments
+        /// it returns the code deployed to
+        /// the address provided in the contractAddress field.
+        /// in case of revert, the smart contract custom error message
+        /// is also returned here (see EIP-140 for more details).
+        returnedData: String
     )
 
     access(all)
-    event CadenceOwnedAccountCreated(addressBytes: [UInt8; 20])
+    event CadenceOwnedAccountCreated(address: String)
 
     /// FLOWTokensDeposited is emitted when FLOW tokens is bridged
     /// into the EVM environment. Note that this event is not emitted
     /// for transfer of flow tokens between two EVM addresses.
+    /// Similar to the FungibleToken.Deposited event
+    /// this event includes a depositedUUID that captures the 
+    /// uuid of the source vault.
     access(all)
-    event FLOWTokensDeposited(addressBytes: [UInt8; 20], amount: UFix64)
+    event FLOWTokensDeposited(
+        address: String, 
+        amount: UFix64, 
+        depositedUUID: UInt64
+    )
 
     /// FLOWTokensWithdrawn is emitted when FLOW tokens are bridged
     /// out of the EVM environment. Note that this event is not emitted
     /// for transfer of flow tokens between two EVM addresses.
+    /// similar to the FungibleToken.Withdrawn events
+    /// this event includes a withdrawnUUID that captures the 
+    /// uuid of the returning vault.
     access(all)
-    event FLOWTokensWithdrawn(addressBytes: [UInt8; 20], amount: UFix64)
+    event FLOWTokensWithdrawn(
+        address: String, 
+        amount: UFix64, 
+        withdrawnUUID: UInt64
+    )
 
     /// BridgeAccessorUpdated is emitted when the BridgeAccessor Capability
     /// is updated in the stored BridgeRouter along with identifying
@@ -143,11 +166,16 @@ contract EVM {
             if amount == 0.0 {
                 panic("calling deposit function with an empty vault is not allowed")
             }
+            let depositedUUID = from.uuid
             InternalEVM.deposit(
                 from: <-from,
                 to: self.bytes
             )
-            emit FLOWTokensDeposited(addressBytes: self.bytes, amount: amount)
+            emit FLOWTokensDeposited(
+                address: self.toString(), 
+                amount: amount, 
+                depositedUUID: depositedUUID
+            )
         }
 
         /// Serializes the address to a hex string without the 0x prefix
@@ -258,6 +286,10 @@ contract EVM {
         access(all)
         let errorCode: UInt64
 
+        /// error message
+        access(all)
+        let errorMessage: String
+
         /// returns the amount of gas metered during
         /// evm execution
         access(all)
@@ -267,6 +299,8 @@ contract EVM {
         /// the evm for the call. For coa.deploy
         /// calls it returns the code deployed to
         /// the address provided in the contractAddress field.
+        /// in case of revert, the smart contract custom error message
+        /// is also returned here (see EIP-140 for more details).
         access(all)
         let data: [UInt8]
 
@@ -279,12 +313,14 @@ contract EVM {
         init(
             status: Status,
             errorCode: UInt64,
+            errorMessage: String,
             gasUsed: UInt64,
             data: [UInt8],
             contractAddress: [UInt8; 20]?
         ) {
             self.status = status
             self.errorCode = errorCode
+            self.errorMessage = errorMessage
             self.gasUsed = gasUsed
             self.data = data
 
@@ -366,7 +402,11 @@ contract EVM {
                 from: self.addressBytes,
                 amount: balance.attoflow
             ) as! @FlowToken.Vault
-            emit FLOWTokensWithdrawn(addressBytes: self.addressBytes, amount: balance.inFLOW())
+            emit FLOWTokensWithdrawn(
+                address: self.address().toString(),
+                amount: balance.inFLOW(),
+                withdrawnUUID: vault.uuid
+            )
             return <-vault
         }
 
@@ -465,7 +505,8 @@ contract EVM {
         let acc <-create CadenceOwnedAccount()
         let addr = InternalEVM.createCadenceOwnedAccount(uuid: acc.uuid)
         acc.initAddress(addressBytes: addr)
-        emit CadenceOwnedAccountCreated(addressBytes: addr)
+
+        emit CadenceOwnedAccountCreated(address: acc.address().toString())
         return <-acc
     }
 
@@ -608,8 +649,20 @@ contract EVM {
         // constructing key list
         let keyList = Crypto.KeyList()
         for signature in signatureSet {
-            let key = acc.keys.get(keyIndex: signature.keyIndex)!
-            assert(!key.isRevoked, message: "revoked key is used")
+            let keyRef = acc.keys.get(keyIndex: signature.keyIndex)
+            if keyRef == nil {
+                return ValidationResult(
+                    isValid: false,
+                    problem: "invalid key index"
+                )
+            }
+            let key = keyRef!
+            if key.isRevoked {
+                return ValidationResult(
+                    isValid: false,
+                    problem: "account key is revoked"
+                )
+            }
             keyList.add(
               key.publicKey,
               hashAlgorithm: key.hashAlgorithm,
