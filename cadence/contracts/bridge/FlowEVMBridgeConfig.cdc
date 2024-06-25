@@ -74,7 +74,7 @@ contract FlowEVMBridgeConfig {
     /// Emitted whenever a TokenHandler is configured
     ///
     access(all)
-    event HandlerConfigured(targetType: Type, targetEVMAddress: String?, isEnabled: Bool)
+    event HandlerConfigured(targetType: String, targetEVMAddress: String?, isEnabled: Bool)
     /// Emitted whenever the bridge is paused or unpaused globally - true for paused, false for unpaused
     ///
     access(all)
@@ -82,11 +82,11 @@ contract FlowEVMBridgeConfig {
     /// Emitted whenever a specific asset is paused or unpaused - true for paused, false for unpaused
     ///
     access(all)
-    event AssetPauseStatusUpdated(paused: Bool, type: Type, evmAddress: String)
+    event AssetPauseStatusUpdated(paused: Bool, type: String, evmAddress: String)
     /// Emitted whenever an association is updated
     ///
     access(all)
-    event AssociationUpdated(type: Type, evmAddress: String)
+    event AssociationUpdated(type: String, evmAddress: String)
 
     /*************
         Getters
@@ -143,7 +143,7 @@ contract FlowEVMBridgeConfig {
         let evmAddressHex = evmAddress.toString()
         self.evmAddressHexToType[evmAddressHex] = type
 
-        emit AssociationUpdated(type: type, evmAddress: evmAddressHex)
+        emit AssociationUpdated(type: type.identifier, evmAddress: evmAddressHex)
     }
 
     /// Returns whether the given Type has a TokenHandler configured
@@ -186,7 +186,7 @@ contract FlowEVMBridgeConfig {
         }
 
         emit HandlerConfigured(
-            targetType: type,
+            targetType: type.identifier,
             targetEVMAddress: targetEVMAddressHex,
             isEnabled: handler.isEnabled()
         )
@@ -342,7 +342,7 @@ contract FlowEVMBridgeConfig {
             association.pause()
 
             let evmAddress = association.evmAddress.toString()
-            emit AssetPauseStatusUpdated(paused: true, type: type, evmAddress: evmAddress)
+            emit AssetPauseStatusUpdated(paused: true, type: type.identifier, evmAddress: evmAddress)
         }
 
         /// Unpauses all operations for a given asset type
@@ -358,7 +358,7 @@ contract FlowEVMBridgeConfig {
 
             association.unpause()
             let evmAddress = association.evmAddress.toString()
-            emit AssetPauseStatusUpdated(paused: false, type: type, evmAddress: evmAddress)
+            emit AssetPauseStatusUpdated(paused: false, type: type.identifier, evmAddress: evmAddress)
         }
 
         /// Sets the target EVM contract address on the handler for a given Type, associating the Cadence type with the
@@ -390,7 +390,7 @@ contract FlowEVMBridgeConfig {
             )
 
             emit HandlerConfigured(
-                targetType: targetType,
+                targetType: targetType.identifier,
                 targetEVMAddress: targetEVMAddress.toString(),
                 isEnabled: handler.isEnabled()
             )
@@ -413,7 +413,7 @@ contract FlowEVMBridgeConfig {
                 ?? panic("Handler cannot be enabled without a target EVM Address")
 
             emit HandlerConfigured(
-                targetType: handler.getTargetType()!,
+                targetType: handler.getTargetType()!.identifier,
                 targetEVMAddress: targetEVMAddressHex,
                 isEnabled: handler.isEnabled()
             )

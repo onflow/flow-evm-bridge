@@ -15,8 +15,9 @@ access(all) contract interface IFlowEVMNFTBridge {
     /// Broadcasts an NFT was bridged from Cadence to EVM
     access(all)
     event BridgedNFTToEVM(
-        type: Type,
+        type: String,
         id: UInt64,
+        uuid: UInt64,
         evmID: UInt256,
         to: String,
         evmContractAddress: String,
@@ -25,8 +26,9 @@ access(all) contract interface IFlowEVMNFTBridge {
     /// Broadcasts an NFT was bridged from EVM to Cadence
     access(all)
     event BridgedNFTFromEVM(
-        type: Type,
+        type: String,
         id: UInt64,
+        uuid: UInt64,
         evmID: UInt256,
         caller: String,
         evmContractAddress: String,
@@ -65,8 +67,9 @@ access(all) contract interface IFlowEVMNFTBridge {
     ) {
         pre {
             emit BridgedNFTToEVM(
-                type: token.getType(),
+                type: token.getType().identifier,
                 id: token.id,
+                uuid: token.uuid,
                 evmID: CrossVMNFT.getEVMID(from: &token as &{NonFungibleToken.NFT}) ?? UInt256(token.id),
                 to: to.toString(),
                 evmContractAddress: self.getAssociatedEVMAddress(with: token.getType())?.toString()
@@ -99,8 +102,9 @@ access(all) contract interface IFlowEVMNFTBridge {
     ): @{NonFungibleToken.NFT} {
         post {
             emit BridgedNFTFromEVM(
-                type: result.getType(),
+                type: result.getType().identifier,
                 id: result.id,
+                uuid: result.uuid,
                 evmID: id,
                 caller: owner.toString(),
                 evmContractAddress: self.getAssociatedEVMAddress(with: result.getType())?.toString()
