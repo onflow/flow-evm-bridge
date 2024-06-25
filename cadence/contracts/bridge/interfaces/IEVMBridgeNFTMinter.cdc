@@ -5,7 +5,7 @@ import "NonFungibleToken"
 access(all)
 contract interface IEVMBridgeNFTMinter {
 
-    access(all) event Minted(type: Type, id: UInt64, uuid: UInt64, evmID: UInt256, tokenURI: String, minter: Address)
+    access(all) event Minted(type: String, id: UInt64, uuid: UInt64, evmID: UInt256, tokenURI: String, minter: Address)
     access(all) event TokenURIUpdated(evmID: UInt256, newURI: String, updater: Address)
 
     /// Account-only method to mint an NFT
@@ -14,7 +14,7 @@ contract interface IEVMBridgeNFTMinter {
     fun mintNFT(id: UInt256, tokenURI: String): @{NonFungibleToken.NFT} {
         post {
             emit Minted(
-                type: result.getType(),
+                type: result.getType().identifier,
                 id: result.id,
                 uuid: result.uuid,
                 evmID: id,
