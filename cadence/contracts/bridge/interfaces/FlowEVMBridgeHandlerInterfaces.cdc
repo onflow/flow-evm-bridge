@@ -27,8 +27,19 @@ access(all) contract FlowEVMBridgeHandlerInterfaces {
     **************/
     
     /// Event emitted when a handler is enabled between a Cadence type and an EVM address
-    access(all) event HandlerEnabled(handlerType: String, targetType: String, targetEVMAddress: String)
-    access(all) event MinterSet(handlerType: String, targetType: String?, targetEVMAddress: String?, minterType: String)
+    access(all) event HandlerEnabled(
+        handlerType: String,
+        handlerUUID: UInt64,
+        targetType: String,
+        targetEVMAddress: String
+    )
+    access(all) event MinterSet(handlerType: String,
+        handlerUUID: UInt64,
+        targetType: String?,
+        targetEVMAddress: String?,
+        minterType: String,
+        minterUUID: UInt64
+    )
 
     /****************
         Constructs
@@ -75,9 +86,11 @@ access(all) contract FlowEVMBridgeHandlerInterfaces {
                 minter.getMintedType() == self.getTargetType(): "Minter does not mint the target type"
                 emit MinterSet(
                     handlerType: self.getType().identifier,
+                    handlerUUID: self.uuid,
                     targetType: self.getTargetType()?.identifier,
                     targetEVMAddress: self.getTargetEVMAddress()?.toString(),
-                    minterType: minter.getType().identifier
+                    minterType: minter.getType().identifier,
+                    minterUUID: minter.uuid
                 )
             }
         }
@@ -93,6 +106,7 @@ access(all) contract FlowEVMBridgeHandlerInterfaces {
                 self.isEnabled(): "Problem enabling Handler"
                 emit HandlerEnabled(
                     handlerType: self.getType().identifier,
+                    handlerUUID: self.uuid,
                     targetType: self.getTargetType()!.identifier,
                     targetEVMAddress: self.getTargetEVMAddress()!.toString()
                 )
