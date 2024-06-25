@@ -182,7 +182,7 @@ fun setup() {
         arguments: []
     )
     Test.expect(err, Test.beNil())
-    
+
     /* Integrate EVM bridge contract */
 
     // Set factory as registrar in registry
@@ -335,7 +335,7 @@ fun testDeployERC721Succeeds() {
         exampleERCAccount
     )
     Test.expect(erc721DeployResult, Test.beSucceeded())
-    
+
     // Get ERC721 & ERC20 deployed contract addresses
     let evts = Test.eventsOfType(Type<EVM.TransactionExecuted>())
     Test.assertEqual(21, evts.length)
@@ -350,12 +350,12 @@ fun testDeployERC20Succeeds() {
         exampleERCAccount
     )
     Test.expect(erc20DeployResult, Test.beSucceeded())
-    
+
     // Get ERC721 & ERC20 deployed contract addresses
     let evts = Test.eventsOfType(Type<EVM.TransactionExecuted>())
     Test.assertEqual(22, evts.length)
     erc20AddressHex = getEVMAddressHexFromEvents(evts, idx: 21)
-    
+
 }
 
 access(all)
@@ -601,7 +601,7 @@ fun testOnboardAndBridgeNFTToEVMSucceeds() {
     var requiresOnboarding = typeRequiresOnboardingByIdentifier(exampleNFTIdentifier)
         ?? panic("Problem getting onboarding status for type")
     Test.assertEqual(true, requiresOnboarding)
-    
+
     // Execute bridge NFT to EVM - should also onboard the NFT type
     bridgeNFTToEVM(
         signer: alice,
@@ -654,7 +654,7 @@ fun testOnboardAndCrossVMTransferNFTToEVMSucceeds() {
     var requiresOnboarding = typeRequiresOnboardingByIdentifier(exampleNFTIdentifier)
         ?? panic("Problem getting onboarding status for type")
     Test.assertEqual(true, requiresOnboarding)
-    
+
     // Execute bridge NFT to EVM recipient - should also onboard the NFT type
     let crossVMTransferResult = executeTransaction(
         "../transactions/bridge/nft/bridge_nft_to_any_evm_address.cdc",
@@ -719,7 +719,7 @@ access(all)
 fun testOnboardAndBridgeTokensToEVMSucceeds() {
     // Revert to state before ExampleNFT was onboarded
     Test.reset(to: snapshot)
-    
+
     var aliceCOAAddressHex = getCOAAddressHex(atFlowAddress: alice.address)
     var cadenceBalance = getBalance(ownerAddr: alice.address, storagePathIdentifier: "exampleTokenVault")
         ?? panic("Could not get ExampleToken balance")
@@ -767,7 +767,7 @@ access(all)
 fun testOnboardAndCrossVMTransferTokensToEVMSucceeds() {
     // Revert to state before ExampleNFT was onboarded
     Test.reset(to: snapshot)
-    
+
     var aliceCOAAddressHex = getCOAAddressHex(atFlowAddress: alice.address)
     var cadenceBalance = getBalance(ownerAddr: alice.address, storagePathIdentifier: "exampleTokenVault")
         ?? panic("Could not get ExampleToken balance")
@@ -1030,7 +1030,46 @@ fun testBridgeCadenceNativeNFTToEVMSucceeds() {
 }
 
 access(all)
+fun testCrossVMTransferCadenceNativeNFTFromEVMSucceeds() {
+    snapshot = getCurrentBlockHeight()
+    // Configure recipient's Collection first, using generic setup transaction
+    let setupCollectionResult = executeTransaction(
+        "../transactions/example-assets/setup/setup_generic_nft_collection.cdc",
+        [exampleNFTIdentifier],
+        bob
+    )
+    Test.expect(setupCollectionResult, Test.beSucceeded())
+
+    let aliceCOAAddressHex = getCOAAddressHex(atFlowAddress: alice.address)
+
+    let associatedEVMAddressHex = getAssociatedEVMAddressHex(with: exampleNFTIdentifier)
+    Test.assertEqual(40, associatedEVMAddressHex.length)
+
+    // Assert ownership of the bridged NFT in EVM
+    var aliceIsOwner = isOwner(of: UInt256(mintedNFTID), ownerEVMAddrHex: aliceCOAAddressHex, erc721AddressHex: associatedEVMAddressHex)
+    Test.assertEqual(true, aliceIsOwner)
+
+    // Execute bridge NFT from EVM to Cadence recipient (Bob in this case)
+    let crossVMTransferResult = executeTransaction(
+        "../transactions/bridge/nft/bridge_nft_to_any_cadence_address.cdc",
+        [ exampleNFTAccount.address, "ExampleNFT", UInt256(mintedNFTID), bob.address ],
+        alice
+    )
+    Test.expect(crossVMTransferResult, Test.beSucceeded())
+
+    // Assert ownership of the bridged NFT in EVM has transferred
+    aliceIsOwner = isOwner(of: UInt256(mintedNFTID), ownerEVMAddrHex: aliceCOAAddressHex, erc721AddressHex: associatedEVMAddressHex)
+    Test.assertEqual(false, aliceIsOwner)
+
+    // Assert the NFT is now in Bob's Collection
+    let bobOwnedIDs = getIDs(ownerAddr: bob.address, storagePathIdentifier: "cadenceExampleNFTCollection")
+    Test.assertEqual(1, bobOwnedIDs.length)
+    Test.assertEqual(mintedNFTID, bobOwnedIDs[0])
+}
+
+access(all)
 fun testBridgeCadenceNativeNFTFromEVMSucceeds() {
+    Test.reset(to: snapshot)
     let aliceCOAAddressHex = getCOAAddressHex(atFlowAddress: alice.address)
 
     let associatedEVMAddressHex = getAssociatedEVMAddressHex(with: exampleNFTIdentifier)
@@ -1197,10 +1236,58 @@ fun testBridgeCadenceNativeTokenToEVMSucceeds() {
 }
 
 access(all)
-fun testBridgeCadenceNativeTokenFromEVMSucceeds() {
+fun testCrossVMTransferCadenceNativeTokenFromEVMSucceeds() {
+    snapshot = getCurrentBlockHeight()
+    // Configure recipient's Vault first, using generic setup transaction
+    let setupVaultResult = executeTransaction(
+        "../transactions/example-assets/setup/setup_generic_vault.cdc",
+        [exampleTokenIdentifier],
+        bob
+    )
+    Test.expect(setupVaultResult, Test.beSucceeded())
+
     let associatedEVMAddressHex = getAssociatedEVMAddressHex(with: exampleTokenIdentifier)
     Test.assertEqual(40, associatedEVMAddressHex.length)
-    
+
+    var aliceCOAAddressHex = getCOAAddressHex(atFlowAddress: alice.address)
+
+    // Confirm Alice is starting with 0.0 balance in their Cadence Vault
+    let preCadenceBalance = getBalance(ownerAddr: alice.address, storagePathIdentifier: "exampleTokenVault")
+        ?? panic("Problem getting ExampleToken balance")
+    Test.assertEqual(0.0, preCadenceBalance)
+
+    // Get Alice's ERC20 balance & convert to UFix64
+    var evmBalance = balanceOf(evmAddressHex: aliceCOAAddressHex, erc20AddressHex: associatedEVMAddressHex)
+    let decimals = getTokenDecimals(erc20AddressHex: associatedEVMAddressHex)
+    let ufixValue = uint256ToUFix64(evmBalance, decimals: decimals)
+    // Assert the converted balance is equal to the originally minted amount that was bridged in the previous step
+    Test.assertEqual(exampleTokenMintAmount, ufixValue)
+
+    // Execute bridge tokens from EVM to Cadence recipient (Bob in this case)
+    let crossVMTransferResult = executeTransaction(
+        "../transactions/bridge/nft/bridge_tokens_to_any_cadence_address.cdc",
+        [ exampleTokenAccount.address, "ExampleToken", evmBalance, bob.address ],
+        alice
+    )
+    Test.expect(crossVMTransferResult, Test.beSucceeded())
+
+    // Confirm ExampleToken balance has been bridged back to Alice's Cadence vault
+    let recipientCadenceBalance = getBalance(ownerAddr: bob.address, storagePathIdentifier: "exampleTokenVault")
+        ?? panic("Problem getting ExampleToken balance")
+    Test.assertEqual(ufixValue, recipientCadenceBalance)
+
+    // Confirm ownership on EVM side with Alice COA as owner of ERC721 representation
+    evmBalance = balanceOf(evmAddressHex: aliceCOAAddressHex, erc20AddressHex: associatedEVMAddressHex)
+    Test.assertEqual(UInt256(0), evmBalance)
+}
+
+access(all)
+fun testBridgeCadenceNativeTokenFromEVMSucceeds() {
+    Test.reset(to: snapshot)
+
+    let associatedEVMAddressHex = getAssociatedEVMAddressHex(with: exampleTokenIdentifier)
+    Test.assertEqual(40, associatedEVMAddressHex.length)
+
     var aliceCOAAddressHex = getCOAAddressHex(atFlowAddress: alice.address)
 
     // Confirm Alice is starting with 0.0 balance in their Cadence Vault
