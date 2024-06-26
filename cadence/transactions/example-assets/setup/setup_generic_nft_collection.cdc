@@ -3,7 +3,13 @@ import "MetadataViews"
 
 import "FlowEVMBridgeUtils"
 
+/// Configures a Collection according to the shared NonFungibleToken standard and the defaults specified by the NFT's
+/// defining contract.
+///
+/// @param nftIdentifier: The identifier of the NFT to configure.
+///
 transaction(nftIdentifier: String) {
+
     prepare(signer: auth(BorrowValue, SaveValue, IssueStorageCapabilityController, PublishCapability, UnpublishCapability) &Account) {
         // Gather identifying information about the NFT and its defining contract
         let nftType = CompositeType(nftIdentifier) ?? panic("Invalid NFT identifier: ".concat(nftIdentifier))
@@ -18,7 +24,20 @@ transaction(nftIdentifier: String) {
                 resourceType: nftType,
                 viewType: Type<MetadataViews.NFTCollectionData>()
             ) as! MetadataViews.NFTCollectionData?
-            ?? panic("Could not resolve collection data for NFT type: ".concat(nftIdentifier))
+            ?? panic("Could not resolve NFTCollection data for NFT type: ".concat(nftIdentifier))
+
+        // Check for collision, returning if the collection already exists or reverting on unexpected collision
+        let storedType = signer.storage.type(at: data.storagePath)
+        if storedType == nftType {
+            return
+        } else if storedType != nil {
+            panic(
+                "Another resource of type "
+                .concat(storedType!.identifier)
+                .concat(" already exists at the storage path: ")
+                .concat(data.storagePath.toString())
+            )
+        }
 
         // Create a new collection and save it to signer's storage at the collection's default storage path
         signer.storage.save(<-data.createEmptyCollection(), to: data.storagePath)
