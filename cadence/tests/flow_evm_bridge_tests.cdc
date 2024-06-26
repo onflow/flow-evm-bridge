@@ -7,7 +7,6 @@ import "ExampleNFT"
 import "ExampleToken"
 import "FlowStorageFees"
 import "EVM"
-import "FlowEVMBridgeConfig"
 
 import "test_helpers.cdc"
 
