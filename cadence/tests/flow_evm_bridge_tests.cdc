@@ -1265,7 +1265,7 @@ fun testCrossVMTransferCadenceNativeTokenFromEVMSucceeds() {
 
     // Execute bridge tokens from EVM to Cadence recipient (Bob in this case)
     let crossVMTransferResult = executeTransaction(
-        "../transactions/bridge/nft/bridge_tokens_to_any_cadence_address.cdc",
+        "../transactions/bridge/tokens/bridge_tokens_to_any_cadence_address.cdc",
         [ exampleTokenAccount.address, "ExampleToken", evmBalance, bob.address ],
         alice
     )
