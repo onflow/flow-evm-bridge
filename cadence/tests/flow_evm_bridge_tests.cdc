@@ -7,6 +7,7 @@ import "ExampleNFT"
 import "ExampleToken"
 import "FlowStorageFees"
 import "EVM"
+import "FlowEVMBridgeConfig"
 
 import "test_helpers.cdc"
 
@@ -322,6 +323,38 @@ fun setup() {
         arguments: []
     )
     Test.expect(err, Test.beNil())
+}
+
+/* --- CONFIG TEST --- */
+
+access(all)
+fun testSetGasLimitSucceeds() {
+
+    fun getGasLimit(): UInt64 {
+        let gasLimitResult = executeScript(
+            "../scripts/bridge/get_gas_limit.cdc",
+            []
+        )
+        Test.expect(gasLimitResult, Test.beSucceeded())
+        return gasLimitResult.returnValue as! UInt64? ?? panic("Problem getting gas limit")
+    }
+
+    snapshot = getCurrentBlockHeight()
+
+    let preGasLimit = getGasLimit()
+    let gasLimit = preGasLimit + 1_000
+
+    let setGasLimitResult = executeTransaction(
+        "../transactions/bridge/admin/gas/set_gas_limit.cdc",
+        [gasLimit],
+        bridgeAccount
+    )
+    Test.expect(setGasLimitResult, Test.beSucceeded())
+
+    let postGasLimit = getGasLimit()
+    Test.assertEqual(gasLimit, postGasLimit)
+
+    Test.reset(to: snapshot)
 }
 
 /* --- ASSET & ACCOUNT SETUP - Configure test accounts with assets to bridge --- */
