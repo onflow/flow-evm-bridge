@@ -138,6 +138,15 @@ fun getEVMAddressHexFromEvents(_ evts: [AnyStruct], idx: Int): String {
     return hexAddress
 }
 
+/* --- Derivation Helpers --- */
+
+access(all)
+fun buildTypeIdentifier(address: Address, contractName: String, resourceName: String): String {
+    return "A.".concat(address.toString().split(separator: "x")[1]).concat(".")
+        .concat(contractName).concat(".")
+        .concat(resourceName)
+}
+
 /* --- Script Helpers --- */
 
 access(all)
@@ -367,15 +376,14 @@ fun createCOA(signer: Test.TestAccount, fundingAmount: UFix64) {
 access(all)
 fun bridgeNFTToEVM(
     signer: Test.TestAccount,
-    contractAddr: Address,
-    contractName: String,
+    nftIdentifier: String,
     nftID: UInt64,
     bridgeAccountAddr: Address,
     beFailed: Bool
 ) {
     let bridgeResult = _executeTransaction(
         "../transactions/bridge/nft/bridge_nft_to_evm.cdc",
-        [contractAddr, contractName, nftID],
+        [nftIdentifier, nftID],
         signer
     )
     if beFailed {
@@ -399,15 +407,14 @@ fun bridgeNFTToEVM(
 access(all)
 fun bridgeNFTFromEVM(
     signer: Test.TestAccount,
-    contractAddr: Address,
-    contractName: String,
+    nftIdentifier: String,
     erc721ID: UInt256,
     bridgeAccountAddr: Address,
     beFailed: Bool
 ) {
     let bridgeResult = _executeTransaction(
         "../transactions/bridge/nft/bridge_nft_from_evm.cdc",
-        [contractAddr, contractName, erc721ID],
+        [nftIdentifier, erc721ID],
         signer
     )
     if beFailed {
@@ -429,14 +436,13 @@ fun bridgeNFTFromEVM(
 access(all)
 fun bridgeTokensToEVM(
     signer: Test.TestAccount,
-    contractAddr: Address,
-    contractName: String,
+    vaultIdentifier: String,
     amount: UFix64,
     beFailed: Bool
 ) {
     let bridgeResult = _executeTransaction(
         "../transactions/bridge/tokens/bridge_tokens_to_evm.cdc",
-        [contractAddr, contractName, amount],
+        [vaultIdentifier, amount],
         signer
     )
     Test.expect(bridgeResult, beFailed ? Test.beFailed() : Test.beSucceeded())
@@ -448,14 +454,13 @@ fun bridgeTokensToEVM(
 access(all)
 fun bridgeTokensFromEVM(
     signer: Test.TestAccount,
-    contractAddr: Address,
-    contractName: String,
+    vaultIdentifier: String,
     amount: UInt256,
     beFailed: Bool
 ) {
     let bridgeResult = _executeTransaction(
         "../transactions/bridge/tokens/bridge_tokens_from_evm.cdc",
-        [contractAddr, contractName, amount],
+        [vaultIdentifier, amount],
         signer
     )
     Test.expect(bridgeResult, beFailed ? Test.beFailed() : Test.beSucceeded())

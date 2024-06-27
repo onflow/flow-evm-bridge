@@ -1,39 +1,35 @@
 import "FungibleToken"
-import "ViewResolver"
-import "FungibleTokenMetadataViews"
 import "FlowToken"
+import "ViewResolver"
+import "NonFungibleToken"
+import "FungibleTokenMetadataViews"
 
 import "ScopedFTProviders"
 
 import "EVM"
 
+import "FlowEVMBridgeUtils"
 import "FlowEVMBridge"
 import "FlowEVMBridgeConfig"
-import "FlowEVMBridgeUtils"
 
-/// Bridges a Vault from the signer's storage to the signer's COA in EVM.Account.
+/// Bridges a Vault from the signer's storage to any EVM address. The full amount to be transferred is sourced from the
+/// signer's Cadence Vault & it's assumed the signer has sufficient funds to cover the amount requested to be bridged.
 ///
-/// NOTE: This transaction also onboards the Vault to the bridge if necessary which may incur additional fees
-///     than bridging an asset that has already been onboarded.
+/// NOTE: The Vault being bridged must have first been onboarded to the bridge. This can be checked for with the method
+///     FlowEVMBridge.typeRequiresOnboarding(type): Bool?
 ///
 /// @param vaultIdentifier: The Cadence type identifier of the FungibleToken Vault to bridge
 ///     - e.g. vault.getType().identifier
-/// @param amount: The amount of tokens to bridge from EVM
+/// @param amount: The amount of tokens to bridge from Cadence to the named recipient in EVM
+/// @param recipient: The hex-encoded EVM address to send the tokens to
 ///
-transaction(vaultIdentifier: String, amount: UFix64) {
+transaction(vaultIdentifier: String, amount: UFix64, recipient: String) {
 
     let sentVault: @{FungibleToken.Vault}
-    let coa: auth(EVM.Bridge) &EVM.CadenceOwnedAccount
     let requiresOnboarding: Bool
     let scopedProvider: @ScopedFTProviders.ScopedFTProvider
 
     prepare(signer: auth(CopyValue, BorrowValue, IssueStorageCapabilityController, PublishCapability, SaveValue) &Account) {
-        /* --- Reference the signer's CadenceOwnedAccount --- */
-        //
-        // Borrow a reference to the signer's COA
-        self.coa = signer.storage.borrow<auth(EVM.Bridge) &EVM.CadenceOwnedAccount>(from: /storage/evm)
-            ?? panic("Could not borrow COA from provided gateway address")
-
         /* --- Construct the Vault type --- */
         //
         // Construct the Vault type from the provided identifier
@@ -44,14 +40,14 @@ transaction(vaultIdentifier: String, amount: UFix64) {
             ?? panic("Could not get contract address from identifier: ".concat(vaultIdentifier))
         let tokenContractName = FlowEVMBridgeUtils.getContractName(fromType: vaultType)
             ?? panic("Could not get contract name from identifier: ".concat(vaultIdentifier))
-
+        
         /* --- Retrieve the funds --- */
         //
         // Borrow a reference to the FungibleToken Vault
         let viewResolver = getAccount(tokenContractAddress).contracts.borrow<&{ViewResolver}>(name: tokenContractName)
             ?? panic("Could not borrow ViewResolver from FungibleToken contract")
         let vaultData = viewResolver.resolveContractView(
-                resourceType: vaultType,
+                resourceType: nil,
                 viewType: Type<FungibleTokenMetadataViews.FTVaultData>()
             ) as! FungibleTokenMetadataViews.FTVaultData? ?? panic("Could not resolve FTVaultData view")
         let vault = signer.storage.borrow<auth(FungibleToken.Withdraw) &{FungibleToken.Vault}>(
@@ -94,6 +90,10 @@ transaction(vaultIdentifier: String, amount: UFix64) {
             )
     }
 
+    pre {
+        self.sentVault.balance == amount: "Amount to be transferred does not match the requested amount"
+    }
+
     execute {
         if self.requiresOnboarding {
             // Onboard the Vault to the bridge
@@ -102,9 +102,11 @@ transaction(vaultIdentifier: String, amount: UFix64) {
                 feeProvider: &self.scopedProvider as auth(FungibleToken.Withdraw) &{FungibleToken.Provider}
             )
         }
-        // Execute the bridge
-        self.coa.depositTokens(
+        // Execute the bridge transaction
+        let recipientEVMAddress = EVM.addressFromString(recipient)
+        FlowEVMBridge.bridgeTokensToEVM(
             vault: <-self.sentVault,
+            to: recipientEVMAddress,
             feeProvider: &self.scopedProvider as auth(FungibleToken.Withdraw) &{FungibleToken.Provider}
         )
         // Destroy the ScopedFTProvider
