@@ -2,7 +2,6 @@ import "FungibleToken"
 import "NonFungibleToken"
 import "ViewResolver"
 import "MetadataViews"
-import "FlowToken"
 
 import "ScopedFTProviders"
 
@@ -18,12 +17,11 @@ import "FlowEVMBridgeUtils"
 /// NOTE: The ERC721 must have first been onboarded to the bridge. This can be checked via the method
 ///     FlowEVMBridge.evmAddressRequiresOnboarding(address: self.evmContractAddress)
 ///
-/// @param nftContractAddress: The Flow account address hosting the NFT-defining Cadence contract
-/// @param nftContractName: The name of the NFT-defining Cadence contract
+/// @param nftIdentifier: The Cadence type identifier of the NFT to bridge - e.g. nft.getType().identifier
 /// @param id: The ERC721 id of the NFT to bridge to Cadence from EVM
 /// @param recipient: The Flow account address to receive the bridged NFT
 ///
-transaction(nftContractAddress: Address, nftContractName: String, id: UInt256, recipient: Address) {
+transaction(nftIdentifier: String, id: UInt256, recipient: Address) {
 
     let nftType: Type
     let receiver: &{NonFungibleToken.Receiver}
@@ -37,12 +35,16 @@ transaction(nftContractAddress: Address, nftContractName: String, id: UInt256, r
         self.coa = signer.storage.borrow<auth(EVM.Bridge) &EVM.CadenceOwnedAccount>(from: /storage/evm)
             ?? panic("Could not borrow COA from provided gateway address")
 
-        // Get the ERC721 contract address for the given NFT type
-        self.nftType = FlowEVMBridgeUtils.buildCompositeType(
-                address: nftContractAddress,
-                contractName: nftContractName,
-                resourceName: "NFT"
-            ) ?? panic("Could not construct NFT type")
+        /* --- Construct the NFT type --- */
+        //
+        // Construct the NFT type from the provided identifier
+        self.nftType = CompositeType(nftIdentifier)
+            ?? panic("Could not construct NFT type from identifier: ".concat(nftIdentifier))
+        // Parse the NFT identifier into its components
+        let nftContractAddress = FlowEVMBridgeUtils.getContractAddress(fromType: self.nftType)
+            ?? panic("Could not get contract address from identifier: ".concat(nftIdentifier))
+        let nftContractName = FlowEVMBridgeUtils.getContractName(fromType: self.nftType)
+            ?? panic("Could not get contract name from identifier: ".concat(nftIdentifier))
 
         /* --- Reference the recipient's NFT Receiver --- */
         //

@@ -18,18 +18,29 @@ import "FlowEVMBridgeConfig"
 /// NOTE: The Vault being bridged must have first been onboarded to the bridge. This can be checked for with the method
 ///     FlowEVMBridge.typeRequiresOnboarding(type): Bool?
 ///
-/// @param tokenContractAddress: The Flow account address hosting the FT-defining Cadence contract
-/// @param tokenContractName: The name of the Vault-defining Cadence contract
-/// @param amount: The amount of tokens to bridge from EVM
+/// @param vaultIdentifier: The Cadence type identifier of the FungibleToken Vault to bridge
+///     - e.g. vault.getType().identifier
+/// @param amount: The amount of tokens to bridge from Cadence to the named recipient in EVM
 /// @param recipient: The hex-encoded EVM address to send the tokens to
 ///
-transaction(tokenContractAddress: Address, tokenContractName: String, amount: UFix64, recipient: String) {
+transaction(vaultIdentifier: String, amount: UFix64, recipient: String) {
 
     let sentVault: @{FungibleToken.Vault}
     let requiresOnboarding: Bool
     let scopedProvider: @ScopedFTProviders.ScopedFTProvider
 
     prepare(signer: auth(CopyValue, BorrowValue, IssueStorageCapabilityController, PublishCapability, SaveValue) &Account) {
+        /* --- Construct the Vault type --- */
+        //
+        // Construct the Vault type from the provided identifier
+        let vaultType = CompositeType(vaultIdentifier)
+            ?? panic("Could not construct Vault type from identifier: ".concat(vaultIdentifier))
+        // Parse the Vault identifier into its components
+        let tokenContractAddress = FlowEVMBridgeUtils.getContractAddress(fromType: vaultType)
+            ?? panic("Could not get contract address from identifier: ".concat(vaultIdentifier))
+        let tokenContractName = FlowEVMBridgeUtils.getContractName(fromType: vaultType)
+            ?? panic("Could not get contract name from identifier: ".concat(vaultIdentifier))
+        
         /* --- Retrieve the funds --- */
         //
         // Borrow a reference to the FungibleToken Vault

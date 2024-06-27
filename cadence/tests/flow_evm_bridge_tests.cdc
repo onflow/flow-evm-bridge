@@ -386,9 +386,11 @@ fun testBridgeFlowToEVMSucceeds() {
     let bridgeAmount = 100.0
     bridgeTokensToEVM(
         signer: alice,
-        contractAddr: Address(0x03),
-        contractName: "FlowToken",
-        amount: bridgeAmount,
+        vaultIdentifier: buildTypeIdentifier(
+            address: Address(0x03),
+            contractName: "FlowToken",
+            resourceName: "Vault"
+        ), amount: bridgeAmount,
         beFailed: false
     )
 
@@ -605,8 +607,7 @@ fun testOnboardAndBridgeNFTToEVMSucceeds() {
     // Execute bridge NFT to EVM - should also onboard the NFT type
     bridgeNFTToEVM(
         signer: alice,
-        contractAddr: exampleNFTAccount.address,
-        contractName: "ExampleNFT",
+        nftIdentifier: exampleNFTIdentifier,
         nftID: aliceID,
         bridgeAccountAddr: bridgeAccount.address,
         beFailed: false
@@ -658,7 +659,7 @@ fun testOnboardAndCrossVMTransferNFTToEVMSucceeds() {
     // Execute bridge NFT to EVM recipient - should also onboard the NFT type
     let crossVMTransferResult = executeTransaction(
         "../transactions/bridge/nft/bridge_nft_to_any_evm_address.cdc",
-        [ exampleNFTAccount.address, "ExampleNFT", aliceID, recipient ],
+        [ exampleNFTIdentifier, aliceID, recipient ],
         alice
     )
     Test.expect(crossVMTransferResult, Test.beSucceeded())
@@ -731,8 +732,7 @@ fun testOnboardAndBridgeTokensToEVMSucceeds() {
     // Execute bridge to EVM - should also onboard the token type
     bridgeTokensToEVM(
         signer: alice,
-        contractAddr: exampleTokenAccount.address,
-        contractName: "ExampleToken",
+        vaultIdentifier: exampleTokenIdentifier,
         amount: cadenceBalance,
         beFailed: false
     )
@@ -780,7 +780,7 @@ fun testOnboardAndCrossVMTransferTokensToEVMSucceeds() {
     // Execute bridge to EVM - should also onboard the token type
     let crossVMTransferResult = executeTransaction(
         "../transactions/bridge/tokens/bridge_tokens_to_any_evm_address.cdc",
-        [ exampleTokenAccount.address, "ExampleToken", cadenceBalance, recipient ],
+        [ exampleTokenIdentifier, cadenceBalance, recipient ],
         alice
     )
     Test.expect(crossVMTransferResult, Test.beSucceeded())
@@ -973,8 +973,7 @@ fun testPauseBridgeSucceeds() {
     // Execute bridge to EVM - should fail after pausing
     bridgeNFTToEVM(
         signer: alice,
-        contractAddr: exampleNFTAccount.address,
-        contractName: "ExampleNFT",
+        nftIdentifier: exampleNFTIdentifier,
         nftID: aliceOwnedIDs[0],
         bridgeAccountAddr: bridgeAccount.address,
         beFailed: true
@@ -1006,8 +1005,7 @@ fun testBridgeCadenceNativeNFTToEVMSucceeds() {
     // Execute bridge to EVM
     bridgeNFTToEVM(
         signer: alice,
-        contractAddr: exampleNFTAccount.address,
-        contractName: "ExampleNFT",
+        nftIdentifier: exampleNFTIdentifier,
         nftID: aliceOwnedIDs[0],
         bridgeAccountAddr: bridgeAccount.address,
         beFailed: false
@@ -1052,7 +1050,7 @@ fun testCrossVMTransferCadenceNativeNFTFromEVMSucceeds() {
     // Execute bridge NFT from EVM to Cadence recipient (Bob in this case)
     let crossVMTransferResult = executeTransaction(
         "../transactions/bridge/nft/bridge_nft_to_any_cadence_address.cdc",
-        [ exampleNFTAccount.address, "ExampleNFT", UInt256(mintedNFTID), bob.address ],
+        [ exampleNFTIdentifier, UInt256(mintedNFTID), bob.address ],
         alice
     )
     Test.expect(crossVMTransferResult, Test.beSucceeded())
@@ -1082,8 +1080,7 @@ fun testBridgeCadenceNativeNFTFromEVMSucceeds() {
     // Execute bridge from EVM
     bridgeNFTFromEVM(
         signer: alice,
-        contractAddr: exampleNFTAccount.address,
-        contractName: "ExampleNFT",
+        nftIdentifier: exampleNFTIdentifier,
         erc721ID: UInt256(mintedNFTID),
         bridgeAccountAddr: bridgeAccount.address,
         beFailed: false
@@ -1108,9 +1105,11 @@ fun testBridgeEVMNativeNFTFromEVMSucceeds() {
 
     bridgeNFTFromEVM(
         signer: alice,
-        contractAddr: bridgeAccount.address,
-        contractName: derivedERC721ContractName,
-        erc721ID: erc721ID,
+        nftIdentifier: buildTypeIdentifier(
+            address: bridgeAccount.address,
+            contractName: derivedERC721ContractName,
+            resourceName: "NFT"
+        ), erc721ID: erc721ID,
         bridgeAccountAddr: bridgeAccount.address,
         beFailed: false
     )
@@ -1152,8 +1151,7 @@ fun testPauseByTypeSucceeds() {
     // Execute bridge to EVM - should fail after pausing
     bridgeNFTToEVM(
         signer: alice,
-        contractAddr: exampleNFTAccount.address,
-        contractName: "ExampleNFT",
+        nftIdentifier: exampleNFTIdentifier,
         nftID: aliceOwnedIDs[0],
         bridgeAccountAddr: bridgeAccount.address,
         beFailed: true
@@ -1187,9 +1185,11 @@ fun testBridgeEVMNativeNFTToEVMSucceeds() {
 
     bridgeNFTToEVM(
         signer: alice,
-        contractAddr: bridgeAccount.address,
-        contractName: derivedERC721ContractName,
-        nftID: aliceOwnedIDs[0],
+        nftIdentifier: buildTypeIdentifier(
+            address: bridgeAccount.address,
+            contractName: derivedERC721ContractName,
+            resourceName: "NFT"
+        ), nftID: aliceOwnedIDs[0],
         bridgeAccountAddr: bridgeAccount.address,
         beFailed: false
     )
@@ -1214,8 +1214,7 @@ fun testBridgeCadenceNativeTokenToEVMSucceeds() {
     // Execute bridge to EVM
     bridgeTokensToEVM(
         signer: alice,
-        contractAddr: exampleTokenAccount.address,
-        contractName: "ExampleToken",
+        vaultIdentifier: exampleTokenIdentifier,
         amount: cadenceBalance,
         beFailed: false
     )
@@ -1266,7 +1265,7 @@ fun testCrossVMTransferCadenceNativeTokenFromEVMSucceeds() {
     // Execute bridge tokens from EVM to Cadence recipient (Bob in this case)
     let crossVMTransferResult = executeTransaction(
         "../transactions/bridge/tokens/bridge_tokens_to_any_cadence_address.cdc",
-        [ exampleTokenAccount.address, "ExampleToken", evmBalance, bob.address ],
+        [ exampleTokenIdentifier, evmBalance, bob.address ],
         alice
     )
     Test.expect(crossVMTransferResult, Test.beSucceeded())
@@ -1305,8 +1304,7 @@ fun testBridgeCadenceNativeTokenFromEVMSucceeds() {
     // Execute bridge from EVM
     bridgeTokensFromEVM(
         signer: alice,
-        contractAddr: exampleTokenAccount.address,
-        contractName: "ExampleToken",
+        vaultIdentifier: exampleTokenIdentifier,
         amount: evmBalance,
         beFailed: false
     )
@@ -1339,9 +1337,11 @@ fun testBridgeEVMNativeTokenFromEVMSucceeds() {
     // Execute bridge from EVM
     bridgeTokensFromEVM(
         signer: alice,
-        contractAddr: bridgeAccount.address,
-        contractName: derivedERC20ContractName,
-        amount: evmBalance,
+        vaultIdentifier: buildTypeIdentifier(
+            address: bridgeAccount.address,
+            contractName: derivedERC20ContractName,
+            resourceName: "Vault"
+        ), amount: evmBalance,
         beFailed: false
     )
 
@@ -1388,9 +1388,11 @@ fun testBridgeEVMNativeTokenToEVMSucceeds() {
     // Execute bridge from EVM
     bridgeTokensToEVM(
         signer: alice,
-        contractAddr: bridgeAccount.address,
-        contractName: derivedERC20ContractName,
-        amount: cadenceBalance,
+        vaultIdentifier: buildTypeIdentifier(
+            address: bridgeAccount.address,
+            contractName: derivedERC20ContractName,
+            resourceName: "Vault"
+        ), amount: cadenceBalance,
         beFailed: false
     )
 

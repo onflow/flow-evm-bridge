@@ -16,11 +16,11 @@ import "FlowEVMBridgeUtils"
 /// NOTE: This transaction also onboards the Vault to the bridge if necessary which may incur additional fees
 ///     than bridging an asset that has already been onboarded.
 ///
-/// @param tokenContractAddress: The Flow account address hosting the FT-defining Cadence contract
-/// @param tokenContractName: The name of the Vault-defining Cadence contract
+/// @param vaultIdentifier: The Cadence type identifier of the FungibleToken Vault to bridge
+///     - e.g. vault.getType().identifier
 /// @param amount: The amount of tokens to bridge from EVM
 ///
-transaction(tokenContractAddress: Address, tokenContractName: String, amount: UFix64) {
+transaction(vaultIdentifier: String, amount: UFix64) {
 
     let sentVault: @{FungibleToken.Vault}
     let coa: auth(EVM.Bridge) &EVM.CadenceOwnedAccount
@@ -34,13 +34,24 @@ transaction(tokenContractAddress: Address, tokenContractName: String, amount: UF
         self.coa = signer.storage.borrow<auth(EVM.Bridge) &EVM.CadenceOwnedAccount>(from: /storage/evm)
             ?? panic("Could not borrow COA from provided gateway address")
 
+        /* --- Construct the Vault type --- */
+        //
+        // Construct the Vault type from the provided identifier
+        let vaultType = CompositeType(vaultIdentifier)
+            ?? panic("Could not construct Vault type from identifier: ".concat(vaultIdentifier))
+        // Parse the Vault identifier into its components
+        let tokenContractAddress = FlowEVMBridgeUtils.getContractAddress(fromType: vaultType)
+            ?? panic("Could not get contract address from identifier: ".concat(vaultIdentifier))
+        let tokenContractName = FlowEVMBridgeUtils.getContractName(fromType: vaultType)
+            ?? panic("Could not get contract name from identifier: ".concat(vaultIdentifier))
+
         /* --- Retrieve the funds --- */
         //
         // Borrow a reference to the FungibleToken Vault
         let viewResolver = getAccount(tokenContractAddress).contracts.borrow<&{ViewResolver}>(name: tokenContractName)
             ?? panic("Could not borrow ViewResolver from FungibleToken contract")
         let vaultData = viewResolver.resolveContractView(
-                resourceType: nil,
+                resourceType: vaultType,
                 viewType: Type<FungibleTokenMetadataViews.FTVaultData>()
             ) as! FungibleTokenMetadataViews.FTVaultData? ?? panic("Could not resolve FTVaultData view")
         let vault = signer.storage.borrow<auth(FungibleToken.Withdraw) &{FungibleToken.Vault}>(

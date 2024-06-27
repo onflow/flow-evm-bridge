@@ -2,7 +2,6 @@ import "FungibleToken"
 import "NonFungibleToken"
 import "ViewResolver"
 import "MetadataViews"
-import "FlowToken"
 
 import "ScopedFTProviders"
 
@@ -17,18 +16,28 @@ import "FlowEVMBridgeUtils"
 /// NOTE: This transaction also onboards the NFT to the bridge if necessary which may incur additional fees
 ///     than bridging an asset that has already been onboarded.
 ///
-/// @param nftContractAddress: The Flow account address hosting the NFT-defining Cadence contract
-/// @param nftContractName: The name of the NFT-defining Cadence contract
+/// @param nftIdentifier: The Cadence type identifier of the NFT to bridge - e.g. nft.getType().identifier
 /// @param id: The Cadence NFT.id of the NFT to bridge to EVM
 /// @param recipient: The hex-encoded EVM address to receive the NFT
 ///
-transaction(nftContractAddress: Address, nftContractName: String, id: UInt64, recipient: String) {
+transaction(nftIdentifier: String, id: UInt64, recipient: String) {
     
     let nft: @{NonFungibleToken.NFT}
     let requiresOnboarding: Bool
     let scopedProvider: @ScopedFTProviders.ScopedFTProvider
     
     prepare(signer: auth(CopyValue, BorrowValue, IssueStorageCapabilityController, PublishCapability, SaveValue) &Account) {        
+        /* --- Construct the NFT type --- */
+        //
+        // Construct the NFT type from the provided identifier
+        let nftType = CompositeType(nftIdentifier)
+            ?? panic("Could not construct NFT type from identifier: ".concat(nftIdentifier))
+        // Parse the NFT identifier into its components
+        let nftContractAddress = FlowEVMBridgeUtils.getContractAddress(fromType: nftType)
+            ?? panic("Could not get contract address from identifier: ".concat(nftIdentifier))
+        let nftContractName = FlowEVMBridgeUtils.getContractName(fromType: nftType)
+            ?? panic("Could not get contract name from identifier: ".concat(nftIdentifier))
+
         /* --- Retrieve the NFT --- */
         //
         // Borrow a reference to the NFT collection, configuring if necessary

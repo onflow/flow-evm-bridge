@@ -20,12 +20,12 @@ import "FlowEVMBridgeUtils"
 /// NOTE: The ERC20 must have first been onboarded to the bridge. This can be checked via the method
 ///     FlowEVMBridge.evmAddressRequiresOnboarding(address: self.evmContractAddress)
 ///
-/// @param tokenContractAddress: The Flow account address hosting the FT-defining Cadence contract
-/// @param tokenContractName: The name of the Vault-defining Cadence contract
-/// @param amount: The amount of tokens to bridge from EVM
+/// @param vaultIdentifier: The Cadence type identifier of the FungibleToken Vault to bridge
+///     - e.g. vault.getType().identifier
+/// @param amount: The amount of tokens to bridge from EVM and transfer to the recipient
 /// @param recipient: The Flow account address to receive the bridged tokens
 ///
-transaction(tokenContractAddress: Address, tokenContractName: String, amount: UInt256, recipient: Address) {
+transaction(vaultIdentifier: String, amount: UInt256, recipient: Address) {
 
     let vaultType: Type
     let receiver: &{FungibleToken.Receiver}
@@ -39,12 +39,16 @@ transaction(tokenContractAddress: Address, tokenContractName: String, amount: UI
         self.coa = signer.storage.borrow<auth(EVM.Bridge) &EVM.CadenceOwnedAccount>(from: /storage/evm)
             ?? panic("Could not borrow COA from provided gateway address")
 
-        // Get the ERC20 contract address for the given FungibleToken Vault type
-        self.vaultType = FlowEVMBridgeUtils.buildCompositeType(
-                address: tokenContractAddress,
-                contractName: tokenContractName,
-                resourceName: "Vault"
-            ) ?? panic("Could not construct Vault type of: " .concat(tokenContractAddress.toString()).concat(".").concat(tokenContractName).concat(".Vault"))
+        /* --- Construct the Vault type --- */
+        //
+        // Construct the Vault type from the provided identifier
+        self.vaultType = CompositeType(vaultIdentifier)
+            ?? panic("Could not construct Vault type from identifier: ".concat(vaultIdentifier))
+        // Parse the Vault identifier into its components
+        let tokenContractAddress = FlowEVMBridgeUtils.getContractAddress(fromType: self.vaultType)
+            ?? panic("Could not get contract address from identifier: ".concat(vaultIdentifier))
+        let tokenContractName = FlowEVMBridgeUtils.getContractName(fromType: self.vaultType)
+            ?? panic("Could not get contract name from identifier: ".concat(vaultIdentifier))
 
         /* --- Reference the signer's Vault --- */
         //
