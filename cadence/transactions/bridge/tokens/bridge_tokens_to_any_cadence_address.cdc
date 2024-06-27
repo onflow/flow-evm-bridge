@@ -17,7 +17,7 @@ import "FlowEVMBridgeUtils"
 /// balance of the ERC20 to bridging into Cadence. Also know that the recipient Flow account must have a Receiver
 /// capable of receiving the bridged tokens accessible via published Capability at the token's standard path.
 ///
-/// NOTE: The ERC721 must have first been onboarded to the bridge. This can be checked via the method
+/// NOTE: The ERC20 must have first been onboarded to the bridge. This can be checked via the method
 ///     FlowEVMBridge.evmAddressRequiresOnboarding(address: self.evmContractAddress)
 ///
 /// @param tokenContractAddress: The Flow account address hosting the FT-defining Cadence contract
