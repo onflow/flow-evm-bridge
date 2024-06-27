@@ -13,19 +13,22 @@ import "FlowEVMBridgeConfig"
 import "FlowEVMBridgeUtils"
 
 /// This transaction bridges fungible tokens from EVM to Cadence assuming it has already been onboarded to the
-/// FlowEVMBridge.
+/// FlowEVMBridge. The full amount to be transferred is sourced from EVM, so it's assumed the signer has sufficient
+/// balance of the ERC20 to bridging into Cadence. Also know that the recipient Flow account must have a Receiver
+/// capable of receiving the bridged tokens accessible via published Capability at the token's standard path.
 ///
-/// NOTE: The ERC721 must have first been onboarded to the bridge. This can be checked via the method
+/// NOTE: The ERC20 must have first been onboarded to the bridge. This can be checked via the method
 ///     FlowEVMBridge.evmAddressRequiresOnboarding(address: self.evmContractAddress)
 ///
 /// @param vaultIdentifier: The Cadence type identifier of the FungibleToken Vault to bridge
 ///     - e.g. vault.getType().identifier
-/// @param amount: The amount of tokens to bridge from EVM
+/// @param amount: The amount of tokens to bridge from EVM and transfer to the recipient
+/// @param recipient: The Flow account address to receive the bridged tokens
 ///
-transaction(vaultIdentifier: String, amount: UInt256) {
+transaction(vaultIdentifier: String, amount: UInt256, recipient: Address) {
 
     let vaultType: Type
-    let receiver: &{FungibleToken.Vault}
+    let receiver: &{FungibleToken.Receiver}
     let scopedProvider: @ScopedFTProviders.ScopedFTProvider
     let coa: auth(EVM.Bridge) &EVM.CadenceOwnedAccount
 
@@ -69,8 +72,8 @@ transaction(vaultIdentifier: String, amount: UInt256) {
             signer.capabilities.publish(receiverCap, at: vaultData.receiverPath)
             signer.capabilities.publish(metadataCap, at: vaultData.metadataPath)
         }
-        self.receiver = signer.storage.borrow<&{FungibleToken.Vault}>(from: vaultData.storagePath)
-            ?? panic("Could not borrow Vault from storage path")
+        self.receiver = getAccount(recipient).capabilities.borrow<&{FungibleToken.Receiver}>(vaultData.receiverPath)
+            ?? panic("Could not borrow Vault from recipient's account")
 
         /* --- Configure a ScopedFTProvider --- */
         //

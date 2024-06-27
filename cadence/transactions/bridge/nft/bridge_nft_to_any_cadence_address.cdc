@@ -2,7 +2,6 @@ import "FungibleToken"
 import "NonFungibleToken"
 import "ViewResolver"
 import "MetadataViews"
-import "FlowToken"
 
 import "ScopedFTProviders"
 
@@ -12,17 +11,20 @@ import "FlowEVMBridge"
 import "FlowEVMBridgeConfig"
 import "FlowEVMBridgeUtils"
 
-/// This transaction bridges an NFT from EVM to Cadence assuming it has already been onboarded to the FlowEVMBridge
+/// This transaction bridges an NFT from EVM to Cadence assuming it has already been onboarded to the FlowEVMBridge.
+/// Also know that the recipient Flow account must have a Receiver capable of receiving the this bridged NFT accessible
+/// via published Capability at the token's standard path.
 /// NOTE: The ERC721 must have first been onboarded to the bridge. This can be checked via the method
 ///     FlowEVMBridge.evmAddressRequiresOnboarding(address: self.evmContractAddress)
 ///
 /// @param nftIdentifier: The Cadence type identifier of the NFT to bridge - e.g. nft.getType().identifier
 /// @param id: The ERC721 id of the NFT to bridge to Cadence from EVM
+/// @param recipient: The Flow account address to receive the bridged NFT
 ///
-transaction(nftIdentifier: String, id: UInt256) {
+transaction(nftIdentifier: String, id: UInt256, recipient: Address) {
 
     let nftType: Type
-    let collection: &{NonFungibleToken.Collection}
+    let receiver: &{NonFungibleToken.Receiver}
     let scopedProvider: @ScopedFTProviders.ScopedFTProvider
     let coa: auth(EVM.Bridge) &EVM.CadenceOwnedAccount
     
@@ -44,7 +46,7 @@ transaction(nftIdentifier: String, id: UInt256) {
         let nftContractName = FlowEVMBridgeUtils.getContractName(fromType: self.nftType)
             ?? panic("Could not get contract name from identifier: ".concat(nftIdentifier))
 
-        /* --- Reference the signer's NFT Collection --- */
+        /* --- Reference the recipient's NFT Receiver --- */
         //
         // Borrow a reference to the NFT collection, configuring if necessary
         let viewResolver = getAccount(nftContractAddress).contracts.borrow<&{ViewResolver}>(name: nftContractName)
@@ -53,14 +55,15 @@ transaction(nftIdentifier: String, id: UInt256) {
                 resourceType: self.nftType,
                 viewType: Type<MetadataViews.NFTCollectionData>()
             ) as! MetadataViews.NFTCollectionData? ?? panic("Could not resolve NFTCollectionData view")
+        // Configure the signer's account for this NFT
         if signer.storage.borrow<&{NonFungibleToken.Collection}>(from: collectionData.storagePath) == nil {
             signer.storage.save(<-collectionData.createEmptyCollection(), to: collectionData.storagePath)
             signer.capabilities.unpublish(collectionData.publicPath)
             let collectionCap = signer.capabilities.storage.issue<&{NonFungibleToken.Collection}>(collectionData.storagePath)
             signer.capabilities.publish(collectionCap, at: collectionData.publicPath)
         }
-        self.collection = signer.storage.borrow<&{NonFungibleToken.Collection}>(from: collectionData.storagePath)
-            ?? panic("Could not borrow collection from storage path")
+        self.receiver = getAccount(recipient).capabilities.borrow<&{NonFungibleToken.Receiver}>(collectionData.publicPath)
+            ?? panic("Could not borrow Receiver from recipient's public capability path")
 
         /* --- Configure a ScopedFTProvider --- */
         //
@@ -93,7 +96,7 @@ transaction(nftIdentifier: String, id: UInt256) {
             feeProvider: &self.scopedProvider as auth(FungibleToken.Withdraw) &{FungibleToken.Provider}
         )
         // Deposit the bridged NFT into the signer's collection
-        self.collection.deposit(token: <-nft)
+        self.receiver.deposit(token: <-nft)
         // Destroy the ScopedFTProvider
         destroy self.scopedProvider
     }
