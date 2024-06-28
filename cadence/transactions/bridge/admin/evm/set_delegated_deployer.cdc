@@ -9,21 +9,21 @@ import "FlowEVMBridgeUtils"
 ///
 transaction(deployerEVMAddressHex: String) {
 
+    let targetDeployerEVMAddress: EVM.EVMAddress
     let coa: auth(EVM.Call) &EVM.CadenceOwnedAccount
     var postDelegatedDeployer: EVM.EVMAddress?
 
     prepare(signer: auth(BorrowValue) &Account) {
+        self.targetDeployerEVMAddress = EVM.addressFromString(deployerEVMAddressHex)
         self.coa = signer.storage.borrow<auth(EVM.Call) &EVM.CadenceOwnedAccount>(from: /storage/evm)
             ?? panic("Could not borrow COA from provided gateway address")
-
         self.postDelegatedDeployer = nil
     }
 
     execute {
         // Execute the call
-        let deployerEVMAddress = EVM.addressFromString(deployerEVMAddressHex)
         let callResult = self.coa.call(
-            to: deployerEVMAddress,
+            to: self.targetDeployerEVMAddress,
             data: EVM.encodeABIWithSignature(
                 "setDelegatedDeployer(address)",
                 [FlowEVMBridgeUtils.getBridgeFactoryEVMAddress()]
@@ -35,7 +35,7 @@ transaction(deployerEVMAddressHex: String) {
 
         // Confirm the delegated deployer was set
         let postDelegatedDeployerResult = self.coa.call(
-            to: deployerEVMAddress,
+            to: self.targetDeployerEVMAddress,
             data: EVM.encodeABIWithSignature("delegatedDeployer()", []),
             gasLimit: 15_000_000,
             value: EVM.Balance(attoflow: 0)
@@ -51,7 +51,7 @@ transaction(deployerEVMAddressHex: String) {
     }
 
     post {
-        self.postDelegatedDeployer!.toString() == FlowEVMBridgeUtils.getBridgeFactoryEVMAddress().toString():
+        self.postDelegatedDeployer!.equals(FlowEVMBridgeUtils.getBridgeFactoryEVMAddress()):
             "FlowBridgeFactory address "
             .concat(FlowEVMBridgeUtils.getBridgeFactoryEVMAddress().toString())
             .concat(" was not set as the delegated deployer in the deployer contract ")
