@@ -148,7 +148,7 @@ func main() {
 	checkNoErr(erc20DeployerDeployment.Err)
 	erc20DeployerAddr := getContractAddressFromEVMEvent(erc20DeployerDeployment)
 
-	log.Printf("ERC20 Deployer deployed to address: %s", factoryAddr)
+	log.Printf("ERC20 Deployer deployed to address: %s", erc20DeployerAddr)
 
 	/// Deploy ERC721 deployer ///
 	//
@@ -163,7 +163,7 @@ func main() {
 	checkNoErr(erc721DeployerDeployment.Err)
 	erc721DeployerAddr := getContractAddressFromEVMEvent(erc721DeployerDeployment)
 
-	log.Printf("ERC721 Deployer deployed to address: %s", factoryAddr)
+	log.Printf("ERC721 Deployer deployed to address: %s", erc721DeployerAddr)
 
 	/* --- Cadence Configuration --- */
 
@@ -289,12 +289,12 @@ func main() {
 
 	onboardFeeResult := o.Tx("bridge/admin/fee/update_onboard_fee",
 		WithSigner("flow-evm-bridge"),
-		WithArg("newFee", 0.0),
+		WithArg("newFee", 1.0),
 	)
 	checkNoErr(onboardFeeResult.Err)
 	baseFeeResult := o.Tx("bridge/admin/fee/update_base_fee",
 		WithSigner("flow-evm-bridge"),
-		WithArg("newFee", 0.0),
+		WithArg("newFee", 0.001),
 	)
 	checkNoErr(baseFeeResult.Err)
 
