@@ -19,7 +19,7 @@ access(all)
 contract FlowEVMBridgeUtils {
 
     /// Address of the bridge factory Solidity contract
-    access(all)
+    access(self)
     var bridgeFactoryEVMAddress: EVM.EVMAddress
     /// Delimeter used to derive contract names
     access(self)
