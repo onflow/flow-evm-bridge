@@ -133,7 +133,7 @@ func main() {
 	checkNoErr(registryDeployment.Err)
 	registryAddr := getContractAddressFromEVMEvent(registryDeployment)
 
-	log.Printf("Registry deployed to address: %s", factoryAddr)
+	log.Printf("Registry deployed to address: %s", registryAddr)
 
 	/// Deploy ERC20 deployer ///
 	//
