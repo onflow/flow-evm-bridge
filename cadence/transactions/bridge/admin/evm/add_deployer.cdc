@@ -24,7 +24,7 @@ transaction(deployerTag: String, deployerEVMAddressHex: String) {
         // Execute the call
         let deployerEVMAddress = EVM.addressFromString(deployerEVMAddressHex)
         let callResult = self.coa.call(
-            to: FlowEVMBridgeUtils.bridgeFactoryEVMAddress,
+            to: FlowEVMBridgeUtils.getBridgeFactoryEVMAddress(),
             data: EVM.encodeABIWithSignature(
                 "addDeployer(string,address)",
                 [deployerTag, deployerEVMAddress]
@@ -36,7 +36,7 @@ transaction(deployerTag: String, deployerEVMAddressHex: String) {
 
         // Confirm the deployer was added under the tag
         let postDeployerResult = self.coa.call(
-            to: FlowEVMBridgeUtils.bridgeFactoryEVMAddress,
+            to: FlowEVMBridgeUtils.getBridgeFactoryEVMAddress(),
             data: EVM.encodeABIWithSignature(
                 "getDeployer(string)",
                 [deployerTag]

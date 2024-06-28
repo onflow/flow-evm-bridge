@@ -24,7 +24,7 @@ transaction(registryEVMAddressHex: String) {
             to: registryEVMAddress,
             data: EVM.encodeABIWithSignature(
                 "setRegistrar(address)",
-                [FlowEVMBridgeUtils.bridgeFactoryEVMAddress]
+                [FlowEVMBridgeUtils.getBridgeFactoryEVMAddress()]
             ),
             gasLimit: 15_000_000,
             value: EVM.Balance(attoflow: 0)
@@ -43,15 +43,15 @@ transaction(registryEVMAddressHex: String) {
         let decodedResult = EVM.decodeABI(
                 types: [Type<EVM.EVMAddress>()],
                 data: postRegistrarResult.data
-            ) as! [AnyStruct]
+            )
         assert(decodedResult.length == 1, message: "Invalid response from registrar() call to registry contract")
         self.postRegistrar = decodedResult[0] as! EVM.EVMAddress
     }
 
     post {
-        self.postRegistrar!.toString() == FlowEVMBridgeUtils.bridgeFactoryEVMAddress.toString():
+        self.postRegistrar!.toString() == FlowEVMBridgeUtils.getBridgeFactoryEVMAddress().toString():
             "FlowBridgeFactory address "
-            .concat(FlowEVMBridgeUtils.bridgeFactoryEVMAddress.toString())
+            .concat(FlowEVMBridgeUtils.getBridgeFactoryEVMAddress().toString())
             .concat(" was not set as the registrar in the registry contract ")
             .concat(registryEVMAddressHex)
     }

@@ -26,7 +26,7 @@ transaction(registryEVMAddressHex: String) {
         // Execute call
         let registryEVMAddress = EVM.addressFromString(registryEVMAddressHex)
         let callResult = self.coa.call(
-            to: FlowEVMBridgeUtils.bridgeFactoryEVMAddress,
+            to: FlowEVMBridgeUtils.getBridgeFactoryEVMAddress(),
             data: EVM.encodeABIWithSignature(
                 "setDeploymentRegistry(address)",
                 [registryEVMAddress]
@@ -38,7 +38,7 @@ transaction(registryEVMAddressHex: String) {
 
         // Confirm the registry address was set
         let postRegistryResult = self.coa.call(
-            to: FlowEVMBridgeUtils.bridgeFactoryEVMAddress,
+            to: FlowEVMBridgeUtils.getBridgeFactoryEVMAddress(),
             data: EVM.encodeABIWithSignature("getRegistry()", []),
             gasLimit: 15_000_000,
             value: EVM.Balance(attoflow: 0)
@@ -61,6 +61,6 @@ transaction(registryEVMAddressHex: String) {
             "Registry address "
             .concat(registryEVMAddressHex)
             .concat(" was not set in the FlowBridgeFactory contract ")
-            .concat(FlowEVMBridgeUtils.bridgeFactoryEVMAddress.toString())
+            .concat(FlowEVMBridgeUtils.getBridgeFactoryEVMAddress().toString())
     }
 }

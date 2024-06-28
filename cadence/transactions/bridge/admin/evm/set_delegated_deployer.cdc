@@ -26,7 +26,7 @@ transaction(deployerEVMAddressHex: String) {
             to: deployerEVMAddress,
             data: EVM.encodeABIWithSignature(
                 "setDelegatedDeployer(address)",
-                [FlowEVMBridgeUtils.bridgeFactoryEVMAddress]
+                [FlowEVMBridgeUtils.getBridgeFactoryEVMAddress()]
             ),
             gasLimit: 15_000_000,
             value: EVM.Balance(attoflow: 0)
@@ -51,9 +51,9 @@ transaction(deployerEVMAddressHex: String) {
     }
 
     post {
-        self.postDelegatedDeployer!.toString() == FlowEVMBridgeUtils.bridgeFactoryEVMAddress.toString():
+        self.postDelegatedDeployer!.toString() == FlowEVMBridgeUtils.getBridgeFactoryEVMAddress().toString():
             "FlowBridgeFactory address "
-            .concat(FlowEVMBridgeUtils.bridgeFactoryEVMAddress.toString())
+            .concat(FlowEVMBridgeUtils.getBridgeFactoryEVMAddress().toString())
             .concat(" was not set as the delegated deployer in the deployer contract ")
             .concat(deployerEVMAddressHex)
     }
