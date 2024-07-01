@@ -30,6 +30,7 @@ contract FlowEVMBridgeConfig {
     /// Default ERC20.decimals() value
     access(all)
     let defaultDecimals: UInt8
+    /// The gas limit for all EVM calls related to bridge operations
     access(all)
     var gasLimit: UInt64
     /// Flag enabling pausing of bridge operations
