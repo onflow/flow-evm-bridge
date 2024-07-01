@@ -7,5 +7,5 @@ import "FlowEVMBridgeUtils"
 /// @return The EVM address of the FlowEVMBridgeFactory contract as hex string (without 0x prefix)
 ///
 access(all) fun main(): String {
-    return FlowEVMBridgeUtils.bridgeFactoryEVMAddress.toString()
+    return FlowEVMBridgeUtils.getBridgeFactoryEVMAddress().toString()
 }

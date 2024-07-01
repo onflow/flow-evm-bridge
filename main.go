@@ -133,7 +133,7 @@ func main() {
 	checkNoErr(registryDeployment.Err)
 	registryAddr := getContractAddressFromEVMEvent(registryDeployment)
 
-	log.Printf("Registry deployed to address: %s", factoryAddr)
+	log.Printf("Registry deployed to address: %s", registryAddr)
 
 	/// Deploy ERC20 deployer ///
 	//
@@ -148,7 +148,7 @@ func main() {
 	checkNoErr(erc20DeployerDeployment.Err)
 	erc20DeployerAddr := getContractAddressFromEVMEvent(erc20DeployerDeployment)
 
-	log.Printf("ERC20 Deployer deployed to address: %s", factoryAddr)
+	log.Printf("ERC20 Deployer deployed to address: %s", erc20DeployerAddr)
 
 	/// Deploy ERC721 deployer ///
 	//
@@ -163,7 +163,7 @@ func main() {
 	checkNoErr(erc721DeployerDeployment.Err)
 	erc721DeployerAddr := getContractAddressFromEVMEvent(erc721DeployerDeployment)
 
-	log.Printf("ERC721 Deployer deployed to address: %s", factoryAddr)
+	log.Printf("ERC721 Deployer deployed to address: %s", erc721DeployerAddr)
 
 	/* --- Cadence Configuration --- */
 
@@ -178,6 +178,16 @@ func main() {
 		contractPath := filepath.Join(dir, contract.Location)
 		contractCode, err := os.ReadFile(contractPath)
 		checkNoErr(err)
+
+		// If the contract is already deployed as-is, skip deployment
+		a, err := o.GetAccount(ctx, "flow-evm-bridge")
+		checkNoErr(err)
+		log.Printf("Checking if contract %s is already deployed...", name)
+		if a.Contracts[name] != nil {
+			log.Printf("Contract %s already deployed, skipping...", name)
+			continue
+		}
+		log.Printf("Contract %s not found on %s, deploying...", name, network)
 
 		var args []cadence.Value
 		if name == "FlowEVMBridgeUtils" {
@@ -197,23 +207,8 @@ func main() {
 		WithArg("pause", true),
 	)
 	checkNoErr(pauseResult.Err)
-	log.Printf("Bridge paused, configuring token handlers...")
 
-	// TODO: Blocked on FiatToken staging - uncomment once the updated contract is staged & migrated
-	// Add TokenHandler for specified Types
-	// fiatToken, err := o.State.Config().Contracts.ByName("FiatToken")
-	// checkNoErr(err)
-	// fiatTokenAddress := fiatToken.Aliases.ByNetwork(o.GetNetwork()).Address
-	// fiatTokenVaultIdentifier := "A." + fiatTokenAddress.String() + ".FiatToken.Vault"
-	// fiatTokenMinterIdentifier := "A." + fiatTokenAddress.String() + ".FiatToken.MinterResource"
-	// handlerCreationResult := o.Tx("bridge/admin/token-handler/create_cadence_native_token_handler",
-	// 	WithSigner("flow-evm-bridge"),
-	// 	WithArg("vaultIdentifier", fiatTokenVaultIdentifier),
-	// 	WithArg("minterIdentifier", fiatTokenMinterIdentifier),
-	// )
-	// checkNoErr(handlerCreationResult.Err)
-
-	log.Printf("Token handlers configured...continuing EVM setup...")
+	// TODO: Add any TokenHandlers here if needed
 
 	/* --- Finish EVM Contract Setup --- */
 
@@ -294,12 +289,12 @@ func main() {
 
 	onboardFeeResult := o.Tx("bridge/admin/fee/update_onboard_fee",
 		WithSigner("flow-evm-bridge"),
-		WithArg("newFee", 0.0),
+		WithArg("newFee", 1.0),
 	)
 	checkNoErr(onboardFeeResult.Err)
 	baseFeeResult := o.Tx("bridge/admin/fee/update_base_fee",
 		WithSigner("flow-evm-bridge"),
-		WithArg("newFee", 0.0),
+		WithArg("newFee", 0.001),
 	)
 	checkNoErr(baseFeeResult.Err)
 

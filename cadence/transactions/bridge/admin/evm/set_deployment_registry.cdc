@@ -13,10 +13,12 @@ import "FlowEVMBridgeUtils"
 ///
 transaction(registryEVMAddressHex: String) {
 
+    let targetRegistryEVMAddress: EVM.EVMAddress
     let coa: auth(EVM.Call) &EVM.CadenceOwnedAccount
     var postRegistry: EVM.EVMAddress?
 
     prepare(signer: auth(BorrowValue) &Account) {
+        self.targetRegistryEVMAddress = EVM.addressFromString(registryEVMAddressHex)
         self.coa = signer.storage.borrow<auth(EVM.Call) &EVM.CadenceOwnedAccount>(from: /storage/evm)
             ?? panic("Could not borrow COA from provided gateway address")
             self.postRegistry = nil
@@ -24,12 +26,11 @@ transaction(registryEVMAddressHex: String) {
 
     execute {
         // Execute call
-        let registryEVMAddress = EVM.addressFromString(registryEVMAddressHex)
         let callResult = self.coa.call(
-            to: FlowEVMBridgeUtils.bridgeFactoryEVMAddress,
+            to: FlowEVMBridgeUtils.getBridgeFactoryEVMAddress(),
             data: EVM.encodeABIWithSignature(
                 "setDeploymentRegistry(address)",
-                [registryEVMAddress]
+                [self.targetRegistryEVMAddress]
             ),
             gasLimit: 15_000_000,
             value: EVM.Balance(attoflow: 0)
@@ -38,7 +39,7 @@ transaction(registryEVMAddressHex: String) {
 
         // Confirm the registry address was set
         let postRegistryResult = self.coa.call(
-            to: FlowEVMBridgeUtils.bridgeFactoryEVMAddress,
+            to: FlowEVMBridgeUtils.getBridgeFactoryEVMAddress(),
             data: EVM.encodeABIWithSignature("getRegistry()", []),
             gasLimit: 15_000_000,
             value: EVM.Balance(attoflow: 0)
@@ -51,16 +52,16 @@ transaction(registryEVMAddressHex: String) {
         let decodedResult = EVM.decodeABI(
                 types: [Type<EVM.EVMAddress>()],
                 data: postRegistryResult.data
-            ) as! [AnyStruct]
+            )
         assert(decodedResult.length == 1, message: "Invalid response from getRegistry() call to FlowBridgeFactory contract")
         self.postRegistry = decodedResult[0] as! EVM.EVMAddress
     }
 
     post {
-        self.postRegistry!.toString() == registryEVMAddressHex:
+        self.postRegistry!.equals(self.targetRegistryEVMAddress):
             "Registry address "
             .concat(registryEVMAddressHex)
             .concat(" was not set in the FlowBridgeFactory contract ")
-            .concat(FlowEVMBridgeUtils.bridgeFactoryEVMAddress.toString())
+            .concat(FlowEVMBridgeUtils.getBridgeFactoryEVMAddress().toString())
     }
 }
