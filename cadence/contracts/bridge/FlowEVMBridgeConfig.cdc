@@ -386,7 +386,7 @@ contract FlowEVMBridgeConfig {
             // EVM address is different, update the association
             FlowEVMBridgeConfig.associateType(targetType, with: targetEVMAddress)
             assert(
-                FlowEVMBridgeConfig.getEVMAddressAssociated(with: targetType)!.bytes == targetEVMAddress.bytes,
+                FlowEVMBridgeConfig.getEVMAddressAssociated(with: targetType)!.equals(targetEVMAddress),
                 message: "Problem associating target Type and target EVM Address"
             )
 

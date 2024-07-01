@@ -77,7 +77,7 @@ access(all) contract FlowEVMBridgeHandlerInterfaces {
                 self.getTargetEVMAddress() == nil: "Target EVM address has already been set"
             }
             post {
-                self.getTargetEVMAddress()!.bytes == address!.bytes: "Problem setting target EVM address"
+                self.getTargetEVMAddress()!.equals(address!): "Problem setting target EVM address"
             }
         }
         access(Admin) fun setMinter(_ minter: @{FlowEVMBridgeHandlerInterfaces.TokenMinter}) {
