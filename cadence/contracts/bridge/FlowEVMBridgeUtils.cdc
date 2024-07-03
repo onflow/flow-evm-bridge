@@ -580,7 +580,7 @@ contract FlowEVMBridgeUtils {
         let decodedCallResult = EVM.decodeABI(types: [Type<EVM.EVMAddress>()], data: callResult.data)
         if decodedCallResult.length == 1 {
             let actualOwner = decodedCallResult[0] as! EVM.EVMAddress
-            return actualOwner.bytes == owner.bytes
+            return actualOwner.equals(owner)
         }
         return false
     }
@@ -606,7 +606,7 @@ contract FlowEVMBridgeUtils {
         let decodedCallResult = EVM.decodeABI(types: [Type<EVM.EVMAddress>()], data: callResult.data)
         if decodedCallResult.length == 1 {
             let actualApproved = decodedCallResult[0] as! EVM.EVMAddress
-            return actualApproved.bytes == owner.bytes
+            return actualApproved.equals(owner)
         }
         return false
     }
