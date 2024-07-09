@@ -102,6 +102,8 @@ transaction(vaultIdentifier: String, amount: UInt256) {
             amount: amount,
             feeProvider: &self.scopedProvider as auth(FungibleToken.Withdraw) &{FungibleToken.Provider}
         )
+        // Ensure the bridged vault is the correct type
+        assert(vault.getType() == self.vaultType, message: "Bridged vault type mismatch")
         // Deposit the bridged token into the signer's vault
         self.receiver.deposit(from: <-vault)
         // Destroy the ScopedFTProvider

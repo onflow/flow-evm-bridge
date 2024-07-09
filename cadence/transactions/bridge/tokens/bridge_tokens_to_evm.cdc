@@ -94,6 +94,12 @@ transaction(vaultIdentifier: String, amount: UFix64) {
             )
     }
 
+    pre {
+        self.sentVault.getType().identifier == vaultIdentifier:
+            "Attempting to send invalid vault type - requested: ".concat(vaultIdentifier)
+            .concat(", sending: ").concat(self.sentVault.getType().identifier)
+    }
+
     execute {
         if self.requiresOnboarding {
             // Onboard the Vault to the bridge

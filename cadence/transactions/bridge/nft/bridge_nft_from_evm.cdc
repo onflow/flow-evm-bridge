@@ -92,6 +92,12 @@ transaction(nftIdentifier: String, id: UInt256) {
             id: id,
             feeProvider: &self.scopedProvider as auth(FungibleToken.Withdraw) &{FungibleToken.Provider}
         )
+        // Ensure the bridged nft is the correct type
+        assert(
+            nft.getType() == self.nftType,
+            message: "Bridged nft type mismatch - requeswted: ".concat(self.nftType.identifier)
+                .concat(", received: ").concat(nft.getType().identifier)
+        )
         // Deposit the bridged NFT into the signer's collection
         self.collection.deposit(token: <-nft)
         // Destroy the ScopedFTProvider

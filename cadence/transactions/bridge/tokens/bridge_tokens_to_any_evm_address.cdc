@@ -91,6 +91,9 @@ transaction(vaultIdentifier: String, amount: UFix64, recipient: String) {
     }
 
     pre {
+        self.sentVault.getType().identifier == vaultIdentifier:
+            "Attempting to send invalid vault type - requested: ".concat(vaultIdentifier)
+            .concat(", sending: ").concat(self.sentVault.getType().identifier)
         self.sentVault.balance == amount: "Amount to be transferred does not match the requested amount"
     }
 
