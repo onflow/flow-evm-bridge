@@ -93,6 +93,12 @@ transaction(nftIdentifier: String, id: UInt64) {
             )
     }
 
+    pre {
+        self.nft.getType().identifier == nftIdentifier:
+            "Attempting to send invalid nft type - requested: ".concat(nftIdentifier)
+            .concat(", sending: ").concat(self.nft.getType().identifier)
+    }
+
     execute {
         if self.requiresOnboarding {
             // Onboard the NFT to the bridge
