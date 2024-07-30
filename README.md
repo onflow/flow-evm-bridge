@@ -12,11 +12,11 @@ addresses:
 
 |Contracts|PreviewNet|Testnet|Mainnet|
 |---|---|---|---|
-|All Cadence Bridge contracts|`0x715c57f7a59bc39b`|`0xdfc20aee650fcbdf`|TBD|
-|[`FlowEVMBridgeFactory.sol`](./solidity/src/FlowBridgeFactory.sol)|`0xf23c8619603434f7f71659820193c8e491feb1d9`|TBD|TBD|
-|[`FlowEVMBridgeDeploymentRegistry.sol`](./solidity/src/FlowEVMBridgeDeploymentRegistry.sol)|`0x544ef4ed9209ebe6989bed9e543632512afb25de`|TBD|TBD|
-|[`FlowEVMBridgedERC20Deployer.sol`](./solidity/src/FlowEVMBridgedERC20Deployer.sol)|`0xc5577d2935ef0556b37358d8b92aa578f1e7564e`|TBD|TBD|
-|[`FlowEVMBridgedERC721Deployer.sol`](./solidity/src/FlowEVMBridgedERC721Deployer.sol)|`0xd5bf043e8d5e6e007ebfdefebef7f4c96de5d40a`|TBD|TBD|
+|All Cadence Bridge contracts|`0x7792cfb75d8dfdd8`|`0xdfc20aee650fcbdf`|TBD|
+|[`FlowEVMBridgeFactory.sol`](./solidity/src/FlowBridgeFactory.sol)|`0xb0885c08995a053d8dcadce1c66b2fb11e40b868`|TBD|TBD|
+|[`FlowEVMBridgeDeploymentRegistry.sol`](./solidity/src/FlowEVMBridgeDeploymentRegistry.sol)|`0xfadbc0c156f6679d1ac9eb271d4e55dce7de8802`|TBD|TBD|
+|[`FlowEVMBridgedERC20Deployer.sol`](./solidity/src/FlowEVMBridgedERC20Deployer.sol)|`0x9d5fe779e35d1f13abd875dd6c2b49f20e813054`|TBD|TBD|
+|[`FlowEVMBridgedERC721Deployer.sol`](./solidity/src/FlowEVMBridgedERC721Deployer.sol)|`0x211f54ca1e325a3946ed67aeefcc6cc32b1e833d`|TBD|TBD|
 
 ## Interacting with the bridge
 
