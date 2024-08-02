@@ -184,6 +184,54 @@ execute** - the value of `allowsBridging()` is irrelevant and assets can move be
 For an in-depth look at the high-level architecture of the bridge, see [FLIP
 #237](https://github.com/onflow/flips/blob/main/application/20231222-evm-vm-bridge.md)
 
+## Local Development
+
+The contracts in this repo are not yet included in the Flow emulator. For local development against the bridge, follow
+the steps below to stand up a local Flow emulator instance and deploy the bridge contracts:
+
+### Prerequisites
+
+- Install Flow CLI on your machine. For instructions, see the [Flow CLI documentation](https://developers.flow.com/tools/flow-cli/install).
+- Download and install Go. For instructions, see the [Go documentation](https://go.dev/doc/install).
+
+Ensure both are installed with:
+
+```sh
+flow-c1 version
+```
+
+and go with:
+
+```sh
+go version
+```
+
+### Start your local emulator
+
+Start the Flow emulator with the following command:
+
+```sh
+flow-c1 emulator
+```
+
+### Run the deployment script
+
+In a separate terminal window, run the deployment script to deploy the bridge contracts to your local emulator:
+
+```sh
+go run main.go
+```
+
+If all is successful, you should see a long flow of event and transaction logs in your terminal with a final line resulting in:
+
+```sh
+SETUP COMPLETE! Bridge is now unpaused and ready for use.
+```
+
+### Interact with the bridge
+
+You're now ready to interact with the bridge!
+
 ### Additional Resources
 
 For the current state of Flow EVM across various task paths, see the following resources:
