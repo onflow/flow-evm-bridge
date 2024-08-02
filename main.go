@@ -24,7 +24,7 @@ import (
 
 // Overflow prefixes signer names with the current network - e.g. "crescendo-flow-evm-bridge"
 // Ensure accounts in flow.json are named accordingly
-var networks = []string{"previewnet", "crescendo", "testnet", "mainnet"}
+var networks = []string{"crescendo", "emulator", "mainnet", "previewnet", "testnet"}
 
 // Pulled from flow.json deployments. Specified here as some contracts have init arg values that
 // are emitted in transaction events and cannot be hardcoded in the deployment config section
