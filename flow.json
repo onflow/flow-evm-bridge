@@ -4,7 +4,7 @@
 			"source": "./cadence/contracts/utils/ArrayUtils.cdc",
 			"aliases": {
 				"crescendo": "dfc20aee650fcbdf",
-				"emulator": "179b6b1cb6755e31",
+				"emulator": "f8d6e0586b0a20c7",
 				"previewnet": "7792cfb75d8dfdd8",
 				"testing": "0000000000000007",
 				"testnet": "dfc20aee650fcbdf"
@@ -23,7 +23,7 @@
 			"source": "./cadence/contracts/bridge/interfaces/CrossVMNFT.cdc",
 			"aliases": {
 				"crescendo": "dfc20aee650fcbdf",
-				"emulator": "179b6b1cb6755e31",
+				"emulator": "f8d6e0586b0a20c7",
 				"previewnet": "7792cfb75d8dfdd8",
 				"testing": "0000000000000007",
 				"testnet": "dfc20aee650fcbdf"
@@ -33,7 +33,7 @@
 			"source": "./cadence/contracts/bridge/interfaces/CrossVMToken.cdc",
 			"aliases": {
 				"crescendo": "dfc20aee650fcbdf",
-				"emulator": "179b6b1cb6755e31",
+				"emulator": "f8d6e0586b0a20c7",
 				"previewnet": "7792cfb75d8dfdd8",
 				"testing": "0000000000000007",
 				"testnet": "dfc20aee650fcbdf"
@@ -71,7 +71,7 @@
 			"source": "./cadence/contracts/bridge/FlowEVMBridge.cdc",
 			"aliases": {
 				"crescendo": "dfc20aee650fcbdf",
-				"emulator": "179b6b1cb6755e31",
+				"emulator": "f8d6e0586b0a20c7",
 				"previewnet": "7792cfb75d8dfdd8",
 				"testing": "0000000000000007",
 				"testnet": "dfc20aee650fcbdf"
@@ -81,7 +81,7 @@
 			"source": "./cadence/contracts/bridge/FlowEVMBridgeAccessor.cdc",
 			"aliases": {
 				"crescendo": "dfc20aee650fcbdf",
-				"emulator": "179b6b1cb6755e31",
+				"emulator": "f8d6e0586b0a20c7",
 				"previewnet": "7792cfb75d8dfdd8",
 				"testing": "0000000000000007",
 				"testnet": "dfc20aee650fcbdf"
@@ -91,7 +91,7 @@
 			"source": "./cadence/contracts/bridge/FlowEVMBridgeConfig.cdc",
 			"aliases": {
 				"crescendo": "dfc20aee650fcbdf",
-				"emulator": "179b6b1cb6755e31",
+				"emulator": "f8d6e0586b0a20c7",
 				"previewnet": "7792cfb75d8dfdd8",
 				"testing": "0000000000000007",
 				"testnet": "dfc20aee650fcbdf"
@@ -101,7 +101,7 @@
 			"source": "./cadence/contracts/bridge/interfaces/FlowEVMBridgeHandlerInterfaces.cdc",
 			"aliases": {
 				"crescendo": "dfc20aee650fcbdf",
-				"emulator": "179b6b1cb6755e31",
+				"emulator": "f8d6e0586b0a20c7",
 				"previewnet": "7792cfb75d8dfdd8",
 				"testing": "0000000000000007",
 				"testnet": "dfc20aee650fcbdf"
@@ -111,7 +111,7 @@
 			"source": "./cadence/contracts/bridge/FlowEVMBridgeHandlers.cdc",
 			"aliases": {
 				"crescendo": "dfc20aee650fcbdf",
-				"emulator": "179b6b1cb6755e31",
+				"emulator": "f8d6e0586b0a20c7",
 				"previewnet": "7792cfb75d8dfdd8",
 				"testing": "0000000000000007",
 				"testnet": "dfc20aee650fcbdf"
@@ -121,7 +121,7 @@
 			"source": "./cadence/contracts/bridge/FlowEVMBridgeNFTEscrow.cdc",
 			"aliases": {
 				"crescendo": "dfc20aee650fcbdf",
-				"emulator": "179b6b1cb6755e31",
+				"emulator": "f8d6e0586b0a20c7",
 				"previewnet": "7792cfb75d8dfdd8",
 				"testing": "0000000000000007",
 				"testnet": "dfc20aee650fcbdf"
@@ -131,7 +131,7 @@
 			"source": "./cadence/contracts/bridge/FlowEVMBridgeTemplates.cdc",
 			"aliases": {
 				"crescendo": "dfc20aee650fcbdf",
-				"emulator": "179b6b1cb6755e31",
+				"emulator": "f8d6e0586b0a20c7",
 				"previewnet": "7792cfb75d8dfdd8",
 				"testing": "0000000000000007",
 				"testnet": "dfc20aee650fcbdf"
@@ -141,7 +141,7 @@
 			"source": "./cadence/contracts/bridge/FlowEVMBridgeTokenEscrow.cdc",
 			"aliases": {
 				"crescendo": "dfc20aee650fcbdf",
-				"emulator": "179b6b1cb6755e31",
+				"emulator": "f8d6e0586b0a20c7",
 				"previewnet": "7792cfb75d8dfdd8",
 				"testing": "0000000000000007",
 				"testnet": "dfc20aee650fcbdf"
@@ -151,7 +151,7 @@
 			"source": "./cadence/contracts/bridge/FlowEVMBridgeUtils.cdc",
 			"aliases": {
 				"crescendo": "dfc20aee650fcbdf",
-				"emulator": "179b6b1cb6755e31",
+				"emulator": "f8d6e0586b0a20c7",
 				"previewnet": "7792cfb75d8dfdd8",
 				"testing": "0000000000000007",
 				"testnet": "dfc20aee650fcbdf"
@@ -204,7 +204,7 @@
 			"source": "./cadence/contracts/bridge/interfaces/IBridgePermissions.cdc",
 			"aliases": {
 				"crescendo": "dfc20aee650fcbdf",
-				"emulator": "179b6b1cb6755e31",
+				"emulator": "f8d6e0586b0a20c7",
 				"previewnet": "7792cfb75d8dfdd8",
 				"testing": "0000000000000007",
 				"testnet": "dfc20aee650fcbdf"
@@ -214,7 +214,7 @@
 			"source": "./cadence/contracts/bridge/interfaces/ICrossVM.cdc",
 			"aliases": {
 				"crescendo": "dfc20aee650fcbdf",
-				"emulator": "179b6b1cb6755e31",
+				"emulator": "f8d6e0586b0a20c7",
 				"previewnet": "7792cfb75d8dfdd8",
 				"testing": "0000000000000007",
 				"testnet": "dfc20aee650fcbdf"
@@ -224,7 +224,7 @@
 			"source": "./cadence/contracts/bridge/interfaces/IEVMBridgeNFTMinter.cdc",
 			"aliases": {
 				"crescendo": "dfc20aee650fcbdf",
-				"emulator": "179b6b1cb6755e31",
+				"emulator": "f8d6e0586b0a20c7",
 				"previewnet": "7792cfb75d8dfdd8",
 				"testing": "0000000000000007",
 				"testnet": "dfc20aee650fcbdf"
@@ -234,7 +234,7 @@
 			"source": "./cadence/contracts/bridge/interfaces/IEVMBridgeTokenMinter.cdc",
 			"aliases": {
 				"crescendo": "dfc20aee650fcbdf",
-				"emulator": "179b6b1cb6755e31",
+				"emulator": "f8d6e0586b0a20c7",
 				"previewnet": "7792cfb75d8dfdd8",
 				"testing": "0000000000000007",
 				"testnet": "dfc20aee650fcbdf"
@@ -244,7 +244,7 @@
 			"source": "./cadence/contracts/bridge/interfaces/IFlowEVMNFTBridge.cdc",
 			"aliases": {
 				"crescendo": "dfc20aee650fcbdf",
-				"emulator": "179b6b1cb6755e31",
+				"emulator": "f8d6e0586b0a20c7",
 				"previewnet": "7792cfb75d8dfdd8",
 				"testing": "0000000000000007",
 				"testnet": "dfc20aee650fcbdf"
@@ -254,7 +254,7 @@
 			"source": "./cadence/contracts/bridge/interfaces/IFlowEVMTokenBridge.cdc",
 			"aliases": {
 				"crescendo": "dfc20aee650fcbdf",
-				"emulator": "179b6b1cb6755e31",
+				"emulator": "f8d6e0586b0a20c7",
 				"previewnet": "7792cfb75d8dfdd8",
 				"testing": "0000000000000007",
 				"testnet": "dfc20aee650fcbdf"
@@ -286,7 +286,7 @@
 			"source": "./cadence/contracts/utils/ScopedFTProviders.cdc",
 			"aliases": {
 				"crescendo": "dfc20aee650fcbdf",
-				"emulator": "179b6b1cb6755e31",
+				"emulator": "f8d6e0586b0a20c7",
 				"previewnet": "7792cfb75d8dfdd8",
 				"testing": "0000000000000007",
 				"testnet": "dfc20aee650fcbdf"
@@ -296,7 +296,7 @@
 			"source": "./cadence/contracts/utils/Serialize.cdc",
 			"aliases": {
 				"crescendo": "dfc20aee650fcbdf",
-				"emulator": "179b6b1cb6755e31",
+				"emulator": "f8d6e0586b0a20c7",
 				"previewnet": "7792cfb75d8dfdd8",
 				"testing": "0000000000000007",
 				"testnet": "dfc20aee650fcbdf"
@@ -306,7 +306,7 @@
 			"source": "./cadence/contracts/utils/SerializeMetadata.cdc",
 			"aliases": {
 				"crescendo": "dfc20aee650fcbdf",
-				"emulator": "179b6b1cb6755e31",
+				"emulator": "f8d6e0586b0a20c7",
 				"previewnet": "7792cfb75d8dfdd8",
 				"testing": "0000000000000007",
 				"testnet": "dfc20aee650fcbdf"
@@ -316,7 +316,7 @@
 			"source": "./cadence/contracts/utils/StringUtils.cdc",
 			"aliases": {
 				"crescendo": "dfc20aee650fcbdf",
-				"emulator": "179b6b1cb6755e31",
+				"emulator": "f8d6e0586b0a20c7",
 				"previewnet": "7792cfb75d8dfdd8",
 				"testing": "0000000000000007",
 				"testnet": "dfc20aee650fcbdf"
@@ -367,9 +367,17 @@
 			"address": "f8d6e0586b0a20c7",
 			"key": "fe809cc837ddcd7e761a482721c050aae43657448db859f4eb8fc421e9609938"
 		},
+		"emulator-service-account": {
+			"address": "f8d6e0586b0a20c7",
+			"key": "fe809cc837ddcd7e761a482721c050aae43657448db859f4eb8fc421e9609938"
+		},
 		"emulator-flow": {
 			"address": "0ae53cb6e3f42a79",
 			"key": "c1e4c9d9dca9e4d5e9b0b5a9a8e8b9c5d6f4a8b9c5d6f4a8b9c5d6f4a8b9c5d6"
+		},
+		"emulator-flow-evm-bridge": {
+			"address": "f8d6e0586b0a20c7",
+			"key": "fe809cc837ddcd7e761a482721c050aae43657448db859f4eb8fc421e9609938"
 		},
 		"previewnet-flow-evm-bridge": {
 			"address": "7792cfb75d8dfdd8",
