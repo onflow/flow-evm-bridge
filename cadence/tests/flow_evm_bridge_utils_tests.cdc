@@ -85,11 +85,12 @@ fun setup() {
     Test.expect(err, Test.beNil())
     let deploymentResult = executeTransaction(
         "../transactions/evm/deploy.cdc",
-        [getCompiledFactoryBytecode(), 15_000_000, 0.0],
+        [getCompiledFactoryBytecode(), UInt64(15_000_000), 0.0],
         bridgeAccount
     )
+    Test.expect(deploymentResult, Test.beSucceeded())
     let evts = Test.eventsOfType(Type<EVM.TransactionExecuted>())
-    Test.assertEqual(2, evts.length)
+    Test.assertEqual(3, evts.length)
     let factoryAddressHex = getEVMAddressHexFromEvents(evts, idx: 0)
     err = Test.deployContract(
         name: "FlowEVMBridgeUtils",
