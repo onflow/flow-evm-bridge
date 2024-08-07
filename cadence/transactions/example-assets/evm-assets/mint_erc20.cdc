@@ -1,7 +1,5 @@
 import "EVM"
 
-import "EVMUtils"
-
 transaction(
     recipientHexAddress: String,
     amount: UInt256,
@@ -17,10 +15,8 @@ transaction(
     }
 
     execute {
-        let recipientAddress = EVMUtils.getEVMAddressFromHexString(address: recipientHexAddress)
-            ?? panic("Invalid recipient address")
-        let erc20Address = EVMUtils.getEVMAddressFromHexString(address: erc20HexAddress)
-            ?? panic("Invalid ERC20 address")
+        let recipientAddress = EVM.addressFromString(recipientHexAddress)
+        let erc20Address = EVM.addressFromString(erc20HexAddress)
         let calldata = EVM.encodeABIWithSignature(
             "mint(address,uint256)",
             [recipientAddress, amount]

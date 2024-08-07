@@ -1,7 +1,5 @@
 import "EVM"
 
-import "EVMUtils"
-
 transaction(
     recipientHexAddress: String,
     tokenId: UInt256,
@@ -18,10 +16,8 @@ transaction(
     }
 
     execute {
-        let recipientAddress = EVMUtils.getEVMAddressFromHexString(address: recipientHexAddress)
-            ?? panic("Invalid recipient address")
-        let erc721Address = EVMUtils.getEVMAddressFromHexString(address: erc721HexAddress)
-            ?? panic("Invalid ERC721 address")
+        let recipientAddress = EVM.addressFromString(recipientHexAddress)
+        let erc721Address = EVM.addressFromString(erc721HexAddress)
         let calldata = EVM.encodeABIWithSignature(
             "safeMint(address,uint256,string)",
             [recipientAddress, tokenId, uri]

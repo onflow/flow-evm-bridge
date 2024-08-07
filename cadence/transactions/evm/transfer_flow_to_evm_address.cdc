@@ -3,8 +3,6 @@ import "FlowToken"
 
 import "EVM"
 
-import "EVMUtils"
-
 /// Transfers $FLOW from the signer's account Cadence Flow balance to the recipient's hex-encoded EVM address.
 ///
 transaction(recipientEVMAddressHex: String, amount: UFix64, gasLimit: UInt64) {
@@ -21,8 +19,7 @@ transaction(recipientEVMAddressHex: String, amount: UFix64, gasLimit: UInt64) {
         self.sentVault <- vaultRef.withdraw(amount: amount) as! @FlowToken.Vault
 
         // Get the recipient's EVM address
-        self.recipientEVMAddress = EVMUtils.getEVMAddressFromHexString(address: recipientEVMAddressHex)
-            ?? panic("Invalid recipient EVM address")
+        self.recipientEVMAddress = EVM.addressFromString(recipientEVMAddressHex)
 
         // Get the recipient's balance before the transfer to check the amount transferred
         self.recipientPreBalance = self.recipientEVMAddress.balance().inFLOW()

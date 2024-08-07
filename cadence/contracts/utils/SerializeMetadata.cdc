@@ -118,9 +118,14 @@ access(all) contract SerializeMetadata {
     fun serializeNFTTraitsAsAttributes(_ traits: MetadataViews.Traits): String {
         // Serialize each trait as an attribute, building the serialized JSON compatible string
         var serializedResult = "\"attributes\": ["
-        for i, trait in traits!.traits {
+        let traitsLength = traits.traits.length
+        for i, trait in traits.traits {
             let value = Serialize.tryToJSONString(trait.value)
             if value == nil {
+                // Remove trailing comma if last trait is not serializable
+                if i == traitsLength - 1 && serializedResult[serializedResult.length - 1] == "," {
+                    serializedResult = serializedResult.slice(from: 0, upTo: serializedResult.length - 1)    
+                }
                 continue
             }
             serializedResult = serializedResult.concat("{")
@@ -173,12 +178,18 @@ access(all) contract SerializeMetadata {
     access(all) view fun deriveSymbol(fromString: String): String {
         let defaultLen = 4
         let len = fromString.length < defaultLen ? fromString.length : defaultLen
-        return self.toUpper(fromString, upTo: len)
+        return self.toUpperAlphaNumerical(fromString, upTo: len)
     }
 
-    /// Returns the uppercase alphanumeric version of a given string.
+    /// Returns the uppercase alphanumeric version of a given string. If upTo is nil or exceeds the length of the string,
+    /// the entire string is converted to uppercase.
     ///
-    access(self) view fun toUpper(_ str: String, upTo: Int?): String {
+    /// @param str: The string to convert to uppercase
+    /// @param upTo: The maximum number of characters to convert to uppercase
+    ///
+    /// @returns: The uppercase version of the given string
+    ///
+    access(all) view fun toUpperAlphaNumerical(_ str: String, upTo: Int?): String {
         let len = upTo ?? str.length
         var upper: String = ""
         for char in str {
@@ -189,12 +200,19 @@ access(all) contract SerializeMetadata {
             if bytes.length != 1 {
                 continue
             }
-            if bytes[0] >= 97 && bytes[0] <= 122 {
-                let upperChar = String.fromUTF8([bytes[0] - UInt8(32)])!
+            let byte = bytes[0]
+            if byte >= 97 && byte <= 122 {
+                // Convert lower case to upper case
+                let upperChar = String.fromUTF8([byte - UInt8(32)])!
                 upper = upper.concat(upperChar)
-            } else if bytes[0] >= 65 && bytes[0] <= 90 {
+            } else if byte >= 65 && byte <= 90 {
+                // Keep upper case
                 upper = upper.concat(char.toString())
+            } else if byte >= 48 && byte <= 57 {
+                // Keep numbers
+                upper = upper.concat(String.fromCharacters([char]))
             } else {
+                // Skip non-alphanumeric characters
                 continue
             }
         }

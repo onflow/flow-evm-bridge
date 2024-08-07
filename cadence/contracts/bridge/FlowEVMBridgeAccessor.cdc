@@ -4,6 +4,7 @@ import "FlowToken"
 
 import "EVM"
 
+import "FlowEVMBridgeConfig"
 import "FlowEVMBridge"
 
 /// This contract defines a mechanism for routing bridge requests from the EVM contract to the Flow-EVM bridge contract
@@ -66,7 +67,7 @@ contract FlowEVMBridgeAccessor {
                         "safeTransferFrom(address,address,uint256)",
                         [caller.address(), FlowEVMBridge.getBridgeCOAEVMAddress(), id]
                     ),
-                    gasLimit: 15000000,
+                    gasLimit: FlowEVMBridgeConfig.gasLimit,
                     value: EVM.Balance(attoflow: 0)
                 )
             }
@@ -95,14 +96,14 @@ contract FlowEVMBridgeAccessor {
             FlowEVMBridge.bridgeTokensToEVM(vault: <-vault, to: to, feeProvider: feeProvider)
         }
 
-        /// Passes along the bridge request to the dedicated bridge contract, returning the bridged NFT
+        /// Passes along the bridge request to the dedicated bridge contract, returning the bridged FungibleToken
         ///
         /// @param caller: A reference to the COA which currently owns the tokens in EVM
         /// @param type: The Cadence type of the fungible token vault to be bridged from EVM
         /// @param amount: The amount of tokens to be bridged
         /// @param feeProvider: A reference to a FungibleToken Provider from which the bridging fee is withdrawn in $FLOW
         ///
-        /// @return The bridged NFT
+        /// @return The bridged FungibleToken Vault
         ///
         access(EVM.Bridge)
         fun withdrawTokens(
@@ -128,7 +129,7 @@ contract FlowEVMBridgeAccessor {
                         "transfer(address,uint256)",
                         [FlowEVMBridge.getBridgeCOAEVMAddress(), amount]
                     ),
-                    gasLimit: 15000000,
+                    gasLimit: FlowEVMBridgeConfig.gasLimit,
                     value: EVM.Balance(attoflow: 0)
                 )
             }

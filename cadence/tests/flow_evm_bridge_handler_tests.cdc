@@ -67,12 +67,6 @@ fun setup() {
         arguments: []
     )
     Test.expect(err, Test.beNil())
-    err = Test.deployContract(
-        name: "EVMUtils",
-        path: "../contracts/utils/EVMUtils.cdc",
-        arguments: []
-    )
-    Test.expect(err, Test.beNil())
 
     // Transfer bridge account some $FLOW
     transferFlow(signer: serviceAccount, recipient: bridgeAccount.address, amount: 10_000.0)
@@ -461,8 +455,11 @@ fun testBridgeHandledCadenceNativeTokenToEVMFails() {
     // Execute bridge to EVM - should fail since Handler is not enabled
     bridgeTokensToEVM(
         signer: alice,
-        contractAddr: exampleHandledTokenAccount.address,
-        contractName: "ExampleHandledToken",
+        vaultIdentifier: buildTypeIdentifier(
+            address: exampleHandledTokenAccount.address,
+            contractName: "ExampleHandledToken",
+            resourceName: "Vault"
+        ),
         amount: cadenceBalance,
         beFailed: true
     )
@@ -480,8 +477,11 @@ fun testBridgeHandledCadenceNativeTokenFromEVMFails() {
     // Execute bridge from EVM
     bridgeTokensFromEVM(
         signer: alice,
-        contractAddr: exampleHandledTokenAccount.address,
-        contractName: "ExampleHandledToken",
+        vaultIdentifier: buildTypeIdentifier(
+            address: exampleHandledTokenAccount.address,
+            contractName: "ExampleHandledToken",
+            resourceName: "Vault"
+        ),
         amount: evmBalance,
         beFailed: true
     )
@@ -524,8 +524,11 @@ fun testBridgeHandledCadenceNativeTokenToEVMFirstSucceeds() {
     // Execute bridge to EVM
     bridgeTokensToEVM(
         signer: alice,
-        contractAddr: exampleHandledTokenAccount.address,
-        contractName: "ExampleHandledToken",
+        vaultIdentifier: buildTypeIdentifier(
+            address: exampleHandledTokenAccount.address,
+            contractName: "ExampleHandledToken",
+            resourceName: "Vault"
+        ),
         amount: cadenceBalance,
         beFailed: false
     )
@@ -563,8 +566,11 @@ fun testBridgeHandledCadenceNativeTokenFromEVMSecondSucceeds() {
     let ufixEVMbalance = uint256ToUFix64(evmBalance, decimals: defaultDecimals)
     bridgeTokensFromEVM(
         signer: alice,
-        contractAddr: exampleHandledTokenAccount.address,
-        contractName: "ExampleHandledToken",
+        vaultIdentifier: buildTypeIdentifier(
+            address: exampleHandledTokenAccount.address,
+            contractName: "ExampleHandledToken",
+            resourceName: "Vault"
+        ),
         amount: evmBalance,
         beFailed: false
     )
@@ -623,8 +629,11 @@ fun testBridgeHandledCadenceNativeTokenFromEVMFirstSucceeds() {
     // Execute bridge from EVM
     bridgeTokensFromEVM(
         signer: alice,
-        contractAddr: exampleHandledTokenAccount.address,
-        contractName: "ExampleHandledToken",
+        vaultIdentifier: buildTypeIdentifier(
+            address: exampleHandledTokenAccount.address,
+            contractName: "ExampleHandledToken",
+            resourceName: "Vault"
+        ),
         amount: aliceEVMBalanceBefore,
         beFailed: false
     )
@@ -672,9 +681,11 @@ fun testBridgeHandledCadenceNativeTokenToEVMSecondSucceeds() {
     // Execute bridge to EVM
     bridgeTokensToEVM(
         signer: alice,
-        contractAddr: exampleHandledTokenAccount.address,
-        contractName: "ExampleHandledToken",
-        amount: aliceCadenceBalanceBefore,
+        vaultIdentifier: buildTypeIdentifier(
+            address: exampleHandledTokenAccount.address,
+            contractName: "ExampleHandledToken",
+            resourceName: "Vault"
+        ), amount: aliceCadenceBalanceBefore,
         beFailed: false
     )
 

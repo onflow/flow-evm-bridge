@@ -1,10 +1,10 @@
 import "FlowEVMBridgeConfig"
 
-/// Sets the pause status of the FlowEVM Bridge as specified.
+/// Sets the pause status of the FlowEVM Bridge as specified, affecting cross-VM bridging globally via FlowEVMBridge.
 ///
 /// @param pause: A boolean indicating whether the FlowEVM Bridge should be paused or unpaused.
 ///
-/// @emits FlowEVMBridgeConfig.PauseStatusUpdated(paused: true)
+/// @emits FlowEVMBridgeConfig.BridgePauseStatusUpdated(paused: true)
 ///
 transaction(pause: Bool) {
 
@@ -21,5 +21,9 @@ transaction(pause: Bool) {
         } else {
             self.admin.unpauseBridge()
         }
+    }
+
+    post {
+        FlowEVMBridgeConfig.isPaused() == pause: "Problem updating pause status in FlowEVMBridgeConfig"
     }
 }

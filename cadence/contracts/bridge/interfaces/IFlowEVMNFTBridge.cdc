@@ -3,7 +3,6 @@ import "NonFungibleToken"
 
 import "EVM"
 
-import "EVMUtils"
 import "FlowEVMBridgeConfig"
 import "CrossVMNFT"
 
@@ -16,8 +15,9 @@ access(all) contract interface IFlowEVMNFTBridge {
     /// Broadcasts an NFT was bridged from Cadence to EVM
     access(all)
     event BridgedNFTToEVM(
-        type: Type,
+        type: String,
         id: UInt64,
+        uuid: UInt64,
         evmID: UInt256,
         to: String,
         evmContractAddress: String,
@@ -26,8 +26,9 @@ access(all) contract interface IFlowEVMNFTBridge {
     /// Broadcasts an NFT was bridged from EVM to Cadence
     access(all)
     event BridgedNFTFromEVM(
-        type: Type,
+        type: String,
         id: UInt64,
+        uuid: UInt64,
         evmID: UInt256,
         caller: String,
         evmContractAddress: String,
@@ -66,14 +67,14 @@ access(all) contract interface IFlowEVMNFTBridge {
     ) {
         pre {
             emit BridgedNFTToEVM(
-                type: token.getType(),
+                type: token.getType().identifier,
                 id: token.id,
+                uuid: token.uuid,
                 evmID: CrossVMNFT.getEVMID(from: &token as &{NonFungibleToken.NFT}) ?? UInt256(token.id),
-                to: EVMUtils.getEVMAddressAsHexString(address: to),
-                evmContractAddress: EVMUtils.getEVMAddressAsHexString(
-                    address: self.getAssociatedEVMAddress(with: token.getType())
-                        ?? panic("Could not find EVM Contract address associated with provided NFT")
-                ), bridgeAddress: self.account.address
+                to: to.toString(),
+                evmContractAddress: self.getAssociatedEVMAddress(with: token.getType())?.toString()
+                    ?? panic("Could not find EVM Contract address associated with provided NFT"),
+                bridgeAddress: self.account.address
             )
         }
     }
@@ -82,9 +83,9 @@ access(all) contract interface IFlowEVMNFTBridge {
     ///
     /// @param owner: The EVM address of the NFT owner. Current ownership and successful transfer (via 
     ///     `protectedTransferCall`) is validated before the bridge request is executed.
-    /// @param calldata: Caller-provided approve() call, enabling contract COA to operate on NFT in EVM contract
+    /// @param type: The Cadence Type of the NFT to be bridged. If EVM-native, this would be the Cadence Type associated
+    ///     with the EVM contract on the Flow side at onboarding.
     /// @param id: The NFT ID to bridged
-    /// @param evmContractAddress: Address of the EVM address defining the NFT being bridged - also call target
     /// @param feeProvider: A reference to a FungibleToken Provider from which the bridging fee is withdrawn in $FLOW
     /// @param protectedTransferCall: A function that executes the transfer of the NFT from the named owner to the
     ///     bridge's COA. This function is expected to return a Result indicating the status of the transfer call.
@@ -101,14 +102,14 @@ access(all) contract interface IFlowEVMNFTBridge {
     ): @{NonFungibleToken.NFT} {
         post {
             emit BridgedNFTFromEVM(
-                type: result.getType(),
+                type: result.getType().identifier,
                 id: result.id,
+                uuid: result.uuid,
                 evmID: id,
-                caller: EVMUtils.getEVMAddressAsHexString(address: owner),
-                evmContractAddress: EVMUtils.getEVMAddressAsHexString(
-                    address: self.getAssociatedEVMAddress(with: result.getType())
-                        ?? panic("Could not find EVM Contract address associated with provided NFT")
-                ), bridgeAddress: self.account.address
+                caller: owner.toString(),
+                evmContractAddress: self.getAssociatedEVMAddress(with: result.getType())?.toString()
+                    ?? panic("Could not find EVM Contract address associated with provided NFT"),
+                bridgeAddress: self.account.address
             )
         }
     }

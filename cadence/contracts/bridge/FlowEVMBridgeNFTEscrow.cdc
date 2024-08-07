@@ -90,7 +90,7 @@ access(all) contract FlowEVMBridgeNFTEscrow {
         let lockerPath = FlowEVMBridgeUtils.deriveEscrowStoragePath(fromType: forType)
             ?? panic("Problem deriving locker path")
         if self.account.storage.type(at: lockerPath) != nil {
-            return
+            panic("Locker already stored at storage path: ".concat(lockerPath.toString()))
         }
 
         let locker <- create Locker(name: name, symbol: symbol, lockedType: forType, erc721Address: erc721Address)

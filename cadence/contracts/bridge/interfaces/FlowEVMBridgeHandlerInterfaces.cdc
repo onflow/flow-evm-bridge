@@ -27,7 +27,19 @@ access(all) contract FlowEVMBridgeHandlerInterfaces {
     **************/
     
     /// Event emitted when a handler is enabled between a Cadence type and an EVM address
-    access(all) event HandlerEnabled(handlerType: Type, targetType: Type, targetEVMAddress: EVM.EVMAddress)
+    access(all) event HandlerEnabled(
+        handlerType: String,
+        handlerUUID: UInt64,
+        targetType: String,
+        targetEVMAddress: String
+    )
+    access(all) event MinterSet(handlerType: String,
+        handlerUUID: UInt64,
+        targetType: String?,
+        targetEVMAddress: String?,
+        minterType: String,
+        minterUUID: UInt64
+    )
 
     /****************
         Constructs
@@ -49,7 +61,8 @@ access(all) contract FlowEVMBridgeHandlerInterfaces {
     /// Administrative interface for Handler configuration
     ///
     access(all) resource interface HandlerAdmin : HandlerInfo {
-        /// Sets the target Cadence Type handled by this resource
+        /// Sets the target Cadence Type handled by this resource. Once the targe type is set - whether by this method
+        /// or on initialization - this setter will fail.
         access(Admin) fun setTargetType(_ type: Type) {
             pre {
                 self.getTargetType() == nil: "Target Type has already been set"
@@ -64,12 +77,21 @@ access(all) contract FlowEVMBridgeHandlerInterfaces {
                 self.getTargetEVMAddress() == nil: "Target EVM address has already been set"
             }
             post {
-                self.getTargetEVMAddress()!.bytes == address!.bytes: "Problem setting target EVM address"
+                self.getTargetEVMAddress()!.equals(address!): "Problem setting target EVM address"
             }
         }
         access(Admin) fun setMinter(_ minter: @{FlowEVMBridgeHandlerInterfaces.TokenMinter}) {
             pre {
                 self.getExpectedMinterType() == minter.getType(): "Minter is not of the expected type"
+                minter.getMintedType() == self.getTargetType(): "Minter does not mint the target type"
+                emit MinterSet(
+                    handlerType: self.getType().identifier,
+                    handlerUUID: self.uuid,
+                    targetType: self.getTargetType()?.identifier,
+                    targetEVMAddress: self.getTargetEVMAddress()?.toString(),
+                    minterType: minter.getType().identifier,
+                    minterUUID: minter.uuid
+                )
             }
         }
         /// Enables the Handler to fulfill bridge requests for the configured targets. If implementers utilize a minter,
@@ -83,9 +105,10 @@ access(all) contract FlowEVMBridgeHandlerInterfaces {
             post {
                 self.isEnabled(): "Problem enabling Handler"
                 emit HandlerEnabled(
-                    handlerType: self.getType(),
-                    targetType: self.getTargetType()!,
-                    targetEVMAddress: self.getTargetEVMAddress()!
+                    handlerType: self.getType().identifier,
+                    handlerUUID: self.uuid,
+                    targetType: self.getTargetType()!.identifier,
+                    targetEVMAddress: self.getTargetEVMAddress()!.toString()
                 )
             }
         }
@@ -96,7 +119,7 @@ access(all) contract FlowEVMBridgeHandlerInterfaces {
     access(all) resource interface TokenMinter {
         /// Returns the Cadence type minted by this resource
         access(all) view fun getMintedType(): Type
-        /// Mints the specified amount of the Cadence 
+        /// Mints the specified amount of tokens
         access(Mint) fun mint(amount: UFix64): @{FungibleToken.Vault} {
             pre {
                 amount > 0.0: "Amount must be greater than 0"
@@ -111,7 +134,7 @@ access(all) contract FlowEVMBridgeHandlerInterfaces {
     /// Handler interface for bridging FungibleToken assets. Implementations should be stored within the bridge account
     /// and called be the bridge contract for bridging operations on the Handler's target Type and EVM contract.
     ///
-    access(all) resource interface TokenHandler : HandlerInfo, HandlerAdmin {
+    access(all) resource interface TokenHandler : HandlerAdmin {
         /// Fulfills a request to bridge tokens from the Cadence side to the EVM side
         access(account) fun fulfillTokensToEVM(
             tokens: @{FungibleToken.Vault},

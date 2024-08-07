@@ -12,11 +12,11 @@ addresses:
 
 |Contracts|PreviewNet|Testnet|Mainnet|
 |---|---|---|---|
-|All Cadence Bridge contracts|`0x715c57f7a59bc39b`|`0xdfc20aee650fcbdf`|TBD|
-|[`FlowEVMBridgeFactory.sol`](./solidity/src/FlowBridgeFactory.sol)|`0xf23c8619603434f7f71659820193c8e491feb1d9`|TBD|TBD|
-|[`FlowEVMBridgeDeploymentRegistry.sol`](./solidity/src/FlowEVMBridgeDeploymentRegistry.sol)|`0x544ef4ed9209ebe6989bed9e543632512afb25de`|TBD|TBD|
-|[`FlowEVMBridgedERC20Deployer.sol`](./solidity/src/FlowEVMBridgedERC20Deployer.sol)|`0xc5577d2935ef0556b37358d8b92aa578f1e7564e`|TBD|TBD|
-|[`FlowEVMBridgedERC721Deployer.sol`](./solidity/src/FlowEVMBridgedERC721Deployer.sol)|`0xd5bf043e8d5e6e007ebfdefebef7f4c96de5d40a`|TBD|TBD|
+|All Cadence Bridge contracts|`0x7792cfb75d8dfdd8`|`0xdfc20aee650fcbdf`|TBD|
+|[`FlowEVMBridgeFactory.sol`](./solidity/src/FlowBridgeFactory.sol)|`0xb0885c08995a053d8dcadce1c66b2fb11e40b868`|TBD|TBD|
+|[`FlowEVMBridgeDeploymentRegistry.sol`](./solidity/src/FlowEVMBridgeDeploymentRegistry.sol)|`0xfadbc0c156f6679d1ac9eb271d4e55dce7de8802`|TBD|TBD|
+|[`FlowEVMBridgedERC20Deployer.sol`](./solidity/src/FlowEVMBridgedERC20Deployer.sol)|`0x9d5fe779e35d1f13abd875dd6c2b49f20e813054`|TBD|TBD|
+|[`FlowEVMBridgedERC721Deployer.sol`](./solidity/src/FlowEVMBridgedERC721Deployer.sol)|`0x211f54ca1e325a3946ed67aeefcc6cc32b1e833d`|TBD|TBD|
 
 ## Interacting with the bridge
 
@@ -183,6 +183,54 @@ execute** - the value of `allowsBridging()` is irrelevant and assets can move be
 
 For an in-depth look at the high-level architecture of the bridge, see [FLIP
 #237](https://github.com/onflow/flips/blob/main/application/20231222-evm-vm-bridge.md)
+
+## Local Development
+
+The contracts in this repo are not yet included in the Flow emulator. For local development against the bridge, follow
+the steps below to stand up a local Flow emulator instance and deploy the bridge contracts:
+
+### Prerequisites
+
+- Install Flow CLI on your machine. For instructions, see the [Flow CLI documentation](https://developers.flow.com/tools/flow-cli/install).
+- Download and install Go. For instructions, see the [Go documentation](https://go.dev/doc/install).
+
+Ensure both are installed with:
+
+```sh
+flow-c1 version
+```
+
+and go with:
+
+```sh
+go version
+```
+
+### Start your local emulator
+
+Start the Flow emulator with the following command:
+
+```sh
+flow-c1 emulator
+```
+
+### Run the deployment script
+
+In a separate terminal window, run the deployment script to deploy the bridge contracts to your local emulator:
+
+```sh
+go run main.go
+```
+
+If all is successful, you should see a long flow of event and transaction logs in your terminal with a final line resulting in:
+
+```sh
+SETUP COMPLETE! Bridge is now unpaused and ready for use.
+```
+
+### Interact with the bridge
+
+You're now ready to interact with the bridge!
 
 ### Additional Resources
 

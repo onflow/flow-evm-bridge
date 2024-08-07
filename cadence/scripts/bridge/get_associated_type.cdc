@@ -1,6 +1,5 @@
 import "EVM"
 
-import "EVMUtils"
 import "FlowEVMBridgeConfig"
 
 /// Returns the Cadence Type associated with the given EVM address (as its hex String)
@@ -12,6 +11,6 @@ import "FlowEVMBridgeConfig"
 ///
 access(all)
 fun main(addressHex: String): Type? {
-    let address = EVMUtils.getEVMAddressFromHexString(address: addressHex)
-    return address != nil ? FlowEVMBridgeConfig.getTypeAssociated(with: address!) : nil
+    let address = EVM.addressFromString(addressHex)
+    return FlowEVMBridgeConfig.getTypeAssociated(with: address)
 }

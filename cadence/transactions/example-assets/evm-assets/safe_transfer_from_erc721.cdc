@@ -1,6 +1,5 @@
 import "EVM"
 
-import "EVMUtils"
 import "FlowEVMBridgeUtils"
 
 /// Executes an NFT transfer to the defined recipient address against the specified ERC721 contract.
@@ -14,8 +13,8 @@ transaction(evmContractAddressHex: String, recipientAddressHex: String, id: UInt
     var recipientOwnerCheck: Bool
     
     prepare(signer: auth(BorrowValue) &Account) {
-        self.evmContractAddress = EVMUtils.getEVMAddressFromHexString(address: evmContractAddressHex) ?? panic("Invalid contract address")
-        self.recipientAddress = EVMUtils.getEVMAddressFromHexString(address: recipientAddressHex) ?? panic("Invalid recipient address")
+        self.evmContractAddress = EVM.addressFromString(evmContractAddressHex)
+        self.recipientAddress = EVM.addressFromString(recipientAddressHex)
 
         self.coa = signer.storage.borrow<auth(EVM.Call) &EVM.CadenceOwnedAccount>(from: /storage/evm)
             ?? panic("Could not borrow CadenceOwnedAccount reference")

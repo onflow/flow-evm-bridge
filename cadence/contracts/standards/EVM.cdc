@@ -6,7 +6,7 @@ import "FlowToken"
 access(all)
 contract EVM {
 
-    // Entitlements enabling finer-graned access control on a CadenceOwnedAccount
+    // Entitlements enabling finer-grained access control on a CadenceOwnedAccount
     access(all) entitlement Validate
     access(all) entitlement Withdraw
     access(all) entitlement Call
@@ -21,7 +21,7 @@ contract EVM {
         // height or number of the block
         height: UInt64,
         // hash of the block
-        hash: String,
+        hash: [UInt8; 32],
         // timestamp of the block creation
         timestamp: UInt64,
         // total Flow supply
@@ -29,53 +29,81 @@ contract EVM {
         // all gas used in the block by transactions included
         totalGasUsed: UInt64,
         // parent block hash
-        parentHash: String,
-        // hash of all the transaction receipts
-        receiptRoot: String,
-        // all the transactions included in the block
-        transactionHashes: [String]
+        parentHash: [UInt8; 32],
+        // root hash of all the transaction receipts
+        receiptRoot: [UInt8; 32],
+        // root hash of all the transaction hashes
+        transactionHashRoot: [UInt8; 32],
     )
 
-    /// Transaction executed event is emitted everytime a transaction
+    /// Transaction executed event is emitted every time a transaction
     /// is executed by the EVM (even if failed).
     access(all)
     event TransactionExecuted(
         // hash of the transaction
-        hash: String,
+        hash: [UInt8; 32],
         // index of the transaction in a block
         index: UInt16,
         // type of the transaction
         type: UInt8,
-        // RLP and hex encoded transaction payload
-        payload: String,
+        // RLP encoded transaction payload
+        payload: [UInt8],
         // code indicating a specific validation (201-300) or execution (301-400) error
         errorCode: UInt16,
+        // a human-readable message about the error (if any)
+        errorMessage: String,
         // the amount of gas transaction used
         gasConsumed: UInt64,
         // if transaction was a deployment contains a newly deployed contract address
         contractAddress: String,
-        // RLP and hex encoded logs
-        logs: String,
-        // block height in which transaction was inclued
+        // RLP encoded logs
+        logs: [UInt8],
+        // block height in which transaction was included
         blockHeight: UInt64,
-        // block hash in which transaction was included
-        blockHash: String
+        /// captures the hex encoded data that is returned from
+        /// the evm. For contract deployments
+        /// it returns the code deployed to
+        /// the address provided in the contractAddress field.
+        /// in case of revert, the smart contract custom error message
+        /// is also returned here (see EIP-140 for more details).
+        returnedData: [UInt8],
+        /// captures the input and output of the calls (rlp encoded) to the extra
+        /// precompiled contracts (e.g. Cadence Arch) during the transaction execution.
+        /// This data helps to replay the transactions without the need to
+        /// have access to the full cadence state data.
+        precompiledCalls: [UInt8]
     )
 
     access(all)
-    event CadenceOwnedAccountCreated(addressBytes: [UInt8; 20])
+    event CadenceOwnedAccountCreated(address: String)
 
     /// FLOWTokensDeposited is emitted when FLOW tokens is bridged
     /// into the EVM environment. Note that this event is not emitted
     /// for transfer of flow tokens between two EVM addresses.
+    /// Similar to the FungibleToken.Deposited event
+    /// this event includes a depositedUUID that captures the
+    /// uuid of the source vault.
     access(all)
-    event FLOWTokensDeposited(addressBytes: [UInt8; 20], amount: UFix64)
+    event FLOWTokensDeposited(
+        address: String,
+        amount: UFix64,
+        depositedUUID: UInt64,
+        balanceAfterInAttoFlow: UInt
+    )
 
     /// FLOWTokensWithdrawn is emitted when FLOW tokens are bridged
     /// out of the EVM environment. Note that this event is not emitted
     /// for transfer of flow tokens between two EVM addresses.
+    /// similar to the FungibleToken.Withdrawn events
+    /// this event includes a withdrawnUUID that captures the
+    /// uuid of the returning vault.
     access(all)
-    event FLOWTokensWithdrawn(addressBytes: [UInt8; 20], amount: UFix64)
+    event FLOWTokensWithdrawn(
+        address: String,
+        amount: UFix64,
+        withdrawnUUID: UInt64,
+        balanceAfterInAttoFlow: UInt
+    )
 
     /// BridgeAccessorUpdated is emitted when the BridgeAccessor Capability
     /// is updated in the stored BridgeRouter along with identifying
@@ -143,12 +171,44 @@ contract EVM {
             if amount == 0.0 {
                 panic("calling deposit function with an empty vault is not allowed")
             }
+            let depositedUUID = from.uuid
             InternalEVM.deposit(
                 from: <-from,
                 to: self.bytes
             )
-            emit FLOWTokensDeposited(addressBytes: self.bytes, amount: amount)
+            emit FLOWTokensDeposited(
+                address: self.toString(),
+                amount: amount,
+                depositedUUID: depositedUUID,
+                balanceAfterInAttoFlow: self.balance().attoflow
+            )
         }
+
+        /// Serializes the address to a hex string without the 0x prefix
+        /// Future implementations should pass data to InternalEVM for native serialization
+        access(all)
+        view fun toString(): String {
+            return String.encodeHex(self.bytes.toVariableSized())
+        }
+
+        /// Compares the address with another address
+        access(all)
+        view fun equals(_ other: EVMAddress): Bool {
+            return self.bytes == other.bytes
+        }
+    }
+
+    /// Converts a hex string to an EVM address if the string is a valid hex string
+    /// Future implementations should pass data to InternalEVM for native deserialization
+    access(all)
+    fun addressFromString(_ asHex: String): EVMAddress {
+        pre {
+            asHex.length == 40 || asHex.length == 42: "Invalid hex string length for an EVM address"
+        }
+        // Strip the 0x prefix if it exists
+        var withoutPrefix = (asHex[1] == "x" ? asHex.slice(from: 2, upTo: asHex.length) : asHex).toLower()
+        let bytes = withoutPrefix.decodeHex().toConstantSized<[UInt8; 20]>()!
+        return EVMAddress(bytes: bytes)
     }
 
     access(all)
@@ -232,6 +292,10 @@ contract EVM {
         access(all)
         let errorCode: UInt64
 
+        /// error message
+        access(all)
+        let errorMessage: String
+
         /// returns the amount of gas metered during
         /// evm execution
         access(all)
@@ -241,6 +305,8 @@ contract EVM {
         /// the evm for the call. For coa.deploy
         /// calls it returns the code deployed to
         /// the address provided in the contractAddress field.
+        /// in case of revert, the smart contract custom error message
+        /// is also returned here (see EIP-140 for more details).
         access(all)
         let data: [UInt8]
 
@@ -253,12 +319,14 @@ contract EVM {
         init(
             status: Status,
             errorCode: UInt64,
+            errorMessage: String,
             gasUsed: UInt64,
             data: [UInt8],
             contractAddress: [UInt8; 20]?
         ) {
             self.status = status
             self.errorCode = errorCode
+            self.errorMessage = errorMessage
             self.gasUsed = gasUsed
             self.data = data
 
@@ -340,7 +408,12 @@ contract EVM {
                 from: self.addressBytes,
                 amount: balance.attoflow
             ) as! @FlowToken.Vault
-            emit FLOWTokensWithdrawn(addressBytes: self.addressBytes, amount: balance.inFLOW())
+            emit FLOWTokensWithdrawn(
+                address: self.address().toString(),
+                amount: balance.inFLOW(),
+                withdrawnUUID: vault.uuid,
+                balanceAfterInAttoFlow: self.balance().attoflow
+            )
             return <-vault
         }
 
@@ -439,7 +512,8 @@ contract EVM {
         let acc <-create CadenceOwnedAccount()
         let addr = InternalEVM.createCadenceOwnedAccount(uuid: acc.uuid)
         acc.initAddress(addressBytes: addr)
-        emit CadenceOwnedAccountCreated(addressBytes: addr)
+
+        emit CadenceOwnedAccountCreated(address: acc.address().toString())
         return <-acc
     }
 
@@ -582,8 +656,20 @@ contract EVM {
         // constructing key list
         let keyList = Crypto.KeyList()
         for signature in signatureSet {
-            let key = acc.keys.get(keyIndex: signature.keyIndex)!
-            assert(!key.isRevoked, message: "revoked key is used")
+            let keyRef = acc.keys.get(keyIndex: signature.keyIndex)
+            if keyRef == nil {
+                return ValidationResult(
+                    isValid: false,
+                    problem: "invalid key index"
+                )
+            }
+            let key = keyRef!
+            if key.isRevoked {
+                return ValidationResult(
+                    isValid: false,
+                    problem: "account key is revoked"
+                )
+            }
             keyList.add(
               key.publicKey,
               hashAlgorithm: key.hashAlgorithm,
@@ -726,5 +812,38 @@ contract EVM {
         return self.account.storage.borrow<auth(Bridge) &{BridgeRouter}>(from: /storage/evmBridgeRouter)
             ?.borrowBridgeAccessor()
             ?? panic("Could not borrow reference to the EVM bridge")
+    }
+
+    /// The Heartbeat resource controls the block production.
+    /// It is stored in the storage and used in the Flow protocol to call the heartbeat function once per block.
+    access(all)
+    resource Heartbeat {
+        /// heartbeat calls commit block proposals and forms new blocks including all the
+        /// recently executed transactions.
+        /// The Flow protocol makes sure to call this function once per block as a system call.
+        access(all)
+        fun heartbeat() {
+            InternalEVM.commitBlockProposal()
+        }
+    }
+
+    /// setupHeartbeat creates a heartbeat resource and saves it to storage.
+    /// The function is called once during the contract initialization.
+    ///
+    /// The heartbeat resource is used to control the block production,
+    /// and used in the Flow protocol to call the heartbeat function once per block.
+    ///
+    /// The function can be called by anyone, but only once:
+    /// the function will fail if the resource already exists.
+    ///
+    /// The resulting resource is stored in the account storage,
+    /// and is only accessible by the account, not the caller of the function.
+    access(all)
+    fun setupHeartbeat() {
+        self.account.storage.save(<-create Heartbeat(), to: /storage/EVMHeartbeat)
+    }
+
+    init() {
+        self.setupHeartbeat()
     }
 }

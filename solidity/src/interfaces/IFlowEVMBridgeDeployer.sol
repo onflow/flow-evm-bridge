@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.17;
+pragma solidity 0.8.24;
 
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
@@ -8,6 +8,18 @@ import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
  * @dev Interface contracts on FlowEVM which deploys EVM contracts with named associations to Cadence contracts.
  */
 interface IFlowEVMBridgeDeployer is IERC165 {
+    /**
+     * @dev Event emitted when a new contract is deployed via this deployer
+     */
+    event Deployed(
+        address indexed contractAddress, string name, string symbol, string cadenceAddress, string cadenceIdentifier
+    );
+
+    /**
+     * @dev Event emitted when a new deployer is authorized
+     */
+    event DeployerAuthorized(address indexed deployer);
+
     /**
      * @dev Deploy a new EVM contract with the given name, symbol, and association to a Cadence contract.
      *

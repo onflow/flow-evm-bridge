@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.17;
+pragma solidity 0.8.24;
 
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {ERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
@@ -46,7 +46,7 @@ abstract contract BridgePermissions is ERC165, IBridgePermissions {
      * Emits a {PermissionsUpdated} event.
      */
     function _setPermissions(bool permissions) internal {
-        permissions = permissions;
+        _permissions = permissions;
         emit PermissionsUpdated(permissions);
     }
 }

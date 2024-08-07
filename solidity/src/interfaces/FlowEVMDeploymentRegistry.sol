@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.17;
+pragma solidity 0.8.24;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
@@ -93,14 +93,30 @@ abstract contract FlowEVMDeploymentRegistry is IFlowEVMDeploymentRegistry, ERC16
      * @param contractAddr The address of the deployed contract
      */
     function _registerDeployment(string memory cadenceIdentifier, address contractAddr) internal {
+        require(contractAddr != address(0), "FlowEVMDeploymentRegistry: Contract address cannot be 0");
+        require(bytes(cadenceIdentifier).length != 0, "FlowEVMDeploymentRegistry: Cadence identifier cannot be empty");
+        require(
+            cadenceIdentifierToContract[cadenceIdentifier] == address(0),
+            "FlowEVMDeploymentRegistry: Cadence identifier already registered"
+        );
+        require(
+            bytes(contractToCadenceIdentifier[contractAddr]).length == 0,
+            "FlowEVMDeploymentRegistry: Contract address already registered"
+        );
+
         cadenceIdentifierToContract[cadenceIdentifier] = contractAddr;
         contractToCadenceIdentifier[contractAddr] = cadenceIdentifier;
+
+        emit DeploymentRegistered(contractAddr, cadenceIdentifier);
     }
 
     /**
      * @dev Set the registrar address as the entity that can register new deployments. Only the owner can execute this.
      */
     function _setRegistrar(address _registrar) internal {
+        require(_registrar != address(0), "FlowEVMDeploymentRegistry: Registrar cannot be 0");
         registrar = _registrar;
+
+        emit RegistrarAuthorized(_registrar);
     }
 }
