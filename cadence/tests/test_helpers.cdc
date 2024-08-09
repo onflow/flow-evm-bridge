@@ -354,6 +354,16 @@ fun evmAddressRequiresOnboarding(_ addressHex: String): Bool? {
 /* --- Transaction Helpers --- */
 
 access(all)
+fun updateBridgePauseStatus(signer: Test.TestAccount, pause: Bool) {
+    let pauseResult = _executeTransaction(
+        "../transactions/bridge/admin/pause/update_bridge_pause_status.cdc",
+        [pause],
+        signer
+    )
+    Test.expect(pauseResult, Test.beSucceeded())
+}
+
+access(all)
 fun transferFlow(signer: Test.TestAccount, recipient: Address, amount: UFix64) {
     let transferResult = _executeTransaction(
         "../transactions/flow-token/transfer_flow.cdc",
