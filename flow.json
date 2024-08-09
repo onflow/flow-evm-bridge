@@ -413,11 +413,13 @@
 			}
 		},
 		"testnet-service-account": {
-			"address": "dfc20aee650fcbdf",
+			"address": "8c5303eaa26202d6",
 			"key": {
-				"type": "google-kms",
+				"type": "file",
+				"signatureAlgorithm": "ECDSA_secp256k1",
 				"hashAlgorithm": "SHA2_256",
-				"resourceID": "projects/dl-flow-admin/locations/global/keyRings/flow-vm-bridge/cryptoKeys/flow-fvm-evm-bridge-testnet/cryptoKeyVersions/1"
+				"location": "./testnet-service-account.pkey",
+				"index": 2
 			}
 		}
 	},
