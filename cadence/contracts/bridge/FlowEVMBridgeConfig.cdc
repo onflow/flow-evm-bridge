@@ -426,7 +426,7 @@ contract FlowEVMBridgeConfig {
         self.baseFee = 0.0
         self.defaultDecimals = 18
         self.gasLimit = 15_000_000
-        self.paused = false
+        self.paused = true
 
         // Although $FLOW does not have ERC20 address, we associate the the Vault with the EVM address from which
         // EVM transfers originate
