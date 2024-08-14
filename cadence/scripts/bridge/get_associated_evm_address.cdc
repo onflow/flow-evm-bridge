@@ -4,7 +4,7 @@ import "FlowEVMBridgeConfig"
 
 /// Returns the EVM address associated with the given Cadence type (as its identifier String)
 ///
-/// @param typeIdentifier The Cadence type identifier String
+/// @param typeIdentifier: The Cadence type identifier String
 ///
 /// @return The EVM address as a hex string if the type has an associated EVMAddress, otherwise nil
 ///

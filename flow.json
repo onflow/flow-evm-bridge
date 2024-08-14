@@ -322,6 +322,15 @@
 				"testnet": "dfc20aee650fcbdf"
 			}
 		},
+		"USDCFlow": {
+			"source": "./cadence/contracts/handled-tokens/USDCFlow.cdc",
+			"aliases": {
+				"crescendo": "4516677f8083d680",
+				"emulator": "f8d6e0586b0a20c7",
+				"testing": "0000000000000007",
+				"testnet": "4516677f8083d680"
+			}
+		},
 		"ViewResolver": {
 			"source": "./cadence/contracts/standards/ViewResolver.cdc",
 			"aliases": {
@@ -343,6 +352,14 @@
 		"testnet": "access.devnet.nodes.onflow.org:9000"
 	},
 	"accounts": {
+		"crescendo-flow-evm-bridge": {
+			"address": "dfc20aee650fcbdf",
+			"key": {
+				"type": "file",
+				"location": "./crescendo-flow-evm-bridge.pkey",
+				"index": 1
+			}
+		},
 		"crescendo-service-account": {
 			"address": "8c5303eaa26202d6",
 			"key": {
@@ -351,16 +368,6 @@
 				"hashAlgorithm": "SHA2_256",
 				"location": "./crescendo-service-account.pkey",
 				"index": 2
-			}
-		},
-		"previewnet-service-account": {
-			"address": "b6763b4399a888c8",
-			"key": {
-				"type": "file",
-				"signatureAlgorithm": "ECDSA_secp256k1",
-				"hashAlgorithm": "SHA2_256",
-				"location": "./previewnet-service-account.pkey",
-				"index": 0
 			}
 		},
 		"emulator-account": {
@@ -379,6 +386,16 @@
 			"address": "f8d6e0586b0a20c7",
 			"key": "fe809cc837ddcd7e761a482721c050aae43657448db859f4eb8fc421e9609938"
 		},
+		"previewnet-service-account": {
+			"address": "b6763b4399a888c8",
+			"key": {
+				"type": "file",
+				"signatureAlgorithm": "ECDSA_secp256k1",
+				"hashAlgorithm": "SHA2_256",
+				"location": "./previewnet-service-account.pkey",
+				"index": 0
+			}
+		},
 		"previewnet-flow-evm-bridge": {
 			"address": "7792cfb75d8dfdd8",
 			"key": {
@@ -395,12 +412,14 @@
 				"resourceID": "projects/dl-flow-admin/locations/global/keyRings/flow-vm-bridge/cryptoKeys/flow-fvm-evm-bridge-testnet/cryptoKeyVersions/1"
 			}
 		},
-		"crescendo-flow-evm-bridge": {
-			"address": "dfc20aee650fcbdf",
+		"testnet-service-account": {
+			"address": "8c5303eaa26202d6",
 			"key": {
 				"type": "file",
-				"location": "./crescendo-flow-evm-bridge.pkey",
-				"index": 1
+				"signatureAlgorithm": "ECDSA_secp256k1",
+				"hashAlgorithm": "SHA2_256",
+				"location": "./testnet-service-account.pkey",
+				"index": 2
 			}
 		}
 	},

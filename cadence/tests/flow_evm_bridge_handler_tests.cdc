@@ -234,6 +234,9 @@ fun setup() {
         bridgeAccount
     )
     Test.expect(updateBaseFeeResult, Test.beSucceeded())
+
+    // Unpause Bridge
+    updateBridgePauseStatus(signer: bridgeAccount, pause: false)
 }
 
 /* --- ASSET & ACCOUNT SETUP - Configure test accounts with assets to bridge --- */

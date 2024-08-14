@@ -201,6 +201,23 @@ func main() {
 	}
 	log.Printf("Cadence contracts deployed...Pausing bridge for setup...")
 
+	// If emulator, deploy USDCFlow contract
+	if network == "emulator" {
+		log.Printf("Emulator detected...deploying USDCFlow contract...")
+
+		usdcContract, err := o.State.Config().Contracts.ByName("USDCFlow")
+		checkNoErr(err)
+
+		usdcPath := filepath.Join(dir, usdcContract.Location)
+		usdcCode, err := os.ReadFile(usdcPath)
+		checkNoErr(err)
+
+		err = o.AddContract(ctx, "flow-evm-bridge", usdcCode, []cadence.Value{}, usdcPath, true)
+		checkNoErr(err)
+
+		log.Printf("USDCFlow contract deployed...")
+	}
+
 	// Pause the bridge for setup
 	var pauseResult = o.Tx("bridge/admin/pause/update_bridge_pause_status",
 		WithSigner("flow-evm-bridge"),
@@ -208,7 +225,24 @@ func main() {
 	)
 	checkNoErr(pauseResult.Err)
 
-	// TODO: Add any TokenHandlers here if needed
+	/* --- USDCFlow TokenHandler Configuration --- */
+
+	// Add USDCFlow TokenHandler
+	usdcFlowAddr := o.Address("USDCFlow")
+	usdcFlowVaultIdentifier := buildUSDCFlowVaultIdentifier(usdcFlowAddr)
+	usdcFlowMinterIdentifier := buildUSDCFlowMinterIdentifier(usdcFlowAddr)
+
+	log.Printf("Bridge pause confirmeed...configuring USDCFlow TokenHandler with vault=" + usdcFlowVaultIdentifier + " and minter=" + usdcFlowMinterIdentifier)
+
+	// execute create_cadence_native_token_handler transaction
+	createTokenHandlerResult := o.Tx("bridge/admin/token-handler/create_cadence_native_token_handler",
+		WithSigner("flow-evm-bridge"),
+		WithArg("vaultIdentifier", usdcFlowVaultIdentifier),
+		WithArg("minterIdentifier", usdcFlowMinterIdentifier),
+	)
+	checkNoErr(createTokenHandlerResult.Err)
+
+	log.Printf("USDCFlow TokenHandler configured...")
 
 	/* --- Finish EVM Contract Setup --- */
 
@@ -430,6 +464,14 @@ func getCodeChunksFromArgsJSON(path string) []string {
 	}
 
 	return strArr
+}
+
+func buildUSDCFlowVaultIdentifier(addrString string) string {
+	return "A." + strings.Split(addrString, "x")[1] + ".USDCFlow.Vault"
+}
+
+func buildUSDCFlowMinterIdentifier(addrString string) string {
+	return "A." + strings.Split(addrString, "x")[1] + ".USDCFlow.Minter"
 }
 
 func checkNoErr(err error) {
