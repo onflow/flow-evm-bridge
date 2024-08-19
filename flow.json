@@ -15,8 +15,10 @@
 			"aliases": {
 				"crescendo": "9a0766d93b6608b7",
 				"emulator": "f8d6e0586b0a20c7",
+				"mainnet": "f233dcee88fe0abe",
 				"previewnet": "b6763b4399a888c8",
-				"testing": "0000000000000001"
+				"testing": "0000000000000001",
+				"testnet": "9a0766d93b6608b7"
 			}
 		},
 		"CrossVMNFT": {
@@ -44,8 +46,8 @@
 			"aliases": {
 				"crescendo": "8c5303eaa26202d6",
 				"emulator": "f8d6e0586b0a20c7",
+				"mainnet": "e467b9dd11fa00df",
 				"previewnet": "b6763b4399a888c8",
-				"mainnet": "0xe467b9dd11fa00df",
 				"testnet": "8c5303eaa26202d6"
 			}
 		},
@@ -325,10 +327,10 @@
 		"USDCFlow": {
 			"source": "./cadence/contracts/handled-tokens/USDCFlow.cdc",
 			"aliases": {
-				"crescendo": "4516677f8083d680",
+				"crescendo": "64adf39cbc354fcb",
 				"emulator": "f8d6e0586b0a20c7",
 				"testing": "0000000000000007",
-				"testnet": "4516677f8083d680"
+				"testnet": "64adf39cbc354fcb"
 			}
 		},
 		"ViewResolver": {
@@ -356,8 +358,7 @@
 			"address": "dfc20aee650fcbdf",
 			"key": {
 				"type": "file",
-				"location": "./crescendo-flow-evm-bridge.pkey",
-				"index": 1
+				"location": "./crescendo-flow-evm-bridge.pkey"
 			}
 		},
 		"crescendo-service-account": {
@@ -366,15 +367,10 @@
 				"type": "file",
 				"signatureAlgorithm": "ECDSA_secp256k1",
 				"hashAlgorithm": "SHA2_256",
-				"location": "./crescendo-service-account.pkey",
-				"index": 2
+				"location": "./crescendo-service-account.pkey"
 			}
 		},
 		"emulator-account": {
-			"address": "f8d6e0586b0a20c7",
-			"key": "fe809cc837ddcd7e761a482721c050aae43657448db859f4eb8fc421e9609938"
-		},
-		"emulator-service-account": {
 			"address": "f8d6e0586b0a20c7",
 			"key": "fe809cc837ddcd7e761a482721c050aae43657448db859f4eb8fc421e9609938"
 		},
@@ -386,15 +382,9 @@
 			"address": "f8d6e0586b0a20c7",
 			"key": "fe809cc837ddcd7e761a482721c050aae43657448db859f4eb8fc421e9609938"
 		},
-		"previewnet-service-account": {
-			"address": "b6763b4399a888c8",
-			"key": {
-				"type": "file",
-				"signatureAlgorithm": "ECDSA_secp256k1",
-				"hashAlgorithm": "SHA2_256",
-				"location": "./previewnet-service-account.pkey",
-				"index": 0
-			}
+		"emulator-service-account": {
+			"address": "f8d6e0586b0a20c7",
+			"key": "fe809cc837ddcd7e761a482721c050aae43657448db859f4eb8fc421e9609938"
 		},
 		"previewnet-flow-evm-bridge": {
 			"address": "7792cfb75d8dfdd8",
@@ -402,6 +392,15 @@
 				"type": "google-kms",
 				"hashAlgorithm": "SHA2_256",
 				"resourceID": "projects/dl-flow-admin/locations/global/keyRings/flow-vm-bridge/cryptoKeys/flow-fvm-evm-bridge-previewnet/cryptoKeyVersions/1"
+			}
+		},
+		"previewnet-service-account": {
+			"address": "b6763b4399a888c8",
+			"key": {
+				"type": "file",
+				"signatureAlgorithm": "ECDSA_secp256k1",
+				"hashAlgorithm": "SHA2_256",
+				"location": "./previewnet-service-account.pkey"
 			}
 		},
 		"testnet-flow-evm-bridge": {
@@ -418,8 +417,7 @@
 				"type": "file",
 				"signatureAlgorithm": "ECDSA_secp256k1",
 				"hashAlgorithm": "SHA2_256",
-				"location": "./testnet-service-account.pkey",
-				"index": 2
+				"location": "./testnet-service-account.pkey"
 			}
 		}
 	},
@@ -466,8 +464,8 @@
 					"name": "FlowEVMBridgeUtils",
 					"args": [
 						{
-							"type": "String",
-							"value": "f23c8619603434f7f71659820193c8e491feb1d9"
+							"value": "f23c8619603434f7f71659820193c8e491feb1d9",
+							"type": "String"
 						}
 					]
 				},

@@ -341,7 +341,7 @@ func main() {
 		dir,
 		"cadence/args/bridged-token-code-chunks-args-"+network+".json",
 	)
-	nftChunkPath := filepath.Join(dir, "cadence/args/bridged-token-code-chunks-args-"+network+".json")
+	nftChunkPath := filepath.Join(dir, "cadence/args/bridged-nft-code-chunks-args-"+network+".json")
 	tokenChunks := getCodeChunksFromArgsJSON(tokenChunkPath)
 	nftChunks := getCodeChunksFromArgsJSON(nftChunkPath)
 	tokenChunkUpsert := o.Tx("bridge/admin/templates/upsert_contract_code_chunks",
