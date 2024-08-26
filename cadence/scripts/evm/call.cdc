@@ -20,15 +20,12 @@ access(all) fun main(
     typeIdentifiers: [String]
 ): [AnyStruct] {
 
-    let evmAddressBytes: [UInt8] = evmContractAddressHex.decodeHex()
     let evmAddress = EVM.EVMAddress(
-            bytes: [
-                evmAddressBytes[0], evmAddressBytes[1], evmAddressBytes[2], evmAddressBytes[3], evmAddressBytes[4],
-                evmAddressBytes[5], evmAddressBytes[6], evmAddressBytes[7], evmAddressBytes[8], evmAddressBytes[9],
-                evmAddressBytes[10], evmAddressBytes[11], evmAddressBytes[12], evmAddressBytes[13], evmAddressBytes[14],
-                evmAddressBytes[15], evmAddressBytes[16], evmAddressBytes[17], evmAddressBytes[18], evmAddressBytes[19]
-            ]
-        )
+        bytes: evmContractAddressHex
+            .decodeHex()
+            .toConstantSized<[UInt8; 20]>()
+            ?? panic("Invalid EVM address")
+    )
 
     let data: [UInt8] = calldata.decodeHex()
 
