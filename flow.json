@@ -478,16 +478,29 @@
 				"FlowEVMBridge"
 			]
 		},
-		"emulator": {
-			"emulator-account": [
-				"IBridgePermissions",
-				"FlowEVMBridgeHandlerInterfaces"
-			]
-		},
 		"mainnet": {
 			"mainnet-flow-evm-bridge": [
+				"FlowEVMBridgeHandlerInterfaces",
+				"ArrayUtils",
+				"StringUtils",
+				"ScopedFTProviders",
+				"Serialize",
+				"SerializeMetadata",
 				"IBridgePermissions",
-				"FlowEVMBridgeHandlerInterfaces"
+				"ICrossVM",
+				"CrossVMNFT",
+				"CrossVMToken",
+				"FlowEVMBridgeConfig",
+				"FlowEVMBridgeUtils",
+				"FlowEVMBridgeHandlers",
+				"FlowEVMBridgeNFTEscrow",
+				"FlowEVMBridgeTokenEscrow",
+				"FlowEVMBridgeTemplates",
+				"IEVMBridgeNFTMinter",
+				"IEVMBridgeTokenMinter",
+				"IFlowEVMNFTBridge",
+				"IFlowEVMTokenBridge",
+				"FlowEVMBridge"
 			]
 		},
 		"previewnet": {
