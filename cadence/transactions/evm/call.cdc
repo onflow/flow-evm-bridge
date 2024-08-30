@@ -8,12 +8,7 @@ transaction(evmContractAddressHex: String, calldata: String, gasLimit: UInt64, v
     let coa: auth(EVM.Call) &EVM.CadenceOwnedAccount
 
     prepare(signer: auth(BorrowValue) &Account) {
-        self.evmAddress = EVM.EVMAddress(
-            bytes: evmContractAddressHex
-                .decodeHex()
-                .toConstantSized<[UInt8; 20]>()
-                ?? panic("Invalid EVM address")
-        )
+        self.evmAddress = EVM.addressFromString(evmContractAddressHex)
 
         self.coa = signer.storage.borrow<auth(EVM.Call) &EVM.CadenceOwnedAccount>(from: /storage/evm)
             ?? panic("Could not borrow COA from provided gateway address")

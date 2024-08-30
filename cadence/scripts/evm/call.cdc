@@ -20,14 +20,9 @@ access(all) fun main(
     typeIdentifiers: [String]
 ): [AnyStruct] {
 
-    let evmAddress = EVM.EVMAddress(
-        bytes: evmContractAddressHex
-            .decodeHex()
-            .toConstantSized<[UInt8; 20]>()
-            ?? panic("Invalid EVM address")
-    )
+    let evmAddress = EVM.addressFromString(evmContractAddressHex)
 
-    let data: [UInt8] = calldata.decodeHex()
+    let data = calldata.decodeHex()
 
     let gatewayCOA = getAuthAccount<auth(BorrowValue) &Account>(gatewayAddress)
         .storage.borrow<auth(EVM.Call) &EVM.CadenceOwnedAccount>(
