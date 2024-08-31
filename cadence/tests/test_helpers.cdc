@@ -351,6 +351,26 @@ fun evmAddressRequiresOnboarding(_ addressHex: String): Bool? {
     return onboardingRequiredResult.returnValue as! Bool? ?? panic("Problem getting onboarding requirement")
 }
 
+access(all)
+fun isNFTLocked(nftTypeIdentifier: String, id: UInt64): Bool {
+    let isLockedResult = _executeScript(
+        "../scripts/escrow/is_nft_locked.cdc",
+        [nftTypeIdentifier, id]
+    )
+    Test.expect(isLockedResult, Test.beSucceeded())
+    return isLockedResult.returnValue as! Bool? ?? panic("Problem getting locked status")
+}
+
+access(all)
+fun getLockedTokenBalance(vaultTypeIdentifier: String): UFix64? {
+    let balanceResult = _executeScript(
+        "../scripts/escrow/get_locked_token_balance.cdc",
+        [vaultTypeIdentifier]
+    )
+    Test.expect(balanceResult, Test.beSucceeded())
+    return balanceResult.returnValue as! UFix64?
+}
+
 /* --- Transaction Helpers --- */
 
 access(all)

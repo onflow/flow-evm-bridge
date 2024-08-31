@@ -1053,6 +1053,9 @@ fun testBridgeCadenceNativeNFTToEVMSucceeds() {
     )
     Test.expect(isOwnerResult, Test.beSucceeded())
     Test.assertEqual(true, isOwnerResult.returnValue as! Bool? ?? panic("Problem getting owner status"))
+
+    let isNFTLocked = isNFTLocked(nftTypeIdentifier: exampleNFTIdentifier, id: mintedNFTID)
+    Test.assertEqual(true, isNFTLocked)
 }
 
 access(all)
@@ -1091,6 +1094,9 @@ fun testCrossVMTransferCadenceNativeNFTFromEVMSucceeds() {
     let bobOwnedIDs = getIDs(ownerAddr: bob.address, storagePathIdentifier: "cadenceExampleNFTCollection")
     Test.assertEqual(1, bobOwnedIDs.length)
     Test.assertEqual(mintedNFTID, bobOwnedIDs[0])
+
+    let isNFTLocked = isNFTLocked(nftTypeIdentifier: exampleNFTIdentifier, id: mintedNFTID)
+    Test.assertEqual(false, isNFTLocked)
 }
 
 access(all)
@@ -1260,6 +1266,10 @@ fun testBridgeCadenceNativeTokenToEVMSucceeds() {
     let expectedEVMBalance = ufix64ToUInt256(exampleTokenMintAmount, decimals: decimals)
     let evmBalance = balanceOf(evmAddressHex: aliceCOAAddressHex, erc20AddressHex: associatedEVMAddressHex)
     Test.assertEqual(expectedEVMBalance, evmBalance)
+
+    // Confirm the token is locked
+    let lockedBalance = getLockedTokenBalance(vaultTypeIdentifier: exampleTokenIdentifier) ?? panic("Problem getting locked balance")
+    Test.assertEqual(exampleTokenMintAmount, lockedBalance)
 }
 
 access(all)

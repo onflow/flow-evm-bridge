@@ -77,13 +77,15 @@ access(all) contract FlowEVMBridgeTokenEscrow {
         evmTokenAddress: EVM.EVMAddress
     ) {
         pre {
-            vault.balance == 0.0: "Can only initialize Escrow with an empty vault"
+            vault.balance == 0.0:
+            "Vault contains a balance=".concat(vault.balance.toString())
+                .concat(" - can only initialize Escrow with an empty vault")
         }
         let lockedType = vault.getType()
         let lockerPath = FlowEVMBridgeUtils.deriveEscrowStoragePath(fromType: lockedType)
-            ?? panic("Problem deriving locker path")
+            ?? panic("Problem deriving Locker path for Vault type identifier=".concat(lockedType.identifier))
         if self.account.storage.type(at: lockerPath) != nil {
-            panic("Collision at derived Locker path for type: ".concat(lockedType.identifier))
+            panic("Token Locker already stored at storage path=".concat(lockedType.identifier))
         }
 
         // Create the Locker, lock a new vault of given type and save at the derived path
@@ -100,7 +102,8 @@ access(all) contract FlowEVMBridgeTokenEscrow {
     /// Locks the fungible tokens in escrow returning the storage used by locking the Vault
     ///
     access(account) fun lockTokens(_ vault: @{FungibleToken.Vault}): UInt64 {
-        let locker = self.borrowLocker(forType: vault.getType()) ?? panic("Locker doesn't exist for given type")
+        let locker = self.borrowLocker(forType: vault.getType())
+            ?? panic("Locker doesn't exist for given type=".concat(vault.getType().identifier))
 
         let preStorageSnapshot = self.account.storage.used
         locker.deposit(from: <-vault)
@@ -112,7 +115,8 @@ access(all) contract FlowEVMBridgeTokenEscrow {
     /// Unlocks the tokens of the given type and amount, reverting if it isn't in escrow
     ///
     access(account) fun unlockTokens(type: Type, amount: UFix64): @{FungibleToken.Vault} {
-        let locker = self.borrowLocker(forType: type) ?? panic("Locker doesn't exist for given type")
+        let locker = self.borrowLocker(forType: type)
+            ?? panic("Locker doesn't exist for given type=".concat(type.identifier))
         return <- locker.withdraw(amount: amount)
             
     }
@@ -158,7 +162,7 @@ access(all) contract FlowEVMBridgeTokenEscrow {
             // Locked Vaults must accept their own type as Lockers escrow Vaults on a 1:1 type basis
             assert(
                 self.lockedVault.isSupportedVaultType(type: self.lockedVault.getType()),
-                message: "Locked Vault does not accept its own type"
+                message: "Locked Vault does not accept its own type=".concat(self.lockedVault.getType().identifier)
             )
         }
 

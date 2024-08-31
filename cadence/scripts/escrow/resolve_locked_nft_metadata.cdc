@@ -13,8 +13,8 @@ import "FlowEVMBridge"
 /// @return The resolved view if the NFT is escrowed & the view is resolved by it or nil if the NFT is not locked
 ///
 access(all) fun main(nftTypeIdentifier: String, id: UInt256, viewIdentifier: String): AnyStruct? {
-    let nftType: Type = CompositeType(nftTypeIdentifier) ?? panic("Malformed nft type identifier")
-    let view: Type = CompositeType(viewIdentifier) ?? panic("Malformed view type identifier")
+    let nftType: Type = CompositeType(nftTypeIdentifier) ?? panic("Malformed NFT type identifier=".concat(nftTypeIdentifier))
+    let view: Type = CompositeType(viewIdentifier) ?? panic("Malformed view type identifier=".concat(viewIdentifier))
 
     return FlowEVMBridgeNFTEscrow.resolveLockedNFTView(nftType: nftType, id: id, viewType: view)
 }
