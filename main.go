@@ -225,24 +225,26 @@ func main() {
 	)
 	checkNoErr(pauseResult.Err)
 
+	log.Printf("Bridge deployed and paused...")
+
 	/* --- USDCFlow TokenHandler Configuration --- */
 
 	// Add USDCFlow TokenHandler
-	usdcFlowAddr := o.Address("USDCFlow")
-	usdcFlowVaultIdentifier := buildUSDCFlowVaultIdentifier(usdcFlowAddr)
-	usdcFlowMinterIdentifier := buildUSDCFlowMinterIdentifier(usdcFlowAddr)
+	// usdcFlowAddr := o.Address("USDCFlow")
+	// usdcFlowVaultIdentifier := buildUSDCFlowVaultIdentifier(usdcFlowAddr)
+	// usdcFlowMinterIdentifier := buildUSDCFlowMinterIdentifier(usdcFlowAddr)
 
-	log.Printf("Bridge pause confirmeed...configuring USDCFlow TokenHandler with vault=" + usdcFlowVaultIdentifier + " and minter=" + usdcFlowMinterIdentifier)
+	// log.Printf("Bridge pause confirmed...configuring USDCFlow TokenHandler with vault=" + usdcFlowVaultIdentifier + " and minter=" + usdcFlowMinterIdentifier)
 
-	// execute create_cadence_native_token_handler transaction
-	createTokenHandlerResult := o.Tx("bridge/admin/token-handler/create_cadence_native_token_handler",
-		WithSigner("flow-evm-bridge"),
-		WithArg("vaultIdentifier", usdcFlowVaultIdentifier),
-		WithArg("minterIdentifier", usdcFlowMinterIdentifier),
-	)
-	checkNoErr(createTokenHandlerResult.Err)
+	// // execute create_cadence_native_token_handler transaction
+	// createTokenHandlerResult := o.Tx("bridge/admin/token-handler/create_cadence_native_token_handler",
+	// 	WithSigner("flow-evm-bridge"),
+	// 	WithArg("vaultIdentifier", usdcFlowVaultIdentifier),
+	// 	WithArg("minterIdentifier", usdcFlowMinterIdentifier),
+	// )
+	// checkNoErr(createTokenHandlerResult.Err)
 
-	log.Printf("USDCFlow TokenHandler configured...")
+	// log.Printf("USDCFlow TokenHandler configured...")
 
 	/* --- Finish EVM Contract Setup --- */
 
@@ -360,13 +362,14 @@ func main() {
 	log.Printf("Templates have been added...Unpausing bridge...")
 
 	// Unpause the bridge
-	unpauseResult := o.Tx("bridge/admin/pause/update_bridge_pause_status",
-		WithSigner("flow-evm-bridge"),
-		WithArg("pause", false),
-	)
-	checkNoErr(unpauseResult.Err)
+	// unpauseResult := o.Tx("bridge/admin/pause/update_bridge_pause_status",
+	// 	WithSigner("flow-evm-bridge"),
+	// 	WithArg("pause", false),
+	// )
+	// checkNoErr(unpauseResult.Err)
 
-	log.Printf("SETUP COMPLETE! Bridge is now unpaused and ready for use.")
+	// log.Printf("SETUP COMPLETE! Bridge is now unpaused and ready for use.")
+	log.Printf("SETUP COMPLETE! Bridge is still paused - be sure to unpause before use.")
 }
 
 func checkDryRun() bool {
