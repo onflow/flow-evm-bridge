@@ -77,23 +77,6 @@ access(all) contract FlowEVMBridgeNFTEscrow {
         return nil
     }
 
-    /// Resolves the requested view type for the given NFT type if it is locked and supports the requested view type
-    ///
-    /// @param nftType: Type of the locked NFT
-    /// @param viewType: Type of the view to resolve
-    /// @param id: ID of the locked NFT
-    ///
-    /// @returns The resolved view as AnyStruct if the NFT is locked and the view is supported, otherwise returns nil
-    ///
-    access(all) fun resolveLockedNFTView(nftType: Type, id: UInt256, viewType: Type): AnyStruct? {
-        if let locker = self.borrowLocker(forType: nftType) {
-            if let cadenceID = locker.getCadenceID(from: id) {
-                return locker.borrowViewResolver(id: cadenceID)?.resolveView(viewType) ?? nil
-            }
-        }
-        return nil
-    }
-
     /**********************
         Bridge Methods
     ***********************/

@@ -3,6 +3,7 @@ import BlockchainHelpers
 
 import "FungibleToken"
 import "NonFungibleToken"
+import "MetadataViews"
 import "ExampleNFT"
 import "ExampleToken"
 import "FlowStorageFees"
@@ -1056,6 +1057,9 @@ fun testBridgeCadenceNativeNFTToEVMSucceeds() {
 
     let isNFTLocked = isNFTLocked(nftTypeIdentifier: exampleNFTIdentifier, id: mintedNFTID)
     Test.assertEqual(true, isNFTLocked)
+
+    let metadata = resolveLockedNFTMetadata(bridgeAddress: bridgeAccount.address, nftTypeIdentifier: exampleNFTIdentifier, id: UInt256(mintedNFTID), viewIdentifier: Type<MetadataViews.Display>().identifier)
+    Test.assert(metadata != nil, message: "Expected metadata to be resolved")
 }
 
 access(all)
