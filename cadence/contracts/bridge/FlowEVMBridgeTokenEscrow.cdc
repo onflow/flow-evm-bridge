@@ -51,18 +51,6 @@ access(all) contract FlowEVMBridgeTokenEscrow {
         return self.borrowLocker(forType: tokenType)?.getViews() ?? []
     }
 
-    /// Resolves the requested view type for the given FT type if it is locked and supports the requested view type
-    ///
-    /// @param tokenType: Type of the locked fungible tokens
-    /// @param viewType: Type of the view to resolve
-    ///
-    /// @returns The resolved view as AnyStruct if the vault is locked and the view is supported, otherwise returns nil
-    ///
-    access(all) fun resolveLockedTokenView(tokenType: Type, viewType: Type): AnyStruct? {
-        // The Locker implements Resolver, which has basic resolveView functionality
-        return self.borrowLocker(forType: tokenType)?.resolveView(viewType) ?? nil
-    }
-
     /**********************
         Bridge Methods
     ***********************/

@@ -4,6 +4,7 @@ import BlockchainHelpers
 import "FungibleToken"
 import "NonFungibleToken"
 import "MetadataViews"
+import "FungibleTokenMetadataViews"
 import "ExampleNFT"
 import "ExampleToken"
 import "FlowStorageFees"
@@ -1058,8 +1059,8 @@ fun testBridgeCadenceNativeNFTToEVMSucceeds() {
     let isNFTLocked = isNFTLocked(nftTypeIdentifier: exampleNFTIdentifier, id: mintedNFTID)
     Test.assertEqual(true, isNFTLocked)
 
-    let metadata = resolveLockedNFTMetadata(bridgeAddress: bridgeAccount.address, nftTypeIdentifier: exampleNFTIdentifier, id: UInt256(mintedNFTID), viewIdentifier: Type<MetadataViews.Display>().identifier)
-    Test.assert(metadata != nil, message: "Expected metadata to be resolved")
+    let metadata = resolveLockedNFTView(bridgeAddress: bridgeAccount.address, nftTypeIdentifier: exampleNFTIdentifier, id: UInt256(mintedNFTID), viewIdentifier: Type<MetadataViews.Display>().identifier)
+    Test.assert(metadata != nil, message: "Expected NFT metadata to be resolved from escrow but none was returned")
 }
 
 access(all)
@@ -1274,6 +1275,9 @@ fun testBridgeCadenceNativeTokenToEVMSucceeds() {
     // Confirm the token is locked
     let lockedBalance = getLockedTokenBalance(vaultTypeIdentifier: exampleTokenIdentifier) ?? panic("Problem getting locked balance")
     Test.assertEqual(exampleTokenMintAmount, lockedBalance)
+
+    let metadata = resolveLockedTokenView(bridgeAddress: bridgeAccount.address, vaultTypeIdentifier: exampleTokenIdentifier, viewIdentifier: Type<FungibleTokenMetadataViews.FTDisplay>().identifier)
+    Test.assert(metadata != nil, message: "Expected Vault metadata to be resolved from escrow but none was returned")
 }
 
 access(all)

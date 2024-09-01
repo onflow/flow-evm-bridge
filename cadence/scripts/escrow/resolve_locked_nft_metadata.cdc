@@ -8,7 +8,7 @@ import "FlowEVMBridgeUtils"
 /// NOTE: This functionality is not available via the escrow contract as `resolveView` is not a `view` method, but the
 ///     escrow contract
 ///
-/// @param bridgeAddress: The address of the bridge contract
+/// @param bridgeAddress: The address of the bridge contract (included as the VM bridge address varies across networks)
 /// @param nftTypeIdentifier: The identifier of the NFT type
 /// @param id: The ERC721 id of the escrowed NFT
 /// @param viewIdentifier: The identifier of the view to resolve

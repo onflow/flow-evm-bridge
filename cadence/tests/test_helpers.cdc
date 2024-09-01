@@ -372,10 +372,20 @@ fun getLockedTokenBalance(vaultTypeIdentifier: String): UFix64? {
 }
 
 access(all)
-fun resolveLockedNFTMetadata(bridgeAddress: Address, nftTypeIdentifier: String, id: UInt256, viewIdentifier: String): AnyStruct? {
+fun resolveLockedNFTView(bridgeAddress: Address, nftTypeIdentifier: String, id: UInt256, viewIdentifier: String): AnyStruct? {
     let resolvedViewResult = _executeScript(
         "../scripts/escrow/resolve_locked_nft_metadata.cdc",
         [bridgeAddress, nftTypeIdentifier, id, viewIdentifier]
+    )
+    Test.expect(resolvedViewResult, Test.beSucceeded())
+    return resolvedViewResult.returnValue as! AnyStruct?
+}
+
+access(all)
+fun resolveLockedTokenView(bridgeAddress: Address, vaultTypeIdentifier: String, viewIdentifier: String): AnyStruct? {
+    let resolvedViewResult = _executeScript(
+        "../scripts/escrow/resolve_locked_vault_metadata.cdc",
+        [bridgeAddress, vaultTypeIdentifier, viewIdentifier]
     )
     Test.expect(resolvedViewResult, Test.beSucceeded())
     return resolvedViewResult.returnValue as! AnyStruct?
