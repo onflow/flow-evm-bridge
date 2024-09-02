@@ -351,6 +351,46 @@ fun evmAddressRequiresOnboarding(_ addressHex: String): Bool? {
     return onboardingRequiredResult.returnValue as! Bool? ?? panic("Problem getting onboarding requirement")
 }
 
+access(all)
+fun isNFTLocked(nftTypeIdentifier: String, id: UInt64): Bool {
+    let isLockedResult = _executeScript(
+        "../scripts/escrow/is_nft_locked.cdc",
+        [nftTypeIdentifier, id]
+    )
+    Test.expect(isLockedResult, Test.beSucceeded())
+    return isLockedResult.returnValue as! Bool? ?? panic("Problem getting locked status")
+}
+
+access(all)
+fun getLockedTokenBalance(vaultTypeIdentifier: String): UFix64? {
+    let balanceResult = _executeScript(
+        "../scripts/escrow/get_locked_token_balance.cdc",
+        [vaultTypeIdentifier]
+    )
+    Test.expect(balanceResult, Test.beSucceeded())
+    return balanceResult.returnValue as! UFix64?
+}
+
+access(all)
+fun resolveLockedNFTView(bridgeAddress: Address, nftTypeIdentifier: String, id: UInt256, viewIdentifier: String): AnyStruct? {
+    let resolvedViewResult = _executeScript(
+        "../scripts/escrow/resolve_locked_nft_metadata.cdc",
+        [bridgeAddress, nftTypeIdentifier, id, viewIdentifier]
+    )
+    Test.expect(resolvedViewResult, Test.beSucceeded())
+    return resolvedViewResult.returnValue as! AnyStruct?
+}
+
+access(all)
+fun resolveLockedTokenView(bridgeAddress: Address, vaultTypeIdentifier: String, viewIdentifier: String): AnyStruct? {
+    let resolvedViewResult = _executeScript(
+        "../scripts/escrow/resolve_locked_vault_metadata.cdc",
+        [bridgeAddress, vaultTypeIdentifier, viewIdentifier]
+    )
+    Test.expect(resolvedViewResult, Test.beSucceeded())
+    return resolvedViewResult.returnValue as! AnyStruct?
+}
+
 /* --- Transaction Helpers --- */
 
 access(all)

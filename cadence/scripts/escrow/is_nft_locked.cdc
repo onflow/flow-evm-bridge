@@ -11,6 +11,6 @@ import "FlowEVMBridge"
 /// @return true if the NFT is locked in escrow and false otherwise
 ///
 access(all) fun main(nftTypeIdentifier: String, id: UInt64): Bool {
-    let type = CompositeType(nftTypeIdentifier) ?? panic("Malformed type identifier")
+    let type = CompositeType(nftTypeIdentifier) ?? panic("Malformed NFT type identifier=".concat(nftTypeIdentifier))
     return FlowEVMBridgeNFTEscrow.isLocked(type: type, id: id)
 }

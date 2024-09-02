@@ -51,18 +51,6 @@ access(all) contract FlowEVMBridgeTokenEscrow {
         return self.borrowLocker(forType: tokenType)?.getViews() ?? []
     }
 
-    /// Resolves the requested view type for the given FT type if it is locked and supports the requested view type
-    ///
-    /// @param tokenType: Type of the locked fungible tokens
-    /// @param viewType: Type of the view to resolve
-    ///
-    /// @returns The resolved view as AnyStruct if the vault is locked and the view is supported, otherwise returns nil
-    ///
-    access(all) fun resolveLockedTokenView(tokenType: Type, viewType: Type): AnyStruct? {
-        // The Locker implements Resolver, which has basic resolveView functionality
-        return self.borrowLocker(forType: tokenType)?.resolveView(viewType) ?? nil
-    }
-
     /**********************
         Bridge Methods
     ***********************/
@@ -77,13 +65,15 @@ access(all) contract FlowEVMBridgeTokenEscrow {
         evmTokenAddress: EVM.EVMAddress
     ) {
         pre {
-            vault.balance == 0.0: "Can only initialize Escrow with an empty vault"
+            vault.balance == 0.0:
+            "Vault contains a balance=".concat(vault.balance.toString())
+                .concat(" - can only initialize Escrow with an empty vault")
         }
         let lockedType = vault.getType()
         let lockerPath = FlowEVMBridgeUtils.deriveEscrowStoragePath(fromType: lockedType)
-            ?? panic("Problem deriving locker path")
+            ?? panic("Problem deriving Locker path for Vault type identifier=".concat(lockedType.identifier))
         if self.account.storage.type(at: lockerPath) != nil {
-            panic("Collision at derived Locker path for type: ".concat(lockedType.identifier))
+            panic("Token Locker already stored at storage path=".concat(lockedType.identifier))
         }
 
         // Create the Locker, lock a new vault of given type and save at the derived path
@@ -100,7 +90,8 @@ access(all) contract FlowEVMBridgeTokenEscrow {
     /// Locks the fungible tokens in escrow returning the storage used by locking the Vault
     ///
     access(account) fun lockTokens(_ vault: @{FungibleToken.Vault}): UInt64 {
-        let locker = self.borrowLocker(forType: vault.getType()) ?? panic("Locker doesn't exist for given type")
+        let locker = self.borrowLocker(forType: vault.getType())
+            ?? panic("Locker doesn't exist for given type=".concat(vault.getType().identifier))
 
         let preStorageSnapshot = self.account.storage.used
         locker.deposit(from: <-vault)
@@ -112,7 +103,8 @@ access(all) contract FlowEVMBridgeTokenEscrow {
     /// Unlocks the tokens of the given type and amount, reverting if it isn't in escrow
     ///
     access(account) fun unlockTokens(type: Type, amount: UFix64): @{FungibleToken.Vault} {
-        let locker = self.borrowLocker(forType: type) ?? panic("Locker doesn't exist for given type")
+        let locker = self.borrowLocker(forType: type)
+            ?? panic("Locker doesn't exist for given type=".concat(type.identifier))
         return <- locker.withdraw(amount: amount)
             
     }
@@ -158,7 +150,7 @@ access(all) contract FlowEVMBridgeTokenEscrow {
             // Locked Vaults must accept their own type as Lockers escrow Vaults on a 1:1 type basis
             assert(
                 self.lockedVault.isSupportedVaultType(type: self.lockedVault.getType()),
-                message: "Locked Vault does not accept its own type"
+                message: "Locked Vault does not accept its own type=".concat(self.lockedVault.getType().identifier)
             )
         }
 

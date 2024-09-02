@@ -3,6 +3,8 @@ import BlockchainHelpers
 
 import "FungibleToken"
 import "NonFungibleToken"
+import "MetadataViews"
+import "FungibleTokenMetadataViews"
 import "ExampleNFT"
 import "ExampleToken"
 import "FlowStorageFees"
@@ -1053,6 +1055,12 @@ fun testBridgeCadenceNativeNFTToEVMSucceeds() {
     )
     Test.expect(isOwnerResult, Test.beSucceeded())
     Test.assertEqual(true, isOwnerResult.returnValue as! Bool? ?? panic("Problem getting owner status"))
+
+    let isNFTLocked = isNFTLocked(nftTypeIdentifier: exampleNFTIdentifier, id: mintedNFTID)
+    Test.assertEqual(true, isNFTLocked)
+
+    let metadata = resolveLockedNFTView(bridgeAddress: bridgeAccount.address, nftTypeIdentifier: exampleNFTIdentifier, id: UInt256(mintedNFTID), viewIdentifier: Type<MetadataViews.Display>().identifier)
+    Test.assert(metadata != nil, message: "Expected NFT metadata to be resolved from escrow but none was returned")
 }
 
 access(all)
@@ -1091,6 +1099,9 @@ fun testCrossVMTransferCadenceNativeNFTFromEVMSucceeds() {
     let bobOwnedIDs = getIDs(ownerAddr: bob.address, storagePathIdentifier: "cadenceExampleNFTCollection")
     Test.assertEqual(1, bobOwnedIDs.length)
     Test.assertEqual(mintedNFTID, bobOwnedIDs[0])
+
+    let isNFTLocked = isNFTLocked(nftTypeIdentifier: exampleNFTIdentifier, id: mintedNFTID)
+    Test.assertEqual(false, isNFTLocked)
 }
 
 access(all)
@@ -1260,6 +1271,13 @@ fun testBridgeCadenceNativeTokenToEVMSucceeds() {
     let expectedEVMBalance = ufix64ToUInt256(exampleTokenMintAmount, decimals: decimals)
     let evmBalance = balanceOf(evmAddressHex: aliceCOAAddressHex, erc20AddressHex: associatedEVMAddressHex)
     Test.assertEqual(expectedEVMBalance, evmBalance)
+
+    // Confirm the token is locked
+    let lockedBalance = getLockedTokenBalance(vaultTypeIdentifier: exampleTokenIdentifier) ?? panic("Problem getting locked balance")
+    Test.assertEqual(exampleTokenMintAmount, lockedBalance)
+
+    let metadata = resolveLockedTokenView(bridgeAddress: bridgeAccount.address, vaultTypeIdentifier: exampleTokenIdentifier, viewIdentifier: Type<FungibleTokenMetadataViews.FTDisplay>().identifier)
+    Test.assert(metadata != nil, message: "Expected Vault metadata to be resolved from escrow but none was returned")
 }
 
 access(all)
