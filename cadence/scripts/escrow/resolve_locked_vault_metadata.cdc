@@ -5,6 +5,8 @@ import "FlowEVMBridgeTokenEscrow"
 import "FlowEVMBridgeUtils"
 
 /// Resolves the view for the requested locked Vault or nil if the Vault is not locked in escrow
+/// NOTE: This functionality is not available via the escrow contract as `resolveView` is not a `view` method, but the
+///     escrow contract does provide the necessary functionality to resolve the view from the context of a script
 ///
 /// @param bridgeAddress: The address of the bridge contract (included as the VM bridge address varies across networks)
 /// @param vaultTypeIdentifier: The identifier of the Vault type

@@ -6,7 +6,7 @@ import "FlowEVMBridgeUtils"
 
 /// Resolves the view for the requested locked NFT or nil if the NFT is not locked
 /// NOTE: This functionality is not available via the escrow contract as `resolveView` is not a `view` method, but the
-///     escrow contract
+///     escrow contract does provide the necessary functionality to resolve the view from the context of a script
 ///
 /// @param bridgeAddress: The address of the bridge contract (included as the VM bridge address varies across networks)
 /// @param nftTypeIdentifier: The identifier of the NFT type
