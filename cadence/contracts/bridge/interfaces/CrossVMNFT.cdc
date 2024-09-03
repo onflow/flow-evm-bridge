@@ -4,6 +4,8 @@ import "MetadataViews"
 
 import "EVM"
 
+import "ICrossVMAsset"
+
 /// Contract defining cross-VM NFT-related interfaces
 ///
 access(all) contract CrossVMNFT {
@@ -17,13 +19,13 @@ access(all) contract CrossVMNFT {
     /// See discussion https://github.com/onflow/flow-nft/pull/126#discussion_r1462612559 where @austinkline raised
     /// differentiating IDs in a minimal interface incorporated into the one below
     ///
-    access(all) resource interface EVMNFT : NonFungibleToken.NFT {
+    access(all) resource interface EVMNFT : ICrossVMAsset.AssetInfo, NonFungibleToken.NFT {
         access(all) let evmID: UInt256
 
         access(all) view fun getName(): String
         access(all) view fun getSymbol(): String
-        access(all) view fun tokenURI(): String
         access(all) view fun getEVMContractAddress(): EVM.EVMAddress
+        access(all) fun tokenURI(): String
     }
 
     /// A simple interface for a collection of EVMNFTs

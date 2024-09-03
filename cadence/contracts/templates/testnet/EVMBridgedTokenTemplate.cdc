@@ -8,6 +8,7 @@ import FlowToken from 0x7e60df042a9c0868
 import EVM from 0x8c5303eaa26202d6
 
 import ICrossVM from 0xdfc20aee650fcbdf
+import ICrossVMAsset from 0xdfc20aee650fcbdf
 import IEVMBridgeTokenMinter from 0xdfc20aee650fcbdf
 import FlowEVMBridgeTokenEscrow from 0xdfc20aee650fcbdf
 import FlowEVMBridgeConfig from 0xdfc20aee650fcbdf
@@ -15,6 +16,7 @@ import FlowEVMBridgeUtils from 0xdfc20aee650fcbdf
 import FlowEVMBridge from 0xdfc20aee650fcbdf
 import CrossVMNFT from 0xdfc20aee650fcbdf
 import CrossVMToken from 0xdfc20aee650fcbdf
+import FlowEVMBridgeResolver from 0xdfc20aee650fcbdf
 
 /// This contract is a template used by FlowEVMBridge to define EVM-native fungible tokens bridged from Flow EVM to 
 /// Cadence. Upon deployment of this contract, the contract name is derived as a function of the asset type (here an 
@@ -29,7 +31,7 @@ import CrossVMToken from 0xdfc20aee650fcbdf
 /// To bridge between VMs, a caller can either use the interface exposed on CadenceOwnedAccount or use FlowEVMBridge
 /// public contract methods.
 ///
-access(all) contract {{CONTRACT_NAME}} : ICrossVM, IEVMBridgeTokenMinter, FungibleToken {
+access(all) contract {{CONTRACT_NAME}} : ICrossVM, ICrossVMAsset, IEVMBridgeTokenMinter, FungibleToken {
 
     /// Pointer to the Factory deployed Solidity contract address defining the bridged asset
     access(all) let evmTokenContractAddress: EVM.EVMAddress
@@ -49,7 +51,7 @@ access(all) contract {{CONTRACT_NAME}} : ICrossVM, IEVMBridgeTokenMinter, Fungib
 
     /// The Vault resource representing the bridged ERC20 token
     ///
-    access(all) resource Vault : CrossVMToken.EVMTokenInfo, FungibleToken.Vault {
+    access(all) resource Vault : ICrossVMAsset.AssetInfo, CrossVMToken.EVMTokenInfo, FungibleToken.Vault {
         /// Balance of the tokens in a given Vault
         access(all) var balance: UFix64
 
@@ -163,6 +165,18 @@ access(all) contract {{CONTRACT_NAME}} : ICrossVM, IEVMBridgeTokenMinter, Fungib
             Getters
     ***********************/
 
+    /// Returns the name of the asset
+    ///
+    access(all) view fun getName(): String {
+        return self.name
+    }
+
+    /// Returns the symbol of the asset
+    ///
+    access(all) view fun getSymbol(): String {
+        return self.symbol
+    }
+
     /// Returns the EVM contract address of the fungible token this contract represents
     ///
     access(all) view fun getEVMContractAddress(): EVM.EVMAddress {
@@ -171,8 +185,8 @@ access(all) contract {{CONTRACT_NAME}} : ICrossVM, IEVMBridgeTokenMinter, Fungib
 
     /// Function that returns all the Metadata Views implemented by this fungible token contract.
     ///
-    /// @return An array of Types defining the implemented views. This value will be used by
-    ///         developers to know which parameter to pass to the resolveView() method.
+    /// @return An array of Types defining the implemented views. This value will be used by developers to know which
+    ///         parameter to pass to the resolveContractView() method.
     ///
     access(all) view fun getContractViews(resourceType: Type?): [Type] {
         return [
@@ -198,22 +212,8 @@ access(all) contract {{CONTRACT_NAME}} : ICrossVM, IEVMBridgeTokenMinter, Fungib
                     ftVaultData: self.resolveContractView(resourceType: nil, viewType: Type<FungibleTokenMetadataViews.FTVaultData>()) as! FungibleTokenMetadataViews.FTVaultData?
                 )
             case Type<FungibleTokenMetadataViews.FTDisplay>():
-                let media = MetadataViews.Media(
-                        file: MetadataViews.HTTPFile(
-                        url: "https://assets.website-files.com/5f6294c0c7a8cdd643b1c820/5f6294c0c7a8cda55cb1c936_Flow_Wordmark.svg"
-                    ),
-                    mediaType: "image/svg+xml"
-                )
-                let medias = MetadataViews.Medias([media])
-                return FungibleTokenMetadataViews.FTDisplay(
-                    // TODO: Decide on how we want to represent bridged token media
-                    name: self.name,
-                    symbol: self.symbol,
-                    description: "This fungible token was bridged from Flow EVM.",
-                    externalURL: MetadataViews.ExternalURL("https://bridge.flow.com/fungible-token"),
-                    logos: medias,
-                    socials: {}
-                )
+                let selfRef = &self as &{ICrossVMAsset}
+                FlowEVMBridgeResolver.resolveBridgedView(bridgedContract: selfRef, view: Type<FungibleTokenMetadataViews.FTDisplay>())
             case Type<FungibleTokenMetadataViews.FTVaultData>():
                 return FungibleTokenMetadataViews.FTVaultData(
                     storagePath: /storage/{{CONTRACT_NAME}}Vault,

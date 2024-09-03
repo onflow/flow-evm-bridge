@@ -7,12 +7,14 @@ import FlowToken from 0x7e60df042a9c0868
 import EVM from 0x8c5303eaa26202d6
 
 import ICrossVM from 0xdfc20aee650fcbdf
+import ICrossVMAsset from 0xdfc20aee650fcbdf
 import IEVMBridgeNFTMinter from 0xdfc20aee650fcbdf
 import FlowEVMBridgeNFTEscrow from 0xdfc20aee650fcbdf
 import FlowEVMBridgeConfig from 0xdfc20aee650fcbdf
 import FlowEVMBridgeUtils from 0xdfc20aee650fcbdf
 import FlowEVMBridge from 0xdfc20aee650fcbdf
 import CrossVMNFT from 0xdfc20aee650fcbdf
+import FlowEVMBridgeResolver from 0xdfc20aee650fcbdf
 
 /// This contract is a template used by FlowEVMBridge to define EVM-native NFTs bridged from Flow EVM to Flow.
 /// Upon deployment of this contract, the contract name is derived as a function of the asset type (here an ERC721 aka
@@ -27,7 +29,7 @@ import CrossVMNFT from 0xdfc20aee650fcbdf
 /// To bridge between VMs, a caller can either use the interface exposed on CadenceOwnedAccount or use FlowEVMBridge
 /// public contract methods.
 ///
-access(all) contract {{CONTRACT_NAME}} : ICrossVM, IEVMBridgeNFTMinter, NonFungibleToken {
+access(all) contract {{CONTRACT_NAME}} : ICrossVM, ICrossVMAsset, IEVMBridgeNFTMinter, NonFungibleToken {
 
     /// Pointer to the Factory deployed Solidity contract address defining the bridged asset
     access(all) let evmNFTContractAddress: EVM.EVMAddress
@@ -46,7 +48,7 @@ access(all) contract {{CONTRACT_NAME}} : ICrossVM, IEVMBridgeNFTMinter, NonFungi
 
     /// The NFT resource representing the bridged ERC721 token
     ///
-    access(all) resource NFT : CrossVMNFT.EVMNFT {
+    access(all) resource NFT : ICrossVMAsset.AssetInfo, CrossVMNFT.EVMNFT {
         /// The Cadence ID of the NFT
         access(all) let id: UInt64
         /// The ERC721 ID of the NFT
@@ -66,10 +68,11 @@ access(all) contract {{CONTRACT_NAME}} : ICrossVM, IEVMBridgeNFTMinter, NonFungi
         /// Returns the metadata view types supported by this NFT
         access(all) view fun getViews(): [Type] {
             return [
-                Type<MetadataViews.EVMBridgedMetadata>(),
+                Type<MetadataViews.Display>(),
                 Type<MetadataViews.Serial>(),
                 Type<MetadataViews.NFTCollectionData>(),
-                Type<MetadataViews.NFTCollectionDisplay>()
+                Type<MetadataViews.NFTCollectionDisplay>(),
+                Type<MetadataViews.EVMBridgedMetadata>()
             ]
         }
 
@@ -88,14 +91,9 @@ access(all) contract {{CONTRACT_NAME}} : ICrossVM, IEVMBridgeNFTMinter, NonFungi
         /// Resolves a metadata view for this NFT
         access(all) fun resolveView(_ view: Type): AnyStruct? {
             switch view {
-                // We don't know what kind of file the URI represents (IPFS v HTTP), so we can't resolve Display view
-                // with the URI as thumbnail - we may a new standard view for EVM NFTs - this is interim
-                case Type<MetadataViews.EVMBridgedMetadata>():
-                    return MetadataViews.EVMBridgedMetadata(
-                        name: self.getName(),
-                        symbol: self.getSymbol(),
-                        uri: MetadataViews.URI(baseURI: nil, value: self.tokenURI())
-                    )
+                case Type<MetadataViews.Display>():
+                    let contractRef = &{{CONTRACT_NAME}} as &{ICrossVMAsset}
+                    return FlowEVMBridgeResolver.resolveBridgedView(bridgedContract: selfRef, view: Type<MetadataViews.Display>())
                 case Type<MetadataViews.Serial>():
                     return MetadataViews.Serial(
                         self.id
@@ -109,6 +107,12 @@ access(all) contract {{CONTRACT_NAME}} : ICrossVM, IEVMBridgeNFTMinter, NonFungi
                     return {{CONTRACT_NAME}}.resolveContractView(
                         resourceType: self.getType(),
                         viewType: Type<MetadataViews.NFTCollectionDisplay>()
+                    )
+                case Type<MetadataViews.EVMBridgedMetadata>():
+                    return MetadataViews.EVMBridgedMetadata(
+                        name: self.getName(),
+                        symbol: self.getSymbol(),
+                        uri: MetadataViews.URI(baseURI: nil, value: self.tokenURI())
                     )
             }
             return nil
@@ -269,6 +273,18 @@ access(all) contract {{CONTRACT_NAME}} : ICrossVM, IEVMBridgeNFTMinter, NonFungi
             Getters
     ***********************/
 
+    /// Returns the name of the asset
+    ///
+    access(all) view fun getName(): String {
+        return self.name
+    }
+
+    /// Returns the symbol of the asset
+    ///
+    access(all) view fun getSymbol(): String {
+        return self.symbol
+    }
+
     /// Returns the EVM contract address of the NFT this contract represents
     ///
     access(all) view fun getEVMContractAddress(): EVM.EVMAddress {
@@ -308,20 +324,8 @@ access(all) contract {{CONTRACT_NAME}} : ICrossVM, IEVMBridgeNFTMinter, NonFungi
                 )
                 return collectionData
             case Type<MetadataViews.NFTCollectionDisplay>():
-                let media = MetadataViews.Media(
-                    file: MetadataViews.HTTPFile(
-                        url: "https://assets.website-files.com/5f6294c0c7a8cdd643b1c820/5f6294c0c7a8cda55cb1c936_Flow_Wordmark.svg"
-                    ),
-                    mediaType: "image/svg+xml"
-                )
-                return MetadataViews.NFTCollectionDisplay(
-                    name: self.name,
-                    description: "This collection was bridged from Flow EVM.",
-                    externalURL: MetadataViews.ExternalURL("https://port.flow.com/"),
-                    squareImage: media,
-                    bannerImage: media,
-                    socials: {}
-                )
+                let selfRef = &self as &{ICrossVMAsset}
+                FlowEVMBridgeResolver.resolveBridgedView(bridgedContract: selfRef, view: Type<MetadataViews.NFTCollectionDisplay>())
             case Type<MetadataViews.EVMBridgedMetadata>():
                 return MetadataViews.EVMBridgedMetadata(
                     name: self.name,

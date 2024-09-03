@@ -106,6 +106,12 @@ fun setup() {
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
+        name: "ICrossVMAsset",
+        path: "../contracts/bridge/interfaces/ICrossVMAsset.cdc",
+        arguments: []
+    )
+    Test.expect(err, Test.beNil())
+    err = Test.deployContract(
         name: "CrossVMNFT",
         path: "../contracts/bridge/interfaces/CrossVMNFT.cdc",
         arguments: []
@@ -175,6 +181,13 @@ fun setup() {
         name: "FlowEVMBridgeUtils",
         path: "../contracts/bridge/FlowEVMBridgeUtils.cdc",
         arguments: [factoryAddressHex]
+    )
+    Test.expect(err, Test.beNil())
+
+    err = Test.deployContract(
+        name: "FlowEVMBridgeResolver",
+        path: "../contracts/bridge/FlowEVMBridgeResolver.cdc",
+        arguments: []
     )
     Test.expect(err, Test.beNil())
 
@@ -325,6 +338,51 @@ fun setup() {
         arguments: []
     )
     Test.expect(err, Test.beNil())
+
+    // Configure metadata views for bridged NFTS & FTs
+    let setBridgedNFTDisplayViewResult = executeTransaction(
+        "../transactions/bridge/admin/metadata/set_bridged_nft_display_view.cdc",
+        [
+            "https://assets.website-files.com/5f6294c0c7a8cdd643b1c820/5f6294c0c7a8cda55cb1c936_Flow_Wordmark.svg", // thumbnailURI
+            Type<MetadataViews.HTTPFile>().identifier, // thumbnailFileTypeIdentifier
+            nil // ipfsFilePath
+        ],
+        bridgeAccount
+    )
+    Test.expect(setBridgedNFTDisplayViewResult, Test.beSucceeded())
+
+    let socialsDict: {String: String} = {}
+    let setBridgedNFTCollectionDisplayResult = executeTransaction(
+        "../transactions/bridge/admin/metadata/set_bridged_nft_collection_display_view.cdc",
+        [
+            "https://port.flow.com", // externalURL
+            "https://assets.website-files.com/5f6294c0c7a8cdd643b1c820/5f6294c0c7a8cda55cb1c936_Flow_Wordmark.svg", // squareImageURI
+            Type<MetadataViews.HTTPFile>().identifier, // squareImageFileTypeIdentifier
+            nil, // squareImageIPFSFilePath
+            "image/svg+xml", // squareImageMediaType
+            "https://assets.website-files.com/5f6294c0c7a8cdd643b1c820/5f6294c0c7a8cda55cb1c936_Flow_Wordmark.svg", // bannerImageURI
+            Type<MetadataViews.HTTPFile>().identifier, // bannerImageFileTypeIdentifier
+            nil, // bannerImageIPFSFilePath
+            "image/svg+xml", // bannerImageMediaType
+            socialsDict // socialsDict
+        ],
+        bridgeAccount
+    )
+    Test.expect(setBridgedNFTCollectionDisplayResult, Test.beSucceeded())
+
+    let setFTDisplayResult = executeTransaction(
+        "../transactions/bridge/admin/metadata/set_bridged_ft_display_view.cdc",
+        [
+            "https://port.flow.com", // externalURL
+            "https://assets.website-files.com/5f6294c0c7a8cdd643b1c820/5f6294c0c7a8cda55cb1c936_Flow_Wordmark.svg", // logoURI
+            Type<MetadataViews.HTTPFile>().identifier, // logoFileTypeIdentifier
+            nil, // logoIPFSFilePath
+            "image/svg+xml", // logoMediaType
+            socialsDict // socialsDict
+        ],
+        bridgeAccount
+    )
+    Test.expect(setFTDisplayResult, Test.beSucceeded())
 }
 
 /* --- CONFIG TEST --- */
@@ -1163,6 +1221,13 @@ fun testBridgeEVMNativeNFTFromEVMSucceeds() {
     Test.expect(evmIDResult, Test.beSucceeded())
     let evmID = evmIDResult.returnValue as! UInt256? ?? panic("Problem getting EVM ID")
     Test.assertEqual(erc721ID, evmID)
+
+    let viewsResolved = executeScript(
+        "./scripts/resolve_bridged_nft_views.cdc",
+        [alice.address, bridgedCollectionPathIdentifier, aliceOwnedIDs[0]]
+    )
+    Test.expect(viewsResolved, Test.beSucceeded())
+    Test.assertEqual(true, viewsResolved.returnValue as! Bool? ?? panic("Problem resolving views"))
 }
 
 

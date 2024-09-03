@@ -60,6 +60,12 @@ fun setup() {
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
+        name: "ICrossVMAsset",
+        path: "../contracts/bridge/interfaces/ICrossVMAsset.cdc",
+        arguments: []
+    )
+    Test.expect(err, Test.beNil())
+    err = Test.deployContract(
         name: "CrossVMNFT",
         path: "../contracts/bridge/interfaces/CrossVMNFT.cdc",
         arguments: []

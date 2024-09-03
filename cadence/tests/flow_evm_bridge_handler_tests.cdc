@@ -86,6 +86,12 @@ fun setup() {
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
+        name: "ICrossVMAsset",
+        path: "../contracts/bridge/interfaces/ICrossVMAsset.cdc",
+        arguments: []
+    )
+    Test.expect(err, Test.beNil())
+    err = Test.deployContract(
         name: "CrossVMNFT",
         path: "../contracts/bridge/interfaces/CrossVMNFT.cdc",
         arguments: []
@@ -125,6 +131,12 @@ fun setup() {
         name: "FlowEVMBridgeUtils",
         path: "../contracts/bridge/FlowEVMBridgeUtils.cdc",
         arguments: [factoryAddressHex]
+    )
+    Test.expect(err, Test.beNil())
+    err = Test.deployContract(
+        name: "FlowEVMBridgeResolver",
+        path: "../contracts/bridge/FlowEVMBridgeResolver.cdc",
+        arguments: []
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(

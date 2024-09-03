@@ -22,6 +22,17 @@
 				"testnet": "9a0766d93b6608b7"
 			}
 		},
+		"ICrossVMAsset": {
+			"source": "./cadence/contracts/bridge/interfaces/ICrossVMAsset.cdc",
+			"aliases": {
+				"crescendo": "dfc20aee650fcbdf",
+				"emulator": "f8d6e0586b0a20c7",
+				"mainnet": "1e4aa0b87d10b141",
+				"previewnet": "7792cfb75d8dfdd8",
+				"testing": "0000000000000007",
+				"testnet": "dfc20aee650fcbdf"
+			}
+		},
 		"CrossVMNFT": {
 			"source": "./cadence/contracts/bridge/interfaces/CrossVMNFT.cdc",
 			"aliases": {
@@ -129,6 +140,17 @@
 		},
 		"FlowEVMBridgeNFTEscrow": {
 			"source": "./cadence/contracts/bridge/FlowEVMBridgeNFTEscrow.cdc",
+			"aliases": {
+				"crescendo": "dfc20aee650fcbdf",
+				"emulator": "f8d6e0586b0a20c7",
+				"mainnet": "1e4aa0b87d10b141",
+				"previewnet": "7792cfb75d8dfdd8",
+				"testing": "0000000000000007",
+				"testnet": "dfc20aee650fcbdf"
+			}
+		},
+		"FlowEVMBridgeResolver": {
+			"source": "./cadence/contracts/bridge/FlowEVMBridgeResolver.cdc",
 			"aliases": {
 				"crescendo": "dfc20aee650fcbdf",
 				"emulator": "f8d6e0586b0a20c7",
@@ -463,10 +485,12 @@
 				"SerializeMetadata",
 				"IBridgePermissions",
 				"ICrossVM",
+				"ICrossVMAsset",
 				"CrossVMNFT",
 				"CrossVMToken",
 				"FlowEVMBridgeConfig",
 				"FlowEVMBridgeUtils",
+				"FlowEVMBridgeResolver",
 				"FlowEVMBridgeHandlers",
 				"FlowEVMBridgeNFTEscrow",
 				"FlowEVMBridgeTokenEscrow",
@@ -488,10 +512,12 @@
 				"SerializeMetadata",
 				"IBridgePermissions",
 				"ICrossVM",
+				"ICrossVMAsset",
 				"CrossVMNFT",
 				"CrossVMToken",
 				"FlowEVMBridgeConfig",
 				"FlowEVMBridgeUtils",
+				"FlowEVMBridgeResolver",
 				"FlowEVMBridgeHandlers",
 				"FlowEVMBridgeNFTEscrow",
 				"FlowEVMBridgeTokenEscrow",
@@ -513,6 +539,7 @@
 				"SerializeMetadata",
 				"IBridgePermissions",
 				"ICrossVM",
+				"ICrossVMAsset",
 				"CrossVMNFT",
 				"CrossVMToken",
 				"FlowEVMBridgeConfig",
@@ -525,6 +552,7 @@
 						}
 					]
 				},
+				"FlowEVMBridgeResolver",
 				"FlowEVMBridgeHandlers",
 				"FlowEVMBridgeNFTEscrow",
 				"FlowEVMBridgeTokenEscrow",
@@ -546,10 +574,12 @@
 				"SerializeMetadata",
 				"IBridgePermissions",
 				"ICrossVM",
+				"ICrossVMAsset",
 				"CrossVMNFT",
 				"CrossVMToken",
 				"FlowEVMBridgeConfig",
 				"FlowEVMBridgeUtils",
+				"FlowEVMBridgeResolver",
 				"FlowEVMBridgeHandlers",
 				"FlowEVMBridgeNFTEscrow",
 				"FlowEVMBridgeTokenEscrow",
