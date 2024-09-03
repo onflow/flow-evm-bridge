@@ -113,6 +113,42 @@ access(all) contract FlowEVMBridgeResolver {
         return nil
     }
 
+    /// Builds a thumbnail file based on the provided thumbnail file type identifier and optional IPFS file path
+    ///
+    /// @param thumbnailURI: The URI of the thumbnail file
+    /// @param thumbnailFileTypeIdentifier: The type identifier of the thumbnail file
+    /// @param ipfsFilePath: The optional IPFS file path if the thumbnail file is an IPFS file and has a path
+    ///
+    /// @returns The built thumbnail file
+    ///
+    access(all)
+    view fun buildFile(uri: String, fileType: Type, ipfsFilePath: String?): {MetadataViews.File}? {
+        switch fileType {
+            case Type<MetadataViews.HTTPFile>():
+                return MetadataViews.HTTPFile(url: uri)
+            case Type<MetadataViews.IPFSFile>():
+                return MetadataViews.IPFSFile(cid: uri, path: ipfsFilePath)
+            default:
+                return nil
+        }
+    }
+
+    /// Builds a dictionary of ExternalURL views from a dictionary of URLs, helpful for creating a socials dictionary
+    ///
+    /// @param fromDict: The dictionary of URLs to convert
+    ///
+    /// @returns The dictionary of ExternalURL views
+    ///
+    access(all)
+    view fun buildExternalURLMapping(fromDict: {String: String}): {String: MetadataViews.ExternalURL} {
+        let res: {String: MetadataViews.ExternalURL} = {}
+        for key in fromDict.keys {
+            res[key] = MetadataViews.ExternalURL(fromDict[key]!)
+        }
+        return res
+    }
+    
+
     /*****************
         Constructs
      *****************/
