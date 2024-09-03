@@ -12,7 +12,7 @@ import "FlowEVMBridgeUtils"
 /// Upon bridging to Cadence, these tokens must have certain basic metadata views that cannot be retrieved at the time
 /// of bridging, such as MetadataViews.Display for NFTs and FungibleTokenMetadataViews.FTDisplay for FungibleTokens.
 ///
-/// This contract then serves as a means of setting and potentiall updating base placeholder views for these bridged
+/// This contract then serves as a means of setting and potentially updating base placeholder views for these bridged
 /// assets. Anyone wishing to consume the metadata from the source EVM contract should either resolve directly from the
 /// EVM contract or leverage the EVMBridgedMetadata view which retains the original token URI and/or contract URI (if
 /// implemented in the source contract).
