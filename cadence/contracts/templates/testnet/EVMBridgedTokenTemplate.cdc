@@ -14,7 +14,6 @@ import FlowEVMBridgeTokenEscrow from 0xdfc20aee650fcbdf
 import FlowEVMBridgeConfig from 0xdfc20aee650fcbdf
 import FlowEVMBridgeUtils from 0xdfc20aee650fcbdf
 import FlowEVMBridge from 0xdfc20aee650fcbdf
-import CrossVMNFT from 0xdfc20aee650fcbdf
 import CrossVMToken from 0xdfc20aee650fcbdf
 import FlowEVMBridgeResolver from 0xdfc20aee650fcbdf
 
@@ -212,8 +211,8 @@ access(all) contract {{CONTRACT_NAME}} : ICrossVM, ICrossVMAsset, IEVMBridgeToke
                     ftVaultData: self.resolveContractView(resourceType: nil, viewType: Type<FungibleTokenMetadataViews.FTVaultData>()) as! FungibleTokenMetadataViews.FTVaultData?
                 )
             case Type<FungibleTokenMetadataViews.FTDisplay>():
-                let selfRef = &self as &{ICrossVMAsset}
-                FlowEVMBridgeResolver.resolveBridgedView(bridgedContract: selfRef, view: Type<FungibleTokenMetadataViews.FTDisplay>())
+                let contractRef = self.borrowThisContract()
+                return FlowEVMBridgeResolver.resolveBridgedView(bridgedContract: contractRef, view: Type<FungibleTokenMetadataViews.FTDisplay>())
             case Type<FungibleTokenMetadataViews.FTVaultData>():
                 return FungibleTokenMetadataViews.FTVaultData(
                     storagePath: /storage/{{CONTRACT_NAME}}Vault,
@@ -248,6 +247,14 @@ access(all) contract {{CONTRACT_NAME}} : ICrossVM, ICrossVMAsset, IEVMBridgeToke
     access(account) fun mintTokens(amount: UFix64): @{FungibleToken.Vault} {
         self.totalSupply = self.totalSupply + amount
         return <- create Vault(balance: amount)
+    }
+
+    /// Returns a reference to this contract as an ICrossVMAsset contract
+    ///
+    access(self)
+    fun borrowThisContract(): &{ICrossVMAsset} {
+        let contractAddress = self.account.address
+        return getAccount(contractAddress).contracts.borrow<&{ICrossVMAsset}>(name: "{{CONTRACT_NAME}}")!
     }
 
     init(name: String, symbol: String, decimals: UInt8, evmContractAddress: EVM.EVMAddress, contractURI: String?) {

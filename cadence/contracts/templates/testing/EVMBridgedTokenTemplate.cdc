@@ -14,7 +14,6 @@ import FlowEVMBridgeTokenEscrow from 0x0000000000000007
 import FlowEVMBridgeConfig from 0x0000000000000007
 import FlowEVMBridgeUtils from 0x0000000000000007
 import FlowEVMBridge from 0x0000000000000007
-import CrossVMNFT from 0x0000000000000007
 import CrossVMToken from 0x0000000000000007
 import FlowEVMBridgeResolver from 0x0000000000000007
 
