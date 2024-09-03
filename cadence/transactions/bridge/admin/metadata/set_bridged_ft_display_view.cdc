@@ -31,7 +31,7 @@ fun buildSocials(_ socials: {String: String}): {String: MetadataViews.ExternalUR
     return res
 }
 
-/// This transaction sets the bridged NFT Display view for all bridged NFTs
+/// This transaction sets the bridged FTDisplay view for all fungible tokens bridged from Flow EVM
 ///
 transaction(
     externalURL: String,

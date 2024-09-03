@@ -20,7 +20,7 @@ fun buildThumbnailFile(_ thumbnailURI: String, _ thumbnailFileTypeIdentifier: St
     }
 }
 
-/// This transaction sets the bridged NFT Display view for all bridged NFTs
+/// This transaction sets the bridged NFT Display view for all NFTs bridged from Flow EVM
 ///
 transaction(thumbnailURI: String, thumbnailFileTypeIdentifier: String, ipfsFilePath: String?) {
 
