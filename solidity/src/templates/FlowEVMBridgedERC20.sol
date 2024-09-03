@@ -15,14 +15,17 @@ contract FlowEVMBridgedERC20 is ERC165, ERC20, ERC20Burnable, ERC20Permit, Ownab
     string public cadenceTokenIdentifier;
     string public contractMetadata;
 
+    string private _customSymbol;
+
     constructor(
         address owner,
-        string memory name,
-        string memory symbol,
+        string memory name_,
+        string memory symbol_,
         string memory _cadenceTokenAddress,
         string memory _cadenceTokenIdentifier,
         string memory _contractMetadata
-    ) ERC20(name, symbol) Ownable(owner) ERC20Permit(name) {
+    ) ERC20(name_, symbol_) Ownable(owner) ERC20Permit(name_) {
+        _customSymbol = symbol_;
         cadenceTokenAddress = _cadenceTokenAddress;
         cadenceTokenIdentifier = _cadenceTokenIdentifier;
         contractMetadata = _contractMetadata;
@@ -36,17 +39,33 @@ contract FlowEVMBridgedERC20 is ERC165, ERC20, ERC20Burnable, ERC20Permit, Ownab
         return cadenceTokenIdentifier;
     }
 
-    function mint(address to, uint256 amount) public onlyOwner {
-        _mint(to, amount);
+    function symbol() public view override returns (string memory) {
+        return _customSymbol;
     }
 
     function contractURI() public view returns (string memory) {
         return contractMetadata;
     }
 
+    function mint(address to, uint256 amount) public onlyOwner {
+        _mint(to, amount);
+    }
+
+    function setSymbol(string memory newSymbol) public onlyOwner {
+        _setSymbol(newSymbol);
+    }
+
+    function setContractURI(string memory newContractURI) public onlyOwner {
+        contractMetadata = newContractURI;
+    }
+
     function supportsInterface(bytes4 interfaceId) public view override(ERC165) returns (bool) {
         return interfaceId == type(IERC20).interfaceId || interfaceId == type(ERC20Burnable).interfaceId
             || interfaceId == type(Ownable).interfaceId || interfaceId == type(ERC20Permit).interfaceId
             || interfaceId == type(ICrossVM).interfaceId || super.supportsInterface(interfaceId);
+    }
+
+    function _setSymbol(string memory newSymbol) internal {
+        _customSymbol = newSymbol;
     }
 }
