@@ -1471,6 +1471,13 @@ fun testBridgeEVMNativeTokenFromEVMSucceeds() {
     let bridgeCOAAddressHex = getCOAAddressHex(atFlowAddress: bridgeAccount.address)
     let bridgeCOAEscrowBalance = balanceOf(evmAddressHex: bridgeCOAAddressHex, erc20AddressHex: erc20AddressHex)
     Test.assertEqual(erc20MintAmount, bridgeCOAEscrowBalance)
+
+    let viewsResolved = executeScript(
+        "./scripts/resolve_bridged_token_views.cdc",
+        [alice.address, bridgedVaultPathIdentifier]
+    )
+    Test.expect(viewsResolved, Test.beSucceeded())
+    Test.assertEqual(true, viewsResolved.returnValue as! Bool? ?? panic("Problem resolving views"))
 }
 
 access(all)
