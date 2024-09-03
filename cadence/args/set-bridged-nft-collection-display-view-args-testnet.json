@@ -1,0 +1,42 @@
+[
+    {
+        "type": "String",
+        "value": "https://port.flow.com"
+    },
+    {
+        "type": "String",
+        "value": "https://assets.website-files.com/5f6294c0c7a8cdd643b1c820/5f6294c0c7a8cda55cb1c936_Flow_Wordmark.svg"
+    },
+    {
+        "type": "String",
+        "value": "A.631e88ae7f1d7c20.MetadataViews.HTTPFile"
+    },
+    {
+        "type": "Optional",
+        "value": null
+    },
+    {
+        "type": "String",
+        "value": "image/svg+xml"
+    },
+    {
+        "type": "String",
+        "value": "https://assets.website-files.com/5f6294c0c7a8cdd643b1c820/5f6294c0c7a8cda55cb1c936_Flow_Wordmark.svg"
+    },
+    {
+        "type": "String",
+        "value": "A.631e88ae7f1d7c20.MetadataViews.HTTPFile"
+    },
+    {
+        "type": "Optional",
+        "value": null
+    },
+    {
+        "type": "String",
+        "value": "image/svg+xml"
+    },
+    {
+        "type": "Dictionary",
+        "value": []
+    }
+]

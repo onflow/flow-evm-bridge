@@ -15,7 +15,7 @@ import "FlowEVMBridgeUtils"
 /// This transaction bridges fungible tokens from EVM to Cadence assuming it has already been onboarded to the
 /// FlowEVMBridge.
 ///
-/// NOTE: The ERC721 must have first been onboarded to the bridge. This can be checked via the method
+/// NOTE: The ERC20 must have first been onboarded to the bridge. This can be checked via the method
 ///     FlowEVMBridge.evmAddressRequiresOnboarding(address: self.evmContractAddress)
 ///
 /// @param vaultIdentifier: The Cadence type identifier of the FungibleToken Vault to bridge

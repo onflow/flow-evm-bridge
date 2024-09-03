@@ -22,6 +22,17 @@
 				"testnet": "9a0766d93b6608b7"
 			}
 		},
+		"ICrossVMAsset": {
+			"source": "./cadence/contracts/bridge/interfaces/ICrossVMAsset.cdc",
+			"aliases": {
+				"crescendo": "dfc20aee650fcbdf",
+				"emulator": "f8d6e0586b0a20c7",
+				"mainnet": "1e4aa0b87d10b141",
+				"previewnet": "7792cfb75d8dfdd8",
+				"testing": "0000000000000007",
+				"testnet": "dfc20aee650fcbdf"
+			}
+		},
 		"CrossVMNFT": {
 			"source": "./cadence/contracts/bridge/interfaces/CrossVMNFT.cdc",
 			"aliases": {
@@ -129,6 +140,17 @@
 		},
 		"FlowEVMBridgeNFTEscrow": {
 			"source": "./cadence/contracts/bridge/FlowEVMBridgeNFTEscrow.cdc",
+			"aliases": {
+				"crescendo": "dfc20aee650fcbdf",
+				"emulator": "f8d6e0586b0a20c7",
+				"mainnet": "1e4aa0b87d10b141",
+				"previewnet": "7792cfb75d8dfdd8",
+				"testing": "0000000000000007",
+				"testnet": "dfc20aee650fcbdf"
+			}
+		},
+		"FlowEVMBridgeResolver": {
+			"source": "./cadence/contracts/bridge/FlowEVMBridgeResolver.cdc",
 			"aliases": {
 				"crescendo": "dfc20aee650fcbdf",
 				"emulator": "f8d6e0586b0a20c7",
@@ -372,6 +394,7 @@
 		"crescendo": "access-001.migrationtestnet1.nodes.onflow.org:9000",
 		"emulator": "127.0.0.1:3569",
 		"mainnet": "access.mainnet.nodes.onflow.org:9000",
+		"migrationmainnet": "access-001.migrationmainnet1.nodes.onflow.org:9000",
 		"previewnet": "access.previewnet.nodes.onflow.org:9000",
 		"testing": "127.0.0.1:3569",
 		"testnet": "access.devnet.nodes.onflow.org:9000"
@@ -410,6 +433,14 @@
 			"key": "fe809cc837ddcd7e761a482721c050aae43657448db859f4eb8fc421e9609938"
 		},
 		"mainnet-flow-evm-bridge": {
+			"address": "1e4aa0b87d10b141",
+			"key": {
+				"type": "google-kms",
+				"hashAlgorithm": "SHA2_256",
+				"resourceID": "projects/dl-flow-admin/locations/global/keyRings/flow-vm-bridge/cryptoKeys/flow-fvm-evm-bridge-mainnet/cryptoKeyVersions/1"
+			}
+		},
+		"migrationmainnet-flow-evm-bridge": {
 			"address": "1e4aa0b87d10b141",
 			"key": {
 				"type": "google-kms",
@@ -463,10 +494,12 @@
 				"SerializeMetadata",
 				"IBridgePermissions",
 				"ICrossVM",
+				"ICrossVMAsset",
 				"CrossVMNFT",
 				"CrossVMToken",
 				"FlowEVMBridgeConfig",
 				"FlowEVMBridgeUtils",
+				"FlowEVMBridgeResolver",
 				"FlowEVMBridgeHandlers",
 				"FlowEVMBridgeNFTEscrow",
 				"FlowEVMBridgeTokenEscrow",
@@ -488,10 +521,12 @@
 				"SerializeMetadata",
 				"IBridgePermissions",
 				"ICrossVM",
+				"ICrossVMAsset",
 				"CrossVMNFT",
 				"CrossVMToken",
 				"FlowEVMBridgeConfig",
 				"FlowEVMBridgeUtils",
+				"FlowEVMBridgeResolver",
 				"FlowEVMBridgeHandlers",
 				"FlowEVMBridgeNFTEscrow",
 				"FlowEVMBridgeTokenEscrow",
@@ -513,6 +548,7 @@
 				"SerializeMetadata",
 				"IBridgePermissions",
 				"ICrossVM",
+				"ICrossVMAsset",
 				"CrossVMNFT",
 				"CrossVMToken",
 				"FlowEVMBridgeConfig",
@@ -525,6 +561,7 @@
 						}
 					]
 				},
+				"FlowEVMBridgeResolver",
 				"FlowEVMBridgeHandlers",
 				"FlowEVMBridgeNFTEscrow",
 				"FlowEVMBridgeTokenEscrow",
@@ -546,10 +583,12 @@
 				"SerializeMetadata",
 				"IBridgePermissions",
 				"ICrossVM",
+				"ICrossVMAsset",
 				"CrossVMNFT",
 				"CrossVMToken",
 				"FlowEVMBridgeConfig",
 				"FlowEVMBridgeUtils",
+				"FlowEVMBridgeResolver",
 				"FlowEVMBridgeHandlers",
 				"FlowEVMBridgeNFTEscrow",
 				"FlowEVMBridgeTokenEscrow",

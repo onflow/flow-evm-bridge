@@ -6,11 +6,6 @@ import "FlowEVMBridgeAccessor"
 /// been configured in the bridge account and its Capability has been published to be claimed by the EVM account. If a
 /// BridgeRouter implementation already exists from a previous bridge integration, it will be destroyed and replaced.
 ///
-/// NOTE: The replacement of a BridgeRouter resource is an artifact of the iterative process on PreviewNet and should be
-/// removed once an interface and integration pattern is solidified. If a new BridgeAccessor Capability must be set to
-/// integrate the EVM contract with another bridge implementation, it should be set using the existing BridgeRouter
-/// defined by a neutral party contract, not one related to bridge-specific deployments.
-///
 /// @param name: The name of the BridgeAccessor Capability to claim
 /// @param provider: The address of the account that published the BridgeAccessor Capability
 ///
