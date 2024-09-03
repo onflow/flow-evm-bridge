@@ -158,4 +158,26 @@ contract FlowBridgeFactoryTest is Test {
         uint256 balance = deployedERC20Contract.balanceOf(recipient);
         assertEq(balance, amount);
     }
+
+    function test_UpdateERC721Symbol() public {
+        string memory _symbol = deployedERC721Contract.symbol();
+        assertEq(_symbol, symbol);
+
+        string memory newSymbol = "NEW_SYMBOL";
+        deployedERC721Contract.setSymbol(newSymbol);
+
+        _symbol = deployedERC721Contract.symbol();
+        assertEq(_symbol, newSymbol);
+    }
+
+    function test_UpdateERC20Symbol() public {
+        string memory _symbol = deployedERC20Contract.symbol();
+        assertEq(_symbol, symbol);
+
+        string memory newSymbol = "NEW_SYMBOL";
+        deployedERC20Contract.setSymbol(newSymbol);
+
+        _symbol = deployedERC20Contract.symbol();
+        assertEq(_symbol, newSymbol);
+    }
 }

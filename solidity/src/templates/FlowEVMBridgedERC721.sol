@@ -18,14 +18,17 @@ contract FlowEVMBridgedERC721 is ERC721, ERC721URIStorage, ERC721Burnable, ERC72
     string public cadenceNFTIdentifier;
     string public contractMetadata;
 
+    string private _customSymbol;
+
     constructor(
         address owner,
-        string memory name,
-        string memory symbol,
+        string memory name_,
+        string memory symbol_,
         string memory _cadenceNFTAddress,
         string memory _cadenceNFTIdentifier,
         string memory _contractMetadata
-    ) ERC721(name, symbol) Ownable(owner) {
+    ) ERC721(name_, symbol_) Ownable(owner) {
+        _customSymbol = symbol_;
         cadenceNFTAddress = _cadenceNFTAddress;
         cadenceNFTIdentifier = _cadenceNFTIdentifier;
         contractMetadata = _contractMetadata;
@@ -39,6 +42,10 @@ contract FlowEVMBridgedERC721 is ERC721, ERC721URIStorage, ERC721Burnable, ERC72
         return cadenceNFTIdentifier;
     }
 
+    function symbol() public view override returns (string memory) {
+        return _customSymbol;
+    }
+
     function safeMint(address to, uint256 tokenId, string memory uri) public onlyOwner {
         _safeMint(to, tokenId);
         _setTokenURI(tokenId, uri);
@@ -46,6 +53,10 @@ contract FlowEVMBridgedERC721 is ERC721, ERC721URIStorage, ERC721Burnable, ERC72
 
     function updateTokenURI(uint256 tokenId, string memory uri) public onlyOwner {
         _setTokenURI(tokenId, uri);
+    }
+
+    function setSymbol(string memory newSymbol) public onlyOwner {
+        _setSymbol(newSymbol);
     }
 
     function contractURI() public view returns (string memory) {
@@ -70,6 +81,10 @@ contract FlowEVMBridgedERC721 is ERC721, ERC721URIStorage, ERC721Burnable, ERC72
 
     function exists(uint256 tokenId) public view returns (bool) {
         return _ownerOf(tokenId) != address(0);
+    }
+
+    function _setSymbol(string memory newSymbol) internal {
+        _customSymbol = newSymbol;
     }
 
     function _update(address to, uint256 tokenId, address auth)
