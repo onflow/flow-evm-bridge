@@ -92,8 +92,8 @@ access(all) contract {{CONTRACT_NAME}} : ICrossVM, ICrossVMAsset, IEVMBridgeNFTM
         access(all) fun resolveView(_ view: Type): AnyStruct? {
             switch view {
                 case Type<MetadataViews.Display>():
-                    let contractRef = &{{CONTRACT_NAME}} as &{ICrossVMAsset}
-                    return FlowEVMBridgeResolver.resolveBridgedView(bridgedContract: selfRef, view: Type<MetadataViews.Display>())
+                    let contractRef = {{CONTRACT_NAME}}.borrowThisContract()
+                    return FlowEVMBridgeResolver.resolveBridgedView(bridgedContract: contractRef, view: Type<MetadataViews.Display>())
                 case Type<MetadataViews.Serial>():
                     return MetadataViews.Serial(
                         self.id
@@ -324,8 +324,8 @@ access(all) contract {{CONTRACT_NAME}} : ICrossVM, ICrossVMAsset, IEVMBridgeNFTM
                 )
                 return collectionData
             case Type<MetadataViews.NFTCollectionDisplay>():
-                let selfRef = &self as &{ICrossVMAsset}
-                FlowEVMBridgeResolver.resolveBridgedView(bridgedContract: selfRef, view: Type<MetadataViews.NFTCollectionDisplay>())
+                let selfRef = self.borrowThisContract()
+                return FlowEVMBridgeResolver.resolveBridgedView(bridgedContract: selfRef, view: Type<MetadataViews.NFTCollectionDisplay>())
             case Type<MetadataViews.EVMBridgedMetadata>():
                 return MetadataViews.EVMBridgedMetadata(
                     name: self.name,
@@ -369,6 +369,14 @@ access(all) contract {{CONTRACT_NAME}} : ICrossVM, ICrossVMAsset, IEVMBridgeNFTM
         if self.tokenURIs[evmID] != newURI {
             self.tokenURIs[evmID] = newURI
         }
+    }
+
+    /// Returns a reference to this contract as an ICrossVMAsset contract
+    ///
+    access(self)
+    fun borrowThisContract(): &{ICrossVMAsset} {
+        let contractAddress = self.account.address
+        return getAccount(contractAddress).contracts.borrow<&{ICrossVMAsset}>(name: "{{CONTRACT_NAME}}")!
     }
 
     init(name: String, symbol: String, evmContractAddress: EVM.EVMAddress, contractURI: String?) {
