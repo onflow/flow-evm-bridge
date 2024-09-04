@@ -99,8 +99,13 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         } else if type.isSubtype(of: Type<@{FungibleToken.Vault}>()) {
             let createVaultFunction = FlowEVMBridgeUtils.getCreateEmptyVaultFunction(forType: type)
                 ?? panic("Could not retrieve createEmptyVault function for the given type")
+            let vault <-createVaultFunction(type)
+            assert(
+                vault.getType() == type,
+                message: "Requested to onboard type=".concat(type.identifier).concat( "but contract returned type=").concat(vault.getType().identifier)
+            )
             FlowEVMBridgeTokenEscrow.initializeEscrow(
-                with: <-createVaultFunction(type),
+                with: <-vault,
                 name: onboardingValues.name,
                 symbol: onboardingValues.symbol,
                 decimals: onboardingValues.decimals!,
