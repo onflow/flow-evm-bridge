@@ -394,11 +394,6 @@
 		}
 	},
 	"deployments": {
-		"emulator": {
-			"emulator-flow-evm-bridge": [
-				"FlowEVMBridgeConfig"
-			]
-		},
 		"mainnet": {
 			"mainnet-flow-evm-bridge": [
 				"FlowEVMBridgeHandlerInterfaces",
