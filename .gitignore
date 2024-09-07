@@ -30,3 +30,4 @@ local.flow.json
 # Local
 .DS_Store
 .vscode/
+imports/

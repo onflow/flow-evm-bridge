@@ -3,11 +3,11 @@
 
 # Flow EVM Bridge
 
-This repo contains contracts enabling bridging of fungible & non-fungible tokens between Cadence and EVM.
+This repo contains contracts enabling bridging of fungible & non-fungible tokens between Cadence and EVM on Flow.
 
 ## Deployments
 
-The bridge in this repo are deployed to the following addresses:
+The bridge contracts in this repo are deployed to the following addresses:
 
 |Contracts|Testnet|Mainnet|
 |---|---|---|
