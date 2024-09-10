@@ -67,7 +67,10 @@ access(all) contract interface IFlowEVMTokenBridge {
                 bridgedUUID: vault.uuid,
                 to: to.toString(),
                 evmContractAddress: self.getAssociatedEVMAddress(with: vault.getType())?.toString()
-                    ?? panic("Could not find EVM Contract address associated with provided NFT"),
+                    ?? panic(
+                        "Could not find EVM Contract address associated with provided Token identifier="
+                        .concat(vault.getType().identifier)
+                    ),
                 bridgeAddress: self.account.address
             )
         }
