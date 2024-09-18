@@ -428,16 +428,8 @@ contract FlowEVMBridgeConfig {
         self.gasLimit = 15_000_000
         self.paused = true
 
-        // Although $FLOW does not have ERC20 address, we associate the the Vault with the EVM address from which
-        // EVM transfers originate
-        // See FLIP #223 - https://github.com/onflow/flips/pull/225
-        let flowOriginationAddress = EVM.EVMAddress(
-                bytes: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0]
-            )
-        let flowVaultType = Type<@FlowToken.Vault>()
-        let flowOriginationAddressHex = flowOriginationAddress.toString()
-        self.registeredTypes = { flowVaultType: TypeEVMAssociation(associated: flowOriginationAddress) }
-        self.evmAddressHexToType = { flowOriginationAddressHex: flowVaultType }
+        self.registeredTypes = {}
+        self.evmAddressHexToType = {}
 
         self.typeToTokenHandlers <- {}
 
