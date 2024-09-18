@@ -69,8 +69,6 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
     fun onboardByType(_ type: Type, feeProvider: auth(FungibleToken.Withdraw) &{FungibleToken.Provider}) {
         pre {
             !FlowEVMBridgeConfig.isPaused(): "Bridge operations are currently paused"
-            type != Type<@FlowToken.Vault>():
-                "$FLOW cannot be bridged via the VM bridge - use the CadenceOwnedAccount interface"
             self.typeRequiresOnboarding(type) == true: "Onboarding is not needed for this type"
             FlowEVMBridgeUtils.typeAllowsBridging(type):
                 "This type is not supported as defined by the project's development team"
@@ -351,11 +349,6 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         /* Handle $FLOW requests via EVM interface & return */
         //
         let vaultType = vault.getType()
-        if vaultType == Type<@FlowToken.Vault>() {
-            let flowVault <-vault as! @FlowToken.Vault
-            to.deposit(from: <-flowVault)
-            return
-        }
 
         // Gather the vault balance before acting on the resource
         let vaultBalance = vault.balance
@@ -444,7 +437,6 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         pre {
             !FlowEVMBridgeConfig.isPaused(): "Bridge operations are currently paused"
             !type.isSubtype(of: Type<@{NonFungibleToken.Collection}>()): "Mixed asset types are not yet supported"
-            !type.isInstance(Type<@FlowToken.Vault>()): "Must use the CadenceOwnedAccount interface to bridge $FLOW from EVM"
             self.typeRequiresOnboarding(type) == false: "FungibleToken must first be onboarded"
             FlowEVMBridgeConfig.isTypePaused(type) == false: "Bridging is currently paused for this token"
         }
