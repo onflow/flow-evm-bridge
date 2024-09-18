@@ -333,7 +333,7 @@ access(all) contract FlowEVMBridgeHandlers {
             let unwrapResult = FlowEVMBridgeUtils.call(
                 signature: "withdraw(uint)",
                 targetEVMAddress: wflowAddress,
-                args: [UInt(amount)],
+                args: [amount],
                 gasLimit: FlowEVMBridgeConfig.gasLimit,
                 value: 0.0
             )
@@ -344,7 +344,7 @@ access(all) contract FlowEVMBridgeHandlers {
             // Cover underflow
             assert(
                 postBalance > preBalance,
-                message: "Balance decremented after unwrapping WFLOW"
+                message: "Balance did not increment after unwrapping WFLOW amount=".concat(amount.toString())
             )
             // Confirm bridge COA's FLOW balance has incremented by the expected amount
             assert(
