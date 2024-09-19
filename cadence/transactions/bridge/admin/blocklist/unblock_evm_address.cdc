@@ -2,9 +2,9 @@ import "EVM"
 
 import "FlowEVMBridgeConfig"
 
-/// Removes the given EVM contract address from the EVMBlocklist if it exists.
+/// Unblocks the given EVM contract address from onboarding to the bridge.
 ///
-/// @param evmContractHex: The EVM contract address to remove from the blocklist
+/// @param evmContractHex: The EVM contract address to unblock
 ///
 transaction(evmContractHex: String) {
 
@@ -13,16 +13,16 @@ transaction(evmContractHex: String) {
 
     prepare(signer: auth(BorrowValue) &Account) {
         self.evmBlocklist = signer.storage.borrow<auth(FlowEVMBridgeConfig.Blocklist) &FlowEVMBridgeConfig.EVMBlocklist>(
-                from: FlowEVMBridgeConfig.adminStoragePath
-            ) ?? panic("Could not borrow FlowEVMBridgeConfig Admin reference")
+                from: /storage/evmBlocklist
+            ) ?? panic("Could not borrow FlowEVMBridgeConfig EVMBlocklist reference")
         self.evmAddress = EVM.addressFromString(evmContractHex)
     }
 
     execute {
-        self.evmBlocklist.block(self.evmAddress)
+        self.evmBlocklist.unblock(self.evmAddress)
     }
 
     post {
-        FlowEVMBridgeConfig.isEVMAddressBlocked(self.evmAddress): "Fee was not set correctly"
+        !FlowEVMBridgeConfig.isEVMAddressBlocked(self.evmAddress): "EVM address was not unblocked"
     }
 }

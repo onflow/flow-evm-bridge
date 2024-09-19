@@ -979,7 +979,7 @@ fun testOnboardERC721ByEVMAddressSucceeds() {
 
     // Unblock the EVM address
     let unblockResult = executeTransaction(
-        "../transactions/bridge/admin/blocklist/remove_evm_address_from_blocklist.cdc",
+        "../transactions/bridge/admin/blocklist/unblock_evm_address.cdc",
         [erc721AddressHex],
         bridgeAccount
     )

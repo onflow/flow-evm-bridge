@@ -14,7 +14,7 @@ transaction(evmContractHex: String) {
     prepare(signer: auth(BorrowValue) &Account) {
         FlowEVMBridgeConfig.initBlocklist()
         self.evmBlocklist = signer.storage.borrow<auth(FlowEVMBridgeConfig.Blocklist) &FlowEVMBridgeConfig.EVMBlocklist>(
-                from: FlowEVMBridgeConfig.adminStoragePath
+                from: /storage/evmBlocklist
             ) ?? panic("Could not borrow FlowEVMBridgeConfig Admin reference")
         self.evmAddress = EVM.addressFromString(evmContractHex)
     }
@@ -24,6 +24,6 @@ transaction(evmContractHex: String) {
     }
 
     post {
-        FlowEVMBridgeConfig.isEVMAddressBlocked(self.evmAddress): "Fee was not set correctly"
+        FlowEVMBridgeConfig.isEVMAddressBlocked(self.evmAddress): "EVM address was not blocked"
     }
 }
