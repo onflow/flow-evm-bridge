@@ -229,6 +229,18 @@ contract FlowEVMBridgeConfig {
             ?? panic("Missing or mis-typed Blocklist in storage")
     }
 
+    /// Temporary method to initialize the EVMBlocklist resource as this resource was added after the contract was
+    /// deployed
+    ///
+    access(all)
+    fun initBlocklist() {
+        let path = /storage/evmBlocklist
+        if self.account.storage.type(at: path) != nil{
+            return
+        }
+        self.account.storage.save(<-create EVMBlocklist(), to: path)
+    }
+
     /*****************
         Constructs
      *****************/
@@ -412,27 +424,6 @@ contract FlowEVMBridgeConfig {
             association.unpause()
             let evmAddress = association.evmAddress.toString()
             emit AssetPauseStatusUpdated(paused: false, type: type.identifier, evmAddress: evmAddress)
-        }
-
-        /// Blocks the given EVM address from onboarding to the bridge
-        ///
-        access(Blocklist)
-        fun blockEVMAddress(_ evmAddress: EVM.EVMAddress) {
-            FlowEVMBridgeConfig.borrowBlocklist().block(evmAddress)
-        }
-
-        /// Unblocks the given EVM address from onboarding to the bridge
-        ///
-        access(Blocklist)
-        fun unblockEVMAddress(_ evmAddress: EVM.EVMAddress) {
-            FlowEVMBridgeConfig.borrowBlocklist().unblock(evmAddress)
-        }
-
-        /// Removes the given EVM address from the blocklist
-        ///
-        access(Blocklist)
-        fun removeEVMAddressFromBlocklist(_ evmAddress: EVM.EVMAddress) {
-            FlowEVMBridgeConfig.borrowBlocklist().remove(evmAddress)
         }
 
         /// Sets the target EVM contract address on the handler for a given Type, associating the Cadence type with the

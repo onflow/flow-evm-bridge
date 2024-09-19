@@ -8,18 +8,19 @@ import "FlowEVMBridgeConfig"
 ///
 transaction(evmContractHex: String) {
 
-    let admin: auth(FlowEVMBridgeConfig.Blocklist) &FlowEVMBridgeConfig.Admin
+    let evmBlocklist: auth(FlowEVMBridgeConfig.Blocklist) &FlowEVMBridgeConfig.EVMBlocklist
     let evmAddress: EVM.EVMAddress
 
     prepare(signer: auth(BorrowValue) &Account) {
-        self.admin = signer.storage.borrow<auth(FlowEVMBridgeConfig.Blocklist) &FlowEVMBridgeConfig.Admin>(
+        FlowEVMBridgeConfig.initBlocklist()
+        self.evmBlocklist = signer.storage.borrow<auth(FlowEVMBridgeConfig.Blocklist) &FlowEVMBridgeConfig.EVMBlocklist>(
                 from: FlowEVMBridgeConfig.adminStoragePath
             ) ?? panic("Could not borrow FlowEVMBridgeConfig Admin reference")
         self.evmAddress = EVM.addressFromString(evmContractHex)
     }
 
     execute {
-        self.admin.blockEVMAddress(self.evmAddress)
+        self.evmBlocklist.block(self.evmAddress)
     }
 
     post {
