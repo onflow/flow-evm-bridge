@@ -16,6 +16,7 @@ contract FlowEVMBridgeConfig {
     access(all) entitlement Gas
     access(all) entitlement Fee
     access(all) entitlement Pause
+    access(all) entitlement Blocklist
 
     /*************
         Fields
@@ -128,6 +129,13 @@ contract FlowEVMBridgeConfig {
         return self.evmAddressHexToType[evmAddressHex]
     }
 
+    /// Returns whether the given EVMAddress is currently blocked from onboarding to the bridge
+    ///
+    access(all)
+    view fun isEVMAddressBlocked(_ evmAddress: EVM.EVMAddress): Bool {
+        return self.borrowBlocklist().isBlocked(evmAddress)
+    }
+
     /****************************
         Bridge Account Methods
      ****************************/
@@ -213,6 +221,26 @@ contract FlowEVMBridgeConfig {
         return &self.typeToTokenHandlers[type]
     }
 
+    /// Returns an entitled reference to the bridge EVMBlocklist
+    ///
+    access(self)
+    view fun borrowBlocklist(): auth(Blocklist) &EVMBlocklist {
+        return self.account.storage.borrow<auth(Blocklist) &EVMBlocklist>(from: /storage/evmBlocklist)
+            ?? panic("Missing or mis-typed Blocklist in storage")
+    }
+
+    /// Temporary method to initialize the EVMBlocklist resource as this resource was added after the contract was
+    /// deployed
+    ///
+    access(all)
+    fun initBlocklist() {
+        let path = /storage/evmBlocklist
+        if self.account.storage.type(at: path) != nil{
+            return
+        }
+        self.account.storage.save(<-create EVMBlocklist(), to: path)
+    }
+
     /*****************
         Constructs
      *****************/
@@ -242,6 +270,36 @@ contract FlowEVMBridgeConfig {
         ///
         access(contract) fun unpause() {
             self.isPaused = false
+        }
+    }
+
+    /// EVMBlocklist resource stores a mapping of EVM addresses that are blocked from onboarding to the bridge
+    ///
+    access(all) resource EVMBlocklist {
+        /// Mapping of serialized EVM addresses to their blocked status
+        ///
+        access(all) let blockList: {String: Bool}
+
+        init() {
+            self.blockList = {}
+        }
+
+        /// Returns whether the given EVM address is blocked from onboarding to the bridge
+        ///
+        access(all) view fun isBlocked(_ evmAddress: EVM.EVMAddress): Bool {
+            return self.blockList[evmAddress.toString()] ?? false
+        }
+
+        /// Blocks the given EVM address from onboarding to the bridge
+        ///
+        access(Blocklist) fun block(_ evmAddress: EVM.EVMAddress) {
+            self.blockList[evmAddress.toString()] = true
+        }
+
+        /// Removes the given EVM address from the blocklist
+        ///
+        access(Blocklist) fun unblock(_ evmAddress: EVM.EVMAddress) {
+            self.blockList.remove(key: evmAddress.toString())
         }
     }
 
