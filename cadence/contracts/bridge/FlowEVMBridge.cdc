@@ -141,6 +141,8 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
     ) {
         pre {
             !FlowEVMBridgeConfig.isPaused(): "Bridge operations are currently paused"
+            !FlowEVMBridgeConfig.isEVMAddressBlocked(address):
+                "This EVM contract is currently blocked from being onboarded"
         }
         /* Validate the EVM contract */
         //
