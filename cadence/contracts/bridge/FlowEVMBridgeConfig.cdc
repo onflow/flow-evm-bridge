@@ -278,28 +278,28 @@ contract FlowEVMBridgeConfig {
     access(all) resource EVMBlocklist {
         /// Mapping of serialized EVM addresses to their blocked status
         ///
-        access(all) let blockList: {String: Bool}
+        access(all) let blocklist: {String: Bool}
 
         init() {
-            self.blockList = {}
+            self.blocklist = {}
         }
 
         /// Returns whether the given EVM address is blocked from onboarding to the bridge
         ///
         access(all) view fun isBlocked(_ evmAddress: EVM.EVMAddress): Bool {
-            return self.blockList[evmAddress.toString()] ?? false
+            return self.blocklist[evmAddress.toString()] ?? false
         }
 
         /// Blocks the given EVM address from onboarding to the bridge
         ///
         access(Blocklist) fun block(_ evmAddress: EVM.EVMAddress) {
-            self.blockList[evmAddress.toString()] = true
+            self.blocklist[evmAddress.toString()] = true
         }
 
         /// Removes the given EVM address from the blocklist
         ///
         access(Blocklist) fun unblock(_ evmAddress: EVM.EVMAddress) {
-            self.blockList.remove(key: evmAddress.toString())
+            self.blocklist.remove(key: evmAddress.toString())
         }
     }
 
