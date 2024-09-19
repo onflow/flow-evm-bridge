@@ -296,15 +296,9 @@ contract FlowEVMBridgeConfig {
             self.blockList[evmAddress.toString()] = true
         }
 
-        /// Unblocks the given EVM address from onboarding to the bridge
-        ///
-        access(Blocklist) fun unblock(_ evmAddress: EVM.EVMAddress) {
-            self.blockList[evmAddress.toString()] = false
-        }
-
         /// Removes the given EVM address from the blocklist
         ///
-        access(Blocklist) fun remove(_ evmAddress: EVM.EVMAddress) {
+        access(Blocklist) fun unblock(_ evmAddress: EVM.EVMAddress) {
             self.blockList.remove(key: evmAddress.toString())
         }
     }
