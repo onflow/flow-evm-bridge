@@ -229,18 +229,6 @@ contract FlowEVMBridgeConfig {
             ?? panic("Missing or mis-typed Blocklist in storage")
     }
 
-    /// Temporary method to initialize the EVMBlocklist resource as this resource was added after the contract was
-    /// deployed
-    ///
-    access(all)
-    fun initBlocklist() {
-        let path = /storage/evmBlocklist
-        if self.account.storage.type(at: path) != nil{
-            return
-        }
-        self.account.storage.save(<-create EVMBlocklist(), to: path)
-    }
-
     /*****************
         Constructs
      *****************/
@@ -508,5 +496,8 @@ contract FlowEVMBridgeConfig {
         self.account.storage.save(<-create Admin(), to: self.adminStoragePath)
         let adminCap = self.account.capabilities.storage.issue<&Admin>(self.adminStoragePath)
         self.account.capabilities.publish(adminCap, at: self.adminPublicPath)
+
+        // Initialize the EVMBlocklist
+        self.account.storage.save(<-create EVMBlocklist(), to: /storage/evmBlocklist)
     }
 }
