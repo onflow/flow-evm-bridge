@@ -12,7 +12,6 @@ transaction(evmContractHex: String) {
     let evmAddress: EVM.EVMAddress
 
     prepare(signer: auth(BorrowValue) &Account) {
-        FlowEVMBridgeConfig.initBlocklist()
         self.evmBlocklist = signer.storage.borrow<auth(FlowEVMBridgeConfig.Blocklist) &FlowEVMBridgeConfig.EVMBlocklist>(
                 from: /storage/evmBlocklist
             ) ?? panic("Could not borrow FlowEVMBridgeConfig Admin reference")
