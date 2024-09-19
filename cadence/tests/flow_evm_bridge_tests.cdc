@@ -961,11 +961,37 @@ access(all)
 fun testOnboardERC721ByEVMAddressSucceeds() {
     snapshot = getCurrentBlockHeight()
 
+    // Validate EVMBlocklist works by blocking the EVM address
+    let blockResult = executeTransaction(
+        "../transactions/bridge/admin/blocklist/block_evm_address.cdc",
+        [erc721AddressHex],
+        bridgeAccount
+    )
+    Test.expect(blockResult, Test.beSucceeded())
+
+    // onboarding should fail as the EVM address is blocked
+    var onboardingResult = executeTransaction(
+        "../transactions/bridge/onboarding/onboard_by_evm_address.cdc",
+        [erc721AddressHex],
+        alice
+    )
+    Test.expect(onboardingResult, Test.beFailed())
+
+    // Unblock the EVM address
+    let unblockResult = executeTransaction(
+        "../transactions/bridge/admin/blocklist/remove_evm_address_from_blocklist.cdc",
+        [erc721AddressHex],
+        bridgeAccount
+    )
+    Test.expect(unblockResult, Test.beSucceeded())
+
+    // And now onboarding should succeed
+
     var requiresOnboarding = evmAddressRequiresOnboarding(erc721AddressHex)
         ?? panic("Problem getting onboarding requirement")
     Test.assertEqual(true, requiresOnboarding)
 
-    var onboardingResult = executeTransaction(
+    onboardingResult = executeTransaction(
         "../transactions/bridge/onboarding/onboard_by_evm_address.cdc",
         [erc721AddressHex],
         alice
