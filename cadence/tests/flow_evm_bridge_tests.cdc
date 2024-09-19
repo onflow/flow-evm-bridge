@@ -135,6 +135,13 @@ fun setup() {
         arguments: []
     )
     Test.expect(err, Test.beNil())
+    // Initialize EVMBlocklist resource in account storage
+    let initBlocklistResult = executeTransaction(
+        "../transactions/bridge/admin/blocklist/init_blocklist.cdc",
+        [],
+        bridgeAccount
+    )
+    Test.expect(initBlocklistResult, Test.beSucceeded())
 
     // Deploy registry
     let registryDeploymentResult = executeTransaction(
