@@ -84,13 +84,13 @@ access(all) contract SerializeMetadata {
         // Append results from the token-level Display view to the serialized JSON compatible string
         if nftDisplay != nil {
             serializedResult = serializedResult
-                .concat(name).concat(Serialize.tryToJSONString(nftDisplay!.name)!).concat(", ")
-                .concat(description).concat(Serialize.tryToJSONString(nftDisplay!.description)!).concat(", ")
-                .concat(image).concat(Serialize.tryToJSONString(nftDisplay!.thumbnail.uri())!)
+            .concat(name).concat(Serialize.tryToJSONString(nftDisplay!.name)!).concat(", ")
+            .concat(description).concat(Serialize.tryToJSONString(nftDisplay!.description)!).concat(", ")
+            .concat(image).concat(Serialize.tryToJSONString(nftDisplay!.thumbnail.uri())!)
             // Append the `externa_url` value from NFTCollectionDisplay view if present
             if collectionDisplay != nil {
                 return serializedResult.concat(", ")
-                    .concat(externalURL).concat(Serialize.tryToJSONString(collectionDisplay!.externalURL.url)!)
+                .concat(externalURL).concat(Serialize.tryToJSONString(collectionDisplay!.externalURL.url)!)
             }
         }
 
@@ -100,10 +100,10 @@ access(all) contract SerializeMetadata {
 
         // Without token-level view, serialize as contract-level metadata
         return serializedResult
-            .concat(name).concat(Serialize.tryToJSONString(collectionDisplay!.name)!).concat(", ")
-            .concat(description).concat(Serialize.tryToJSONString(collectionDisplay!.description)!).concat(", ")
-            .concat(image).concat(Serialize.tryToJSONString(collectionDisplay!.squareImage.file.uri())!).concat(", ")
-            .concat(externalLink).concat(Serialize.tryToJSONString(collectionDisplay!.externalURL.url)!)
+        .concat(name).concat(Serialize.tryToJSONString(collectionDisplay!.name)!).concat(", ")
+        .concat(description).concat(Serialize.tryToJSONString(collectionDisplay!.description)!).concat(", ")
+        .concat(image).concat(Serialize.tryToJSONString(collectionDisplay!.squareImage.file.uri())!).concat(", ")
+        .concat(externalLink).concat(Serialize.tryToJSONString(collectionDisplay!.externalURL.url)!)
     }
 
     /// Serializes given Traits view as a JSON compatible string. If a given Trait is not serializable, it is skipped
@@ -129,9 +129,10 @@ access(all) contract SerializeMetadata {
                 continue
             }
             serializedResult = serializedResult.concat("{")
-                .concat("\"trait_type\": ").concat(Serialize.tryToJSONString(trait.name)!)
-                .concat(", \"value\": ").concat(value!)
-                .concat("}")
+            .concat("\"trait_type\": ").concat(Serialize.tryToJSONString(trait.name)!)
+            .concat(", \"display_type\": ").concat(Serialize.tryToJSONString(trait.display_type)!)
+            .concat(", \"value\": ").concat(value!)
+            .concat("}")
             if i < traits!.traits.length - 1 {
                 serializedResult = serializedResult.concat(",")
             }
@@ -160,11 +161,11 @@ access(all) contract SerializeMetadata {
         let externalLink = "\"external_link\": "
 
         return "data:application/json;utf8,{"
-            .concat(name).concat(Serialize.tryToJSONString(ftDisplay.name)!).concat(", ")
-            .concat(symbol).concat(Serialize.tryToJSONString(ftDisplay.symbol)!).concat(", ")
-            .concat(description).concat(Serialize.tryToJSONString(ftDisplay.description)!).concat(", ")
-            .concat(externalLink).concat(Serialize.tryToJSONString(ftDisplay.externalURL.url)!)
-            .concat("}")
+        .concat(name).concat(Serialize.tryToJSONString(ftDisplay.name)!).concat(", ")
+        .concat(symbol).concat(Serialize.tryToJSONString(ftDisplay.symbol)!).concat(", ")
+        .concat(description).concat(Serialize.tryToJSONString(ftDisplay.description)!).concat(", ")
+        .concat(externalLink).concat(Serialize.tryToJSONString(ftDisplay.externalURL.url)!)
+        .concat("}")
     }
 
     /// Derives a symbol for use as an ERC20 or ERC721 symbol from a given string, presumably a Cadence contract name.
