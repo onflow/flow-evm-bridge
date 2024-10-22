@@ -112,7 +112,7 @@ access(all) contract SerializeMetadata {
     /// @param traits: The Traits view to be serialized
     ///
     /// @returns: A JSON compatible string containing the serialized traits as:
-    ///     `\"attributes\": [{\"trait_type\": \"<trait.name>\", \"value\": \"<trait.value>\"}, {...}]`
+    ///     `\"attributes\": [{\"trait_type\": \"<trait.name>\", \"display_type\": \"<trait.displayType>\", \"value\": \"<trait.value>\"}, {...}]`
     ///
     access(all)
     fun serializeNFTTraitsAsAttributes(_ traits: MetadataViews.Traits): String {
@@ -129,10 +129,13 @@ access(all) contract SerializeMetadata {
                 continue
             }
             serializedResult = serializedResult.concat("{")
-            .concat("\"trait_type\": ").concat(Serialize.tryToJSONString(trait.name)!)
-            .concat(", \"display_type\": ").concat(Serialize.tryToJSONString(trait.displayType)!)
-            .concat(", \"value\": ").concat(value!)
-            .concat("}")
+                .concat("\"trait_type\": ").concat(Serialize.tryToJSONString(trait.name)!)
+            if trait.displayType != nil {
+                serializedResult = serializedResult.concat(", \"display_type\": ")
+                    .concat(Serialize.tryToJSONString(trait.displayType)!)
+            }
+            serializedResult = serializedResult.concat(", \"value\": ").concat(value!)
+                .concat("}")
             if i < traits!.traits.length - 1 {
                 serializedResult = serializedResult.concat(",")
             }
