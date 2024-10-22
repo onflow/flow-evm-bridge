@@ -130,7 +130,7 @@ access(all) contract SerializeMetadata {
             }
             serializedResult = serializedResult.concat("{")
             .concat("\"trait_type\": ").concat(Serialize.tryToJSONString(trait.name)!)
-            .concat(", \"display_type\": ").concat(Serialize.tryToJSONString(trait.display_type)!)
+            .concat(", \"display_type\": ").concat(Serialize.tryToJSONString(trait.displayType)!)
             .concat(", \"value\": ").concat(value!)
             .concat("}")
             if i < traits!.traits.length - 1 {
