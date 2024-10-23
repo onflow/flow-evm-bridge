@@ -31,14 +31,15 @@ access(all) contract SerializeMetadata {
         // Serialize the display values from the NFT's Display & NFTCollectionDisplay views
         let nftDisplay = nft.resolveView(Type<MetadataViews.Display>()) as! MetadataViews.Display?
         let collectionDisplay = nft.resolveView(Type<MetadataViews.NFTCollectionDisplay>()) as! MetadataViews.NFTCollectionDisplay?
+        // Serialize the display & collection display views - nil if both views are nil
         let display = self.serializeFromDisplays(nftDisplay: nftDisplay, collectionDisplay: collectionDisplay)
 
         // Get the Traits view from the NFT, returning early if no traits are found
         let traits = nft.resolveView(Type<MetadataViews.Traits>()) as! MetadataViews.Traits?
         let attributes = self.serializeNFTTraitsAsAttributes(traits ?? MetadataViews.Traits([]))
 
-        // Return an empty string if nothing is serializable
-        if display == nil && attributes == nil {
+        // Return an empty string if all views are nil
+        if display == nil && traits == nil {
             return ""
         }
         // Init the data format prefix & concatenate the serialized display & attributes
