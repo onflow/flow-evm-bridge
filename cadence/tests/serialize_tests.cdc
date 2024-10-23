@@ -239,6 +239,7 @@ fun testDictToJSONStringSucceeds() {
     var expectedTwo: String = "{\"arr\": [\"127\", \"Hello, World!\"], \"bool\": \"true\"}"
     
     var actual: String? = Serialize.dictToJSONString(dict: dict, excludedNames: nil)
+    log(actual)
     Test.assertEqual(true, expectedOne == actual! || expectedTwo == actual!)
     
     actual = Serialize.tryToJSONString(dict)
