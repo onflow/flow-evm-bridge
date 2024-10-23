@@ -5,7 +5,7 @@ import "NonFungibleToken"
 /// This contract is a utility for serializing primitive types, arrays, and common metadata mapping formats to JSON
 /// compatible strings. Also included are interfaces enabling custom serialization for structs and resources.
 ///
-/// Special thanks to @austinkline for the idea and initial implementation.
+/// Special thanks to @austinkline for the idea and initial implementation & @bjartek + @bluesign for optimizations.
 ///
 access(all)
 contract Serialize {
