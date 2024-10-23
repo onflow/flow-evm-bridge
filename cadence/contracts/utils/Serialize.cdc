@@ -90,7 +90,7 @@ contract Serialize {
     access(all)
     fun arrayToJSONString(_ arr: [AnyStruct]): String? {
         let parts: [String]= []
-        for i, element in arr {
+        for element in arr {
             let serializedElement = self.tryToJSONString(element)
             if serializedElement == nil {
                 continue
@@ -112,7 +112,7 @@ contract Serialize {
             }
         }
         let parts: [String] = []
-        for i, key in dict.keys {
+        for key in dict.keys {
             let serializedValue = self.tryToJSONString(dict[key]!)
             if serializedValue == nil {
                 continue

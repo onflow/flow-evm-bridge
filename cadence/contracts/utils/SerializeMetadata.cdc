@@ -112,36 +112,44 @@ access(all) contract SerializeMetadata {
     ///
     /// @param traits: The Traits view to be serialized
     ///
-    /// @returns: A JSON compatible string containing the serialized traits as:
+    /// @returns: A JSON compatible string containing the serialized traits as follows
+    ///     (display_type omitted if trait.displayType == nil):
     ///     `\"attributes\": [{\"trait_type\": \"<trait.name>\", \"display_type\": \"<trait.displayType>\", \"value\": \"<trait.value>\"}, {...}]`
     ///
     access(all)
     fun serializeNFTTraitsAsAttributes(_ traits: MetadataViews.Traits): String {
         // Serialize each trait as an attribute, building the serialized JSON compatible string
-        var serializedResult = "\"attributes\": ["
+        let parts: [String] = []
         let traitsLength = traits.traits.length
         for i, trait in traits.traits {
-            let value = Serialize.tryToJSONString(trait.value)
-            if value == nil {
-                // Remove trailing comma if last trait is not serializable
-                if i == traitsLength - 1 && serializedResult[serializedResult.length - 1] == "," {
-                    serializedResult = serializedResult.slice(from: 0, upTo: serializedResult.length - 1)
-                }
+            let attribute = self.serializeNFTTraitAsAttribute(trait)
+            if attribute == nil {
                 continue
             }
-            serializedResult = serializedResult.concat("{")
-                .concat("\"trait_type\": ").concat(Serialize.tryToJSONString(trait.name)!)
-            if trait.displayType != nil {
-                serializedResult = serializedResult.concat(", \"display_type\": ")
-                    .concat(Serialize.tryToJSONString(trait.displayType)!)
-            }
-            serializedResult = serializedResult.concat(", \"value\": ").concat(value!)
-                .concat("}")
-            if i < traits!.traits.length - 1 {
-                serializedResult = serializedResult.concat(",")
-            }
+            parts.append(attribute!)
         }
-        return serializedResult.concat("]")
+        // Join all serialized attributes with a comma separator, wrapping the result in square brackets under the
+        // `attributes` key
+        return "\"attributes\": [".concat(String.join(parts, separator: ", ")).concat("]")
+    }
+
+    /// Serializes a given Trait as an attribute in a JSON compatible format. If the trait's value is not serializable,
+    /// nil is returned.
+    /// The format of the serialized trait is as follows (display_type omitted if trait.displayType == nil):
+    ///     `{"trait_type": "<trait.name>", "display_type": "<trait.displayType>", "value": "<trait.value>"}`
+    access(all)
+    fun serializeNFTTraitAsAttribute(_ trait: MetadataViews.Trait): String? {
+        let value = Serialize.tryToJSONString(trait.value)
+        if value == nil {
+            return nil
+        }
+        let parts: [String] = ["{"]
+        parts.appendAll( [ "\"trait_type\": ", Serialize.tryToJSONString(trait.name)! ] )
+        if trait.displayType != nil {
+            parts.appendAll( [ ", \"display_type\": ", Serialize.tryToJSONString(trait.displayType)! ] )
+        }
+        parts.appendAll( [ ", \"value\": ", value! , "}" ] )
+        return String.join(parts, separator: "")
     }
 
     /// Serializes the FTDisplay view of a given fungible token as a JSON compatible data URL. The value is returned as
