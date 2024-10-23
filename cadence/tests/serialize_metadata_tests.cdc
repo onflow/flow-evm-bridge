@@ -57,8 +57,8 @@ fun testSerializeNFTSucceeds() {
     let heightString = mintedBlockHeight.toString()
 
     let expectedPrefix = "data:application/json;utf8,{\"name\": \"ExampleNFT\", \"description\": \"Example NFT Collection\", \"image\": \"https://flow.com/examplenft.jpg\", \"external_url\": \"https://example-nft.onflow.org\", "
-    let altSuffix1 = "\"attributes\": [{\"trait_type\": \"mintedBlock\", \"display_type\": \"nil\", \"value\": \"".concat(heightString).concat("\"},{\"trait_type\": \"foo\", \"display_type\": \"nil\", \"value\": \"nil\"}]}")
-    let altSuffix2 = "\"attributes\": [{\"trait_type\": \"foo\", \"display_type\": \"nil\", \"value\": \"nil\"}]}, {\"trait_type\": \"mintedBlock\", \"display_type\": \"nil\", \"value\": \"".concat(heightString).concat("\"}")
+    let altSuffix1 = "\"attributes\": [{\"trait_type\": \"mintedBlock\", \"value\": \"".concat(heightString).concat("\"},{\"trait_type\": \"foo\", \"value\": \"nil\"}]}")
+    let altSuffix2 = "\"attributes\": [{\"trait_type\": \"foo\", \"value\": \"nil\"}]}, {\"trait_type\": \"mintedBlock\", \"value\": \"".concat(heightString).concat("\"}")
 
     let idsResult = executeScript(
         "../scripts/nft/get_ids.cdc",
