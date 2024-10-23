@@ -23,7 +23,7 @@ transaction(
                 "Cannot add Key: Must provide a hash algorithm raw value that corresponds to "
                 .concat("one of of the available hash algorithms for Flow keys.")
                 .concat("You provided ").concat(hashAlgorithm.toString())
-                .concat(" but the options are 1 (SHA2_256), 3 (SHA3_256), ")
+                .concat(" but the options are 1 (SHA2_256), 3 (SHA3_256).")
         }
 
         self.auth = signer
