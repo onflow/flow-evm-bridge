@@ -74,7 +74,6 @@ fun testSerializeNFTSucceeds() {
     Test.expect(serializeMetadataResult, Test.beSucceeded())
 
     let serializedMetadata = serializeMetadataResult.returnValue! as! String
-
     Test.assertEqual(true, serializedMetadata == expectedPrefix.concat(altSuffix1) || serializedMetadata == expectedPrefix.concat(altSuffix2))
 }
 
