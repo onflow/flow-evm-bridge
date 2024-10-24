@@ -123,7 +123,7 @@ access(all) contract SerializeMetadata {
         // Serialize each trait as an attribute, building the serialized JSON compatible string
         let parts: [String] = []
         let traitsLength = traits.traits.length
-        for i, trait in traits.traits {
+        for trait in traits.traits {
             let attribute = self.serializeNFTTraitAsAttribute(trait)
             if attribute == nil {
                 continue
