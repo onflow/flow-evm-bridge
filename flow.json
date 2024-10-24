@@ -264,7 +264,6 @@
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "e467b9dd11fa00df",
-				"previewnet": "b6763b4399a888c8",
 				"testnet": "8c5303eaa26202d6"
 			}
 		},
@@ -274,7 +273,6 @@
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "e467b9dd11fa00df",
-				"previewnet": "b6763b4399a888c8",
 				"testnet": "8c5303eaa26202d6"
 			}
 		},
@@ -284,7 +282,6 @@
 			"aliases": {
 				"emulator": "0ae53cb6e3f42a79",
 				"mainnet": "1654653399040a61",
-				"previewnet": "4445e7ad11568276",
 				"testnet": "7e60df042a9c0868"
 			}
 		},
@@ -294,7 +291,6 @@
 			"aliases": {
 				"emulator": "ee82856bf20e2aa6",
 				"mainnet": "f233dcee88fe0abe",
-				"previewnet": "a0225e7000ac82a9",
 				"testnet": "9a0766d93b6608b7"
 			}
 		},
@@ -304,7 +300,6 @@
 			"aliases": {
 				"emulator": "ee82856bf20e2aa6",
 				"mainnet": "f233dcee88fe0abe",
-				"previewnet": "a0225e7000ac82a9",
 				"testnet": "9a0766d93b6608b7"
 			}
 		},
@@ -314,7 +309,6 @@
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "1d7e57aa55817448",
-				"previewnet": "b6763b4399a888c8",
 				"testnet": "631e88ae7f1d7c20"
 			}
 		},
@@ -324,7 +318,6 @@
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "1d7e57aa55817448",
-				"previewnet": "b6763b4399a888c8",
 				"testnet": "631e88ae7f1d7c20"
 			}
 		},
@@ -334,7 +327,6 @@
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "1d7e57aa55817448",
-				"previewnet": "b6763b4399a888c8",
 				"testnet": "631e88ae7f1d7c20"
 			}
 		}
