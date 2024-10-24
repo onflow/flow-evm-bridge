@@ -10,9 +10,9 @@ transaction(
     signatureAlgorithm: UInt8, // signature algorithm to be used for the account
     hashAlgorithm: UInt8, // hash algorithm to be used for the account
 ) {
-    let auth: auth(Storage, Keys, Capabilities) &Account
+    let auth: auth(BorrowValue) &Account
 
-    prepare(signer: auth(Storage, Keys, Capabilities) &Account) {
+    prepare(signer: auth(BorrowValue) &Account) {
         pre {
             signatureAlgorithm == 1 || signatureAlgorithm == 2:
                 "Cannot add Key: Must provide a signature algorithm raw value that corresponds to "
