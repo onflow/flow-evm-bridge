@@ -58,16 +58,15 @@ transaction(nftIdentifier: String, id: UInt64) {
                 from: collectionData.storagePath
             ) ?? panic("Could not access signer's NFT Collection")
 
-        // Withdraw the requested NFT & calculate the approximate bridge fee based on NFT storage usage
-        let currentStorageUsage = signer.storage.used
+        // Withdraw the requested NFT & set a cap on the withdrawable bridge fee
         self.nft <- collection.withdraw(withdrawID: id)
-        let withdrawnStorageUsage = signer.storage.used
         var approxFee = FlowEVMBridgeUtils.calculateBridgeFee(
-                bytes: currentStorageUsage - withdrawnStorageUsage
-            ) * 1.10
+                bytes: 200_000 // 200 kB as upper bound on movable storage used in a single transaction
+            )
         // Determine if the NFT requires onboarding - this impacts the fee required
         self.requiresOnboarding = FlowEVMBridge.typeRequiresOnboarding(self.nft.getType())
             ?? panic("Bridge does not support this asset type")
+        // Add the onboarding fee if onboarding is necessary
         if self.requiresOnboarding {
             approxFee = approxFee + FlowEVMBridgeConfig.onboardFee
         }
