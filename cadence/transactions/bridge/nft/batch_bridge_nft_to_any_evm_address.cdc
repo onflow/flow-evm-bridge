@@ -102,12 +102,14 @@ transaction(nftIdentifier: String, ids: [UInt64], recipient: String) {
             )
         }
 
+        // Iterate over requested IDs and bridge each NFT to the provided recipient in EVM
         for id in ids {
             // Withdraw the NFT & ensure it is the correct type
             let nft <-self.collection.withdraw(withdrawID: id)
             assert(
                 nft.getType() == self.nftType,
-                message: "Bridged nft type mismatch - requested: ".concat(self.nftType.identifier).concat(", received: ").concat(nft.getType().identifier)
+                message: "Bridged nft type mismatch - requested: ".concat(self.nftType.identifier)
+                    .concat(", received: ").concat(nft.getType().identifier)
             )
             // Execute the bridge to EVM
             let recipientEVMAddress = EVM.addressFromString(recipient)
