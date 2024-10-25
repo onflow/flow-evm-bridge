@@ -64,8 +64,10 @@ transaction(nftIdentifier: String, id: UInt256) {
 
         /* --- Configure a ScopedFTProvider --- */
         //
-        // Calculate the bridge fee - bridging from EVM consumes no storage, so flat fee
-        let approxFee = FlowEVMBridgeUtils.calculateBridgeFee(bytes: 0)
+        // Set a cap on the withdrawable bridge fee
+        var approxFee = FlowEVMBridgeUtils.calculateBridgeFee(
+                bytes: 200_000 // 200 kB as upper bound on movable storage used in a single transaction
+            )
         // Issue and store bridge-dedicated Provider Capability in storage if necessary
         if signer.storage.type(at: FlowEVMBridgeConfig.providerCapabilityStoragePath) == nil {
             let providerCap = signer.capabilities.storage.issue<auth(FungibleToken.Withdraw) &{FungibleToken.Provider}>(
