@@ -58,14 +58,11 @@ transaction(vaultIdentifier: String, amount: UFix64) {
                 from: vaultData.storagePath
             ) ?? panic("Could not access signer's FungibleToken Vault")
 
-        // Withdraw the requested balance & calculate the approximate bridge fee based on storage usage
-        let currentStorageUsage = signer.storage.used
+        // Withdraw the requested balance & set a cap on the withdrawable bridge fee
         self.sentVault <- vault.withdraw(amount: amount)
-        let withdrawnStorageUsage = signer.storage.used
-        // Approximate the bridge fee based on the difference in storage usage with some buffer
         var approxFee = FlowEVMBridgeUtils.calculateBridgeFee(
-                bytes: currentStorageUsage - withdrawnStorageUsage
-            ) * 1.10
+                bytes: 200_000 // 200 kB as upper bound on movable storage used in a single transaction
+            )
         // Determine if the Vault requires onboarding - this impacts the fee required
         self.requiresOnboarding = FlowEVMBridge.typeRequiresOnboarding(self.sentVault.getType())
             ?? panic("Bridge does not support this asset type")
