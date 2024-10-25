@@ -5,7 +5,7 @@ import "NonFungibleToken"
 /// This contract is a utility for serializing primitive types, arrays, and common metadata mapping formats to JSON
 /// compatible strings. Also included are interfaces enabling custom serialization for structs and resources.
 ///
-/// Special thanks to @austinkline for the idea and initial implementation.
+/// Special thanks to @austinkline for the idea and initial implementation & @bjartek + @bluesign for optimizations.
 ///
 access(all)
 contract Serialize {
@@ -27,59 +27,59 @@ contract Serialize {
             case Type<Never?>():
                 return "\"nil\""
             case Type<String>():
-                return "\"".concat(value as! String).concat("\"")
+                return String.join(["\"", value as! String, "\"" ], separator: "")
             case Type<String?>():
-                return "\"".concat(value as? String ?? "nil").concat("\"")
+                return String.join(["\"", value as? String ?? "nil", "\"" ], separator: "")
             case Type<Character>():
-                return "\"".concat((value as! Character).toString()).concat("\"")
+                return String.join(["\"", (value as! Character).toString(), "\"" ], separator: "")
             case Type<Bool>():
-                return "\"".concat(value as! Bool ? "true" : "false").concat("\"")
+                return String.join(["\"", value as! Bool ? "true" : "false", "\"" ], separator: "")
             case Type<Address>():
-                return "\"".concat((value as! Address).toString()).concat("\"")
+                return String.join(["\"", (value as! Address).toString(), "\"" ], separator: "")
             case Type<Address?>():
-                return "\"".concat((value as? Address)?.toString() ?? "nil").concat("\"")
+                return String.join(["\"", (value as? Address)?.toString() ?? "nil", "\"" ], separator: "")
             case Type<Int8>():
-                return "\"".concat((value as! Int8).toString()).concat("\"")
+                return String.join(["\"", (value as! Int8).toString(), "\"" ], separator: "")
             case Type<Int16>():
-                return "\"".concat((value as! Int16).toString()).concat("\"")
+                return String.join(["\"", (value as! Int16).toString(), "\"" ], separator: "")
             case Type<Int32>():
-                return "\"".concat((value as! Int32).toString()).concat("\"")
+                return String.join(["\"", (value as! Int32).toString(), "\"" ], separator: "")
             case Type<Int64>():
-                return "\"".concat((value as! Int64).toString()).concat("\"")
+                return String.join(["\"", (value as! Int64).toString(), "\"" ], separator: "")
             case Type<Int128>():
-                return "\"".concat((value as! Int128).toString()).concat("\"")
+                return String.join(["\"", (value as! Int128).toString(), "\"" ], separator: "")
             case Type<Int256>():
-                return "\"".concat((value as! Int256).toString()).concat("\"")
+                return String.join(["\"", (value as! Int256).toString(), "\"" ], separator: "")
             case Type<Int>():
-                return "\"".concat((value as! Int).toString()).concat("\"")
+                return String.join(["\"", (value as! Int).toString(), "\"" ], separator: "")
             case Type<UInt8>():
-                return "\"".concat((value as! UInt8).toString()).concat("\"")
+                return String.join(["\"", (value as! UInt8).toString(), "\"" ], separator: "")
             case Type<UInt16>():
-                return "\"".concat((value as! UInt16).toString()).concat("\"")
+                return String.join(["\"", (value as! UInt16).toString(), "\"" ], separator: "")
             case Type<UInt32>():
-                return "\"".concat((value as! UInt32).toString()).concat("\"")
+                return String.join(["\"", (value as! UInt32).toString(), "\"" ], separator: "")
             case Type<UInt64>():
-                return "\"".concat((value as! UInt64).toString()).concat("\"")
+                return String.join(["\"", (value as! UInt64).toString(), "\"" ], separator: "")
             case Type<UInt128>():
-                return "\"".concat((value as! UInt128).toString()).concat("\"")
+                return String.join(["\"", (value as! UInt128).toString(), "\"" ], separator: "")
             case Type<UInt256>():
-                return "\"".concat((value as! UInt256).toString()).concat("\"")
+                return String.join(["\"", (value as! UInt256).toString(), "\"" ], separator: "")
             case Type<UInt>():
-                return "\"".concat((value as! UInt).toString()).concat("\"")
+                return String.join(["\"", (value as! UInt).toString(), "\"" ], separator: "")
             case Type<Word8>():
-                return "\"".concat((value as! Word8).toString()).concat("\"")
+                return String.join(["\"", (value as! Word8).toString(), "\"" ], separator: "")
             case Type<Word16>():
-                return "\"".concat((value as! Word16).toString()).concat("\"")
+                return String.join(["\"", (value as! Word16).toString(), "\"" ], separator: "")
             case Type<Word32>():
-                return "\"".concat((value as! Word32).toString()).concat("\"")
+                return String.join(["\"", (value as! Word32).toString(), "\"" ], separator: "")
             case Type<Word64>():
-                return "\"".concat((value as! Word64).toString()).concat("\"")
+                return String.join(["\"", (value as! Word64).toString(), "\"" ], separator: "")
             case Type<Word128>():
-                return "\"".concat((value as! Word128).toString()).concat("\"")
+                return String.join(["\"", (value as! Word128).toString(), "\"" ], separator: "")
             case Type<Word256>():
-                return "\"".concat((value as! Word256).toString()).concat("\"")
+                return String.join(["\"", (value as! Word256).toString(), "\"" ], separator: "")
             case Type<UFix64>():
-                return "\"".concat((value as! UFix64).toString()).concat("\"")
+                return String.join(["\"", (value as! UFix64).toString(), "\"" ], separator: "")
             default:
                 return nil
         }
@@ -89,24 +89,15 @@ contract Serialize {
     ///
     access(all)
     fun arrayToJSONString(_ arr: [AnyStruct]): String? {
-        var serializedArr = "["
-        let arrLength = arr.length
-        for i, element in arr {
+        let parts: [String]= []
+        for element in arr {
             let serializedElement = self.tryToJSONString(element)
             if serializedElement == nil {
-                if i == arrLength - 1 && serializedArr.length > 1 && serializedArr[serializedArr.length - 2] == "," {
-                    // Remove trailing comma as this element could not be serialized
-                    serializedArr = serializedArr.slice(from: 0, upTo: serializedArr.length - 2)
-                }
                 continue
             }
-            serializedArr = serializedArr.concat(serializedElement!)
-            // Add a comma if there are more elements to serialize
-            if i < arr.length - 1 {
-                serializedArr = serializedArr.concat(", ")
-            }
+            parts.append(serializedElement!)
         }
-        return serializedArr.concat("]")
+        return "[".concat(String.join(parts, separator: ", ")).concat("]")
     }
 
     /// Returns a serialized representation of the given String-indexed mapping or nil if the value is not serializable.
@@ -120,22 +111,15 @@ contract Serialize {
                 dict.remove(key: k)
             }
         }
-        var serializedDict = "{"
-        let dictLength = dict.length
-        for i, key in dict.keys {
+        let parts: [String] = []
+        for key in dict.keys {
             let serializedValue = self.tryToJSONString(dict[key]!)
             if serializedValue == nil {
-                if i == dictLength - 1  && serializedDict.length > 1 && serializedDict[serializedDict.length - 2] == "," {
-                    // Remove trailing comma as this element could not be serialized
-                    serializedDict = serializedDict.slice(from: 0, upTo: serializedDict.length - 2)
-                }
                 continue
             }
-            serializedDict = serializedDict.concat(self.tryToJSONString(key)!).concat(": ").concat(serializedValue!)
-            if i < dict.length - 1 {
-                serializedDict = serializedDict.concat(", ")
-            }
+            let serialializedKeyValue = String.join([self.tryToJSONString(key)!, serializedValue!], separator: ": ")
+            parts.append(serialializedKeyValue)
         }
-        return serializedDict.concat("}")
+        return "{".concat(String.join(parts, separator: ", ")).concat("}")
     }
 }
