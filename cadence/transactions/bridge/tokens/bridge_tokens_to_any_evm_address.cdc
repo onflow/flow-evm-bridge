@@ -57,7 +57,7 @@ transaction(vaultIdentifier: String, amount: UFix64, recipient: String) {
         // Withdraw the requested balance & set a cap on the withdrawable bridge fee
         self.sentVault <- vault.withdraw(amount: amount)
         var approxFee = FlowEVMBridgeUtils.calculateBridgeFee(
-                bytes: 200_000 // 200 kB as upper bound on movable storage used in a single transaction
+                bytes: 400_000 // 400 kB as upper bound on movable storage used in a single transaction
             )
         // Determine if the Vault requires onboarding - this impacts the fee required
         self.requiresOnboarding = FlowEVMBridge.typeRequiresOnboarding(self.sentVault.getType())

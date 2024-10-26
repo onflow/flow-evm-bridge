@@ -76,7 +76,7 @@ transaction(vaultIdentifier: String, amount: UInt256) {
         //
         // Set a cap on the withdrawable bridge fee
         var approxFee = FlowEVMBridgeUtils.calculateBridgeFee(
-                bytes: 200_000 // 200 kB as upper bound on movable storage used in a single transaction
+                bytes: 400_000 // 400 kB as upper bound on movable storage used in a single transaction
             )
         // Issue and store bridge-dedicated Provider Capability in storage if necessary
         if signer.storage.type(at: FlowEVMBridgeConfig.providerCapabilityStoragePath) == nil {
