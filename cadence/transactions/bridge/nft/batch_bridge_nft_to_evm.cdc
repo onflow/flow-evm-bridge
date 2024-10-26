@@ -62,7 +62,7 @@ transaction(nftIdentifier: String, ids: [UInt64]) {
         // Withdraw the requested NFT & set a cap on the withdrawable bridge fee
         var approxFee = FlowEVMBridgeUtils.calculateBridgeFee(
                 bytes: 200_000 // 200 kB as upper bound on movable storage used in a single transaction
-            )
+            ) + (FlowEVMBridgeConfig.baseFee * UFix64(ids.length))
         // Determine if the NFT requires onboarding - this impacts the fee required
         self.requiresOnboarding = FlowEVMBridge.typeRequiresOnboarding(self.nftType)
             ?? panic("Bridge does not support this asset type")
@@ -70,6 +70,7 @@ transaction(nftIdentifier: String, ids: [UInt64]) {
         if self.requiresOnboarding {
             approxFee = approxFee + FlowEVMBridgeConfig.onboardFee
         }
+        log(approxFee)
 
         /* --- Configure a ScopedFTProvider --- */
         //
