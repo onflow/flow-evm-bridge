@@ -33,7 +33,7 @@ transaction(nftIdentifier: String, ids: [UInt256], recipient: Address) {
         //
         // Borrow a reference to the signer's COA
         self.coa = signer.storage.borrow<auth(EVM.Bridge) &EVM.CadenceOwnedAccount>(from: /storage/evm)
-            ?? panic("Could not borrow COA from provided gateway address")
+            ?? panic("Could not borrow COA signer's account at path /storage/evm")
 
         /* --- Construct the NFT type --- */
         //
@@ -50,11 +50,14 @@ transaction(nftIdentifier: String, ids: [UInt256], recipient: Address) {
         //
         // Borrow a reference to the NFT collection, configuring if necessary
         let viewResolver = getAccount(nftContractAddress).contracts.borrow<&{ViewResolver}>(name: nftContractName)
-            ?? panic("Could not borrow ViewResolver from NFT contract")
+            ?? panic("Could not borrow ViewResolver from NFT contract with name "
+                .concat(nftContractName).concat(" and address ")
+                .concat(nftContractAddress.toString()))
         let collectionData = viewResolver.resolveContractView(
                 resourceType: self.nftType,
                 viewType: Type<MetadataViews.NFTCollectionData>()
-            ) as! MetadataViews.NFTCollectionData? ?? panic("Could not resolve NFTCollectionData view")
+            ) as! MetadataViews.NFTCollectionData?
+            ?? panic("Could not resolve NFTCollectionData view for NFT type ".concat(self.nftType.identifier))
         // Configure the signer's account for this NFT
         if signer.storage.borrow<&{NonFungibleToken.Collection}>(from: collectionData.storagePath) == nil {
             signer.storage.save(<-collectionData.createEmptyCollection(), to: collectionData.storagePath)
@@ -63,7 +66,7 @@ transaction(nftIdentifier: String, ids: [UInt256], recipient: Address) {
             signer.capabilities.publish(collectionCap, at: collectionData.publicPath)
         }
         self.receiver = getAccount(recipient).capabilities.borrow<&{NonFungibleToken.Receiver}>(collectionData.publicPath)
-            ?? panic("Could not borrow Receiver from recipient's public capability path")
+            ?? panic("Could not borrow NonFungibleToken Receiver from recipient's public capability path")
 
         /* --- Configure a ScopedFTProvider --- */
         //
@@ -81,7 +84,8 @@ transaction(nftIdentifier: String, ids: [UInt256], recipient: Address) {
         // Copy the stored Provider capability and create a ScopedFTProvider
         let providerCapCopy = signer.storage.copy<Capability<auth(FungibleToken.Withdraw) &{FungibleToken.Provider}>>(
                 from: FlowEVMBridgeConfig.providerCapabilityStoragePath
-            ) ?? panic("Invalid Provider Capability found in storage.")
+            ) ?? panic("Invalid FungibleToken Provider Capability found in storage at path "
+                .concat(FlowEVMBridgeConfig.providerCapabilityStoragePath.toString()))
         let providerFilter = ScopedFTProviders.AllowanceFilter(approxFee)
         self.scopedProvider <- ScopedFTProviders.createScopedFTProvider(
                 provider: providerCapCopy,
@@ -102,7 +106,7 @@ transaction(nftIdentifier: String, ids: [UInt256], recipient: Address) {
             // Ensure the bridged nft is the correct type
             assert(
                 nft.getType() == self.nftType,
-                message: "Bridged nft type mismatch - requeswted: ".concat(self.nftType.identifier)
+                message: "Bridged nft type mismatch - requested: ".concat(self.nftType.identifier)
                     .concat(", received: ").concat(nft.getType().identifier)
             )
             // Deposit the bridged NFT into the signer's collection

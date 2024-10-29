@@ -45,14 +45,17 @@ transaction(vaultIdentifier: String, amount: UFix64, recipient: String) {
         //
         // Borrow a reference to the FungibleToken Vault
         let viewResolver = getAccount(tokenContractAddress).contracts.borrow<&{ViewResolver}>(name: tokenContractName)
-            ?? panic("Could not borrow ViewResolver from FungibleToken contract")
+            ?? panic("Could not borrow ViewResolver from FungibleToken contract with name"
+                .concat(tokenContractName).concat(" and address ")
+                .concat(tokenContractAddress.toString()))
         let vaultData = viewResolver.resolveContractView(
                 resourceType: nil,
                 viewType: Type<FungibleTokenMetadataViews.FTVaultData>()
-            ) as! FungibleTokenMetadataViews.FTVaultData? ?? panic("Could not resolve FTVaultData view")
+            ) as! FungibleTokenMetadataViews.FTVaultData?
+            ?? panic("Could not resolve FTVaultData view for Vault type ".concat(vaultType.identifier))
         let vault = signer.storage.borrow<auth(FungibleToken.Withdraw) &{FungibleToken.Vault}>(
                 from: vaultData.storagePath
-            ) ?? panic("Could not access signer's FungibleToken Vault")
+            ) ?? panic("Could not borrow FungibleToken Vault from storage path ".concat(vaultData.storagePath.toString()))
 
         // Withdraw the requested balance & set a cap on the withdrawable bridge fee
         self.sentVault <- vault.withdraw(amount: amount)
@@ -61,7 +64,7 @@ transaction(vaultIdentifier: String, amount: UFix64, recipient: String) {
             )
         // Determine if the Vault requires onboarding - this impacts the fee required
         self.requiresOnboarding = FlowEVMBridge.typeRequiresOnboarding(self.sentVault.getType())
-            ?? panic("Bridge does not support this asset type")
+            ?? panic("Bridge does not support the requested asset type ".concat(vaultIdentifier))
         if self.requiresOnboarding {
             approxFee = approxFee + FlowEVMBridgeConfig.onboardFee
         }
@@ -78,7 +81,8 @@ transaction(vaultIdentifier: String, amount: UFix64, recipient: String) {
         // Copy the stored Provider capability and create a ScopedFTProvider
         let providerCapCopy = signer.storage.copy<Capability<auth(FungibleToken.Withdraw) &{FungibleToken.Provider}>>(
                 from: FlowEVMBridgeConfig.providerCapabilityStoragePath
-            ) ?? panic("Invalid Provider Capability found in storage.")
+            ) ?? panic("Invalid FungibleToken Provider Capability found in storage at path "
+                .concat(FlowEVMBridgeConfig.providerCapabilityStoragePath.toString()))
         let providerFilter = ScopedFTProviders.AllowanceFilter(approxFee)
         self.scopedProvider <- ScopedFTProviders.createScopedFTProvider(
                 provider: providerCapCopy,

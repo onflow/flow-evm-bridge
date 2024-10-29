@@ -42,14 +42,18 @@ transaction(nftIdentifier: String, id: UInt64, recipient: String) {
         //
         // Borrow a reference to the NFT collection, configuring if necessary
         let viewResolver = getAccount(nftContractAddress).contracts.borrow<&{ViewResolver}>(name: nftContractName)
-            ?? panic("Could not borrow ViewResolver from NFT contract")
+            ?? panic("Could not borrow ViewResolver from NFT contract with name "
+                .concat(nftContractName).concat(" and address ")
+                .concat(nftContractAddress.toString()))
         let collectionData = viewResolver.resolveContractView(
                 resourceType: nil,
                 viewType: Type<MetadataViews.NFTCollectionData>()
-            ) as! MetadataViews.NFTCollectionData? ?? panic("Could not resolve NFTCollectionData view")
+            ) as! MetadataViews.NFTCollectionData?
+            ?? panic("Could not resolve NFTCollectionData view for NFT type ".concat(nftType.identifier))
         let collection = signer.storage.borrow<auth(NonFungibleToken.Withdraw) &{NonFungibleToken.Collection}>(
                 from: collectionData.storagePath
-            ) ?? panic("Could not access signer's NFT Collection")
+            ) ?? panic("Could not borrow a NonFungibleToken Collection from the signer's storage path "
+                .concat(collectionData.storagePath.toString()))
 
         // Withdraw the requested NFT & calculate the approximate bridge fee based on NFT storage usage
         self.nft <- collection.withdraw(withdrawID: id)
@@ -58,7 +62,7 @@ transaction(nftIdentifier: String, id: UInt64, recipient: String) {
             )
         // Determine if the NFT requires onboarding - this impacts the fee required
         self.requiresOnboarding = FlowEVMBridge.typeRequiresOnboarding(self.nft.getType())
-            ?? panic("Bridge does not support this asset type")
+            ?? panic("Bridge does not support the requested asset type ".concat(nftIdentifier))
         // Add the onboarding fee if onboarding is necessary
         if self.requiresOnboarding {
             approxFee = approxFee + FlowEVMBridgeConfig.onboardFee
@@ -76,7 +80,8 @@ transaction(nftIdentifier: String, id: UInt64, recipient: String) {
         // Copy the stored Provider capability and create a ScopedFTProvider
         let providerCapCopy = signer.storage.copy<Capability<auth(FungibleToken.Withdraw) &{FungibleToken.Provider}>>(
                 from: FlowEVMBridgeConfig.providerCapabilityStoragePath
-            ) ?? panic("Invalid Provider Capability found in storage.")
+            ) ?? panic("Invalid FungibleToken Provider Capability found in storage at path "
+                .concat(FlowEVMBridgeConfig.providerCapabilityStoragePath.toString()))
         let providerFilter = ScopedFTProviders.AllowanceFilter(approxFee)
         self.scopedProvider <- ScopedFTProviders.createScopedFTProvider(
                 provider: providerCapCopy,
