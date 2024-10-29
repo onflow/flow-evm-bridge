@@ -49,8 +49,8 @@ transaction(nftIdentifier: String, ids: [UInt256]) {
         // Borrow a reference to the NFT collection, configuring if necessary
         let viewResolver = getAccount(nftContractAddress).contracts.borrow<&{ViewResolver}>(name: nftContractName)
             ?? panic("Could not borrow ViewResolver from NFT contract with name "
-                          .concat(contractName).concat(" and address ")
-                          .concat(contractAddress.toString())
+                          .concat(nftContractName).concat(" and address ")
+                          .concat(nftContractAddress.toString()))
         let collectionData = viewResolver.resolveContractView(
                 resourceType: self.nftType,
                 viewType: Type<MetadataViews.NFTCollectionData>()
@@ -62,7 +62,7 @@ transaction(nftIdentifier: String, ids: [UInt256]) {
             signer.capabilities.publish(collectionCap, at: collectionData.publicPath)
         }
         self.collection = signer.storage.borrow<&{NonFungibleToken.Collection}>(from: collectionData.storagePath)
-            ?? panic("Could not borrow a NonFungibleToken Collection from the signer's storage path ")
+            ?? panic("Could not borrow a NonFungibleToken Collection from the signer's storage path "
                     .concat(collectionData.storagePath.toString()))
 
         /* --- Configure a ScopedFTProvider --- */
