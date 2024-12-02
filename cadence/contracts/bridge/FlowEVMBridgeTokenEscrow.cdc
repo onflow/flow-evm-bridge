@@ -97,7 +97,14 @@ access(all) contract FlowEVMBridgeTokenEscrow {
         locker.deposit(from: <-vault)
         let postStorageSnapshot = self.account.storage.used
 
-        return postStorageSnapshot - preStorageSnapshot
+        // Return the amount of storage used by the locker after storing the NFT
+        if postStorageSnapshot < preStorageSnapshot {
+            // Due to atree inlining, account storage usage may counterintuitively decrease at times - return 0
+            return 0
+        } else {
+            // Otherwise, return the storage usage delta
+            return postStorageSnapshot - preStorageSnapshot
+        }
     }
 
     /// Unlocks the tokens of the given type and amount, reverting if it isn't in escrow

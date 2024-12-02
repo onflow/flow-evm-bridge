@@ -37,7 +37,7 @@ transaction(vaultIdentifier: String, amount: UInt256, recipient: Address) {
         //
         // Borrow a reference to the signer's COA
         self.coa = signer.storage.borrow<auth(EVM.Bridge) &EVM.CadenceOwnedAccount>(from: /storage/evm)
-            ?? panic("Could not borrow COA from provided gateway address")
+            ?? panic("Could not borrow COA signer's account at path /storage/evm")
 
         /* --- Construct the Vault type --- */
         //
@@ -54,11 +54,14 @@ transaction(vaultIdentifier: String, amount: UInt256, recipient: Address) {
         //
         // Borrow a reference to the FungibleToken Vault, configuring if necessary
         let viewResolver = getAccount(tokenContractAddress).contracts.borrow<&{ViewResolver}>(name: tokenContractName)
-            ?? panic("Could not borrow ViewResolver from FungibleToken contract")
+            ?? panic("Could not borrow ViewResolver from FungibleToken contract with name"
+                .concat(tokenContractName).concat(" and address ")
+                .concat(tokenContractAddress.toString()))
         let vaultData = viewResolver.resolveContractView(
                 resourceType: self.vaultType,
                 viewType: Type<FungibleTokenMetadataViews.FTVaultData>()
-            ) as! FungibleTokenMetadataViews.FTVaultData? ?? panic("Could not resolve FTVaultData view")
+            ) as! FungibleTokenMetadataViews.FTVaultData?
+            ?? panic("Could not resolve FTVaultData view for Vault type ".concat(self.vaultType.identifier))
         // If the vault does not exist, create it and publish according to the contract's defined configuration
         if signer.storage.borrow<&{FungibleToken.Vault}>(from: vaultData.storagePath) == nil {
             signer.storage.save(<-vaultData.createEmptyVault(), to: vaultData.storagePath)
@@ -73,12 +76,14 @@ transaction(vaultIdentifier: String, amount: UInt256, recipient: Address) {
             signer.capabilities.publish(metadataCap, at: vaultData.metadataPath)
         }
         self.receiver = getAccount(recipient).capabilities.borrow<&{FungibleToken.Receiver}>(vaultData.receiverPath)
-            ?? panic("Could not borrow Vault from recipient's account")
+            ?? panic("Could not borrow FungibleToken Vault from storage path ".concat(vaultData.storagePath.toString()))
 
         /* --- Configure a ScopedFTProvider --- */
         //
-        // Calculate the bridge fee - bridging from EVM consumes no storage, so flat fee
-        let approxFee = FlowEVMBridgeUtils.calculateBridgeFee(bytes: 0)
+        // Set a cap on the withdrawable bridge fee
+        var approxFee = FlowEVMBridgeUtils.calculateBridgeFee(
+                bytes: 400_000 // 400 kB as upper bound on movable storage used in a single transaction
+            )
         // Issue and store bridge-dedicated Provider Capability in storage if necessary
         if signer.storage.type(at: FlowEVMBridgeConfig.providerCapabilityStoragePath) == nil {
             let providerCap = signer.capabilities.storage.issue<auth(FungibleToken.Withdraw) &{FungibleToken.Provider}>(
@@ -89,7 +94,8 @@ transaction(vaultIdentifier: String, amount: UInt256, recipient: Address) {
         // Copy the stored Provider capability and create a ScopedFTProvider
         let providerCapCopy = signer.storage.copy<Capability<auth(FungibleToken.Withdraw) &{FungibleToken.Provider}>>(
                 from: FlowEVMBridgeConfig.providerCapabilityStoragePath
-            ) ?? panic("Invalid Provider Capability found in storage.")
+            ) ?? panic("Invalid FungibleToken Provider Capability found in storage at path "
+                .concat(FlowEVMBridgeConfig.providerCapabilityStoragePath.toString()))
         let providerFilter = ScopedFTProviders.AllowanceFilter(approxFee)
         self.scopedProvider <- ScopedFTProviders.createScopedFTProvider(
                 provider: providerCapCopy,
@@ -106,7 +112,11 @@ transaction(vaultIdentifier: String, amount: UInt256, recipient: Address) {
             feeProvider: &self.scopedProvider as auth(FungibleToken.Withdraw) &{FungibleToken.Provider}
         )
         // Ensure the bridged vault is the correct type
-        assert(vault.getType() == self.vaultType, message: "Bridged vault type mismatch")
+        assert(
+            vault.getType() == self.vaultType,
+            message: "Bridged vault type mismatch - requested: ".concat(self.vaultType.identifier)
+                .concat(", received: ").concat(vault.getType().identifier)
+        )
         // Deposit the bridged token into the signer's vault
         self.receiver.deposit(from: <-vault)
         // Destroy the ScopedFTProvider

@@ -25,7 +25,8 @@ access(all) let exampleNFTIdentifier = "A.0000000000000008.ExampleNFT.NFT"
 access(all) let exampleNFTTokenName = "Example NFT"
 access(all) let exampleNFTTokenDescription = "Example NFT token description"
 access(all) let exampleNFTTokenThumbnail = "https://examplenft.com/thumbnail.png"
-access(all) var mintedNFTID: UInt64 = 0
+access(all) var mintedNFTID1: UInt64 = 0
+access(all) var mintedNFTID2: UInt64 = 0
 
 // ExampleToken
 access(all) let exampleTokenIdentifier = "A.0000000000000010.ExampleToken.Vault"
@@ -135,13 +136,6 @@ fun setup() {
         arguments: []
     )
     Test.expect(err, Test.beNil())
-    // Initialize EVMBlocklist resource in account storage
-    let initBlocklistResult = executeTransaction(
-        "../transactions/bridge/admin/blocklist/init_blocklist.cdc",
-        [],
-        bridgeAccount
-    )
-    Test.expect(initBlocklistResult, Test.beSucceeded())
 
     // Deploy registry
     let registryDeploymentResult = executeTransaction(
@@ -523,22 +517,38 @@ fun testMintExampleNFTSucceeds() {
     Test.expect(hasCollection, Test.beSucceeded())
     Test.assertEqual(true, hasCollection.returnValue as! Bool? ?? panic("Problem getting collection status"))
 
-    let mintExampleNFTResult = executeTransaction(
+    var mintExampleNFTResult = executeTransaction(
         "../transactions/example-assets/example-nft/mint_nft.cdc",
         [alice.address, exampleNFTTokenName, exampleNFTTokenDescription, exampleNFTTokenThumbnail, [], [], []],
         exampleNFTAccount
     )
     Test.expect(mintExampleNFTResult, Test.beSucceeded())
 
-    let aliceOwnedIDs = getIDs(ownerAddr: alice.address, storagePathIdentifier: "cadenceExampleNFTCollection")
+    var aliceOwnedIDs = getIDs(ownerAddr: alice.address, storagePathIdentifier: "cadenceExampleNFTCollection")
     Test.assertEqual(1, aliceOwnedIDs.length)
 
-    let events = Test.eventsOfType(Type<NonFungibleToken.Deposited>())
+    var events = Test.eventsOfType(Type<NonFungibleToken.Deposited>())
     Test.assertEqual(1, events.length)
-    let evt = events[0] as! NonFungibleToken.Deposited
-    mintedNFTID = evt.id
+    var evt = events[0] as! NonFungibleToken.Deposited
+    mintedNFTID1 = evt.id
 
-    Test.assertEqual(aliceOwnedIDs[0], mintedNFTID)
+    mintExampleNFTResult = executeTransaction(
+        "../transactions/example-assets/example-nft/mint_nft.cdc",
+        [alice.address, exampleNFTTokenName, exampleNFTTokenDescription, exampleNFTTokenThumbnail, [], [], []],
+        exampleNFTAccount
+    )
+    Test.expect(mintExampleNFTResult, Test.beSucceeded())
+
+    aliceOwnedIDs = getIDs(ownerAddr: alice.address, storagePathIdentifier: "cadenceExampleNFTCollection")
+    Test.assertEqual(2, aliceOwnedIDs.length)
+
+    events = Test.eventsOfType(Type<NonFungibleToken.Deposited>())
+    Test.assertEqual(2, events.length)
+    evt = events[1] as! NonFungibleToken.Deposited
+    mintedNFTID2 = evt.id
+
+    Test.assert(mintedNFTID1 != mintedNFTID2)
+    Test.assertEqual(true, aliceOwnedIDs.contains(mintedNFTID1) && aliceOwnedIDs.contains(mintedNFTID2))
 }
 
 access(all)
@@ -701,8 +711,7 @@ fun testOnboardAndBridgeNFTToEVMSucceeds() {
 
     var aliceCOAAddressHex = getCOAAddressHex(atFlowAddress: alice.address)
     var aliceOwnedIDs = getIDs(ownerAddr: alice.address, storagePathIdentifier: "cadenceExampleNFTCollection")
-    Test.assertEqual(1, aliceOwnedIDs.length)
-    let aliceID = aliceOwnedIDs[0]
+    Test.assertEqual(2, aliceOwnedIDs.length)
 
     var requiresOnboarding = typeRequiresOnboardingByIdentifier(exampleNFTIdentifier)
         ?? panic("Problem getting onboarding status for type")
@@ -712,7 +721,7 @@ fun testOnboardAndBridgeNFTToEVMSucceeds() {
     bridgeNFTToEVM(
         signer: alice,
         nftIdentifier: exampleNFTIdentifier,
-        nftID: aliceID,
+        nftID: mintedNFTID1,
         bridgeAccountAddr: bridgeAccount.address,
         beFailed: false
     )
@@ -733,12 +742,12 @@ fun testOnboardAndBridgeNFTToEVMSucceeds() {
 
     // Confirm the NFT is no longer in Alice's Collection
     aliceOwnedIDs = getIDs(ownerAddr: alice.address, storagePathIdentifier: "cadenceExampleNFTCollection")
-    Test.assertEqual(0, aliceOwnedIDs.length)
+    Test.assertEqual(1, aliceOwnedIDs.length)
 
     // Confirm ownership on EVM side with Alice COA as owner of ERC721 representation
     let isOwnerResult = executeScript(
         "../scripts/utils/is_owner.cdc",
-        [UInt256(mintedNFTID), aliceCOAAddressHex, associatedEVMAddressHex]
+        [UInt256(mintedNFTID1), aliceCOAAddressHex, associatedEVMAddressHex]
     )
     Test.expect(isOwnerResult, Test.beSucceeded())
     Test.assertEqual(true, isOwnerResult.returnValue as! Bool? ?? panic("Problem getting owner status"))
@@ -751,8 +760,7 @@ fun testOnboardAndCrossVMTransferNFTToEVMSucceeds() {
 
     var aliceCOAAddressHex = getCOAAddressHex(atFlowAddress: alice.address)
     var aliceOwnedIDs = getIDs(ownerAddr: alice.address, storagePathIdentifier: "cadenceExampleNFTCollection")
-    Test.assertEqual(1, aliceOwnedIDs.length)
-    let aliceID = aliceOwnedIDs[0]
+    Test.assertEqual(2, aliceOwnedIDs.length)
 
     let recipient = getCOAAddressHex(atFlowAddress: bob.address)
 
@@ -763,7 +771,7 @@ fun testOnboardAndCrossVMTransferNFTToEVMSucceeds() {
     // Execute bridge NFT to EVM recipient - should also onboard the NFT type
     let crossVMTransferResult = executeTransaction(
         "../transactions/bridge/nft/bridge_nft_to_any_evm_address.cdc",
-        [ exampleNFTIdentifier, aliceID, recipient ],
+        [ exampleNFTIdentifier, mintedNFTID1, recipient ],
         alice
     )
     Test.expect(crossVMTransferResult, Test.beSucceeded())
@@ -784,15 +792,11 @@ fun testOnboardAndCrossVMTransferNFTToEVMSucceeds() {
 
     // Confirm the NFT is no longer in Alice's Collection
     aliceOwnedIDs = getIDs(ownerAddr: alice.address, storagePathIdentifier: "cadenceExampleNFTCollection")
-    Test.assertEqual(0, aliceOwnedIDs.length)
+    Test.assertEqual(1, aliceOwnedIDs.length)
 
     // Confirm ownership on EVM side with Alice COA as owner of ERC721 representation
-    let isOwnerResult = executeScript(
-        "../scripts/utils/is_owner.cdc",
-        [UInt256(mintedNFTID), recipient, associatedEVMAddressHex]
-    )
-    Test.expect(isOwnerResult, Test.beSucceeded())
-    Test.assertEqual(true, isOwnerResult.returnValue as! Bool? ?? panic("Problem getting owner status"))
+    var aliceIsOwner = isOwner(of: UInt256(mintedNFTID1), ownerEVMAddrHex: recipient, erc721AddressHex: associatedEVMAddressHex)
+    Test.assertEqual(true, aliceIsOwner)
 }
 
 access(all)
@@ -1092,7 +1096,7 @@ fun testPauseBridgeSucceeds() {
     Test.assertEqual(true, isPausedResult.returnValue as! Bool? ?? panic("Problem getting pause status"))
 
     var aliceOwnedIDs = getIDs(ownerAddr: alice.address, storagePathIdentifier: "cadenceExampleNFTCollection")
-    Test.assertEqual(1, aliceOwnedIDs.length)
+    Test.assertEqual(2, aliceOwnedIDs.length)
 
     var aliceCOAAddressHex = getCOAAddressHex(atFlowAddress: alice.address)
 
@@ -1118,8 +1122,10 @@ fun testPauseBridgeSucceeds() {
 
 access(all)
 fun testBridgeCadenceNativeNFTToEVMSucceeds() {
+    snapshot = getCurrentBlockHeight()
+
     var aliceOwnedIDs = getIDs(ownerAddr: alice.address, storagePathIdentifier: "cadenceExampleNFTCollection")
-    Test.assertEqual(1, aliceOwnedIDs.length)
+    Test.assertEqual(2, aliceOwnedIDs.length)
 
     var aliceCOAAddressHex = getCOAAddressHex(atFlowAddress: alice.address)
 
@@ -1127,7 +1133,7 @@ fun testBridgeCadenceNativeNFTToEVMSucceeds() {
     bridgeNFTToEVM(
         signer: alice,
         nftIdentifier: exampleNFTIdentifier,
-        nftID: aliceOwnedIDs[0],
+        nftID: mintedNFTID1,
         bridgeAccountAddr: bridgeAccount.address,
         beFailed: false
     )
@@ -1137,26 +1143,110 @@ fun testBridgeCadenceNativeNFTToEVMSucceeds() {
 
     // Confirm the NFT is no longer in Alice's Collection
     aliceOwnedIDs = getIDs(ownerAddr: alice.address, storagePathIdentifier: "cadenceExampleNFTCollection")
-    Test.assertEqual(0, aliceOwnedIDs.length)
+    Test.assertEqual(1, aliceOwnedIDs.length)
 
     // Confirm ownership on EVM side with Alice COA as owner of ERC721 representation
     let isOwnerResult = executeScript(
         "../scripts/utils/is_owner.cdc",
-        [UInt256(mintedNFTID), aliceCOAAddressHex, associatedEVMAddressHex]
+        [UInt256(mintedNFTID1), aliceCOAAddressHex, associatedEVMAddressHex]
     )
     Test.expect(isOwnerResult, Test.beSucceeded())
     Test.assertEqual(true, isOwnerResult.returnValue as! Bool? ?? panic("Problem getting owner status"))
 
-    let isNFTLocked = isNFTLocked(nftTypeIdentifier: exampleNFTIdentifier, id: mintedNFTID)
+    let isNFTLocked = isNFTLocked(nftTypeIdentifier: exampleNFTIdentifier, id: mintedNFTID1)
     Test.assertEqual(true, isNFTLocked)
 
-    let metadata = resolveLockedNFTView(bridgeAddress: bridgeAccount.address, nftTypeIdentifier: exampleNFTIdentifier, id: UInt256(mintedNFTID), viewIdentifier: Type<MetadataViews.Display>().identifier)
+    let metadata = resolveLockedNFTView(bridgeAddress: bridgeAccount.address, nftTypeIdentifier: exampleNFTIdentifier, id: UInt256(mintedNFTID1), viewIdentifier: Type<MetadataViews.Display>().identifier)
     Test.assert(metadata != nil, message: "Expected NFT metadata to be resolved from escrow but none was returned")
 }
 
 access(all)
-fun testCrossVMTransferCadenceNativeNFTFromEVMSucceeds() {
+fun testBatchBridgeCadenceNativeNFTToEVMSucceeds() {
+    let tmp = snapshot
+    Test.reset(to: snapshot)
+    snapshot = tmp
+
+    var aliceOwnedIDs = getIDs(ownerAddr: alice.address, storagePathIdentifier: "cadenceExampleNFTCollection")
+    Test.assertEqual(2, aliceOwnedIDs.length)
+
+    var aliceCOAAddressHex = getCOAAddressHex(atFlowAddress: alice.address)
+
+    // Execute bridge to EVM
+    let bridgeResult = executeTransaction(
+        "../transactions/bridge/nft/batch_bridge_nft_to_evm.cdc",
+        [ exampleNFTIdentifier, aliceOwnedIDs ],
+        alice
+    )
+    Test.expect(bridgeResult, Test.beSucceeded())
+
+    let associatedEVMAddressHex = getAssociatedEVMAddressHex(with: exampleNFTIdentifier)
+    Test.assertEqual(40, associatedEVMAddressHex.length)
+
+    // Confirm the NFT is no longer in Alice's Collection
+    aliceOwnedIDs = getIDs(ownerAddr: alice.address, storagePathIdentifier: "cadenceExampleNFTCollection")
+    Test.assertEqual(0, aliceOwnedIDs.length)
+
+    // Confirm ownership on EVM side with Alice COA as owner of ERC721 representation
+    var aliceIsOwner = isOwner(of: UInt256(mintedNFTID1), ownerEVMAddrHex: aliceCOAAddressHex, erc721AddressHex: associatedEVMAddressHex)
+    Test.assertEqual(true, aliceIsOwner)
+    aliceIsOwner = isOwner(of: UInt256(mintedNFTID2), ownerEVMAddrHex: aliceCOAAddressHex, erc721AddressHex: associatedEVMAddressHex)
+    Test.assertEqual(true, aliceIsOwner)
+
+    let isNFT1Locked = isNFTLocked(nftTypeIdentifier: exampleNFTIdentifier, id: mintedNFTID1)
+    let isNFT2Locked = isNFTLocked(nftTypeIdentifier: exampleNFTIdentifier, id: mintedNFTID2)
+    Test.assertEqual(true, isNFT1Locked)
+    Test.assertEqual(true, isNFT2Locked)
+
+    let metadata1 = resolveLockedNFTView(bridgeAddress: bridgeAccount.address, nftTypeIdentifier: exampleNFTIdentifier, id: UInt256(mintedNFTID1), viewIdentifier: Type<MetadataViews.Display>().identifier)
+    let metadata2 = resolveLockedNFTView(bridgeAddress: bridgeAccount.address, nftTypeIdentifier: exampleNFTIdentifier, id: UInt256(mintedNFTID2), viewIdentifier: Type<MetadataViews.Display>().identifier)
+    Test.assert(metadata1 != nil, message: "Expected NFT metadata to be resolved from escrow but none was returned")
+    Test.assert(metadata2 != nil, message: "Expected NFT metadata to be resolved from escrow but none was returned")
+}
+
+access(all)
+fun testBatchBridgeCadenceNativeNFTFromEVMSucceeds() {
     snapshot = getCurrentBlockHeight()
+
+    var aliceCOAAddressHex = getCOAAddressHex(atFlowAddress: alice.address)
+    let associatedEVMAddressHex = getAssociatedEVMAddressHex(with: exampleNFTIdentifier)
+    Test.assertEqual(40, associatedEVMAddressHex.length)
+    
+    // Confirm ownership on EVM side with Alice COA as owner of ERC721 representation
+    var aliceIsOwner = isOwner(of: UInt256(mintedNFTID1), ownerEVMAddrHex: aliceCOAAddressHex, erc721AddressHex: associatedEVMAddressHex)
+    Test.assertEqual(true, aliceIsOwner)
+    aliceIsOwner = isOwner(of: UInt256(mintedNFTID2), ownerEVMAddrHex: aliceCOAAddressHex, erc721AddressHex: associatedEVMAddressHex)
+    Test.assertEqual(true, aliceIsOwner)
+
+    // Execute bridge from EVM
+    let bridgeResult = executeTransaction(
+        "../transactions/bridge/nft/batch_bridge_nft_from_evm.cdc",
+        [ exampleNFTIdentifier, [UInt256(mintedNFTID1), UInt256(mintedNFTID2)] ],
+        alice
+    )
+    Test.expect(bridgeResult, Test.beSucceeded())
+
+    // Confirm the NFT is no longer in Alice's Collection
+    let aliceOwnedIDs = getIDs(ownerAddr: alice.address, storagePathIdentifier: "cadenceExampleNFTCollection")
+    Test.assertEqual(2, aliceOwnedIDs.length)
+
+    // Confirm ownership on EVM side with Alice COA as owner of ERC721 representation
+    aliceIsOwner = isOwner(of: UInt256(mintedNFTID1), ownerEVMAddrHex: aliceCOAAddressHex, erc721AddressHex: associatedEVMAddressHex)
+    Test.assertEqual(false, aliceIsOwner)
+    aliceIsOwner = isOwner(of: UInt256(mintedNFTID2), ownerEVMAddrHex: aliceCOAAddressHex, erc721AddressHex: associatedEVMAddressHex)
+    Test.assertEqual(false, aliceIsOwner)
+
+    let isNFT1Locked = isNFTLocked(nftTypeIdentifier: exampleNFTIdentifier, id: mintedNFTID1)
+    let isNFT2Locked = isNFTLocked(nftTypeIdentifier: exampleNFTIdentifier, id: mintedNFTID2)
+    Test.assertEqual(false, isNFT1Locked)
+    Test.assertEqual(false, isNFT2Locked)
+}
+
+access(all)
+fun testCrossVMTransferCadenceNativeNFTFromEVMSucceeds() {
+    let tmp = snapshot
+    Test.reset(to: snapshot)
+    snapshot = getCurrentBlockHeight()
+
     // Configure recipient's Collection first, using generic setup transaction
     let setupCollectionResult = executeTransaction(
         "../transactions/example-assets/setup/setup_generic_nft_collection.cdc",
@@ -1171,27 +1261,27 @@ fun testCrossVMTransferCadenceNativeNFTFromEVMSucceeds() {
     Test.assertEqual(40, associatedEVMAddressHex.length)
 
     // Assert ownership of the bridged NFT in EVM
-    var aliceIsOwner = isOwner(of: UInt256(mintedNFTID), ownerEVMAddrHex: aliceCOAAddressHex, erc721AddressHex: associatedEVMAddressHex)
+    var aliceIsOwner = isOwner(of: UInt256(mintedNFTID1), ownerEVMAddrHex: aliceCOAAddressHex, erc721AddressHex: associatedEVMAddressHex)
     Test.assertEqual(true, aliceIsOwner)
 
     // Execute bridge NFT from EVM to Cadence recipient (Bob in this case)
     let crossVMTransferResult = executeTransaction(
         "../transactions/bridge/nft/bridge_nft_to_any_cadence_address.cdc",
-        [ exampleNFTIdentifier, UInt256(mintedNFTID), bob.address ],
+        [ exampleNFTIdentifier, UInt256(mintedNFTID1), bob.address ],
         alice
     )
     Test.expect(crossVMTransferResult, Test.beSucceeded())
 
     // Assert ownership of the bridged NFT in EVM has transferred
-    aliceIsOwner = isOwner(of: UInt256(mintedNFTID), ownerEVMAddrHex: aliceCOAAddressHex, erc721AddressHex: associatedEVMAddressHex)
+    aliceIsOwner = isOwner(of: UInt256(mintedNFTID1), ownerEVMAddrHex: aliceCOAAddressHex, erc721AddressHex: associatedEVMAddressHex)
     Test.assertEqual(false, aliceIsOwner)
 
     // Assert the NFT is now in Bob's Collection
     let bobOwnedIDs = getIDs(ownerAddr: bob.address, storagePathIdentifier: "cadenceExampleNFTCollection")
     Test.assertEqual(1, bobOwnedIDs.length)
-    Test.assertEqual(mintedNFTID, bobOwnedIDs[0])
+    Test.assertEqual(mintedNFTID1, bobOwnedIDs[0])
 
-    let isNFTLocked = isNFTLocked(nftTypeIdentifier: exampleNFTIdentifier, id: mintedNFTID)
+    let isNFTLocked = isNFTLocked(nftTypeIdentifier: exampleNFTIdentifier, id: mintedNFTID1)
     Test.assertEqual(false, isNFTLocked)
 }
 
@@ -1204,26 +1294,26 @@ fun testBridgeCadenceNativeNFTFromEVMSucceeds() {
     Test.assertEqual(40, associatedEVMAddressHex.length)
 
     // Assert ownership of the bridged NFT in EVM
-    var aliceIsOwner = isOwner(of: UInt256(mintedNFTID), ownerEVMAddrHex: aliceCOAAddressHex, erc721AddressHex: associatedEVMAddressHex)
+    var aliceIsOwner = isOwner(of: UInt256(mintedNFTID1), ownerEVMAddrHex: aliceCOAAddressHex, erc721AddressHex: associatedEVMAddressHex)
     Test.assertEqual(true, aliceIsOwner)
 
     // Execute bridge from EVM
     bridgeNFTFromEVM(
         signer: alice,
         nftIdentifier: exampleNFTIdentifier,
-        erc721ID: UInt256(mintedNFTID),
+        erc721ID: UInt256(mintedNFTID1),
         bridgeAccountAddr: bridgeAccount.address,
         beFailed: false
     )
 
     // Assert ownership of the bridged NFT in EVM has transferred
-    aliceIsOwner = isOwner(of: UInt256(mintedNFTID), ownerEVMAddrHex: aliceCOAAddressHex, erc721AddressHex: associatedEVMAddressHex)
+    aliceIsOwner = isOwner(of: UInt256(mintedNFTID1), ownerEVMAddrHex: aliceCOAAddressHex, erc721AddressHex: associatedEVMAddressHex)
     Test.assertEqual(false, aliceIsOwner)
 
     // Assert the NFT is back in Alice's Collection
     let aliceOwnedIDs = getIDs(ownerAddr: alice.address, storagePathIdentifier: "cadenceExampleNFTCollection")
     Test.assertEqual(1, aliceOwnedIDs.length)
-    Test.assertEqual(mintedNFTID, aliceOwnedIDs[0])
+    Test.assertEqual(true, aliceOwnedIDs.contains(mintedNFTID1))
 }
 
 access(all)
@@ -1289,7 +1379,7 @@ fun testPauseByTypeSucceeds() {
     bridgeNFTToEVM(
         signer: alice,
         nftIdentifier: exampleNFTIdentifier,
-        nftID: aliceOwnedIDs[0],
+        nftID: mintedNFTID1,
         bridgeAccountAddr: bridgeAccount.address,
         beFailed: true
     )

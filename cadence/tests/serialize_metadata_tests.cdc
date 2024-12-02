@@ -56,9 +56,10 @@ fun testSerializeNFTSucceeds() {
     mintedBlockHeight = heightResult.returnValue! as! UInt64
     let heightString = mintedBlockHeight.toString()
 
+    // Cadence dictionaries are not ordered by insertion order, so we need to check for both possible orderings
     let expectedPrefix = "data:application/json;utf8,{\"name\": \"ExampleNFT\", \"description\": \"Example NFT Collection\", \"image\": \"https://flow.com/examplenft.jpg\", \"external_url\": \"https://example-nft.onflow.org\", "
-    let altSuffix1 = "\"attributes\": [{\"trait_type\": \"mintedBlock\", \"value\": \"".concat(heightString).concat("\"},{\"trait_type\": \"foo\", \"value\": \"nil\"}]}")
-    let altSuffix2 = "\"attributes\": [{\"trait_type\": \"foo\", \"value\": \"nil\"}]}, {\"trait_type\": \"mintedBlock\", \"value\": \"".concat(heightString).concat("\"}")
+    let altSuffix1 = "\"attributes\": [{\"trait_type\": \"mintedBlock\", \"value\": \"".concat(heightString).concat("\"}, {\"trait_type\": \"foo\", \"value\": \"nil\"}]}")
+    let altSuffix2 = "\"attributes\": [{\"trait_type\": \"foo\", \"value\": \"nil\"}, {\"trait_type\": \"mintedBlock\", \"value\": \"".concat(heightString).concat("\"}]}")
 
     let idsResult = executeScript(
         "../scripts/nft/get_ids.cdc",
@@ -74,7 +75,6 @@ fun testSerializeNFTSucceeds() {
     Test.expect(serializeMetadataResult, Test.beSucceeded())
 
     let serializedMetadata = serializeMetadataResult.returnValue! as! String
-
     Test.assertEqual(true, serializedMetadata == expectedPrefix.concat(altSuffix1) || serializedMetadata == expectedPrefix.concat(altSuffix2))
 }
 

@@ -12,27 +12,29 @@ import "FlowEVMBridge"
 import "FlowEVMBridgeConfig"
 import "FlowEVMBridgeUtils"
 
-/// This transaction bridges an NFT from EVM to Cadence assuming it has already been onboarded to the FlowEVMBridge
-/// NOTE: The ERC721 must have first been onboarded to the bridge. This can be checked via the method
-///     FlowEVMBridge.evmAddressRequiresOnboarding(address: self.evmContractAddress)
+/// Bridges NFTs (from the same collection) from the signer's collection in Cadence to the signer's COA in FlowEVM
+///
+/// NOTE: This transaction also onboards the NFT to the bridge if necessary which may incur additional fees
+///     than bridging an asset that has already been onboarded.
 ///
 /// @param nftIdentifier: The Cadence type identifier of the NFT to bridge - e.g. nft.getType().identifier
-/// @param id: The ERC721 id of the NFT to bridge to Cadence from EVM
+/// @param id: The Cadence NFT.id of the NFT to bridge to EVM
 ///
-transaction(nftIdentifier: String, id: UInt256) {
+transaction(nftIdentifier: String, ids: [UInt64]) {
 
     let nftType: Type
-    let collection: &{NonFungibleToken.Collection}
-    let scopedProvider: @ScopedFTProviders.ScopedFTProvider
+    let collection: auth(NonFungibleToken.Withdraw) &{NonFungibleToken.Collection}
     let coa: auth(EVM.Bridge) &EVM.CadenceOwnedAccount
+    let requiresOnboarding: Bool
+    let scopedProvider: @ScopedFTProviders.ScopedFTProvider
     
-    prepare(signer: auth(BorrowValue, CopyValue, IssueStorageCapabilityController, PublishCapability, SaveValue, UnpublishCapability) &Account) {
+    prepare(signer: auth(CopyValue, BorrowValue, IssueStorageCapabilityController, PublishCapability, SaveValue) &Account) {
         /* --- Reference the signer's CadenceOwnedAccount --- */
         //
         // Borrow a reference to the signer's COA
         self.coa = signer.storage.borrow<auth(EVM.Bridge) &EVM.CadenceOwnedAccount>(from: /storage/evm)
             ?? panic("Could not borrow COA signer's account at path /storage/evm")
-
+        
         /* --- Construct the NFT type --- */
         //
         // Construct the NFT type from the provided identifier
@@ -44,7 +46,7 @@ transaction(nftIdentifier: String, id: UInt256) {
         let nftContractName = FlowEVMBridgeUtils.getContractName(fromType: self.nftType)
             ?? panic("Could not get contract name from identifier: ".concat(nftIdentifier))
 
-        /* --- Reference the signer's NFT Collection --- */
+        /* --- Retrieve the NFT --- */
         //
         // Borrow a reference to the NFT collection, configuring if necessary
         let viewResolver = getAccount(nftContractAddress).contracts.borrow<&{ViewResolver}>(name: nftContractName)
@@ -56,22 +58,25 @@ transaction(nftIdentifier: String, id: UInt256) {
                 viewType: Type<MetadataViews.NFTCollectionData>()
             ) as! MetadataViews.NFTCollectionData?
             ?? panic("Could not resolve NFTCollectionData view for NFT type ".concat(self.nftType.identifier))
-        if signer.storage.borrow<&{NonFungibleToken.Collection}>(from: collectionData.storagePath) == nil {
-            signer.storage.save(<-collectionData.createEmptyCollection(), to: collectionData.storagePath)
-            signer.capabilities.unpublish(collectionData.publicPath)
-            let collectionCap = signer.capabilities.storage.issue<&{NonFungibleToken.Collection}>(collectionData.storagePath)
-            signer.capabilities.publish(collectionCap, at: collectionData.publicPath)
+        self.collection = signer.storage.borrow<auth(NonFungibleToken.Withdraw) &{NonFungibleToken.Collection}>(
+                from: collectionData.storagePath
+            ) ?? panic("Could not borrow a NonFungibleToken Collection from the signer's storage path "
+                .concat(collectionData.storagePath.toString()))
+
+        // Withdraw the requested NFT & set a cap on the withdrawable bridge fee
+        var approxFee = FlowEVMBridgeUtils.calculateBridgeFee(
+                bytes: 400_000 // 400 kB as upper bound on movable storage used in a single transaction
+            ) + (FlowEVMBridgeConfig.baseFee * UFix64(ids.length))
+        // Determine if the NFT requires onboarding - this impacts the fee required
+        self.requiresOnboarding = FlowEVMBridge.typeRequiresOnboarding(self.nftType)
+            ?? panic("Bridge does not support the requested asset type ".concat(nftIdentifier))
+        // Add the onboarding fee if onboarding is necessary
+        if self.requiresOnboarding {
+            approxFee = approxFee + FlowEVMBridgeConfig.onboardFee
         }
-        self.collection = signer.storage.borrow<&{NonFungibleToken.Collection}>(from: collectionData.storagePath)
-            ?? panic("Could not borrow a NonFungibleToken Collection from the signer's storage path "
-                    .concat(collectionData.storagePath.toString()))
 
         /* --- Configure a ScopedFTProvider --- */
         //
-        // Set a cap on the withdrawable bridge fee
-        var approxFee = FlowEVMBridgeUtils.calculateBridgeFee(
-                bytes: 400_000 // 400 kB as upper bound on movable storage used in a single transaction
-            )
         // Issue and store bridge-dedicated Provider Capability in storage if necessary
         if signer.storage.type(at: FlowEVMBridgeConfig.providerCapabilityStoragePath) == nil {
             let providerCap = signer.capabilities.storage.issue<auth(FungibleToken.Withdraw) &{FungibleToken.Provider}>(
@@ -93,20 +98,30 @@ transaction(nftIdentifier: String, id: UInt256) {
     }
 
     execute {
-        // Execute the bridge
-        let nft: @{NonFungibleToken.NFT} <- self.coa.withdrawNFT(
-            type: self.nftType,
-            id: id,
-            feeProvider: &self.scopedProvider as auth(FungibleToken.Withdraw) &{FungibleToken.Provider}
-        )
-        // Ensure the bridged nft is the correct type
-        assert(
-            nft.getType() == self.nftType,
-            message: "Bridged nft type mismatch - requested: ".concat(self.nftType.identifier)
-                .concat(", received: ").concat(nft.getType().identifier)
-        )
-        // Deposit the bridged NFT into the signer's collection
-        self.collection.deposit(token: <-nft)
+        if self.requiresOnboarding {
+            // Onboard the NFT to the bridge
+            FlowEVMBridge.onboardByType(
+                self.nftType,
+                feeProvider: &self.scopedProvider as auth(FungibleToken.Withdraw) &{FungibleToken.Provider}
+            )
+        }
+
+        // Iterate over requested IDs and bridge each NFT to the signer's COA in EVM
+        for id in ids {
+            // Withdraw the NFT & ensure it's the correct type
+            let nft <-self.collection.withdraw(withdrawID: id)
+            assert(
+                nft.getType() == self.nftType,
+                message: "Bridged nft type mismatch - requested: ".concat(self.nftType.identifier)
+                    .concat(", received: ").concat(nft.getType().identifier)
+            )
+            // Execute the bridge to EVM for the current ID
+            self.coa.depositNFT(
+                nft: <-nft,
+                feeProvider: &self.scopedProvider as auth(FungibleToken.Withdraw) &{FungibleToken.Provider}
+            )
+        }
+
         // Destroy the ScopedFTProvider
         destroy self.scopedProvider
     }
