@@ -36,5 +36,9 @@ access(all) fun main(
         value: EVM.Balance(attoflow: 0)
     )
 
-    return EVM.decodeABI(types: getTypeArray(typeIdentifiers), data: evmResult.data)
+    if typeIdentifiers.length == 0 {
+        return []
+    } else {
+        return EVM.decodeABI(types: getTypeArray(typeIdentifiers), data: evmResult.data)
+    }
 }
