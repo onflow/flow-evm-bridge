@@ -28,6 +28,6 @@ transaction(amount: UFix64) {
     }
 
     post {
-        self.vault.balance == self.preBalance + amount: "Problem transfering Flow between environments!"
+        self.vault.balance == self.preBalance + amount: "Problem transferring Flow between environments!"
     }
 }
