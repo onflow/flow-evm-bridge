@@ -192,14 +192,6 @@ access(all) contract FlowEVMBridgeHandlers {
         }
     }
 
-    /**
-        TODO:
-            - Configure handler
-                - 
-            - Update association between FLOW & WFLOW
-            - Remove any pre-conditions on FLOW in bridging functionality
-     */
-
     /// Facilitates moving Flow between Cadence and EVM as WFLOW. Since WFLOW is an artifact of the EVM ecosystem, 
     /// wrapping the native token as an ERC20, it does not have a place in Cadence's fungible token ecosystem.
     /// Given the native interface on EVM.CadenceOwnedAccount and EVM.EVMAddress to move FLOW between Cadence and EVM,
@@ -338,7 +330,7 @@ access(all) contract FlowEVMBridgeHandlers {
 
             // Unwrap the transferred WFLOW to FLOW, giving the bridge COA the necessary FLOW to withdraw from EVM
             let unwrapResult = FlowEVMBridgeUtils.call(
-                signature: "withdraw(uint)",
+                signature: "withdraw(uint256)",
                 targetEVMAddress: wflowAddress,
                 args: [amount],
                 gasLimit: FlowEVMBridgeConfig.gasLimit,
@@ -351,7 +343,8 @@ access(all) contract FlowEVMBridgeHandlers {
             // Cover underflow
             assert(
                 postBalance > preBalance,
-                message: "Escrowed FLOW Balance did not increment after unwrapping WFLOW"
+                message: "Escrowed FLOW Balance did not increment after unwrapping WFLOW - pre: ".concat(preBalance.toString())
+                    .concat(" post: ").concat(postBalance.toString())
             )
             // Confirm bridge COA's FLOW balance has incremented by the expected amount
             assert(
@@ -382,7 +375,9 @@ access(all) contract FlowEVMBridgeHandlers {
             return <-flowVault
         }
 
-        /* --- Admin --- */
+        /* --- HandlerAdmin --- */
+        // Conforms to HandlerAdmin for enableBridging, but most of the methods are unnecessary given the strict
+        // association between FLOW and WFLOW
 
         /// Sets the target type for the handler
         access(FlowEVMBridgeHandlerInterfaces.Admin)

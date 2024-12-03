@@ -5,6 +5,7 @@ import "FungibleToken"
 import "NonFungibleToken"
 import "FlowStorageFees"
 import "EVM"
+import "FlowEVMBridgeConfig"
 
 import "test_helpers.cdc"
 
@@ -347,7 +348,7 @@ fun testOnboardWFLOWByEVMAddressFails() {
     Test.expect(onboardingResult, Test.beFailed())
 }
 
-/* --- BRIDGING FUNGIBLE TOKENS - Test bridging both Cadence- & EVM-native fungible tokens --- */
+/* --- BRIDGING FLOW to EVM as WFLOW and WFLOW from EVM as FLOW --- */
 
 // Now enable TokenHandler to bridge in both directions
 access(all)
@@ -363,6 +364,22 @@ fun testEnableWFLOWTokenHandlerSucceeds() {
 
 // Validate that funds can be bridged from Cadence to EVM, resulting in balance increase in WFLOW as target
 access(all)
+fun testBridgeZeroFLOWTokenToEVMFails() {
+    // Attempt bridge 0 FLOW to EVM - should fail
+    bridgeTokensToEVM(
+        signer: alice,
+        vaultIdentifier: buildTypeIdentifier(
+            address: flowTokenAccountAddress,
+            contractName: "FlowToken",
+            resourceName: "Vault"
+        ),
+        amount: 0.0,
+        beFailed: true
+    )
+}
+
+// Validate that funds can be bridged from Cadence to EVM, resulting in balance increase in WFLOW as target
+access(all)
 fun testBridgeFLOWTokenToEVMFirstSucceeds() {
     snapshot = getCurrentBlockHeight()
 
@@ -372,6 +389,7 @@ fun testBridgeFLOWTokenToEVMFirstSucceeds() {
     var cadenceBalance = getBalance(ownerAddr: alice.address, storagePathIdentifier: "flowTokenVault")
         ?? panic("Problem getting FlowToken balance")
     Test.assert(cadenceBalance == flowFundingAmount - coaFundingAmount, message: "Invalid Cadence balance")
+    // Leave some FLOW as it's needed for storage, transaction, and bridge fees
     let remainder = 1.0
     let bridgeAmount = cadenceBalance - remainder
 
@@ -406,9 +424,23 @@ fun testBridgeFLOWTokenToEVMFirstSucceeds() {
 
 // With all funds now in EVM, we can test bridging back to Cadence
 access(all)
-fun testBridgeWFLOWTokenFromEVMSecondSucceeds() {
+fun testBridgeZeroWFLOWTokenFromEVMSecondFails() {
+    bridgeTokensFromEVM(
+        signer: alice,
+        vaultIdentifier: buildTypeIdentifier(
+            address: flowTokenAccountAddress,
+            contractName: "FlowToken",
+            resourceName: "Vault"
+        ),
+        amount: UInt256(0),
+        beFailed: true
+    )
+}
 
-    let wflowTotalSupplyBefore = getEVMTotalSupply(erc20AddressHex: wflowAddressHex)
+// With all funds now in EVM, we can test bridging back to Cadence
+access(all)
+fun testBridgeWFLOWTokenFromEVMSecondSucceeds() {
+    // let wflowTotalSupplyBefore = getEVMTotalSupply(erc20AddressHex: wflowAddressHex)
 
     let cadenceBalanceBefore = getBalance(ownerAddr: alice.address, storagePathIdentifier: "flowTokenVault")
         ?? panic("Problem getting FlowToken balance")
@@ -430,19 +462,20 @@ fun testBridgeWFLOWTokenFromEVMSecondSucceeds() {
     // Confirm that Alice's balance has been bridged to Cadence
     let cadenceBalanceAfter = getBalance(ownerAddr: alice.address, storagePathIdentifier: "flowTokenVault")
         ?? panic("Problem getting FlowToken balance")
-    Test.assertEqual(ufixEVMbalance, cadenceBalanceAfter)
+    let expectedBalanceAfter = cadenceBalanceBefore + ufixEVMbalance - FlowEVMBridgeConfig.baseFee
+    Test.assertEqual(expectedBalanceAfter, cadenceBalanceAfter)
 
-    // Confirm that the ERC20 balance was burned in the process of bridging
+    // Confirm that the WFLOW balance was transferred out in the process of bridging
     let evmBalanceAfter = balanceOf(evmAddressHex: aliceCOAAddressHex, erc20AddressHex: wflowAddressHex)
     Test.assertEqual(UInt256(0), evmBalanceAfter)
 
-    // // Validate that the ERC20 balance in circulation remained the same
-    // let erc20TotalSupplyAfter = getEVMTotalSupply(erc20AddressHex: wflowAddressHex)
-    // Test.assertEqual(wflowTotalSupplyBefore, erc20TotalSupplyAfter)
+    // Validate that the WFLOW supply in circulation reduced to 0
+    let wflowTotalSupplyAfter = getEVMTotalSupply(erc20AddressHex: wflowAddressHex)
+    Test.assertEqual(UInt256(0), wflowTotalSupplyAfter)
 
-    // // Validate that all ERC20 funds are now in escrow since all bridged to Cadence
-    // let escrowBalance = balanceOf(evmAddressHex: getBridgeCOAAddressHex(), erc20AddressHex: wflowAddressHex)
-    // Test.assertEqual(erc20TotalSupplyAfter, escrowBalance)
+    // Validate that all WFLOW funds are now in escrow since all bridged to Cadence
+    let escrowBalance = balanceOf(evmAddressHex: getBridgeCOAAddressHex(), erc20AddressHex: wflowAddressHex)
+    Test.assertEqual(wflowTotalSupplyAfter, escrowBalance)
 }
 
 // // Now test bridging with liquidity flow moving entirely from EVM to Cadence and back

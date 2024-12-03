@@ -5,7 +5,7 @@ import "EVM"
 
 import "FlowEVMBridgeUtils"
 
-/// This transactions wraps FLOW tokens as WFLOW tokens, using the signing COA's EVM FLOW balance primarily. If the 
+/// This transactions wraps FLOW tokens as WFLOW tokens, using the signing COA's EVM FLOW balance primarily. If the
 /// EVM balance is insufficient, the transaction will transfer FLOW from the Cadence balance to the EVM balance.
 ///
 /// @param wflowContractHex: The EVM address of the WFLOW contract as a hex string
@@ -22,13 +22,18 @@ transaction(wflowContractHex: String, amount: UInt256) {
         self.wflowAddress = EVM.addressFromString(wflowContractHex)
         self.coa = signer.storage.borrow<auth(EVM.Call) &EVM.CadenceOwnedAccount>(from: /storage/evm)
             ?? panic("Could not borrow COA from provided gateway address")
+
         self.preBalance = UInt(FlowEVMBridgeUtils.balanceOf(owner: self.coa.address(), evmContractAddress: self.wflowAddress))
+        assert(
+            self.preBalance >= UInt(amount),
+            message: "Amount exceeds current WFLOW balance of ".concat(self.preBalance.toString())
+        )
         self.postBalance = 0
     }
 
     execute {
         // Encode the withdraw function call
-        let calldata = EVM.encodeABIWithSignature("withdraw(uint)", [UInt(amount)])
+        let calldata = EVM.encodeABIWithSignature("withdraw(uint256)", [UInt(amount)])
         // Define the value to send to the WFLOW contract - 0 to unwrap
         let value = EVM.Balance(attoflow: 0)
         // Call the WFLOW contract which should complete the unwrap
@@ -38,7 +43,7 @@ transaction(wflowContractHex: String, amount: UInt256) {
             gasLimit: 15_000_000,
             value: value
         )
-        assert(result.status == EVM.Status.successful, message: "Failed to wrap FLOW as WFLOW")
+        assert(result.status == EVM.Status.successful, message: "Failed to unwrap FLOW as WFLOW")
         self.postBalance = UInt(FlowEVMBridgeUtils.balanceOf(owner: self.coa.address(), evmContractAddress: self.wflowAddress))
     }
 
