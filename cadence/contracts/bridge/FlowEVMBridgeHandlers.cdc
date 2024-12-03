@@ -192,6 +192,14 @@ access(all) contract FlowEVMBridgeHandlers {
         }
     }
 
+    /**
+        TODO:
+            - Configure handler
+                - 
+            - Update association between FLOW & WFLOW
+            - Remove any pre-conditions on FLOW in bridging functionality
+     */
+
     /// Facilitates moving Flow between Cadence and EVM as WFLOW. Since WFLOW is an artifact of the EVM ecosystem, 
     /// wrapping the native token as an ERC20, it does not have a place in Cadence's fungible token ecosystem.
     /// Given the native interface on EVM.CadenceOwnedAccount and EVM.EVMAddress to move FLOW between Cadence and EVM,
@@ -243,11 +251,6 @@ access(all) contract FlowEVMBridgeHandlers {
             tokens: @{FungibleToken.Vault},
             to: EVM.EVMAddress
         ) {
-            pre {
-                tokens.getType() == Type<@FlowToken.Vault>():
-                "Invalid token type=".concat(tokens.getType().identifier)
-                    .concat(" - WFLOWTokenHandler only handles FlowToken Vault")
-            }
             let flowVault <- tokens as! @FlowToken.Vault
             let wflowAddress = self.getTargetEVMAddress()!
 
@@ -276,14 +279,14 @@ access(all) contract FlowEVMBridgeHandlers {
             // Cover underflow
             assert(
                 postBalance > preBalance,
-                message: "Balance decremented after wrapping FLOW"
+                message: "Escrowed WFLOW balance did not increment after wrapping FLOW"
             )
             // Confirm bridge COA's WFLOW balance has incremented by the expected amount
             assert(
                 postBalance - preBalance == uintAmount,
-                message: "Balance after wrapping FLOW does not match requested amount - expected="
+                message: "Balance after wrapping FLOW does not match requested amount - expected "
                     .concat((preBalance + uintAmount).toString())
-                    .concat(" actual=")
+                    .concat(" but got ")
                     .concat((postBalance - preBalance).toString())
             )
 
@@ -315,7 +318,11 @@ access(all) contract FlowEVMBridgeHandlers {
                     amount,
                     erc20Address: wflowAddress
                 )
-            assert(ufixAmount > 0.0, message: "Amount to bridge must be greater than 0")
+            assert(
+                ufixAmount > 0.0,
+                message: "Requested UInt256 amount ".concat(amount.toString()).concat(" converted to 0.0 ")
+                    .concat(" - try bridging a larger amount to avoid UFix64 precision loss during conversion")
+            )
 
             // Transfers WFLOW to bridge COA as escrow
             FlowEVMBridgeUtils.mustEscrowERC20(
@@ -344,7 +351,7 @@ access(all) contract FlowEVMBridgeHandlers {
             // Cover underflow
             assert(
                 postBalance > preBalance,
-                message: "Balance did not increment after unwrapping WFLOW amount=".concat(amount.toString())
+                message: "Escrowed FLOW Balance did not increment after unwrapping WFLOW"
             )
             // Confirm bridge COA's FLOW balance has incremented by the expected amount
             assert(
@@ -355,7 +362,7 @@ access(all) contract FlowEVMBridgeHandlers {
                     .concat((postBalance - preBalance).toString())
             )
 
-            // Withdraw FLOW from bridge COA
+            // Withdraw escrowed FLOW from bridge COA
             let withdrawBalance = EVM.Balance(attoflow: UInt(amount))
             assert(
                 UInt256(withdrawBalance.attoflow) == amount,
@@ -367,9 +374,9 @@ access(all) contract FlowEVMBridgeHandlers {
             let flowVault <- coa.withdraw(balance: withdrawBalance)
             assert(
                 flowVault.balance == ufixAmount,
-                message: "Vault balance does not match requested amount - expected="
+                message: "Resulting Vault balance does not match requested amount - expected "
                     .concat(ufixAmount.toString())
-                    .concat(" actual=")
+                    .concat(" but returned ")
                     .concat(flowVault.balance.toString())
             )
             return <-flowVault
@@ -380,13 +387,15 @@ access(all) contract FlowEVMBridgeHandlers {
         /// Sets the target type for the handler
         access(FlowEVMBridgeHandlerInterfaces.Admin)
         fun setTargetType(_ type: Type) {
-            panic("WFLOWTokenHandler has targetType set at initialization")
+            panic("WFLOWTokenHandler has targetType set to "
+                .concat(self.targetType.identifier).concat(" at initialization"))
         }
 
         /// Sets the target EVM address for the handler
         access(FlowEVMBridgeHandlerInterfaces.Admin)
         fun setTargetEVMAddress(_ address: EVM.EVMAddress) {
-            panic("WFLOWTokenHandler has EVMAddress set at initialization")
+            panic("WFLOWTokenHandler has EVMAddress set to "
+                .concat(self.targetEVMAddress.toString()).concat(" at initialization"))
         }
 
         /// Sets the target type for the handler
@@ -400,14 +409,6 @@ access(all) contract FlowEVMBridgeHandlers {
         fun enableBridging() {
             self.enabled = true
         }
-
-        /* --- Internal --- */
-
-        /// Returns an entitled reference to the encapsulated minter resource
-        access(self)
-        view fun borrowMinter(): auth(FlowEVMBridgeHandlerInterfaces.Mint) &{FlowEVMBridgeHandlerInterfaces.TokenMinter}? {
-            return nil
-        }
     }
 
     /// This resource enables the configuration of Handlers. These Handlers are stored in FlowEVMBridgeConfig from which
@@ -417,7 +418,7 @@ access(all) contract FlowEVMBridgeHandlers {
         /// Creates a new Handler and adds it to the bridge configuration
         ///
         /// @param handlerType: The type of handler to create as defined in this contract
-        /// @param targetType: The type of the asset the handler will handle.
+        /// @param targetType: The type of the asset the handler will handle
         /// @param targetEVMAddress: The EVM contract address the handler will handle, can be nil if still unknown
         /// @param expectedMinterType: The Type of the expected minter to be set for the created TokenHandler
         ///
