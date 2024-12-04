@@ -271,14 +271,15 @@ access(all) contract FlowEVMBridgeHandlers {
             // Cover underflow
             assert(
                 postBalance > preBalance,
-                message: "Escrowed WFLOW balance did not increment after wrapping FLOW"
+                message: "Escrowed WFLOW balance did not increment after wrapping FLOW - pre: "
+                    .concat(preBalance.toString()).concat(" | post: ").concat(postBalance.toString())
             )
             // Confirm bridge COA's WFLOW balance has incremented by the expected amount
             assert(
                 postBalance - preBalance == uintAmount,
-                message: "Balance after wrapping FLOW does not match requested amount - expected "
+                message: "Escrowed WFLOW balance after wrapping does not match requested amount - expected: "
                     .concat((preBalance + uintAmount).toString())
-                    .concat(" but got ")
+                    .concat(" | actual: ")
                     .concat((postBalance - preBalance).toString())
             )
 
@@ -344,14 +345,14 @@ access(all) contract FlowEVMBridgeHandlers {
             assert(
                 postBalance > preBalance,
                 message: "Escrowed FLOW Balance did not increment after unwrapping WFLOW - pre: ".concat(preBalance.toString())
-                    .concat(" post: ").concat(postBalance.toString())
+                    .concat(" | post: ").concat(postBalance.toString())
             )
             // Confirm bridge COA's FLOW balance has incremented by the expected amount
             assert(
                 UInt256(postBalance - preBalance) == amount,
-                message: "Balance after unwrapping WFLOW does not match requested amount - expected="
+                message: "Escrowed WFLOW balance after unwrapping does not match requested amount - expected: "
                     .concat((UInt256(preBalance) + amount).toString())
-                    .concat(" actual=")
+                    .concat(" | actual: ")
                     .concat((postBalance - preBalance).toString())
             )
 
@@ -359,17 +360,17 @@ access(all) contract FlowEVMBridgeHandlers {
             let withdrawBalance = EVM.Balance(attoflow: UInt(amount))
             assert(
                 UInt256(withdrawBalance.attoflow) == amount,
-                message: "Balance failed to convert to attoflow - expected="
+                message: "Requested balance failed to convert to attoflow - expected: "
                     .concat(amount.toString())
-                    .concat(" actual=")
+                    .concat(" | actual: ")
                     .concat(withdrawBalance.attoflow.toString())
             )
             let flowVault <- coa.withdraw(balance: withdrawBalance)
             assert(
                 flowVault.balance == ufixAmount,
-                message: "Resulting Vault balance does not match requested amount - expected "
+                message: "Resulting FLOW Vault balance does not match requested amount - expected: "
                     .concat(ufixAmount.toString())
-                    .concat(" but returned ")
+                    .concat(" | actual: ")
                     .concat(flowVault.balance.toString())
             )
             return <-flowVault
