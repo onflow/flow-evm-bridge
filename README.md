@@ -88,9 +88,17 @@ side, it must escrow on the other as the native VM contract is owned by an exter
 
 With fungible tokens in particular, there may be some cases where the Cadence contract is not deployed to the bridge
 account, but the bridge still follows a mint/burn pattern in Cadence. These cases are handled via
-[`TokenHandler`](./cadence/contracts/bridge/interfaces/FlowEVMBridgeHandlerInterfaces.cdc) implementations. Also know
-that moving $FLOW to EVM is built into the `EVMAddress` object so any requests bridging $FLOW to EVM will simply
-leverage this interface; however, moving $FLOW from EVM to Cadence must be done through the COA resource.
+[`TokenHandler`](./cadence/contracts/bridge/interfaces/FlowEVMBridgeHandlerInterfaces.cdc) implementations.
+
+Also know that moving $FLOW to EVM is built into the `EVMAddress` object via `EVMAddress.deposit(from: @FlowToken.Vault)`.
+Conversely, moving $FLOW from EVM is facilitated via the `CadenceOwnedAccount.withdraw(balance: Balance): @FlowToken.Vault`
+method. Given these existing interfaces, the bridge instead handles $FLOW as corresponding fungible token
+implementations - `FungibleToken.Vault` in Cadence & ERC20 in EVM. Therefore, the bridge wraps $FLOW en route to EVM
+(depositing WFLOW to the recipient) and unwraps WFLOW when bridging when moving from EVM. In short, the cross-VM
+association for $FLOW as far as the bridge is concerned is `@FlowToken.Vault` <> WFLOW
+(`0xd3bF53DAC106A0290B0483EcBC89d40FcC961f3e` on
+[Testnet](https://evm-testnet.flowscan.io/address/0xd3bF53DAC106A0290B0483EcBC89d40FcC961f3e) &
+[Mainnet](https://evm.flowscan.io/address/0xd3bF53DAC106A0290B0483EcBC89d40FcC961f3e)).
 
 Below are transactions relevant to bridging fungible tokens:
 - [`bridge_tokens_to_evm.cdc`](./cadence/transactions/bridge/tokens/bridge_tokens_to_evm.cdc)
