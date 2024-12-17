@@ -1,3 +1,4 @@
+import "FlowStorageFees"
 import "FungibleToken"
 import "FlowToken"
 
@@ -18,7 +19,7 @@ transaction(addressString: String, amount: UFix64) {
     let sentVault: @FlowToken.Vault
     let evmRecipient: EVM.EVMAddress?
     var receiver: &{FungibleToken.Receiver}?
-    
+
     prepare(signer: auth(BorrowValue, SaveValue) &Account) {
         // Reference signer's COA if one exists
         let coa = signer.storage.borrow<auth(EVM.Withdraw) &EVM.CadenceOwnedAccount>(from: /storage/evm)
@@ -26,8 +27,9 @@ transaction(addressString: String, amount: UFix64) {
         // Reference signer's FlowToken Vault
         let sourceVault = signer.storage.borrow<auth(FungibleToken.Withdraw) &FlowToken.Vault>(from: /storage/flowTokenVault)
             ?? panic("Could not borrow signer's FlowToken.Vault")
-        let cadenceBalance = sourceVault.balance
-        
+        // Ensure we don't withdraw more than required for storage
+        let cadenceBalance = FlowStorageFees.defaultTokenAvailableBalance(signer.address)
+
         // Define optional recipients for both VMs
         self.receiver = nil
         let cadenceRecipient = Address.fromString(addressString)
@@ -56,7 +58,7 @@ transaction(addressString: String, amount: UFix64) {
             if amount > self.sentVault.balance {
                 let difference = amount - cadenceBalance
                 // Revert if the signer doesn't have an EVM account or EVM balance is insufficient
-                if coa == nil || difference < coa!.balance().inFLOW() {
+                if coa == nil || difference > coa!.balance().inFLOW() {
                     panic("Insufficient balance across Flow and EVM accounts")
                 }
 
