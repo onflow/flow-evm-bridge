@@ -33,6 +33,14 @@ access(all) contract FlowEVMBridgeHandlerInterfaces {
         targetType: String,
         targetEVMAddress: String
     )
+    /// Event emitted when a handler is disabled, pausing bridging between VMs
+    access(all) event HandlerDisabled(
+        handlerType: String,
+        handlerUUID: UInt64,
+        targetType: String?,
+        targetEVMAddress: String?
+    )
+    /// Emitted when a minter resource is set in a handler
     access(all) event MinterSet(handlerType: String,
         handlerUUID: UInt64,
         targetType: String?,
@@ -99,8 +107,8 @@ access(all) contract FlowEVMBridgeHandlerInterfaces {
         access(Admin) fun enableBridging() {
             pre {
                 self.getTargetType() != nil && self.getTargetEVMAddress() != nil:
-                    "Cannot enable before setting bridge targets"
-                !self.isEnabled(): "Handler already enabled"
+                "Cannot enable before setting bridge target Type and EVM Address"
+                !self.isEnabled(): "Handler has already been enabled"
             }
             post {
                 self.isEnabled(): "Problem enabling Handler"
@@ -109,6 +117,24 @@ access(all) contract FlowEVMBridgeHandlerInterfaces {
                     handlerUUID: self.uuid,
                     targetType: self.getTargetType()!.identifier,
                     targetEVMAddress: self.getTargetEVMAddress()!.toString()
+                )
+            }
+        }
+
+        /// Disables the Handler from fulfilling bridge requests.
+        access(Admin) fun disableBridging() {
+            pre {
+                self.isEnabled():
+                "Cannot disable: ".concat(self.getType().identifier).concat(" is already disabled")
+            }
+            post {
+                !self.isEnabled():
+                "Problem disabling ".concat(self.getType().identifier)
+                emit HandlerDisabled(
+                    handlerType: self.getType().identifier,
+                    handlerUUID: self.uuid,
+                    targetType: self.getTargetType()?.identifier,
+                    targetEVMAddress: self.getTargetEVMAddress()?.toString()
                 )
             }
         }
@@ -122,11 +148,16 @@ access(all) contract FlowEVMBridgeHandlerInterfaces {
         /// Mints the specified amount of tokens
         access(Mint) fun mint(amount: UFix64): @{FungibleToken.Vault} {
             pre {
-                amount > 0.0: "Amount must be greater than 0"
+                amount > 0.0: "Attempting to mint 0.0 - Amount minted must be greater than 0"
             }
             post {
-                result.getType() == self.getMintedType(): "Invalid Vault type returned"
-                result.balance == amount: "Minted amount does not match requested amount"
+                result.getType() == self.getMintedType():
+                "TokenMinter ".concat(self.getType().identifier).concat(" with uuid ").concat(self.uuid.toString())
+                    .concat(" expected to mint ").concat(self.getMintedType().identifier)
+                    .concat(" but returned ").concat(result.getType().identifier)
+                result.balance == amount:
+                "Minted amount ".concat(result.balance.toString())
+                    .concat(" does not match requested amount ").concat(amount.toString())
             }
         }
     }
@@ -141,8 +172,15 @@ access(all) contract FlowEVMBridgeHandlerInterfaces {
             to: EVM.EVMAddress
         ) {
             pre {
-                self.isEnabled(): "Handler is not yet enabled"
-                tokens.getType() == self.getTargetType(): "Invalid Vault type"
+                self.isEnabled():
+                "TokenHandler ".concat(self.getType().identifier).concat(" with uuid ")
+                    .concat(self.uuid.toString()).concat(" is not yet enabled")
+                tokens.getType() == self.getTargetType():
+                "TokenHandler ".concat(self.getType().identifier).concat(" with uuid ").concat(self.uuid.toString())
+                    .concat(" expects ").concat(self.getTargetType()?.identifier ?? "nil")
+                    .concat(" but received ").concat(tokens.getType().identifier)
+                tokens.balance > 0.0:
+                "Attempting to bridge 0.0 tokens - zero amounts are unsupported"
             }
         }
         /// Fulfills a request to bridge tokens from the EVM side to the Cadence side
@@ -153,10 +191,16 @@ access(all) contract FlowEVMBridgeHandlerInterfaces {
             protectedTransferCall: fun (): EVM.Result
         ): @{FungibleToken.Vault} {
             pre {
-                self.isEnabled(): "Handler is not yet enabled"
+                self.isEnabled():
+                "TokenHandler ".concat(self.getType().identifier).concat(" with uuid ")
+                    .concat(self.uuid.toString()).concat(" is not yet enabled")
+                amount > UInt256(0): "Attempting to bridge 0 tokens from EVM - zero amounts are unsupported"
             }
             post {
-                result.getType() == self.getTargetType(): "Invalid Vault type returned"
+                result.getType() == self.getTargetType():
+                "TokenHandler ".concat(self.getType().identifier).concat(" with uuid ").concat(self.uuid.toString())
+                    .concat(" expected to return ").concat(self.getTargetType()?.identifier ?? "nil")
+                    .concat(" but returned ").concat(result.getType().identifier)
             }
         }
     }
