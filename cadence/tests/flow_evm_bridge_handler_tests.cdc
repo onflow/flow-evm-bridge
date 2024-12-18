@@ -732,11 +732,7 @@ fun testBridgeHandledCadenceNativeTokenAfterDisablingFails() {
     Test.expect(disabledResult, Test.beSucceeded())
 
     let aliceCOAAddressHex = getCOAAddressHex(atFlowAddress: alice.address)
-
-    // Execute bridge from EVM, bridging Alice's full balance to Cadence
     let evmBalance = balanceOf(evmAddressHex: aliceCOAAddressHex, erc20AddressHex: erc20AddressHex)
-    let ufixEVMbalance = uint256ToUFix64(evmBalance, decimals: defaultDecimals)
-    log("ufixEVMbalance: ".concat(ufixEVMbalance.toString()))
     bridgeTokensFromEVM(
         signer: alice,
         vaultIdentifier: buildTypeIdentifier(

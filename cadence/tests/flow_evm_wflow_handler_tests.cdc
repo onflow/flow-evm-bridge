@@ -489,7 +489,6 @@ fun testBridgeWFLOWToCadenceAfterDisablingFails() {
 
     let cadenceBalance = getBalance(ownerAddr: alice.address, storagePathIdentifier: "flowTokenVault")
         ?? panic("Problem getting FlowToken balance")
-    log("cadenceBalance:" .concat(cadenceBalance.toString()))
 
     bridgeTokensToEVM(
         signer: alice,
