@@ -33,6 +33,14 @@ access(all) contract FlowEVMBridgeHandlerInterfaces {
         targetType: String,
         targetEVMAddress: String
     )
+    /// Event emitted when a handler is disabled, pausing bridging between VMs
+    access(all) event HandlerDisabled(
+        handlerType: String,
+        handlerUUID: UInt64,
+        targetType: String?,
+        targetEVMAddress: String?
+    )
+    /// Emitted when a minter resource is set in a handler
     access(all) event MinterSet(handlerType: String,
         handlerUUID: UInt64,
         targetType: String?,
@@ -109,6 +117,24 @@ access(all) contract FlowEVMBridgeHandlerInterfaces {
                     handlerUUID: self.uuid,
                     targetType: self.getTargetType()!.identifier,
                     targetEVMAddress: self.getTargetEVMAddress()!.toString()
+                )
+            }
+        }
+
+        /// Disables the Handler from fulfilling bridge requests.
+        access(Admin) fun disableBridging() {
+            pre {
+                self.isEnabled():
+                "Cannot disable: ".concat(self.getType().identifier).concat(" is already disabled")
+            }
+            post {
+                !self.isEnabled():
+                "Problem disabling ".concat(self.getType().identifier)
+                emit HandlerDisabled(
+                    handlerType: self.getType().identifier,
+                    handlerUUID: self.uuid,
+                    targetType: self.getTargetType()?.identifier,
+                    targetEVMAddress: self.getTargetEVMAddress()?.toString()
                 )
             }
         }

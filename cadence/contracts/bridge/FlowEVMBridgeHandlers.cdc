@@ -146,7 +146,8 @@ access(all) contract FlowEVMBridgeHandlers {
             )
 
             // After state confirmation, mint the tokens and return
-            let minter = self.borrowMinter() ?? panic("Minter not set")
+            let minter = self.borrowMinter()
+                ?? panic("Cannot bridge - Minter not set in ".concat(self.getType().identifier))
             let minted <- minter.mint(amount: ufixAmount)
             return <-minted
         }
@@ -169,18 +170,24 @@ access(all) contract FlowEVMBridgeHandlers {
         access(FlowEVMBridgeHandlerInterfaces.Admin)
         fun setMinter(_ minter: @{FlowEVMBridgeHandlerInterfaces.TokenMinter}) {
             pre {
-                self.minter == nil: "Minter has already been set"
+                self.minter == nil: "Minter has already been set in ".concat(self.getType().identifier)
             }
             self.minter <-! minter
         }
 
-        /// Enables the handler for request handling. The
+        /// Enables the handler for request handling.
         access(FlowEVMBridgeHandlerInterfaces.Admin)
         fun enableBridging() {
             pre {
-                self.minter != nil: "Cannot enable handler without a minter"
+                self.minter != nil: "Cannot enable ".concat(self.getType().identifier).concat(" without a minter")
             }
             self.enabled = true
+        }
+
+        /// Disables the handler for request handling.
+        access(FlowEVMBridgeHandlerInterfaces.Admin)
+        fun disableBridging() {
+            self.enabled = false
         }
 
         /* --- Internal --- */
@@ -200,11 +207,9 @@ access(all) contract FlowEVMBridgeHandlers {
     access(all) resource WFLOWTokenHandler : FlowEVMBridgeHandlerInterfaces.TokenHandler {
         /// Flag determining if request handling is enabled
         access(self) var enabled: Bool
-        /// The Cadence Type this handler fulfills requests for. This field is optional in the event the Cadence token
-        /// contract address is not yet known but the EVM Address must still be filtered via Handler to prevent the
-        /// contract from being onboarded otherwise.
+        /// The Cadence Type this handler fulfills requests for
         access(self) var targetType: Type
-        /// The EVM contract address this handler fulfills requests for.
+        /// The EVM contract address this handler fulfills requests for
         access(self) var targetEVMAddress: EVM.EVMAddress
 
         init(wflowEVMAddress: EVM.EVMAddress) {
@@ -404,6 +409,12 @@ access(all) contract FlowEVMBridgeHandlers {
         access(FlowEVMBridgeHandlerInterfaces.Admin)
         fun enableBridging() {
             self.enabled = true
+        }
+
+        /// Disables the handler for request handling.
+        access(FlowEVMBridgeHandlerInterfaces.Admin)
+        fun disableBridging() {
+            self.enabled = false
         }
     }
 

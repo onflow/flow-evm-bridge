@@ -720,3 +720,31 @@ fun testBridgeHandledCadenceNativeTokenToEVMSecondSucceeds() {
     let escrowBalance = balanceOf(evmAddressHex: getBridgeCOAAddressHex(), erc20AddressHex: erc20AddressHex)
     Test.assertEqual(UInt256(0), escrowBalance)
 }
+
+// After disabling the handler, funds should not move between VMs
+access(all)
+fun testBridgeHandledCadenceNativeTokenAfterDisablingFails() {
+    let disabledResult = executeTransaction(
+        "../transactions/bridge/admin/token-handler/disable_token_handler.cdc",
+        [exampleTokenIdentifier],
+        bridgeAccount
+    )
+    Test.expect(disabledResult, Test.beSucceeded())
+
+    let aliceCOAAddressHex = getCOAAddressHex(atFlowAddress: alice.address)
+
+    // Execute bridge from EVM, bridging Alice's full balance to Cadence
+    let evmBalance = balanceOf(evmAddressHex: aliceCOAAddressHex, erc20AddressHex: erc20AddressHex)
+    let ufixEVMbalance = uint256ToUFix64(evmBalance, decimals: defaultDecimals)
+    log("ufixEVMbalance: ".concat(ufixEVMbalance.toString()))
+    bridgeTokensFromEVM(
+        signer: alice,
+        vaultIdentifier: buildTypeIdentifier(
+            address: exampleHandledTokenAccount.address,
+            contractName: "ExampleHandledToken",
+            resourceName: "Vault"
+        ),
+        amount: evmBalance,
+        beFailed: true
+    )
+}

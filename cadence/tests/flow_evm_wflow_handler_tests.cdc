@@ -477,3 +477,28 @@ fun testBridgeWFLOWTokenFromEVMSecondSucceeds() {
     let escrowBalance = balanceOf(evmAddressHex: getBridgeCOAAddressHex(), erc20AddressHex: wflowAddressHex)
     Test.assertEqual(wflowTotalSupplyAfter, escrowBalance)
 }
+
+access(all)
+fun testBridgeWFLOWToCadenceAfterDisablingFails() {
+    let disabledResult = executeTransaction(
+        "../transactions/bridge/admin/token-handler/disable_token_handler.cdc",
+        [flowTokenIdentifier],
+        bridgeAccount
+    )
+    Test.expect(disabledResult, Test.beSucceeded())
+
+    let cadenceBalance = getBalance(ownerAddr: alice.address, storagePathIdentifier: "flowTokenVault")
+        ?? panic("Problem getting FlowToken balance")
+    log("cadenceBalance:" .concat(cadenceBalance.toString()))
+
+    bridgeTokensToEVM(
+        signer: alice,
+        vaultIdentifier: buildTypeIdentifier(
+            address: flowTokenAccountAddress,
+            contractName: "FlowToken",
+            resourceName: "Vault"
+        ),
+        amount: cadenceBalance,
+        beFailed: true
+    )
+}
