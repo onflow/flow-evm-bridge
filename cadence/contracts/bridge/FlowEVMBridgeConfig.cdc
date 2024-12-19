@@ -236,7 +236,7 @@ contract FlowEVMBridgeConfig {
             ?? panic("Missing or mis-typed EVMBlocklist in storage")
     }
 
-    /// Returns an entitled reference to the bridge EVMBlocklist
+    /// Returns an entitled reference to the bridge CadenceBlocklist
     ///
     access(self)
     view fun borrowCadenceBlocklist(): auth(Blocklist) &CadenceBlocklist {
