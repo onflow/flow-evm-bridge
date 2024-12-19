@@ -133,7 +133,14 @@ contract FlowEVMBridgeConfig {
     ///
     access(all)
     view fun isEVMAddressBlocked(_ evmAddress: EVM.EVMAddress): Bool {
-        return self.borrowBlocklist().isBlocked(evmAddress)
+        return self.borrowEVMBlocklist().isBlocked(evmAddress)
+    }
+
+    /// Returns whether the given Cadence Type is currently blocked from onboarding to the bridge
+    ///
+    access(all)
+    view fun isCadenceTypeBlocked(_ type: Type): Bool {
+        return self.borrowCadenceBlocklist().isBlocked(type)
     }
 
     /****************************
@@ -224,9 +231,17 @@ contract FlowEVMBridgeConfig {
     /// Returns an entitled reference to the bridge EVMBlocklist
     ///
     access(self)
-    view fun borrowBlocklist(): auth(Blocklist) &EVMBlocklist {
+    view fun borrowEVMBlocklist(): auth(Blocklist) &EVMBlocklist {
         return self.account.storage.borrow<auth(Blocklist) &EVMBlocklist>(from: /storage/evmBlocklist)
-            ?? panic("Missing or mis-typed Blocklist in storage")
+            ?? panic("Missing or mis-typed EVMBlocklist in storage")
+    }
+
+    /// Returns an entitled reference to the bridge CadenceBlocklist
+    ///
+    access(self)
+    view fun borrowCadenceBlocklist(): auth(Blocklist) &CadenceBlocklist {
+        return self.account.storage.borrow<auth(Blocklist) &CadenceBlocklist>(from: /storage/cadenceBlocklist)
+            ?? panic("Missing or mis-typed CadenceBlocklist in storage")
     }
 
     /*****************
@@ -288,6 +303,45 @@ contract FlowEVMBridgeConfig {
         ///
         access(Blocklist) fun unblock(_ evmAddress: EVM.EVMAddress) {
             self.blocklist.remove(key: evmAddress.toString())
+        }
+    }
+
+    access(all) fun initCadenceBlocklist() {
+        let cadenceBlocklistStoragePath = /storage/cadenceBlocklist
+        assert(
+            self.account.storage.type(at: cadenceBlocklistStoragePath) == nil,
+            message: "CadenceBlocklist already stored"
+        )
+        self.account.storage.save(<-create CadenceBlocklist(), to: cadenceBlocklistStoragePath)
+    }
+
+    /// CadenceBlocklist resource stores a mapping of Cadence Types that are blocked from onboarding to the bridge
+    ///
+    access(all) resource CadenceBlocklist {
+        /// Mapping of serialized Cadence Type to their blocked status
+        ///
+        access(all) let blocklist: {Type: Bool}
+
+        init() {
+            self.blocklist = {}
+        }
+
+        /// Returns whether the given Type is blocked from onboarding to the bridge
+        ///
+        access(all) view fun isBlocked(_ type: Type): Bool {
+            return self.blocklist[type] ?? false
+        }
+
+        /// Blocks the given Type from onboarding to the bridge
+        ///
+        access(Blocklist) fun block(_ type: Type) {
+            self.blocklist[type] = true
+        }
+
+        /// Removes the given type from the blocklist
+        ///
+        access(Blocklist) fun unblock(_ type: Type) {
+            self.blocklist.remove(key: type)
         }
     }
 
@@ -497,7 +551,8 @@ contract FlowEVMBridgeConfig {
         let adminCap = self.account.capabilities.storage.issue<&Admin>(self.adminStoragePath)
         self.account.capabilities.publish(adminCap, at: self.adminPublicPath)
 
-        // Initialize the EVMBlocklist
+        // Initialize the blocklists
         self.account.storage.save(<-create EVMBlocklist(), to: /storage/evmBlocklist)
+        self.account.storage.save(<-create CadenceBlocklist(), to: /storage/cadenceBlocklist)
     }
 }
