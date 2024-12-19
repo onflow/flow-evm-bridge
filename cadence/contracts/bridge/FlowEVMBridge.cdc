@@ -71,6 +71,8 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
             !FlowEVMBridgeConfig.isPaused(): "Bridge operations are currently paused"
             type != Type<@FlowToken.Vault>():
                 "$FLOW cannot be bridged via the VM bridge - use the CadenceOwnedAccount interface"
+            !FlowEVMBridgeConfig.isCadenceTypeBlocked(type):
+                "This Cadence Type ".concat(type.identifier).concat(" is currently blocked from being onboarded")
             self.typeRequiresOnboarding(type) == true: "Onboarding is not needed for this type"
             FlowEVMBridgeUtils.typeAllowsBridging(type):
                 "This type is not supported as defined by the project's development team"
@@ -144,7 +146,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         pre {
             !FlowEVMBridgeConfig.isPaused(): "Bridge operations are currently paused"
             !FlowEVMBridgeConfig.isEVMAddressBlocked(address):
-                "This EVM contract is currently blocked from being onboarded"
+                "This EVM contract ".concat(address.toString()).concat(" is currently blocked from being onboarded")
         }
         /* Validate the EVM contract */
         //
