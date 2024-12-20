@@ -1,7 +1,5 @@
 import "EVM"
 
-import "FlowToken"
-
 import "FlowEVMBridgeHandlerInterfaces"
 
 /// This contract is used to store configuration information shared by FlowEVMBridge contracts
