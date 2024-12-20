@@ -4,7 +4,6 @@ import "FungibleTokenMetadataViews"
 import "NonFungibleToken"
 import "MetadataViews"
 import "ViewResolver"
-import "FlowToken"
 
 import "EVM"
 
@@ -69,6 +68,8 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
     fun onboardByType(_ type: Type, feeProvider: auth(FungibleToken.Withdraw) &{FungibleToken.Provider}) {
         pre {
             !FlowEVMBridgeConfig.isPaused(): "Bridge operations are currently paused"
+            !FlowEVMBridgeConfig.isCadenceTypeBlocked(type):
+                "This Cadence Type ".concat(type.identifier).concat(" is currently blocked from being onboarded")
             self.typeRequiresOnboarding(type) == true: "Onboarding is not needed for this type"
             FlowEVMBridgeUtils.typeAllowsBridging(type):
                 "This type is not supported as defined by the project's development team"
@@ -142,7 +143,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         pre {
             !FlowEVMBridgeConfig.isPaused(): "Bridge operations are currently paused"
             !FlowEVMBridgeConfig.isEVMAddressBlocked(address):
-                "This EVM contract is currently blocked from being onboarded"
+                "This EVM contract ".concat(address.toString()).concat(" is currently blocked from being onboarded")
         }
         /* Validate the EVM contract */
         //
