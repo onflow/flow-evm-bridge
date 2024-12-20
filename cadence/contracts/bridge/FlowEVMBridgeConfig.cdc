@@ -118,7 +118,10 @@ contract FlowEVMBridgeConfig {
     ///
     access(all)
     view fun getEVMAddressAssociated(with type: Type): EVM.EVMAddress? {
-        return self.registeredTypes[type]?.evmAddress
+        if !self.typeHasTokenHandler(type) {
+            return self.registeredTypes[type]?.evmAddress
+        }
+        return self.borrowTokenHandler(type)!.getTargetEVMAddress()
     }
 
     /// Retrieves the type associated with a given EVMAddress if it has been onboarded to the bridge
@@ -535,6 +538,9 @@ contract FlowEVMBridgeConfig {
         ///
         access(FlowEVMBridgeHandlerInterfaces.Admin)
         fun removeAssociationByType(_ type: Type): EVM.EVMAddress {
+            pre {
+                !FlowEVMBridgeConfig.typeHasTokenHandler(type): "Cannot remove associations for Types fulfilled by TokenHandlers"
+            }
             let evmAssociation = FlowEVMBridgeConfig.registeredTypes.remove(key: type)
                 ?? panic("No association found for type ".concat(type.identifier))
             let typeAssociation = FlowEVMBridgeConfig.evmAddressHexToType.remove(key: evmAssociation.evmAddress.toString())
