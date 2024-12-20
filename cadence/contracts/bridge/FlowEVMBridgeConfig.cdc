@@ -306,15 +306,6 @@ contract FlowEVMBridgeConfig {
         }
     }
 
-    access(all) fun initCadenceBlocklist() {
-        let cadenceBlocklistStoragePath = /storage/cadenceBlocklist
-        assert(
-            self.account.storage.type(at: cadenceBlocklistStoragePath) == nil,
-            message: "CadenceBlocklist already stored"
-        )
-        self.account.storage.save(<-create CadenceBlocklist(), to: cadenceBlocklistStoragePath)
-    }
-
     /// CadenceBlocklist resource stores a mapping of Cadence Types that are blocked from onboarding to the bridge
     ///
     access(all) resource CadenceBlocklist {
