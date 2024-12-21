@@ -468,41 +468,6 @@ fun testCreateCOASucceeds() {
 }
 
 access(all)
-fun testBridgeFlowToEVMSucceeds() {
-    // Get $FLOW balances before, making assertions based on values from previous case
-    let cadenceBalanceBefore = getBalance(ownerAddr: alice.address, storagePathIdentifier: "flowTokenVault")
-        ?? panic("Problem getting $FLOW balance")
-    Test.assertEqual(900.0, cadenceBalanceBefore)
-
-    // Get EVM $FLOW balance before
-    var aliceCOAAddressHex = getCOAAddressHex(atFlowAddress: alice.address)
-
-    let evmBalanceBefore = getEVMFlowBalance(of: aliceCOAAddressHex)
-    Test.assertEqual(100.0, evmBalanceBefore)
-
-    // Execute bridge to EVM
-    let bridgeAmount = 100.0
-    bridgeTokensToEVM(
-        signer: alice,
-        vaultIdentifier: buildTypeIdentifier(
-            address: Address(0x03),
-            contractName: "FlowToken",
-            resourceName: "Vault"
-        ), amount: bridgeAmount,
-        beFailed: false
-    )
-
-    // Confirm Alice's token balance is now 0.0
-    let cadenceBalanceAfter = getBalance(ownerAddr: alice.address, storagePathIdentifier: "flowTokenVault")
-        ?? panic("Problem getting $FLOW balance")
-    Test.assertEqual(cadenceBalanceBefore - bridgeAmount, cadenceBalanceAfter)
-
-    // Confirm balance on EVM side has been updated
-    let evmBalanceAfter = getEVMFlowBalance(of: aliceCOAAddressHex)
-    Test.assertEqual(evmBalanceBefore + bridgeAmount, evmBalanceAfter)
-}
-
-access(all)
 fun testMintExampleNFTSucceeds() {
     let setupCollectionResult = executeTransaction(
         "../transactions/example-assets/example-nft/setup_collection.cdc",

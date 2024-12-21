@@ -1,7 +1,5 @@
 import "EVM"
 
-import "FlowToken"
-
 import "FlowEVMBridgeHandlerInterfaces"
 
 /// This contract is used to store configuration information shared by FlowEVMBridge contracts
@@ -118,7 +116,10 @@ contract FlowEVMBridgeConfig {
     ///
     access(all)
     view fun getEVMAddressAssociated(with type: Type): EVM.EVMAddress? {
-        return self.registeredTypes[type]?.evmAddress
+        if !self.typeHasTokenHandler(type) {
+            return self.registeredTypes[type]?.evmAddress
+        }
+        return self.borrowTokenHandler(type)!.getTargetEVMAddress()
     }
 
     /// Retrieves the type associated with a given EVMAddress if it has been onboarded to the bridge
@@ -152,8 +153,12 @@ contract FlowEVMBridgeConfig {
     access(account)
     fun associateType(_ type: Type, with evmAddress: EVM.EVMAddress) {
         pre {
-            self.getEVMAddressAssociated(with: type) == nil: "Type already associated with an EVMAddress"
-            self.getTypeAssociated(with: evmAddress) == nil: "EVMAddress already associated with a Type"
+            self.getEVMAddressAssociated(with: type) == nil:
+            "Type ".concat(type.identifier).concat(" already associated with an EVMAddress ")
+                .concat(self.registeredTypes[type]!.evmAddress.toString())
+            self.getTypeAssociated(with: evmAddress) == nil:
+            "EVMAddress ".concat(evmAddress.toString()).concat(" already associated with Type ")
+                .concat(self.evmAddressHexToType[evmAddress.toString()]!.identifier)
         }
         self.registeredTypes[type] = TypeEVMAssociation(associated: evmAddress)
         let evmAddressHex = evmAddress.toString()
@@ -469,17 +474,15 @@ contract FlowEVMBridgeConfig {
                 FlowEVMBridgeConfig.getTypeAssociated(with: targetEVMAddress) == nil:
                     "EVM Address already associated with another Type"
             }
+            post {
+                FlowEVMBridgeConfig.getEVMAddressAssociated(with: targetType)!.equals(targetEVMAddress):
+                "Problem associating target Type and target EVM Address"
+            }
+            FlowEVMBridgeConfig.associateType(targetType, with: targetEVMAddress)
+
             let handler = FlowEVMBridgeConfig.borrowTokenHandlerAdmin(targetType)
                 ?? panic("No handler found for target Type")
             handler.setTargetEVMAddress(targetEVMAddress)
-
-            // Get the EVM address currently associated with the target Type. If the association does not exist or the
-            // EVM address is different, update the association
-            FlowEVMBridgeConfig.associateType(targetType, with: targetEVMAddress)
-            assert(
-                FlowEVMBridgeConfig.getEVMAddressAssociated(with: targetType)!.equals(targetEVMAddress),
-                message: "Problem associating target Type and target EVM Address"
-            )
 
             emit HandlerConfigured(
                 targetType: targetType.identifier,
@@ -498,7 +501,7 @@ contract FlowEVMBridgeConfig {
         access(FlowEVMBridgeHandlerInterfaces.Admin)
         fun enableHandler(targetType: Type) {
             let handler = FlowEVMBridgeConfig.borrowTokenHandlerAdmin(targetType)
-                ?? panic("No handler found for target Type")
+                ?? panic("No handler found for target Type ".concat(targetType.identifier))
             handler.enableBridging()
 
             let targetEVMAddressHex = handler.getTargetEVMAddress()?.toString()
@@ -510,6 +513,47 @@ contract FlowEVMBridgeConfig {
                 isEnabled: handler.isEnabled()
             )
         }
+
+        /// Disables the TokenHandler for the given Type. If a TokenHandler does not exist for the given Type, the
+        /// operation reverts.
+        ///
+        /// @param targetType: Cadence type indexing the relevant TokenHandler
+        ///
+        /// @emits HandlerConfigured with the target Type, target EVM address, and whether the handler is enabled
+        ///
+        access(FlowEVMBridgeHandlerInterfaces.Admin)
+        fun disableHandler(targetType: Type) {
+            let handler = FlowEVMBridgeConfig.borrowTokenHandlerAdmin(targetType)
+                ?? panic("No handler found for target Type".concat(targetType.identifier))
+            handler.disableBridging()
+
+            emit HandlerConfigured(
+                targetType: handler.getTargetType()!.identifier,
+                targetEVMAddress: handler.getTargetEVMAddress()?.toString(),
+                isEnabled: handler.isEnabled()
+            )
+        }
+
+        /// TEMPORARY USE - Intended use here to update FlowToken association with WFLOW
+        ///
+        access(FlowEVMBridgeHandlerInterfaces.Admin)
+        fun removeAssociationByType(_ type: Type): EVM.EVMAddress {
+            pre {
+                !FlowEVMBridgeConfig.typeHasTokenHandler(type): "Cannot remove associations for Types fulfilled by TokenHandlers"
+            }
+            let evmAssociation = FlowEVMBridgeConfig.registeredTypes.remove(key: type)
+                ?? panic("No association found for type ".concat(type.identifier))
+            let typeAssociation = FlowEVMBridgeConfig.evmAddressHexToType.remove(key: evmAssociation.evmAddress.toString())
+                ?? panic("No association found under EVM address ".concat(evmAssociation.evmAddress.toString()))
+
+            assert(
+                type == typeAssociation,
+                message: "Mismatched association found - expected: "
+                    .concat(type.identifier).concat(", actual: ").concat(typeAssociation.identifier)
+            )
+
+            return evmAssociation.evmAddress
+        }
     }
 
     init() {
@@ -519,16 +563,8 @@ contract FlowEVMBridgeConfig {
         self.gasLimit = 15_000_000
         self.paused = true
 
-        // Although $FLOW does not have ERC20 address, we associate the the Vault with the EVM address from which
-        // EVM transfers originate
-        // See FLIP #223 - https://github.com/onflow/flips/pull/225
-        let flowOriginationAddress = EVM.EVMAddress(
-                bytes: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0]
-            )
-        let flowVaultType = Type<@FlowToken.Vault>()
-        let flowOriginationAddressHex = flowOriginationAddress.toString()
-        self.registeredTypes = { flowVaultType: TypeEVMAssociation(associated: flowOriginationAddress) }
-        self.evmAddressHexToType = { flowOriginationAddressHex: flowVaultType }
+        self.registeredTypes = {}
+        self.evmAddressHexToType = {}
 
         self.typeToTokenHandlers <- {}
 
