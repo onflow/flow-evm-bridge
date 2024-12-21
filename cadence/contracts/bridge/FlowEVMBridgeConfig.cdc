@@ -153,8 +153,12 @@ contract FlowEVMBridgeConfig {
     access(account)
     fun associateType(_ type: Type, with evmAddress: EVM.EVMAddress) {
         pre {
-            self.getEVMAddressAssociated(with: type) == nil: "Type already associated with an EVMAddress"
-            self.getTypeAssociated(with: evmAddress) == nil: "EVMAddress already associated with a Type"
+            self.getEVMAddressAssociated(with: type) == nil:
+            "Type ".concat(type.identifier).concat(" already associated with an EVMAddress ")
+                .concat(self.registeredTypes[type]!.evmAddress.toString())
+            self.getTypeAssociated(with: evmAddress) == nil:
+            "EVMAddress ".concat(evmAddress.toString()).concat(" already associated with Type ")
+                .concat(self.evmAddressHexToType[evmAddress.toString()]!.identifier)
         }
         self.registeredTypes[type] = TypeEVMAssociation(associated: evmAddress)
         let evmAddressHex = evmAddress.toString()
@@ -470,17 +474,15 @@ contract FlowEVMBridgeConfig {
                 FlowEVMBridgeConfig.getTypeAssociated(with: targetEVMAddress) == nil:
                     "EVM Address already associated with another Type"
             }
+            post {
+                FlowEVMBridgeConfig.getEVMAddressAssociated(with: targetType)!.equals(targetEVMAddress):
+                "Problem associating target Type and target EVM Address"
+            }
+            FlowEVMBridgeConfig.associateType(targetType, with: targetEVMAddress)
+
             let handler = FlowEVMBridgeConfig.borrowTokenHandlerAdmin(targetType)
                 ?? panic("No handler found for target Type")
             handler.setTargetEVMAddress(targetEVMAddress)
-
-            // Get the EVM address currently associated with the target Type. If the association does not exist or the
-            // EVM address is different, update the association
-            FlowEVMBridgeConfig.associateType(targetType, with: targetEVMAddress)
-            assert(
-                FlowEVMBridgeConfig.getEVMAddressAssociated(with: targetType)!.equals(targetEVMAddress),
-                message: "Problem associating target Type and target EVM Address"
-            )
 
             emit HandlerConfigured(
                 targetType: targetType.identifier,

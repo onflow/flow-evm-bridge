@@ -357,7 +357,7 @@ fun testDeployERC20Succeeds() {
 }
 
 // Set the TokenHandler's targetEVMAddress to the deployed ERC20 contract address
-// This will filter requests to onboard the ERC20 to the bridge as the Cadence-nat
+// This will filter requests to onboard the ERC20 to the bridge as the Cadence-native token
 access(all)
 fun testSetHandlerTargetEVMAddressSucceeds() {
     let setHandlerTargetResult = executeTransaction(
