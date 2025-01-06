@@ -533,27 +533,6 @@ contract FlowEVMBridgeConfig {
                 isEnabled: handler.isEnabled()
             )
         }
-
-        /// TEMPORARY USE - Intended use here to update FlowToken association with WFLOW
-        ///
-        access(FlowEVMBridgeHandlerInterfaces.Admin)
-        fun removeAssociationByType(_ type: Type): EVM.EVMAddress {
-            pre {
-                !FlowEVMBridgeConfig.typeHasTokenHandler(type): "Cannot remove associations for Types fulfilled by TokenHandlers"
-            }
-            let evmAssociation = FlowEVMBridgeConfig.registeredTypes.remove(key: type)
-                ?? panic("No association found for type ".concat(type.identifier))
-            let typeAssociation = FlowEVMBridgeConfig.evmAddressHexToType.remove(key: evmAssociation.evmAddress.toString())
-                ?? panic("No association found under EVM address ".concat(evmAssociation.evmAddress.toString()))
-
-            assert(
-                type == typeAssociation,
-                message: "Mismatched association found - expected: "
-                    .concat(type.identifier).concat(", actual: ").concat(typeAssociation.identifier)
-            )
-
-            return evmAssociation.evmAddress
-        }
     }
 
     init() {
