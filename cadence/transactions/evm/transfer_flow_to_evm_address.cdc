@@ -5,7 +5,7 @@ import "EVM"
 
 /// Transfers $FLOW from the signer's account Cadence Flow balance to the recipient's hex-encoded EVM address.
 ///
-transaction(recipientEVMAddressHex: String, amount: UFix64, gasLimit: UInt64) {
+transaction(recipientEVMAddressHex: String, amount: UFix64) {
 
     var sentVault: @FlowToken.Vault
     let recipientEVMAddress: EVM.EVMAddress
