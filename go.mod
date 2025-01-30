@@ -1,10 +1,12 @@
 module github.com/onflow/flow-evm-bridge
 
-go 1.21.5
+go 1.22
+
+toolchain go1.23.1
 
 require (
 	github.com/bjartek/overflow/v2 v2.0.0-stable-cadence-beta.13
-	github.com/onflow/cadence v1.0.0-preview.25
+	github.com/onflow/cadence v1.0.0-preview.51
 )
 
 require (
@@ -132,22 +134,23 @@ require (
 	github.com/multiformats/go-varint v0.0.7 // indirect
 	github.com/nightlyone/lockfile v1.0.0 // indirect
 	github.com/olekukonko/tablewriter v0.0.5 // indirect
-	github.com/onflow/atree v0.7.0-rc.1 // indirect
+	github.com/onflow/atree v0.8.0-rc.6 // indirect
 	github.com/onflow/crypto v0.25.1 // indirect
 	github.com/onflow/flixkit-go v1.2.1-cadence-v1-preview.10 // indirect
 	github.com/onflow/flow-core-contracts/lib/go/contracts v0.15.2-0.20240429192223-e696a8e439b5 // indirect
-	github.com/onflow/flow-core-contracts/lib/go/templates v0.15.2-0.20240429192223-e696a8e439b5 // indirect
+	github.com/onflow/flow-core-contracts/lib/go/templates v1.4.0 // indirect
 	github.com/onflow/flow-emulator v1.0.0-preview.22 // indirect
+	github.com/onflow/flow-evm-bridge/bridge v0.0.0-00010101000000-000000000000 // indirect
 	github.com/onflow/flow-ft/lib/go/contracts v0.7.1-0.20240424211859-3ff4c0fe2a1e // indirect
-	github.com/onflow/flow-ft/lib/go/templates v0.7.1-0.20240424211859-3ff4c0fe2a1e // indirect
+	github.com/onflow/flow-ft/lib/go/templates v1.0.1 // indirect
 	github.com/onflow/flow-go v0.34.0-crescendo-preview.18 // indirect
-	github.com/onflow/flow-go-sdk v1.0.0-preview.25 // indirect
+	github.com/onflow/flow-go-sdk v1.0.0-preview.54 // indirect
 	github.com/onflow/flow-nft/lib/go/contracts v1.1.1-0.20240429184308-40c3de711140 // indirect
-	github.com/onflow/flow-nft/lib/go/templates v0.0.0-20240429184308-40c3de711140 // indirect
-	github.com/onflow/flow/protobuf/go/flow v0.4.1-0.20240412170550-911321113030 // indirect
+	github.com/onflow/flow-nft/lib/go/templates v1.2.1 // indirect
+	github.com/onflow/flow/protobuf/go/flow v0.4.3 // indirect
 	github.com/onflow/flowkit/v2 v2.0.0-stable-cadence-alpha.18 // indirect
 	github.com/onflow/go-ethereum v1.13.4 // indirect
-	github.com/onflow/sdks v0.5.1-0.20230912225508-b35402f12bba // indirect
+	github.com/onflow/sdks v0.6.0-preview.1 // indirect
 	github.com/pbnjay/memory v0.0.0-20210728143218-7b4eea64cf58 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.6 // indirect
 	github.com/pierrec/lz4 v2.6.1+incompatible // indirect
@@ -225,7 +228,7 @@ require (
 	google.golang.org/protobuf v1.33.0 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	lukechampine.com/blake3 v1.2.1 // indirect
+	lukechampine.com/blake3 v1.3.0 // indirect
 	modernc.org/libc v1.37.6 // indirect
 	modernc.org/mathutil v1.6.0 // indirect
 	modernc.org/memory v1.7.2 // indirect
@@ -233,3 +236,5 @@ require (
 	mvdan.cc/gofumpt v0.5.0 // indirect
 	rsc.io/tmplfunc v0.0.3 // indirect
 )
+
+replace github.com/onflow/flow-evm-bridge/bridge => ./
