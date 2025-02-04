@@ -41,15 +41,6 @@ import (
 var content embed.FS
 
 var (
-	placeholderFungibleTokenAddress   = "\"FungibleToken\""
-	placeholderFungibleTokenMVAddress = "\"FungibleTokenMetadataViews\""
-	placeholderMetadataViewsAddress   = "\"MetadataViews\""
-	placeholderFlowTokenAddress       = "\"FlowToken\""
-	placeholderBurnerAddress          = "\"Burner\""
-	placeholderViewResolverAddress    = "\"ViewResolver\""
-	placeholderNFTAddress             = "\"NonFungibleToken\""
-	placeholderEVMAddress             = "\"EVM\""
-
 	placeholderCrossVMNFTAddress                     = "\"CrossVMNFT\""
 	placeholderCrossVMTokenAddress                   = "\"CrossVMToken\""
 	placeholderFlowEVMBridgeHandlerInterfacesAddress = "\"FlowEVMBridgeHandlerInterfaces\""
@@ -78,8 +69,6 @@ var (
 )
 
 type Environment struct {
-	NonFungibleTokenAddress               string
-	EVMAddress                            string
 	CrossVMNFTAddress                     string
 	CrossVMTokenAddress                   string
 	FlowEVMBridgeHandlerInterfacesAddress string
@@ -132,23 +121,6 @@ func ReplaceAddress(code, placeholder, replacement string) string {
 func ReplaceAddresses(code string, bridgeEnv Environment, coreEnv coreContracts.Environment) string {
 
 	code = coreContracts.ReplaceAddresses(code, coreEnv)
-
-	// TODO: Remove these once the core contracts address replacement
-	// is working properly
-
-	code = ReplaceAddress(
-		code,
-		placeholderNFTAddress,
-		bridgeEnv.NonFungibleTokenAddress,
-	)
-
-	code = ReplaceAddress(
-		code,
-		placeholderEVMAddress,
-		bridgeEnv.EVMAddress,
-	)
-
-	// End of Section to Remove
 
 	code = ReplaceAddress(
 		code,

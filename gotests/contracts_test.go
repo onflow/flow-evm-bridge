@@ -13,9 +13,11 @@ const (
 	fakeAddr = "0x0A"
 )
 
+// Sets all the env addresses to the fakeAddr so they will all be used
+// to replace import placeholders in the tests
 func SetAllAddresses(bridgeEnv *bridge.Environment, coreEnv *coreContracts.Environment) {
 	coreEnv.FungibleTokenAddress = fakeAddr
-	//coreEnv.EVMAddress = fakeAddr
+	coreEnv.EVMAddress = fakeAddr
 	coreEnv.ViewResolverAddress = fakeAddr
 	coreEnv.BurnerAddress = fakeAddr
 	coreEnv.NonFungibleTokenAddress = fakeAddr
@@ -25,11 +27,6 @@ func SetAllAddresses(bridgeEnv *bridge.Environment, coreEnv *coreContracts.Envir
 	coreEnv.FlowTokenAddress = fakeAddr
 	coreEnv.FungibleTokenMetadataViewsAddress = fakeAddr
 	coreEnv.StorageFeesAddress = fakeAddr
-
-	// TODO: Remove these when the core contracts package supports replacing their placeholers
-	bridgeEnv.NonFungibleTokenAddress = fakeAddr
-	bridgeEnv.EVMAddress = fakeAddr
-	//
 
 	bridgeEnv.CrossVMNFTAddress = fakeAddr
 	bridgeEnv.CrossVMTokenAddress = fakeAddr
