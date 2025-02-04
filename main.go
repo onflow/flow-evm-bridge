@@ -2,6 +2,7 @@ package bridge
 
 import (
 	"embed"
+	"errors"
 	"fmt"
 	"log"
 	"strings"
@@ -10,6 +11,33 @@ import (
 )
 
 //go:embed cadence/contracts/bridge/interfaces/CrossVMNFT.cdc
+//go:embed cadence/contracts/bridge/interfaces/CrossVMToken.cdc
+//go:embed cadence/contracts/bridge/interfaces/FlowEVMBridgeHandlerInterfaces.cdc
+//go:embed cadence/contracts/bridge/interfaces/IBridgePermissions.cdc
+//go:embed cadence/contracts/bridge/interfaces/ICrossVM.cdc
+//go:embed cadence/contracts/bridge/interfaces/ICrossVMAsset.cdc
+//go:embed cadence/contracts/bridge/interfaces/IEVMBridgeNFTMinter.cdc
+//go:embed cadence/contracts/bridge/interfaces/IEVMBridgeTokenMinter.cdc
+//go:embed cadence/contracts/bridge/interfaces/IFlowEVMNFTBridge.cdc
+//go:embed cadence/contracts/bridge/interfaces/IFlowEVMTokenBridge.cdc
+//go:embed cadence/contracts/bridge/FlowEVMBridge.cdc
+//go:embed cadence/contracts/bridge/FlowEVMBridgeAccessor.cdc
+//go:embed cadence/contracts/bridge/FlowEVMBridgeConfig.cdc
+//go:embed cadence/contracts/bridge/FlowEVMBridgeHandlers.cdc
+//go:embed cadence/contracts/bridge/FlowEVMBridgeNFTEscrow.cdc
+//go:embed cadence/contracts/bridge/FlowEVMBridgeResolver.cdc
+//go:embed cadence/contracts/bridge/FlowEVMBridgeTemplates.cdc
+//go:embed cadence/contracts/bridge/FlowEVMBridgeTokenEscrow.cdc
+//go:embed cadence/contracts/bridge/FlowEVMBridgeUtils.cdc
+//go:embed cadence/contracts/utils/ArrayUtils.cdc
+//go:embed cadence/contracts/utils/ScopedFTProviders.cdc
+//go:embed cadence/contracts/utils/Serialize.cdc
+//go:embed cadence/contracts/utils/SerializeMetadata.cdc
+//go:embed cadence/contracts/utils/StringUtils.cdc
+//go:embed cadence/scripts/bridge/batch_evm_address_requires_onboarding.cdc
+//go:embed cadence/scripts/bridge/batch_get_associated_evm_address.cdc
+//go:embed cadence/transactions/bridge/admin/blocklist/block_cadence_type.cdc
+//go:embed cadence/transactions/bridge/admin/blocklist/block_evm_address.cdc
 var content embed.FS
 
 var (
@@ -20,6 +48,7 @@ var (
 	placeholderBurnerAddress          = "\"Burner\""
 	placeholderViewResolverAddress    = "\"ViewResolver\""
 	placeholderNFTAddress             = "\"NonFungibleToken\""
+	placeholderEVMAddress             = "\"EVM\""
 
 	placeholderCrossVMNFTAddress                     = "\"CrossVMNFT\""
 	placeholderCrossVMTokenAddress                   = "\"CrossVMToken\""
@@ -49,6 +78,8 @@ var (
 )
 
 type Environment struct {
+	NonFungibleTokenAddress               string
+	EVMAddress                            string
 	CrossVMNFTAddress                     string
 	CrossVMTokenAddress                   string
 	FlowEVMBridgeHandlerInterfacesAddress string
@@ -87,149 +118,177 @@ func withHexPrefix(address string) string {
 	return fmt.Sprintf("0x%s", address)
 }
 
+func ReplaceAddress(code, placeholder, replacement string) string {
+	if len(replacement) > 0 {
+		code = strings.ReplaceAll(
+			code,
+			placeholder,
+			withHexPrefix(replacement),
+		)
+	}
+	return code
+}
+
 func ReplaceAddresses(code string, bridgeEnv Environment, coreEnv coreContracts.Environment) string {
 
 	code = coreContracts.ReplaceAddresses(code, coreEnv)
 
-	code = strings.ReplaceAll(
+	// TODO: Remove these once the core contracts address replacement
+	// is working properly
+
+	code = ReplaceAddress(
+		code,
+		placeholderNFTAddress,
+		bridgeEnv.NonFungibleTokenAddress,
+	)
+
+	code = ReplaceAddress(
+		code,
+		placeholderEVMAddress,
+		bridgeEnv.EVMAddress,
+	)
+
+	// End of Section to Remove
+
+	code = ReplaceAddress(
 		code,
 		placeholderCrossVMNFTAddress,
-		withHexPrefix(bridgeEnv.CrossVMNFTAddress),
+		bridgeEnv.CrossVMNFTAddress,
 	)
 
-	code = strings.ReplaceAll(
+	code = ReplaceAddress(
 		code,
 		placeholderCrossVMTokenAddress,
-		withHexPrefix(bridgeEnv.CrossVMTokenAddress),
+		bridgeEnv.CrossVMTokenAddress,
 	)
 
-	code = strings.ReplaceAll(
+	code = ReplaceAddress(
 		code,
 		placeholderFlowEVMBridgeHandlerInterfacesAddress,
-		withHexPrefix(bridgeEnv.FlowEVMBridgeHandlerInterfacesAddress),
+		bridgeEnv.FlowEVMBridgeHandlerInterfacesAddress,
 	)
 
-	code = strings.ReplaceAll(
+	code = ReplaceAddress(
 		code,
 		placeholderIBridgePermissionsAddress,
-		withHexPrefix(bridgeEnv.IBridgePermissionsAddress),
+		bridgeEnv.IBridgePermissionsAddress,
 	)
 
-	code = strings.ReplaceAll(
+	code = ReplaceAddress(
 		code,
 		placeholderICrossVMAddress,
-		withHexPrefix(bridgeEnv.ICrossVMAddress),
+		bridgeEnv.ICrossVMAddress,
 	)
-	code = strings.ReplaceAll(
+	code = ReplaceAddress(
 		code,
 		placeholderICrossVMAssetAddress,
-		withHexPrefix(bridgeEnv.ICrossVMAssetAddress),
+		bridgeEnv.ICrossVMAssetAddress,
 	)
-	code = strings.ReplaceAll(
+	code = ReplaceAddress(
 		code,
 		placeholderIEVMBridgeNFTMinterAddress,
-		withHexPrefix(bridgeEnv.IEVMBridgeNFTMinterAddress),
+		bridgeEnv.IEVMBridgeNFTMinterAddress,
 	)
-	code = strings.ReplaceAll(
+	code = ReplaceAddress(
 		code,
 		placeholderIEVMBridgeTokenMinterAddress,
-		withHexPrefix(bridgeEnv.IEVMBridgeTokenMinterAddress),
+		bridgeEnv.IEVMBridgeTokenMinterAddress,
 	)
-	code = strings.ReplaceAll(
+	code = ReplaceAddress(
 		code,
 		placeholderIFlowEVMNFTBridgeAddress,
-		withHexPrefix(bridgeEnv.IFlowEVMNFTBridgeAddress),
+		bridgeEnv.IFlowEVMNFTBridgeAddress,
 	)
-	code = strings.ReplaceAll(
+	code = ReplaceAddress(
 		code,
 		placeholderIFlowEVMTokenBridgeAddress,
-		withHexPrefix(bridgeEnv.IFlowEVMTokenBridgeAddress),
+		bridgeEnv.IFlowEVMTokenBridgeAddress,
 	)
-	code = strings.ReplaceAll(
+	code = ReplaceAddress(
 		code,
 		placeholderFlowEVMBridgeAddress,
-		withHexPrefix(bridgeEnv.FlowEVMBridgeAddress),
+		bridgeEnv.FlowEVMBridgeAddress,
 	)
-	code = strings.ReplaceAll(
+	code = ReplaceAddress(
 		code,
 		placeholderFlowEVMBridgeAccessorAddress,
-		withHexPrefix(bridgeEnv.FlowEVMBridgeAccessorAddress),
+		bridgeEnv.FlowEVMBridgeAccessorAddress,
 	)
-	code = strings.ReplaceAll(
+	code = ReplaceAddress(
 		code,
 		placeholderFlowEVMBridgeConfigAddress,
-		withHexPrefix(bridgeEnv.FlowEVMBridgeConfigAddress),
+		bridgeEnv.FlowEVMBridgeConfigAddress,
 	)
-	code = strings.ReplaceAll(
+	code = ReplaceAddress(
 		code,
 		placeholderFlowEVMBridgeHandlersAddress,
-		withHexPrefix(bridgeEnv.FlowEVMBridgeHandlersAddress),
+		bridgeEnv.FlowEVMBridgeHandlersAddress,
 	)
 
-	code = strings.ReplaceAll(
+	code = ReplaceAddress(
 		code,
 		placeholderFlowEVMBridgeNFTEscrowAddress,
-		withHexPrefix(bridgeEnv.FlowEVMBridgeNFTEscrowAddress),
+		bridgeEnv.FlowEVMBridgeNFTEscrowAddress,
 	)
 
-	code = strings.ReplaceAll(
+	code = ReplaceAddress(
 		code,
 		placeholderFlowEVMBridgeResolverAddress,
-		withHexPrefix(bridgeEnv.FlowEVMBridgeResolverAddress),
+		bridgeEnv.FlowEVMBridgeResolverAddress,
 	)
 
-	code = strings.ReplaceAll(
+	code = ReplaceAddress(
 		code,
 		placeholderFlowEVMBridgeTemplatesAddress,
-		withHexPrefix(bridgeEnv.FlowEVMBridgeTemplatesAddress),
+		bridgeEnv.FlowEVMBridgeTemplatesAddress,
 	)
 
-	code = strings.ReplaceAll(
+	code = ReplaceAddress(
 		code,
 		placeholderFlowEVMBridgeTokenEscrowAddress,
-		withHexPrefix(bridgeEnv.FlowEVMBridgeTokenEscrowAddress),
+		bridgeEnv.FlowEVMBridgeTokenEscrowAddress,
 	)
 
-	code = strings.ReplaceAll(
+	code = ReplaceAddress(
 		code,
 		placeholderFlowEVMBridgeUtilsAddress,
-		withHexPrefix(bridgeEnv.FlowEVMBridgeUtilsAddress),
+		bridgeEnv.FlowEVMBridgeUtilsAddress,
 	)
 
-	code = strings.ReplaceAll(
+	code = ReplaceAddress(
 		code,
 		placeholderArrayUtilsAddress,
-		withHexPrefix(bridgeEnv.ArrayUtilsAddress),
+		bridgeEnv.ArrayUtilsAddress,
 	)
 
-	code = strings.ReplaceAll(
+	code = ReplaceAddress(
 		code,
 		placeholderScopedFTProvidersAddress,
-		withHexPrefix(bridgeEnv.ScopedFTProvidersAddress),
+		bridgeEnv.ScopedFTProvidersAddress,
 	)
 
-	code = strings.ReplaceAll(
+	code = ReplaceAddress(
 		code,
 		placeholderSerializeAddress,
-		withHexPrefix(bridgeEnv.SerializeAddress),
+		bridgeEnv.SerializeAddress,
 	)
 
-	code = strings.ReplaceAll(
+	code = ReplaceAddress(
 		code,
 		placeholderSerializeMetadataAddress,
-		withHexPrefix(bridgeEnv.SerializeMetadataAddress),
+		bridgeEnv.SerializeMetadataAddress,
 	)
 
-	code = strings.ReplaceAll(
+	code = ReplaceAddress(
 		code,
 		placeholderStringUtilsAddress,
-		withHexPrefix(bridgeEnv.StringUtilsAddress),
+		bridgeEnv.StringUtilsAddress,
 	)
 
 	return code
 }
 
-func GetCadenceCode(contractPath string, bridgeEnv Environment, coreEnv coreContracts.Environment) []byte {
+func GetCadenceContractCode(contractPath string, bridgeEnv Environment, coreEnv coreContracts.Environment) ([]byte, error) {
 
 	fileContent, err := content.ReadFile(contractPath)
 
@@ -242,11 +301,123 @@ func GetCadenceCode(contractPath string, bridgeEnv Environment, coreEnv coreCont
 
 	code = ReplaceAddresses(code, bridgeEnv, coreEnv)
 
+	missingImportsString := ""
+
 	if strings.Contains(code, "import \"") {
-		log.Fatal("Missing import addresses for one or more contracts in the import list!")
+		quoteSeparated := strings.Split(code, "\"")
+		contractNames := make([]string, len(quoteSeparated))
+		i := 0
+		for _, name := range quoteSeparated {
+			if strings.Contains(name, "access(all) contract ") {
+				break
+			}
+			if strings.Contains(name, "import") {
+				continue
+			} else {
+				contractNames[i] = name
+				i = i + 1
+			}
+		}
+		missingImportsString = "Cannot return code for " + contractPath + ". Missing import addresses for "
+		for _, name := range contractNames {
+			if len(name) > 0 {
+				missingImportsString = missingImportsString + name + ", "
+			}
+		}
+		missingImportsString = missingImportsString[:len(missingImportsString)-2]
+		missingImportsString = missingImportsString + "."
+		return []byte(code), errors.New(missingImportsString)
 	}
 
-	return []byte(code)
+	return []byte(code), nil
+}
+
+func GetCadenceTransactionCode(transactionPath string, bridgeEnv Environment, coreEnv coreContracts.Environment) ([]byte, error) {
+
+	fileContent, err := content.ReadFile(transactionPath)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Convert []byte to string
+	code := string(fileContent)
+
+	code = ReplaceAddresses(code, bridgeEnv, coreEnv)
+
+	missingImportsString := ""
+
+	if strings.Contains(code, "import \"") {
+		quoteSeparated := strings.Split(code, "\"")
+		contractNames := make([]string, len(quoteSeparated))
+		i := 0
+		for _, name := range quoteSeparated {
+			if strings.Contains(name, "transaction(") {
+				break
+			}
+			if strings.Contains(name, "import") {
+				continue
+			} else {
+				contractNames[i] = name
+				i = i + 1
+			}
+		}
+		missingImportsString = "Cannot return code for " + transactionPath + ". Missing import addresses for "
+		for _, name := range contractNames {
+			if len(name) > 0 {
+				missingImportsString = missingImportsString + name + ", "
+			}
+		}
+		missingImportsString = missingImportsString[:len(missingImportsString)-2]
+		missingImportsString = missingImportsString + "."
+		log.Fatal(missingImportsString)
+	}
+
+	return []byte(code), nil
+}
+
+func GetCadenceScriptCode(scriptPath string, bridgeEnv Environment, coreEnv coreContracts.Environment) ([]byte, error) {
+
+	fileContent, err := content.ReadFile(scriptPath)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Convert []byte to string
+	code := string(fileContent)
+
+	code = ReplaceAddresses(code, bridgeEnv, coreEnv)
+
+	missingImportsString := ""
+
+	if strings.Contains(code, "import \"") {
+		quoteSeparated := strings.Split(code, "\"")
+		contractNames := make([]string, len(quoteSeparated))
+		i := 0
+		for _, name := range quoteSeparated {
+			if strings.Contains(name, "access(all) fun main(") {
+				break
+			}
+			if strings.Contains(name, "import") {
+				continue
+			} else {
+				contractNames[i] = name
+				i = i + 1
+			}
+		}
+		missingImportsString = "Cannot return code for " + scriptPath + ". Missing import addresses for "
+		for _, name := range contractNames {
+			if len(name) > 0 {
+				missingImportsString = missingImportsString + name + ", "
+			}
+		}
+		missingImportsString = missingImportsString[:len(missingImportsString)-2]
+		missingImportsString = missingImportsString + "."
+		log.Fatal(missingImportsString)
+	}
+
+	return []byte(code), nil
 }
 
 /**

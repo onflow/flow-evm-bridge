@@ -13,7 +13,60 @@ const (
 	fakeAddr = "0x0A"
 )
 
-func TestContract(t *testing.T) {
+func SetAllAddresses(bridgeEnv *bridge.Environment, coreEnv *coreContracts.Environment) {
+	coreEnv.FungibleTokenAddress = fakeAddr
+	//coreEnv.EVMAddress = fakeAddr
+	coreEnv.ViewResolverAddress = fakeAddr
+	coreEnv.BurnerAddress = fakeAddr
+	coreEnv.NonFungibleTokenAddress = fakeAddr
+	coreEnv.MetadataViewsAddress = fakeAddr
+	coreEnv.CryptoAddress = fakeAddr
+	coreEnv.FlowFeesAddress = fakeAddr
+	coreEnv.FlowTokenAddress = fakeAddr
+	coreEnv.FungibleTokenMetadataViewsAddress = fakeAddr
+	coreEnv.StorageFeesAddress = fakeAddr
+
+	// TODO: Remove these when the core contracts package supports replacing their placeholers
+	bridgeEnv.NonFungibleTokenAddress = fakeAddr
+	bridgeEnv.EVMAddress = fakeAddr
+	//
+
+	bridgeEnv.CrossVMNFTAddress = fakeAddr
+	bridgeEnv.CrossVMTokenAddress = fakeAddr
+	bridgeEnv.FlowEVMBridgeHandlerInterfacesAddress = fakeAddr
+	bridgeEnv.IBridgePermissionsAddress = fakeAddr
+	bridgeEnv.ICrossVMAddress = fakeAddr
+	bridgeEnv.ICrossVMAssetAddress = fakeAddr
+	bridgeEnv.IEVMBridgeNFTMinterAddress = fakeAddr
+	bridgeEnv.IEVMBridgeTokenMinterAddress = fakeAddr
+	bridgeEnv.IFlowEVMNFTBridgeAddress = fakeAddr
+	bridgeEnv.IFlowEVMTokenBridgeAddress = fakeAddr
+	bridgeEnv.FlowEVMBridgeAddress = fakeAddr
+	bridgeEnv.FlowEVMBridgeAccessorAddress = fakeAddr
+	bridgeEnv.FlowEVMBridgeConfigAddress = fakeAddr
+	bridgeEnv.FlowEVMBridgeHandlersAddress = fakeAddr
+	bridgeEnv.FlowEVMBridgeNFTEscrowAddress = fakeAddr
+	bridgeEnv.FlowEVMBridgeResolverAddress = fakeAddr
+	bridgeEnv.FlowEVMBridgeTemplatesAddress = fakeAddr
+	bridgeEnv.FlowEVMBridgeTokenEscrowAddress = fakeAddr
+	bridgeEnv.FlowEVMBridgeUtilsAddress = fakeAddr
+	bridgeEnv.ArrayUtilsAddress = fakeAddr
+	bridgeEnv.ScopedFTProvidersAddress = fakeAddr
+	bridgeEnv.SerializeAddress = fakeAddr
+	bridgeEnv.SerializeMetadataAddress = fakeAddr
+	bridgeEnv.StringUtilsAddress = fakeAddr
+}
+
+// Tests that a specific contract path should succeed when retrieving it
+// and verifies that all the import placeholders have been replaced
+func GetContractShouldSucceed(t *testing.T, path string, bridgeEnv bridge.Environment, coreEnv coreContracts.Environment) {
+	contract, err := bridge.GetCadenceContractCode(path, bridgeEnv, coreEnv)
+	assert.Nil(t, err)
+	assert.NotContains(t, contract, "import \"")
+}
+
+// Tests that all the contract getters work properly
+func TestContracts(t *testing.T) {
 	coreEnv := coreContracts.Environment{
 		FungibleTokenAddress: fakeAddr,
 		ViewResolverAddress:  fakeAddr,
@@ -23,6 +76,107 @@ func TestContract(t *testing.T) {
 	bridgeEnv := bridge.Environment{
 		CrossVMNFTAddress: fakeAddr,
 	}
-	contract := bridge.GetCadenceCode("cadence/contracts/bridge/interfaces/CrossVMNFT.cdc", bridgeEnv, coreEnv)
+
+	pathPrefix := "cadence/contracts/"
+
+	// Should be missing NonFungibleToken, MetadataViews, EVM, and ICrossVMAsset
+	contract, err := bridge.GetCadenceContractCode(pathPrefix+"bridge/interfaces/CrossVMNFT.cdc", bridgeEnv, coreEnv)
 	assert.NotNil(t, contract)
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "NonFungibleToken")
+	assert.Contains(t, err.Error(), "MetadataViews")
+	assert.Contains(t, err.Error(), "EVM")
+	assert.Contains(t, err.Error(), "ICrossVMAsset")
+
+	SetAllAddresses(&bridgeEnv, &coreEnv)
+
+	GetContractShouldSucceed(t, pathPrefix+"bridge/interfaces/CrossVMToken.cdc", bridgeEnv, coreEnv)
+	GetContractShouldSucceed(t, pathPrefix+"bridge/interfaces/FlowEVMBridgeHandlerInterfaces.cdc", bridgeEnv, coreEnv)
+	GetContractShouldSucceed(t, pathPrefix+"bridge/interfaces/IBridgePermissions.cdc", bridgeEnv, coreEnv)
+	GetContractShouldSucceed(t, pathPrefix+"bridge/interfaces/ICrossVM.cdc", bridgeEnv, coreEnv)
+	GetContractShouldSucceed(t, pathPrefix+"bridge/interfaces/ICrossVMAsset.cdc", bridgeEnv, coreEnv)
+	GetContractShouldSucceed(t, pathPrefix+"bridge/interfaces/IEVMBridgeNFTMinter.cdc", bridgeEnv, coreEnv)
+	GetContractShouldSucceed(t, pathPrefix+"bridge/interfaces/IEVMBridgeTokenMinter.cdc", bridgeEnv, coreEnv)
+	GetContractShouldSucceed(t, pathPrefix+"bridge/interfaces/IFlowEVMNFTBridge.cdc", bridgeEnv, coreEnv)
+	GetContractShouldSucceed(t, pathPrefix+"bridge/interfaces/IFlowEVMTokenBridge.cdc", bridgeEnv, coreEnv)
+	GetContractShouldSucceed(t, pathPrefix+"bridge/FlowEVMBridge.cdc", bridgeEnv, coreEnv)
+	GetContractShouldSucceed(t, pathPrefix+"bridge/FlowEVMBridgeAccessor.cdc", bridgeEnv, coreEnv)
+	GetContractShouldSucceed(t, pathPrefix+"bridge/FlowEVMBridgeConfig.cdc", bridgeEnv, coreEnv)
+	GetContractShouldSucceed(t, pathPrefix+"bridge/FlowEVMBridgeHandlers.cdc", bridgeEnv, coreEnv)
+	GetContractShouldSucceed(t, pathPrefix+"bridge/FlowEVMBridgeNFTEscrow.cdc", bridgeEnv, coreEnv)
+	GetContractShouldSucceed(t, pathPrefix+"bridge/FlowEVMBridgeResolver.cdc", bridgeEnv, coreEnv)
+	GetContractShouldSucceed(t, pathPrefix+"bridge/FlowEVMBridgeTemplates.cdc", bridgeEnv, coreEnv)
+	GetContractShouldSucceed(t, pathPrefix+"bridge/FlowEVMBridgeTokenEscrow.cdc", bridgeEnv, coreEnv)
+	GetContractShouldSucceed(t, pathPrefix+"bridge/FlowEVMBridgeUtils.cdc", bridgeEnv, coreEnv)
+	GetContractShouldSucceed(t, pathPrefix+"utils/ArrayUtils.cdc", bridgeEnv, coreEnv)
+	GetContractShouldSucceed(t, pathPrefix+"utils/ScopedFTProviders.cdc", bridgeEnv, coreEnv)
+	GetContractShouldSucceed(t, pathPrefix+"utils/Serialize.cdc", bridgeEnv, coreEnv)
+	GetContractShouldSucceed(t, pathPrefix+"utils/SerializeMetadata.cdc", bridgeEnv, coreEnv)
+	GetContractShouldSucceed(t, pathPrefix+"utils/StringUtils.cdc", bridgeEnv, coreEnv)
+}
+
+// Tests that a specific script path should succeed when retrieving it
+// and verifies that all the import placeholders have been replaced
+func GetScriptShouldSucceed(t *testing.T, path string, bridgeEnv bridge.Environment, coreEnv coreContracts.Environment) {
+	contract, err := bridge.GetCadenceScriptCode(path, bridgeEnv, coreEnv)
+	assert.Nil(t, err)
+	assert.NotContains(t, contract, "import \"")
+}
+
+func TestScripts(t *testing.T) {
+	coreEnv := coreContracts.Environment{
+		FungibleTokenAddress: fakeAddr,
+		ViewResolverAddress:  fakeAddr,
+		BurnerAddress:        fakeAddr,
+	}
+
+	bridgeEnv := bridge.Environment{
+		CrossVMNFTAddress: fakeAddr,
+	}
+
+	pathPrefix := "cadence/scripts/"
+
+	// Should be missing EVM and FlowEVMBridge
+	contract, err := bridge.GetCadenceContractCode(pathPrefix+"bridge/batch_evm_address_requires_onboarding.cdc", bridgeEnv, coreEnv)
+	assert.NotNil(t, contract)
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "EVM")
+	assert.Contains(t, err.Error(), "FlowEVMBridge")
+
+	SetAllAddresses(&bridgeEnv, &coreEnv)
+
+	GetScriptShouldSucceed(t, pathPrefix+"bridge/batch_get_associated_evm_address.cdc", bridgeEnv, coreEnv)
+}
+
+// Tests that a specific transaction path should succeed when retrieving it
+// and verifies that all the import placeholders have been replaced
+func GetTransactionShouldSucceed(t *testing.T, path string, bridgeEnv bridge.Environment, coreEnv coreContracts.Environment) {
+	contract, err := bridge.GetCadenceTransactionCode(path, bridgeEnv, coreEnv)
+	assert.Nil(t, err)
+	assert.NotContains(t, contract, "import \"")
+}
+
+func TestTransactions(t *testing.T) {
+	coreEnv := coreContracts.Environment{
+		FungibleTokenAddress: fakeAddr,
+		ViewResolverAddress:  fakeAddr,
+		BurnerAddress:        fakeAddr,
+	}
+
+	bridgeEnv := bridge.Environment{
+		CrossVMNFTAddress: fakeAddr,
+	}
+
+	pathPrefix := "cadence/transactions/"
+
+	// Should be missing EVM and FlowEVMBridgeConfig
+	contract, err := bridge.GetCadenceContractCode(pathPrefix+"bridge/admin/blocklist/block_cadence_type.cdc", bridgeEnv, coreEnv)
+	assert.NotNil(t, contract)
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "EVM")
+	assert.Contains(t, err.Error(), "FlowEVMBridgeConfig")
+
+	SetAllAddresses(&bridgeEnv, &coreEnv)
+
+	GetTransactionShouldSucceed(t, pathPrefix+"bridge/admin/blocklist/block_evm_address.cdc", bridgeEnv, coreEnv)
 }

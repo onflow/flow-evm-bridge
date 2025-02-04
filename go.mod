@@ -138,7 +138,7 @@ require (
 	github.com/onflow/crypto v0.25.1 // indirect
 	github.com/onflow/flixkit-go v1.2.1-cadence-v1-preview.10 // indirect
 	github.com/onflow/flow-core-contracts/lib/go/contracts v0.15.2-0.20240429192223-e696a8e439b5 // indirect
-	github.com/onflow/flow-core-contracts/lib/go/templates v1.4.0 // indirect
+	github.com/onflow/flow-core-contracts/lib/go/templates v1.5.1-0.20250204182329-cf8a33d7d089 // indirect
 	github.com/onflow/flow-emulator v1.0.0-preview.22 // indirect
 	github.com/onflow/flow-evm-bridge/bridge v0.0.0-00010101000000-000000000000 // indirect
 	github.com/onflow/flow-ft/lib/go/contracts v0.7.1-0.20240424211859-3ff4c0fe2a1e // indirect
