@@ -34,10 +34,120 @@ import (
 //go:embed cadence/contracts/utils/Serialize.cdc
 //go:embed cadence/contracts/utils/SerializeMetadata.cdc
 //go:embed cadence/contracts/utils/StringUtils.cdc
+
+//go:embed solidity/src/interfaces/BridgePermissions.sol
+//go:embed solidity/src/interfaces/FlowEVMDeploymentRegistry.sol
+//go:embed solidity/src/interfaces/IBridgePermissions.sol
+//go:embed solidity/src/interfaces/ICrossVM.sol
+//go:embed solidity/src/interfaces/IFlowEVMBridgeDeployer.sol
+//go:embed solidity/src/FlowBridgeDeploymentRegistry.sol
+//go:embed solidity/src/FlowBridgeFactory.sol
+//go:embed solidity/src/FlowEVMBridgedERC20Deployer.sol
+//go:embed solidity/src/FlowEVMBridgedERC721Deployer.sol
+
 //go:embed cadence/scripts/bridge/batch_evm_address_requires_onboarding.cdc
 //go:embed cadence/scripts/bridge/batch_get_associated_evm_address.cdc
+//go:embed cadence/scripts/bridge/batch_get_associated_type.cdc
+//go:embed cadence/scripts/bridge/batch_type_requires_onboarding.cdc
+//go:embed cadence/scripts/bridge/calculate_bridge_fee.cdc
+//go:embed cadence/scripts/bridge/evm_address_requires_onboarding.cdc
+//go:embed cadence/scripts/bridge/get_associated_evm_address.cdc
+//go:embed cadence/scripts/bridge/get_associated_type.cdc
+//go:embed cadence/scripts/bridge/get_bridge_coa_address.cdc
+//go:embed cadence/scripts/bridge/get_gas_limit.cdc
+//go:embed cadence/scripts/bridge/is_cadence_type_blocked.cdc
+//go:embed cadence/scripts/bridge/is_evm_address_blocked.cdc
+//go:embed cadence/scripts/bridge/is_paused.cdc
+//go:embed cadence/scripts/bridge/is_type_paused.cdc
+//go:embed cadence/scripts/bridge/type_requires_onboarding.cdc
+//go:embed cadence/scripts/bridge/type_requires_onboarding_by_identifier.cdc
+
+//go:embed cadence/scripts/config/get_base_fee.cdc
+//go:embed cadence/scripts/config/get_onboard_fee.cdc
+
+//go:embed cadence/scripts/escrow/get_locked_token_balance.cdc
+//go:embed cadence/scripts/escrow/get_nft_views.cdc
+//go:embed cadence/scripts/escrow/get_vault_views.cdc
+//go:embed cadence/scripts/escrow/is_nft_locked.cdc
+//go:embed cadence/scripts/escrow/resolve_locked_nft_metadata.cdc
+//go:embed cadence/scripts/escrow/resolve_locked_vault_metadata.cdc
+
+//go:embed cadence/scripts/evm/call.cdc
+//go:embed cadence/scripts/evm/get_balance.cdc
+//go:embed cadence/scripts/evm/get_evm_address_string.cdc
+//go:embed cadence/scripts/evm/get_evm_address_string_from_bytes.cdc
+
+//go:embed cadence/scripts/nft/get_evm_id_from_evm_nft.cdc
+//go:embed cadence/scripts/nft/get_ids.cdc
+//go:embed cadence/scripts/nft/has_collection_configured.cdc
+
+//go:embed cadence/scripts/serialize/serialize_nft.cdc
+
+//go:embed cadence/scripts/tokens/get_all_vault_info_from_storage.cdc
+//go:embed cadence/scripts/tokens/get_balance.cdc
+//go:embed cadence/scripts/tokens/has_vault_configured.cdc
+//go:embed cadence/scripts/tokens/total_supply.cdc
+
+//go:embed cadence/scripts/utils/balance_of.cdc
+//go:embed cadence/scripts/utils/derive_bridged_nft_contract_name.cdc
+//go:embed cadence/scripts/utils/derive_bridged_token_contract_name.cdc
+//go:embed cadence/scripts/utils/get_deployer_address.cdc
+//go:embed cadence/scripts/utils/get_evm_address_from_hex.cdc
+//go:embed cadence/scripts/utils/get_factory_address.cdc
+//go:embed cadence/scripts/utils/get_registry_address.cdc
+//go:embed cadence/scripts/utils/get_token_decimals.cdc
+//go:embed cadence/scripts/utils/is_owner.cdc
+//go:embed cadence/scripts/utils/is_owner_or_approved.cdc
+//go:embed cadence/scripts/utils/token_uri.cdc
+//go:embed cadence/scripts/utils/total_supply.cdc
+
 //go:embed cadence/transactions/bridge/admin/blocklist/block_cadence_type.cdc
 //go:embed cadence/transactions/bridge/admin/blocklist/block_evm_address.cdc
+//go:embed cadence/transactions/bridge/admin/blocklist/unblock_cadence_type.cdc
+//go:embed cadence/transactions/bridge/admin/blocklist/unblock_evm_address.cdc
+//go:embed cadence/transactions/bridge/admin/evm-integration/claim_accessor_capability_and_save_router.cdc
+//go:embed cadence/transactions/bridge/admin/evm/add_deployer.cdc
+//go:embed cadence/transactions/bridge/admin/evm/set_delegated_deployer.cdc
+//go:embed cadence/transactions/bridge/admin/evm/set_deployment_registry.cdc
+//go:embed cadence/transactions/bridge/admin/evm/set_registrar.cdc
+//go:embed cadence/transactions/bridge/admin/evm/upsert_deployer.cdc
+//go:embed cadence/transactions/bridge/admin/fee/update_base_fee.cdc
+//go:embed cadence/transactions/bridge/admin/fee/update_onboard_fee.cdc
+//go:embed cadence/transactions/bridge/admin/gas/set_gas_limit.cdc
+//go:embed cadence/transactions/bridge/admin/metadata/set_bridged_ft_display_view.cdc
+//go:embed cadence/transactions/bridge/admin/metadata/set_bridged_nft_collection_display_view.cdc
+//go:embed cadence/transactions/bridge/admin/metadata/set_bridged_nft_display_view.cdc
+//go:embed cadence/transactions/bridge/admin/pause/update_bridge_pause_status.cdc
+//go:embed cadence/transactions/bridge/admin/pause/update_type_pause_status.cdc
+//go:embed cadence/transactions/bridge/admin/templates/upsert_contract_code_chunks.cdc
+//go:embed cadence/transactions/bridge/admin/token-handler/create_cadence_native_token_handler.cdc
+//go:embed cadence/transactions/bridge/admin/token-handler/create_wflow_token_handler.cdc
+//go:embed cadence/transactions/bridge/admin/token-handler/disable_token_handler.cdc
+//go:embed cadence/transactions/bridge/admin/token-handler/enable_token_handler.cdc
+//go:embed cadence/transactions/bridge/admin/token-handler/send_minter_to_bridge.cdc
+//go:embed cadence/transactions/bridge/admin/token-handler/set_handler_target_evm_address.cdc
+//go:embed cadence/transactions/bridge/admin/token-handler/set_token_handler_minter.cdc
+
+//go:embed cadence/transactions/bridge/nft/batch_bridge_nft_from_evm.cdc
+//go:embed cadence/transactions/bridge/nft/batch_bridge_nft_to_any_cadence_address.cdc
+//go:embed cadence/transactions/bridge/nft/batch_bridge_nft_to_any_evm_address.cdc
+//go:embed cadence/transactions/bridge/nft/batch_bridge_nft_to_evm.cdc
+//go:embed cadence/transactions/bridge/nft/bridge_nft_from_evm.cdc
+//go:embed cadence/transactions/bridge/nft/bridge_nft_to_any_cadence_address.cdc
+//go:embed cadence/transactions/bridge/nft/bridge_nft_to_any_evm_address.cdc
+//go:embed cadence/transactions/bridge/nft/bridge_nft_to_evm.cdc
+
+//go:embed cadence/transactions/bridge/onboarding/batch_onboard_by_evm_address.cdc
+//go:embed cadence/transactions/bridge/onboarding/batch_onboard_by_type.cdc
+//go:embed cadence/transactions/bridge/onboarding/onboard_by_evm_address.cdc
+//go:embed cadence/transactions/bridge/onboarding/onboard_by_type.cdc
+//go:embed cadence/transactions/bridge/onboarding/onboard_by_type_identifier.cdc
+
+//go:embed cadence/transactions/bridge/tokens/bridge_tokens_from_evm.cdc
+//go:embed cadence/transactions/bridge/tokens/bridge_tokens_to_any_cadence_address.cdc
+//go:embed cadence/transactions/bridge/tokens/bridge_tokens_to_any_evm_address.cdc
+//go:embed cadence/transactions/bridge/tokens/bridge_tokens_to_evm.cdc
+
 var content embed.FS
 
 var (
@@ -388,6 +498,20 @@ func GetCadenceScriptCode(scriptPath string, bridgeEnv Environment, coreEnv core
 		missingImportsString = missingImportsString + "."
 		log.Fatal(missingImportsString)
 	}
+
+	return []byte(code), nil
+}
+
+func GetSolidityContractCode(contractPath string) ([]byte, error) {
+
+	fileContent, err := content.ReadFile(contractPath)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Convert []byte to string
+	code := string(fileContent)
 
 	return []byte(code), nil
 }
