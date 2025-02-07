@@ -139,6 +139,9 @@ import (
 //go:embed cadence/transactions/bridge/tokens/bridge_tokens_to_evm.cdc
 
 //go:embed cadence/tests/test_helpers.cdc
+
+//go:embed cadence/args/bridged-nft-code-chunks-args-emulator.json
+//go:embed cadence/args/bridged-token-code-chunks-args-emulator.json
 var content embed.FS
 
 var (
@@ -361,6 +364,8 @@ func ReplaceAddresses(code string, bridgeEnv Environment, coreEnv coreContracts.
 	return code
 }
 
+// Gets the byte representation of a bridge Cadence contract
+// Caller must provide the full path to the contract
 func GetCadenceContractCode(contractPath string, bridgeEnv Environment, coreEnv coreContracts.Environment) ([]byte, error) {
 
 	fileContent, err := content.ReadFile(contractPath)
@@ -403,6 +408,18 @@ func GetCadenceContractCode(contractPath string, bridgeEnv Environment, coreEnv 
 	}
 
 	return []byte(code), nil
+}
+
+// Gets JSON Arguments with the chunked versions of
+// the Cadence NFT or Fungible Token template contract
+func GetCadenceTokenChunkedJSONArguments(nft bool) []byte {
+	if nft {
+		fileContent, _ := content.ReadFile("cadence/args/bridged-nft-code-chunks-args-emulator.json")
+		return fileContent
+	} else {
+		fileContent, _ := content.ReadFile("cadence/args/bridged-token-code-chunks-args-emulator.json")
+		return fileContent
+	}
 }
 
 func GetCadenceTransactionCode(transactionPath string, bridgeEnv Environment, coreEnv coreContracts.Environment) ([]byte, error) {
@@ -515,7 +532,7 @@ func GetSolidityContractCode(contractName string) (string, error) {
 	case "FlowEVMBridgedERC20":
 		return quoteSeparated[23], nil
 	case "WFLOW":
-		return quoteSeparated[27], nil
+		return quoteSeparated[25], nil
 	default:
 		return "", errors.New("Invalid Solidity Contract Name " + contractName)
 	}
