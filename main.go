@@ -35,16 +35,6 @@ import (
 //go:embed cadence/contracts/utils/SerializeMetadata.cdc
 //go:embed cadence/contracts/utils/StringUtils.cdc
 
-//go:embed solidity/src/interfaces/BridgePermissions.sol
-//go:embed solidity/src/interfaces/FlowEVMDeploymentRegistry.sol
-//go:embed solidity/src/interfaces/IBridgePermissions.sol
-//go:embed solidity/src/interfaces/ICrossVM.sol
-//go:embed solidity/src/interfaces/IFlowEVMBridgeDeployer.sol
-//go:embed solidity/src/FlowBridgeDeploymentRegistry.sol
-//go:embed solidity/src/FlowBridgeFactory.sol
-//go:embed solidity/src/FlowEVMBridgedERC20Deployer.sol
-//go:embed solidity/src/FlowEVMBridgedERC721Deployer.sol
-
 //go:embed cadence/scripts/bridge/batch_evm_address_requires_onboarding.cdc
 //go:embed cadence/scripts/bridge/batch_get_associated_evm_address.cdc
 //go:embed cadence/scripts/bridge/batch_get_associated_type.cdc
@@ -148,6 +138,7 @@ import (
 //go:embed cadence/transactions/bridge/tokens/bridge_tokens_to_any_evm_address.cdc
 //go:embed cadence/transactions/bridge/tokens/bridge_tokens_to_evm.cdc
 
+//go:embed cadence/tests/test_helpers.cdc
 var content embed.FS
 
 var (
@@ -452,7 +443,7 @@ func GetCadenceTransactionCode(transactionPath string, bridgeEnv Environment, co
 		}
 		missingImportsString = missingImportsString[:len(missingImportsString)-2]
 		missingImportsString = missingImportsString + "."
-		log.Fatal(missingImportsString)
+		return []byte(code), errors.New(missingImportsString)
 	}
 
 	return []byte(code), nil
@@ -496,24 +487,38 @@ func GetCadenceScriptCode(scriptPath string, bridgeEnv Environment, coreEnv core
 		}
 		missingImportsString = missingImportsString[:len(missingImportsString)-2]
 		missingImportsString = missingImportsString + "."
-		log.Fatal(missingImportsString)
+		return []byte(code), errors.New(missingImportsString)
 	}
 
 	return []byte(code), nil
 }
 
-func GetSolidityContractCode(contractPath string) ([]byte, error) {
+func GetSolidityContractCode(contractName string) (string, error) {
 
-	fileContent, err := content.ReadFile(contractPath)
-
-	if err != nil {
-		log.Fatal(err)
-	}
+	fileContent, _ := content.ReadFile("cadence/tests/test_helpers.cdc")
 
 	// Convert []byte to string
-	code := string(fileContent)
+	fullFile := string(fileContent)
 
-	return []byte(code), nil
+	quoteSeparated := strings.Split(fullFile, "\"")
+	switch contractName {
+	case "FlowBridgeFactory":
+		return quoteSeparated[13], nil
+	case "FlowEVMBridgedERC20Deployer":
+		return quoteSeparated[15], nil
+	case "FlowEVMBridgedERC721Deployer":
+		return quoteSeparated[17], nil
+	case "FlowBridgeDeploymentRegistry":
+		return quoteSeparated[19], nil
+	case "FlowEVMBridgedERC721":
+		return quoteSeparated[21], nil
+	case "FlowEVMBridgedERC20":
+		return quoteSeparated[23], nil
+	case "WFLOW":
+		return quoteSeparated[27], nil
+	default:
+		return "", errors.New("Invalid Solidity Contract Name " + contractName)
+	}
 }
 
 /**

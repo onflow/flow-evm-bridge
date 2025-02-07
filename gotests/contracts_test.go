@@ -56,14 +56,14 @@ func SetAllAddresses(bridgeEnv *bridge.Environment, coreEnv *coreContracts.Envir
 
 // Tests that a specific contract path should succeed when retrieving it
 // and verifies that all the import placeholders have been replaced
-func GetContractShouldSucceed(t *testing.T, path string, bridgeEnv bridge.Environment, coreEnv coreContracts.Environment) {
+func GetCadenceContractShouldSucceed(t *testing.T, path string, bridgeEnv bridge.Environment, coreEnv coreContracts.Environment) {
 	contract, err := bridge.GetCadenceContractCode(path, bridgeEnv, coreEnv)
 	assert.Nil(t, err)
 	assert.NotContains(t, contract, "import \"")
 }
 
-// Tests that all the contract getters work properly
-func TestContracts(t *testing.T) {
+// Tests that all the Cadence contract getters work properly
+func TestCadenceContracts(t *testing.T) {
 	coreEnv := coreContracts.Environment{
 		FungibleTokenAddress: fakeAddr,
 		ViewResolverAddress:  fakeAddr,
@@ -87,29 +87,56 @@ func TestContracts(t *testing.T) {
 
 	SetAllAddresses(&bridgeEnv, &coreEnv)
 
-	GetContractShouldSucceed(t, pathPrefix+"bridge/interfaces/CrossVMToken.cdc", bridgeEnv, coreEnv)
-	GetContractShouldSucceed(t, pathPrefix+"bridge/interfaces/FlowEVMBridgeHandlerInterfaces.cdc", bridgeEnv, coreEnv)
-	GetContractShouldSucceed(t, pathPrefix+"bridge/interfaces/IBridgePermissions.cdc", bridgeEnv, coreEnv)
-	GetContractShouldSucceed(t, pathPrefix+"bridge/interfaces/ICrossVM.cdc", bridgeEnv, coreEnv)
-	GetContractShouldSucceed(t, pathPrefix+"bridge/interfaces/ICrossVMAsset.cdc", bridgeEnv, coreEnv)
-	GetContractShouldSucceed(t, pathPrefix+"bridge/interfaces/IEVMBridgeNFTMinter.cdc", bridgeEnv, coreEnv)
-	GetContractShouldSucceed(t, pathPrefix+"bridge/interfaces/IEVMBridgeTokenMinter.cdc", bridgeEnv, coreEnv)
-	GetContractShouldSucceed(t, pathPrefix+"bridge/interfaces/IFlowEVMNFTBridge.cdc", bridgeEnv, coreEnv)
-	GetContractShouldSucceed(t, pathPrefix+"bridge/interfaces/IFlowEVMTokenBridge.cdc", bridgeEnv, coreEnv)
-	GetContractShouldSucceed(t, pathPrefix+"bridge/FlowEVMBridge.cdc", bridgeEnv, coreEnv)
-	GetContractShouldSucceed(t, pathPrefix+"bridge/FlowEVMBridgeAccessor.cdc", bridgeEnv, coreEnv)
-	GetContractShouldSucceed(t, pathPrefix+"bridge/FlowEVMBridgeConfig.cdc", bridgeEnv, coreEnv)
-	GetContractShouldSucceed(t, pathPrefix+"bridge/FlowEVMBridgeHandlers.cdc", bridgeEnv, coreEnv)
-	GetContractShouldSucceed(t, pathPrefix+"bridge/FlowEVMBridgeNFTEscrow.cdc", bridgeEnv, coreEnv)
-	GetContractShouldSucceed(t, pathPrefix+"bridge/FlowEVMBridgeResolver.cdc", bridgeEnv, coreEnv)
-	GetContractShouldSucceed(t, pathPrefix+"bridge/FlowEVMBridgeTemplates.cdc", bridgeEnv, coreEnv)
-	GetContractShouldSucceed(t, pathPrefix+"bridge/FlowEVMBridgeTokenEscrow.cdc", bridgeEnv, coreEnv)
-	GetContractShouldSucceed(t, pathPrefix+"bridge/FlowEVMBridgeUtils.cdc", bridgeEnv, coreEnv)
-	GetContractShouldSucceed(t, pathPrefix+"utils/ArrayUtils.cdc", bridgeEnv, coreEnv)
-	GetContractShouldSucceed(t, pathPrefix+"utils/ScopedFTProviders.cdc", bridgeEnv, coreEnv)
-	GetContractShouldSucceed(t, pathPrefix+"utils/Serialize.cdc", bridgeEnv, coreEnv)
-	GetContractShouldSucceed(t, pathPrefix+"utils/SerializeMetadata.cdc", bridgeEnv, coreEnv)
-	GetContractShouldSucceed(t, pathPrefix+"utils/StringUtils.cdc", bridgeEnv, coreEnv)
+	GetCadenceContractShouldSucceed(t, pathPrefix+"bridge/interfaces/CrossVMToken.cdc", bridgeEnv, coreEnv)
+	GetCadenceContractShouldSucceed(t, pathPrefix+"bridge/interfaces/FlowEVMBridgeHandlerInterfaces.cdc", bridgeEnv, coreEnv)
+	GetCadenceContractShouldSucceed(t, pathPrefix+"bridge/interfaces/IBridgePermissions.cdc", bridgeEnv, coreEnv)
+	GetCadenceContractShouldSucceed(t, pathPrefix+"bridge/interfaces/ICrossVM.cdc", bridgeEnv, coreEnv)
+	GetCadenceContractShouldSucceed(t, pathPrefix+"bridge/interfaces/ICrossVMAsset.cdc", bridgeEnv, coreEnv)
+	GetCadenceContractShouldSucceed(t, pathPrefix+"bridge/interfaces/IEVMBridgeNFTMinter.cdc", bridgeEnv, coreEnv)
+	GetCadenceContractShouldSucceed(t, pathPrefix+"bridge/interfaces/IEVMBridgeTokenMinter.cdc", bridgeEnv, coreEnv)
+	GetCadenceContractShouldSucceed(t, pathPrefix+"bridge/interfaces/IFlowEVMNFTBridge.cdc", bridgeEnv, coreEnv)
+	GetCadenceContractShouldSucceed(t, pathPrefix+"bridge/interfaces/IFlowEVMTokenBridge.cdc", bridgeEnv, coreEnv)
+	GetCadenceContractShouldSucceed(t, pathPrefix+"bridge/FlowEVMBridge.cdc", bridgeEnv, coreEnv)
+	GetCadenceContractShouldSucceed(t, pathPrefix+"bridge/FlowEVMBridgeAccessor.cdc", bridgeEnv, coreEnv)
+	GetCadenceContractShouldSucceed(t, pathPrefix+"bridge/FlowEVMBridgeConfig.cdc", bridgeEnv, coreEnv)
+	GetCadenceContractShouldSucceed(t, pathPrefix+"bridge/FlowEVMBridgeHandlers.cdc", bridgeEnv, coreEnv)
+	GetCadenceContractShouldSucceed(t, pathPrefix+"bridge/FlowEVMBridgeNFTEscrow.cdc", bridgeEnv, coreEnv)
+	GetCadenceContractShouldSucceed(t, pathPrefix+"bridge/FlowEVMBridgeResolver.cdc", bridgeEnv, coreEnv)
+	GetCadenceContractShouldSucceed(t, pathPrefix+"bridge/FlowEVMBridgeTemplates.cdc", bridgeEnv, coreEnv)
+	GetCadenceContractShouldSucceed(t, pathPrefix+"bridge/FlowEVMBridgeTokenEscrow.cdc", bridgeEnv, coreEnv)
+	GetCadenceContractShouldSucceed(t, pathPrefix+"bridge/FlowEVMBridgeUtils.cdc", bridgeEnv, coreEnv)
+	GetCadenceContractShouldSucceed(t, pathPrefix+"utils/ArrayUtils.cdc", bridgeEnv, coreEnv)
+	GetCadenceContractShouldSucceed(t, pathPrefix+"utils/ScopedFTProviders.cdc", bridgeEnv, coreEnv)
+	GetCadenceContractShouldSucceed(t, pathPrefix+"utils/Serialize.cdc", bridgeEnv, coreEnv)
+	GetCadenceContractShouldSucceed(t, pathPrefix+"utils/SerializeMetadata.cdc", bridgeEnv, coreEnv)
+	GetCadenceContractShouldSucceed(t, pathPrefix+"utils/StringUtils.cdc", bridgeEnv, coreEnv)
+}
+
+// Tests that a specific solidity contract name should succeed when retrieving it
+// and verifies that it contains bytecode
+func GetSolidityContractShouldSucceed(t *testing.T, name string) {
+	byteCode, err := bridge.GetSolidityContractCode(name)
+	assert.Nil(t, err)
+	assert.NotContains(t, byteCode, "access(all)")
+	assert.NotContains(t, byteCode, "//")
+	assert.NotContains(t, byteCode, "import")
+}
+
+// Tests that all the Solidity contract getters work properly
+func TestSolidityContracts(t *testing.T) {
+
+	// Should be invalid contract name
+	_, err := bridge.GetSolidityContractCode("CryptoPunks")
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "Invalid Solidity Contract Name CryptoPunks")
+
+	GetSolidityContractShouldSucceed(t, "FlowBridgeFactory")
+	GetSolidityContractShouldSucceed(t, "FlowEVMBridgedERC20Deployer")
+	GetSolidityContractShouldSucceed(t, "FlowEVMBridgedERC721Deployer")
+	GetSolidityContractShouldSucceed(t, "FlowBridgeDeploymentRegistry")
+	GetSolidityContractShouldSucceed(t, "FlowEVMBridgedERC721")
+	GetSolidityContractShouldSucceed(t, "FlowEVMBridgedERC20")
+	GetSolidityContractShouldSucceed(t, "WFLOW")
 }
 
 // Tests that a specific script path should succeed when retrieving it
