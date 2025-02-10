@@ -19,11 +19,11 @@ abstract contract CrossVMBridgeCallable is Context, IERC165 {
     /**
      * @dev Sets the bridge EVM address such that only the bridge COA can call the privileged methods
      */
-    constructor(address vmBridgeAddress) {
-        if (vmBridgeAddress != address(0)) {
+    constructor(address vmBridgeAddress_) {
+        if (vmBridgeAddress_ == address(0)) {
             revert CrossVMBridgeCallableZeroInitialization();
         }
-        _vmBridgeAddress = vmBridgeAddress;
+        _vmBridgeAddress = vmBridgeAddress_;
     }
 
     /**
