@@ -141,6 +141,16 @@ import (
 //go:embed cadence/transactions/bridge/tokens/bridge_tokens_to_any_evm_address.cdc
 //go:embed cadence/transactions/bridge/tokens/bridge_tokens_to_evm.cdc
 
+//go:embed cadence/transactions/evm/call.cdc
+//go:embed cadence/transactions/evm/create_account.cdc
+//go:embed cadence/transactions/evm/create_new_account_with_coa.cdc
+//go:embed cadence/transactions/evm/deploy.cdc
+//go:embed cadence/transactions/evm/deposit.cdc
+//go:embed cadence/transactions/evm/destroy_coa.cdc
+//go:embed cadence/transactions/evm/transfer_flow_from_coa_to_evm_address.cdc
+//go:embed cadence/transactions/evm/transfer_flow_to_evm_address.cdc
+//go:embed cadence/transactions/evm/withdraw.cdc
+
 //go:embed cadence/tests/test_helpers.cdc
 
 //go:embed cadence/args/bridged-nft-code-chunks-args-emulator.json
@@ -476,7 +486,7 @@ func GetCadenceTokenChunkedJSONArguments(nft bool) []string {
 
 // Reads the JSON file at the specified path and returns the compiled solidity bytecode where the
 // bytecode is the first element in the JSON array as a Cadence JSON string
-func getBytecodeFromArgsJSON(path string) string {
+func GetBytecodeFromArgsJSON(path string) string {
 	argsData, err := os.ReadFile(path)
 	checkNoErr(err)
 
@@ -647,32 +657,6 @@ func GetSolidityContractCode(contractName string) (string, error) {
 // // To run, execute the following command:
 // // go run main.go $NETWORK
 // func main() {
-// 	network := getSpecifiedNetwork()
-
-// 	dir, err := os.Getwd()
-// 	checkNoErr(err)
-
-// 	ctx := context.Background()
-// 	o := Overflow(
-// 		WithNetwork(network),
-// 		WithTransactionFolderName("cadence/transactions"),
-// 		WithScriptFolderName("cadence/scripts"),
-// 		WithGlobalPrintOptions(WithTransactionUrl()),
-// 	)
-
-// 	// Check if the script is a dry run
-// 	if checkDryRun() {
-// 		log.Printf("Dry run detected...running setup script in dry run mode")
-// 		// Run the dry run transaction
-// 		serviceDryRunResult := o.Tx("bridge/admin/dry_run", WithSigner("service-account"))
-// 		checkNoErr(serviceDryRunResult.Err)
-// 		log.Printf("Service Account dry run run successful...")
-// 		bridgeDryRunResult := o.Tx("bridge/admin/dry_run", WithSigner("flow-evm-bridge"))
-// 		checkNoErr(bridgeDryRunResult.Err)
-// 		log.Printf("Bridge Account dry run run successful...")
-// 		log.Printf("Dry run complete...exiting script")
-// 		return
-// 	}
 
 // 	// Create a COA in the bridge account if one does not already exist
 // 	bridgeCOAHex, err := o.Script("evm/get_evm_address_string", WithArg("flowAddress", o.Address("flow-evm-bridge"))).GetAsInterface()
