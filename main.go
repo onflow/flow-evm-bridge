@@ -2,9 +2,12 @@ package bridge
 
 import (
 	"embed"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"log"
+	"os"
 	"strings"
 
 	coreContracts "github.com/onflow/flow-core-contracts/lib/go/templates"
@@ -410,16 +413,79 @@ func GetCadenceContractCode(contractPath string, bridgeEnv Environment, coreEnv 
 	return []byte(code), nil
 }
 
+type Element struct {
+	Type  string      `json:"type"`
+	Value interface{} `json:"value"`
+}
+
 // Gets JSON Arguments with the chunked versions of
 // the Cadence NFT or Fungible Token template contract
-func GetCadenceTokenChunkedJSONArguments(nft bool) []byte {
+func GetCadenceTokenChunkedJSONArguments(nft bool) []string {
+	filePath := ""
+
 	if nft {
-		fileContent, _ := content.ReadFile("cadence/args/bridged-nft-code-chunks-args-emulator.json")
-		return fileContent
+		filePath = "cadence/args/bridged-nft-code-chunks-args-emulator.json"
 	} else {
-		fileContent, _ := content.ReadFile("cadence/args/bridged-token-code-chunks-args-emulator.json")
-		return fileContent
+		filePath = "cadence/args/bridged-token-code-chunks-args-emulator.json"
 	}
+
+	file, err := content.Open(filePath)
+
+	if err != nil {
+		log.Fatalf("Failed opening file: %s", err)
+	}
+	defer file.Close()
+
+	byteValue, _ := ioutil.ReadAll(file)
+
+	var elements []Element
+	json.Unmarshal(byteValue, &elements)
+
+	secondElement := elements[1]
+
+	// Check if the second element is of type "Array"
+	if secondElement.Type != "Array" {
+		log.Fatalf("Second element is not of type Array")
+	}
+
+	// Assert that the value is a slice of interfaces
+	values, ok := secondElement.Value.([]interface{})
+	if !ok {
+		log.Fatalf("Failed to assert value to []interface{}")
+	}
+
+	var strArr []string
+	for _, v := range values {
+		// Assert that the value is a map
+		valueMap, ok := v.(map[string]interface{})
+		if !ok {
+			log.Fatalf("Failed to assert value to map[string]interface{}")
+		}
+
+		// Get the "value" from the map and assert it to string
+		str, ok := valueMap["value"].(string)
+		if !ok {
+			log.Fatalf("Failed to assert value to string")
+		}
+
+		strArr = append(strArr, str)
+	}
+
+	return strArr
+}
+
+// Reads the JSON file at the specified path and returns the compiled solidity bytecode where the
+// bytecode is the first element in the JSON array as a Cadence JSON string
+func getBytecodeFromArgsJSON(path string) string {
+	argsData, err := os.ReadFile(path)
+	checkNoErr(err)
+
+	var args []map[string]string
+
+	err = json.Unmarshal(argsData, &args)
+	checkNoErr(err)
+
+	return args[0]["value"]
 }
 
 func GetCadenceTransactionCode(transactionPath string, bridgeEnv Environment, coreEnv coreContracts.Environment) ([]byte, error) {
@@ -898,27 +964,6 @@ func GetSolidityContractCode(contractName string) (string, error) {
 // 	log.Printf("SETUP COMPLETE! Bridge is still paused - be sure to unpause before use.")
 // }
 
-// func checkDryRun() bool {
-// 	if len(os.Args) < 3 {
-// 		return false
-// 	}
-// 	return os.Args[2] == "--dry-run"
-// }
-
-// // Parses the network argument from the command line
-// // e.g. go run main.go $NETWORK
-// func getSpecifiedNetwork() string {
-// 	if len(os.Args) < 2 {
-// 		log.Fatal("Please provide a network as an argument: ", networks)
-// 	}
-// 	network := os.Args[1]
-
-// 	if !slices.Contains(networks, network) {
-// 		log.Fatal("Please provide a valid network as an argument: ", networks)
-// 	}
-// 	return network
-// }
-
 // // Extracts the deployed contract address from the TransactionExecuted event
 // func getContractAddressFromEVMEvent(res *OverflowResult) string {
 // 	evts := res.GetEventsWithName("TransactionExecuted")
@@ -929,82 +974,16 @@ func GetSolidityContractCode(contractName string) (string, error) {
 // 	return strings.ToLower(strings.Split(contractAddr.(string), "x")[1])
 // }
 
-// // Reads the JSON file at the specified path and returns the compiled solidity bytecode where the
-// // bytecode is the first element in the JSON array as a Cadence JSON string
-// func getBytecodeFromArgsJSON(path string) string {
-// 	argsData, err := os.ReadFile(path)
-// 	checkNoErr(err)
+func buildUSDCFlowVaultIdentifier(addrString string) string {
+	return "A." + strings.Split(addrString, "x")[1] + ".USDCFlow.Vault"
+}
 
-// 	var args []map[string]string
+func buildUSDCFlowMinterIdentifier(addrString string) string {
+	return "A." + strings.Split(addrString, "x")[1] + ".USDCFlow.Minter"
+}
 
-// 	err = json.Unmarshal(argsData, &args)
-// 	checkNoErr(err)
-
-// 	return args[0]["value"]
-// }
-
-// type Element struct {
-// 	Type  string      `json:"type"`
-// 	Value interface{} `json:"value"`
-// }
-
-// // Reads the JSON file at the specified path and returns the code chunks where the code chunks are
-// // the second element in the JSON array as Cadence JSON string array
-// func getCodeChunksFromArgsJSON(path string) []string {
-// 	file, err := os.Open(path)
-// 	if err != nil {
-// 		log.Fatalf("Failed opening file: %s", err)
-// 	}
-// 	defer file.Close()
-
-// 	byteValue, _ := ioutil.ReadAll(file)
-
-// 	var elements []Element
-// 	json.Unmarshal(byteValue, &elements)
-
-// 	secondElement := elements[1]
-
-// 	// Check if the second element is of type "Array"
-// 	if secondElement.Type != "Array" {
-// 		log.Fatalf("Second element is not of type Array")
-// 	}
-
-// 	// Assert that the value is a slice of interfaces
-// 	values, ok := secondElement.Value.([]interface{})
-// 	if !ok {
-// 		log.Fatalf("Failed to assert value to []interface{}")
-// 	}
-
-// 	var strArr []string
-// 	for _, v := range values {
-// 		// Assert that the value is a map
-// 		valueMap, ok := v.(map[string]interface{})
-// 		if !ok {
-// 			log.Fatalf("Failed to assert value to map[string]interface{}")
-// 		}
-
-// 		// Get the "value" from the map and assert it to string
-// 		str, ok := valueMap["value"].(string)
-// 		if !ok {
-// 			log.Fatalf("Failed to assert value to string")
-// 		}
-
-// 		strArr = append(strArr, str)
-// 	}
-
-// 	return strArr
-// }
-
-// func buildUSDCFlowVaultIdentifier(addrString string) string {
-// 	return "A." + strings.Split(addrString, "x")[1] + ".USDCFlow.Vault"
-// }
-
-// func buildUSDCFlowMinterIdentifier(addrString string) string {
-// 	return "A." + strings.Split(addrString, "x")[1] + ".USDCFlow.Minter"
-// }
-
-// func checkNoErr(err error) {
-// 	if err != nil {
-// 		log.Fatal(err)
-// 	}
-// }
+func checkNoErr(err error) {
+	if err != nil {
+		log.Fatal(err)
+	}
+}

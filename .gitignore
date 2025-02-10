@@ -19,6 +19,7 @@ db/
 # Cadence test framework coverage
 coverage.json
 coverage.lcov
+lcov.info
 
 # Keys
 *.pkey
