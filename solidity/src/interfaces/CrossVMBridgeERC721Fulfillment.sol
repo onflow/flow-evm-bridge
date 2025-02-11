@@ -47,7 +47,7 @@ abstract contract CrossVMBridgeERC721Fulfillment is ICrossVMBridgeERC721Fulfillm
             _requireEscrowed(_id);
             safeTransferFrom(vmBridgeAddress(), _to, _id);
         }
-        _afterFulfillment(_to, _id, _data); // hook allowing implementation to perform pre-fulfillment processing
+        _afterFulfillment(_to, _id, _data); // hook allowing implementation to perform post-fulfillment processing
         emit FulfilledToEVM(_to, _id);
     }
 
