@@ -10,7 +10,7 @@ import {CrossVMBridgeCallable} from "./CrossVMBridgeCallable.sol";
 /**
  * @title CrossVMBridgeERC721Fulfillment
  * @dev Related to https://github.com/onflow/flips/issues/318[FLIP-318] Cross VM NFT implementations
- * on Flow in the context of Cadence-native NFTs. The following base contract must be implemented to
+ * on Flow in the context of Cadence-native NFTs. The following base contract should be implemented to
  * integrate with the Flow VM bridge connecting Cadence & EVM implementations so that the canonical
  * VM bridge may move the Cadence NFT into EVM in a mint/escrow pattern.
  */

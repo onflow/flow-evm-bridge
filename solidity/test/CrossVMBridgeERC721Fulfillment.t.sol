@@ -142,7 +142,7 @@ contract CrossVMBridgeERC721FulfillmentTest is Test {
         assertEq(postFulfillmentAfterCounter, afterCounter + 1);
 
         // Confirm escrow status
-        bool isEscrowed = erc721Impl.isEscrowed(fulfilledId);
+        bool isEscrowed = ICrossVMBridgeERC721Fulfillment(erc721Impl).isEscrowed(fulfilledId);
         assertFalse(isEscrowed);
         
         // Transfer from recipient to escrow & confirm escrow status
@@ -150,7 +150,7 @@ contract CrossVMBridgeERC721FulfillmentTest is Test {
         erc721Impl.safeTransferFrom(recipient, vmBridge, fulfilledId);
 
         address currentOwner = erc721Impl.ownerOf(fulfilledId);
-        isEscrowed = erc721Impl.isEscrowed(fulfilledId);
+        isEscrowed = ICrossVMBridgeERC721Fulfillment(erc721Impl).isEscrowed(fulfilledId);
         assertEq(vmBridge, currentOwner);
         assertTrue(isEscrowed);
  
@@ -172,7 +172,7 @@ contract CrossVMBridgeERC721FulfillmentTest is Test {
         assertEq(postFulfillmentAfterCounter, afterCounter + 2);
     }
 
-    function test_SupportsAllExpectedInterfacesSucceeds() public {
+    function test_SupportsAllExpectedInterfacesSucceeds() public view {
         assertTrue(erc721Impl.supportsInterface(type(IERC721).interfaceId));
         assertTrue(erc721Impl.supportsInterface(type(ICrossVMBridgeERC721Fulfillment).interfaceId));
         assertTrue(erc721Impl.supportsInterface(type(ICrossVMBridgeCallable).interfaceId));
