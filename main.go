@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"os"
 	"strings"
 
 	coreContracts "github.com/onflow/flow-core-contracts/lib/go/templates"
@@ -155,6 +154,7 @@ import (
 
 //go:embed cadence/args/bridged-nft-code-chunks-args-emulator.json
 //go:embed cadence/args/bridged-token-code-chunks-args-emulator.json
+//go:embed cadence/args/deploy-factory-args.json
 var content embed.FS
 
 var (
@@ -487,12 +487,17 @@ func GetCadenceTokenChunkedJSONArguments(nft bool) []string {
 // Reads the JSON file at the specified path and returns the compiled solidity bytecode where the
 // bytecode is the first element in the JSON array as a Cadence JSON string
 func GetBytecodeFromArgsJSON(path string) string {
-	argsData, err := os.ReadFile(path)
-	checkNoErr(err)
+	file, err := content.Open(path)
+	if err != nil {
+		log.Fatalf("Failed opening file: %s", err)
+	}
+	defer file.Close()
+
+	byteValue, _ := ioutil.ReadAll(file)
 
 	var args []map[string]string
 
-	err = json.Unmarshal(argsData, &args)
+	err = json.Unmarshal(byteValue, &args)
 	checkNoErr(err)
 
 	return args[0]["value"]
