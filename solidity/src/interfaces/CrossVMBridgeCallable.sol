@@ -8,7 +8,7 @@ import {ERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 /**
  * @title CrossVMBridgeCallable
  * @dev A base contract intended for use in implementations on Flow, allowing a contract to define
- *      access to the Cadence X EVM bridge on certain methods.
+ * access to the Cadence X EVM bridge on certain methods.
  */
 abstract contract CrossVMBridgeCallable is ICrossVMBridgeCallable, Context, ERC165 {
 
