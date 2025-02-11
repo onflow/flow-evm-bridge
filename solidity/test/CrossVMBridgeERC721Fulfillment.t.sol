@@ -5,10 +5,10 @@ import {Test} from "forge-std/Test.sol";
 import {IERC721Errors} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import {CrossVMBridgeCallable} from "../src/interfaces/CrossVMBridgeCallable.sol";
-import {CadenceNativeERC721} from "../src/example-assets/CadenceNativeERC721.sol";
+import {ICrossVMBridgeCallable} from "../src/interfaces/ICrossVMBridgeCallable.sol";
 import {ICrossVMBridgeERC721Fulfillment} from "../src/interfaces/ICrossVMBridgeERC721Fulfillment.sol";
-import {CrossVMBridgeERC721Fulfillment} from "../src/interfaces/CrossVMBridgeERC721Fulfillment.sol";
+import {ICrossVMBridgeERC721Fulfillment} from "../src/interfaces/ICrossVMBridgeERC721Fulfillment.sol";
+import {CadenceNativeERC721} from "../src/example-assets/CadenceNativeERC721.sol";
 
 contract CrossVMBridgeERC721FulfillmentTest is Test {
     CadenceNativeERC721 internal erc721Impl;
@@ -43,9 +43,9 @@ contract CrossVMBridgeERC721FulfillmentTest is Test {
     function test_FulfillToEVMAsUnauthorizedFails() public {
         vm.prank(recipient);
         vm.expectRevert(
-            abi.encodeWithSelector(CrossVMBridgeCallable.CrossVMBridgeCallableUnauthorizedAccount.selector, recipient)
+            abi.encodeWithSelector(ICrossVMBridgeCallable.CrossVMBridgeCallableUnauthorizedAccount.selector, recipient)
         );
-        CrossVMBridgeERC721Fulfillment(erc721Impl).fulfillToEVM(recipient, fulfilledId, emptyBytes);
+        ICrossVMBridgeERC721Fulfillment(erc721Impl).fulfillToEVM(recipient, fulfilledId, emptyBytes);
     }
 
     function test_FulfillToEVMMintSucceeds() public {
@@ -61,10 +61,10 @@ contract CrossVMBridgeERC721FulfillmentTest is Test {
 
         // Call fulfillToEVM minting fulfilledId & incrementing before and after counters
         vm.expectEmit();
-        emit CrossVMBridgeERC721Fulfillment.FulfilledToEVM(recipient, fulfilledId);
+        emit ICrossVMBridgeERC721Fulfillment.FulfilledToEVM(recipient, fulfilledId);
 
         vm.prank(vmBridge);
-        CrossVMBridgeERC721Fulfillment(erc721Impl).fulfillToEVM(recipient, fulfilledId, emptyBytes);
+        ICrossVMBridgeERC721Fulfillment(erc721Impl).fulfillToEVM(recipient, fulfilledId, emptyBytes);
 
         // Confirm id was fulfilled to recipient
         address ownerOf = erc721Impl.ownerOf(fulfilledId);
@@ -90,10 +90,10 @@ contract CrossVMBridgeERC721FulfillmentTest is Test {
 
         // Call fulfillToEVM minting fulfilledId & incrementing before and after counters
         vm.expectEmit();
-        emit CrossVMBridgeERC721Fulfillment.FulfilledToEVM(recipient, fulfilledId);
+        emit ICrossVMBridgeERC721Fulfillment.FulfilledToEVM(recipient, fulfilledId);
 
         vm.prank(vmBridge);
-        CrossVMBridgeERC721Fulfillment(erc721Impl).fulfillToEVM(recipient, fulfilledId, emptyBytes);
+        ICrossVMBridgeERC721Fulfillment(erc721Impl).fulfillToEVM(recipient, fulfilledId, emptyBytes);
 
         // Confirm id was fulfilled to recipient
         address ownerOf = erc721Impl.ownerOf(fulfilledId);
@@ -108,9 +108,9 @@ contract CrossVMBridgeERC721FulfillmentTest is Test {
         // Ensure call fails without token in escrow
         vm.prank(vmBridge);
         vm.expectRevert(
-            abi.encodeWithSelector(CrossVMBridgeERC721Fulfillment.FulfillmentFailedTokenNotEscrowed.selector, fulfilledId, vmBridge)
+            abi.encodeWithSelector(ICrossVMBridgeERC721Fulfillment.FulfillmentFailedTokenNotEscrowed.selector, fulfilledId, vmBridge)
         );
-        CrossVMBridgeERC721Fulfillment(erc721Impl).fulfillToEVM(recipient, fulfilledId, emptyBytes);
+        ICrossVMBridgeERC721Fulfillment(erc721Impl).fulfillToEVM(recipient, fulfilledId, emptyBytes);
     }
 
     function test_FulfillToEVMFromEscrowSucceeds() public {
@@ -126,10 +126,10 @@ contract CrossVMBridgeERC721FulfillmentTest is Test {
 
         // Call fulfillToEVM minting fulfilledId & incrementing before and after counters
         vm.expectEmit();
-        emit CrossVMBridgeERC721Fulfillment.FulfilledToEVM(recipient, fulfilledId);
+        emit ICrossVMBridgeERC721Fulfillment.FulfilledToEVM(recipient, fulfilledId);
 
         vm.prank(vmBridge);
-        CrossVMBridgeERC721Fulfillment(erc721Impl).fulfillToEVM(recipient, fulfilledId, emptyBytes);
+        ICrossVMBridgeERC721Fulfillment(erc721Impl).fulfillToEVM(recipient, fulfilledId, emptyBytes);
 
         // Confirm id was fulfilled to recipient
         address ownerOf = erc721Impl.ownerOf(fulfilledId);
@@ -156,10 +156,10 @@ contract CrossVMBridgeERC721FulfillmentTest is Test {
  
         // Call fulfillToEVM minting fulfilledId & incrementing before and after counters
         vm.expectEmit();
-        emit CrossVMBridgeERC721Fulfillment.FulfilledToEVM(recipient, fulfilledId);
+        emit ICrossVMBridgeERC721Fulfillment.FulfilledToEVM(recipient, fulfilledId);
 
         vm.prank(vmBridge);
-        CrossVMBridgeERC721Fulfillment(erc721Impl).fulfillToEVM(recipient, fulfilledId, emptyBytes);
+        ICrossVMBridgeERC721Fulfillment(erc721Impl).fulfillToEVM(recipient, fulfilledId, emptyBytes);
 
         // Confirm id was fulfilled to recipient
         ownerOf = erc721Impl.ownerOf(fulfilledId);
@@ -173,12 +173,8 @@ contract CrossVMBridgeERC721FulfillmentTest is Test {
     }
 
     function test_SupportsAllExpectedInterfacesSucceeds() public {
-        bytes4 iErc721Id = type(IERC721).interfaceId;
-        bytes4 i721FulfillmentId = type(ICrossVMBridgeERC721Fulfillment).interfaceId;
-        bytes4 callableId = type(CrossVMBridgeCallable).interfaceId;
-
-        assertTrue(erc721Impl.supportsInterface(iErc721Id));
-        assertTrue(erc721Impl.supportsInterface(i721FulfillmentId));
-        assertTrue(erc721Impl.supportsInterface(callableId));
+        assertTrue(erc721Impl.supportsInterface(type(IERC721).interfaceId));
+        assertTrue(erc721Impl.supportsInterface(type(ICrossVMBridgeERC721Fulfillment).interfaceId));
+        assertTrue(erc721Impl.supportsInterface(type(ICrossVMBridgeCallable).interfaceId));
     }
 }

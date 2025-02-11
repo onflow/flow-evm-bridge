@@ -1,20 +1,18 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity 0.8.24;
 
+import {ICrossVMBridgeCallable} from "./ICrossVMBridgeCallable.sol";
 import {Context} from "@openzeppelin/contracts/utils/Context.sol";
-import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import {ERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 
 /**
  * @title CrossVMBridgeCallable
  * @dev A base contract intended for use in implementations on Flow, allowing a contract to define
  *      access to the Cadence X EVM bridge on certain methods.
  */
-abstract contract CrossVMBridgeCallable is Context, IERC165 {
+abstract contract CrossVMBridgeCallable is ICrossVMBridgeCallable, Context, ERC165 {
 
     address private _vmBridgeAddress;
-
-    error CrossVMBridgeCallableZeroInitialization();
-    error CrossVMBridgeCallableUnauthorizedAccount(address account);
 
     /**
      * @dev Sets the bridge EVM address such that only the bridge COA can call the privileged methods
@@ -45,7 +43,7 @@ abstract contract CrossVMBridgeCallable is Context, IERC165 {
      * @dev Checks that msg.sender is the designated vm bridge address
      */
     function _checkVMBridgeAddress() internal view virtual {
-        if (vmBridgeAddress() != _msgSender()) {
+        if (_vmBridgeAddress != _msgSender()) {
             revert CrossVMBridgeCallableUnauthorizedAccount(_msgSender());
         }
     }
@@ -53,7 +51,7 @@ abstract contract CrossVMBridgeCallable is Context, IERC165 {
     /**
      * @dev Allows a caller to determine the contract conforms to the `CrossVMFulfillment` interface
      */
-    function supportsInterface(bytes4 interfaceId) public view virtual returns (bool) {
-        return interfaceId == type(IERC165).interfaceId || interfaceId == type(CrossVMBridgeCallable).interfaceId;
+    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC165) returns (bool) {
+        return interfaceId == type(ICrossVMBridgeCallable).interfaceId || super.supportsInterface(interfaceId);
     }
 }

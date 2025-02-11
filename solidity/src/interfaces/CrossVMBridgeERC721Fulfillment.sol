@@ -4,22 +4,17 @@ pragma solidity 0.8.24;
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import {ICrossVMBridgeERC721Fulfillment} from "./ICrossVMBridgeERC721Fulfillment.sol";
+import {ICrossVMBridgeCallable} from "./CrossVMBridgeCallable.sol";
 import {CrossVMBridgeCallable} from "./CrossVMBridgeCallable.sol";
 
 /**
+ * @title CrossVMBridgeERC721Fulfillment
  * @dev Related to https://github.com/onflow/flips/issues/318[FLIP-318] Cross VM NFT implementations
  * on Flow in the context of Cadence-native NFTs. The following base contract must be implemented to
  * integrate with the Flow VM bridge connecting Cadence & EVM implementations so that the canonical
  * VM bridge may move the Cadence NFT into EVM in a mint/escrow pattern.
  */
 abstract contract CrossVMBridgeERC721Fulfillment is ICrossVMBridgeERC721Fulfillment, CrossVMBridgeCallable, ERC721 {
-
-    // Encountered when attempting to fulfill a token that has been previously minted and is not
-    // escrowed in EVM under the VM bridge
-    error FulfillmentFailedTokenNotEscrowed(uint256 id, address escrowAddress);
-
-    // Emitted when an NFT is moved from Cadence into EVM
-    event FulfilledToEVM(address indexed recipient, uint256 indexed tokenId);
 
     /**
      * Initializes the bridge EVM address such that only the bridge COA can call privileged methods
@@ -64,9 +59,8 @@ abstract contract CrossVMBridgeERC721Fulfillment is ICrossVMBridgeERC721Fulfillm
      * @dev Allows a caller to determine the contract conforms to the `ICrossVMFulfillment` interface
      */
     function supportsInterface(bytes4 interfaceId) public view virtual override(CrossVMBridgeCallable, ERC721, IERC165) returns (bool) {
-        return interfaceId == type(CrossVMBridgeERC721Fulfillment).interfaceId
-            || interfaceId == type(ICrossVMBridgeERC721Fulfillment).interfaceId
-            || interfaceId == type(CrossVMBridgeCallable).interfaceId
+        return interfaceId == type(ICrossVMBridgeERC721Fulfillment).interfaceId
+            || interfaceId == type(ICrossVMBridgeCallable).interfaceId
             || super.supportsInterface(interfaceId);
     }
 
