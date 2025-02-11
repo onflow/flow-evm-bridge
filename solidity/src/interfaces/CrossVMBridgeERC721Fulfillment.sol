@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity 0.8.24;
 
-import {CrossVMBridgeCallable} from "./CrossVMBridgeCallable.sol";
+import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import {ICrossVMBridgeERC721Fulfillment} from "./ICrossVMBridgeERC721Fulfillment.sol";
+import {CrossVMBridgeCallable} from "./CrossVMBridgeCallable.sol";
 
 /**
  * @dev Related to https://github.com/onflow/flips/issues/318[FLIP-318] Cross VM NFT implementations
@@ -10,7 +12,7 @@ import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
  * integrate with the Flow VM bridge connecting Cadence & EVM implementations so that the canonical
  * VM bridge may move the Cadence NFT into EVM in a mint/escrow pattern.
  */
-abstract contract CrossVMBridgeFulfillment is CrossVMBridgeCallable, ERC721 {
+abstract contract CrossVMBridgeERC721Fulfillment is ICrossVMBridgeERC721Fulfillment, CrossVMBridgeCallable, ERC721 {
 
     // Encountered when attempting to fulfill a token that has been previously minted and is not
     // escrowed in EVM under the VM bridge
@@ -61,8 +63,9 @@ abstract contract CrossVMBridgeFulfillment is CrossVMBridgeCallable, ERC721 {
     /**
      * @dev Allows a caller to determine the contract conforms to the `ICrossVMFulfillment` interface
      */
-    function supportsInterface(bytes4 interfaceId) public view virtual override(CrossVMBridgeCallable, ERC721) returns (bool) {
-        return interfaceId == type(CrossVMBridgeFulfillment).interfaceId
+    function supportsInterface(bytes4 interfaceId) public view virtual override(CrossVMBridgeCallable, ERC721, IERC165) returns (bool) {
+        return interfaceId == type(CrossVMBridgeERC721Fulfillment).interfaceId
+            || interfaceId == type(ICrossVMBridgeERC721Fulfillment).interfaceId
             || interfaceId == type(CrossVMBridgeCallable).interfaceId
             || super.supportsInterface(interfaceId);
     }
