@@ -26,7 +26,8 @@ abstract contract CrossVMBridgeERC721Fulfillment is ICrossVMBridgeERC721Fulfillm
      * token with the given ID to the provided address. For dynamic metadata handling between
      * Cadence & EVM, implementations should override and assign metadata as encoded from Cadence
      * side. If overriding, be sure to preserve the mint/escrow pattern as shown in the default
-     * implementation.
+     * implementation. See `_beforeFulfillment` and `_afterFulfillment` hooks to enable pre-and/or
+     * post-processing without the need to override this function.
      * 
      * @param _to address of the token recipient
      * @param _id the id of the token being moved into EVM from Cadence
@@ -56,7 +57,7 @@ abstract contract CrossVMBridgeERC721Fulfillment is ICrossVMBridgeERC721Fulfillm
     }
 
     /**
-     * @dev Allows a caller to determine the contract conforms to the `ICrossVMFulfillment` interface
+     * @dev Allows a caller to determine the contract conforms to implemented interfaces
      */
     function supportsInterface(bytes4 interfaceId) public view virtual override(CrossVMBridgeCallable, ERC721, IERC165) returns (bool) {
         return interfaceId == type(ICrossVMBridgeERC721Fulfillment).interfaceId

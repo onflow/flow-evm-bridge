@@ -4,7 +4,8 @@ import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import {CrossVMBridgeERC721Fulfillment} from "../interfaces/CrossVMBridgeERC721Fulfillment.sol";
 
 /**
- * @dev This contract is a minimal ERC721 implementation demonstrating the use of the
+  * @title CadenceNativeERC721
+  * @dev This contract is a minimal ERC721 implementation demonstrating the use of the
  * CrossVMBridgeERC721Fulfillment base contract. Such ERC721 contracts are intended for use in
  * cross-VM NFT implementations where projects deploy both a Cadence & Solidity definition with
  * movement of individual NFTs facilitated by Flow's canonical VM bridge.
@@ -33,7 +34,7 @@ contract CadenceNativeERC721 is CrossVMBridgeERC721Fulfillment {
 
     /**
      * @dev This hook executes before the fulfillment into EVM executes. It's overridden here as
-     * a simple demonstration and for testing; however you might include your own validation or
+     * a simple demonstration and for testing; however, you might include your own validation or
      * pre-processing.
      * 
      * @param _to address of the pending token recipient
@@ -46,11 +47,11 @@ contract CadenceNativeERC721 is CrossVMBridgeERC721Fulfillment {
     }
 
     /**
-     * @dev This hook executes before the fulfillment into EVM executes. It's overridden here as
-     * a simple demonstration and for testing; however you might include your own validation or
-     * post-processing. For instance, you may set decode the bytes passed by the VM bridge at the
+     * @dev This hook executes after the fulfillment into EVM executes. It's overridden here as
+     * a simple demonstration and for testing; however, you might include your own validation or
+     * post-processing. For instance, you may decode the bytes passed by the VM bridge at the
      * time of bridging into EVM and update the token's metadata. Since you presumably control the
-     * corresponding Cadence implementation, what is passed to you at this moment is in your
+     * corresponding Cadence implementation, what is passed to your at fulfillment is in your
      * control by having your Cadence NFT resolve the `EVMBytesMetadata` view.
      * 
      * @param _to address of the pending token recipient

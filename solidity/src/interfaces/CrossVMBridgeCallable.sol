@@ -40,7 +40,7 @@ abstract contract CrossVMBridgeCallable is ICrossVMBridgeCallable, Context, ERC1
     }
 
     /**
-     * @dev Checks that msg.sender is the designated vm bridge address
+     * @dev Checks that msg.sender is the designated VM bridge address
      */
     function _checkVMBridgeAddress() internal view virtual {
         if (_vmBridgeAddress != _msgSender()) {
@@ -49,7 +49,7 @@ abstract contract CrossVMBridgeCallable is ICrossVMBridgeCallable, Context, ERC1
     }
 
     /**
-     * @dev Allows a caller to determine the contract conforms to the `CrossVMFulfillment` interface
+     * @dev Allows a caller to determine the contract conforms to the `ICrossVMFulfillment` interface
      */
     function supportsInterface(bytes4 interfaceId) public view virtual override(ERC165) returns (bool) {
         return interfaceId == type(ICrossVMBridgeCallable).interfaceId || super.supportsInterface(interfaceId);
