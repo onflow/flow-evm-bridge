@@ -25,6 +25,8 @@ interface ICrossVMBridgeERC721Fulfillment is IERC165 {
      */
     function isEscrowed(uint256 _id) external view returns (bool);
 
+    function exists(uint256 _id) external view returns (bool);
+
     /**
      * @dev Fulfills the bridge request, minting (if non-existent) or transferring (if escrowed) the
      * token with the given ID to the provided address. For dynamic metadata handling between
