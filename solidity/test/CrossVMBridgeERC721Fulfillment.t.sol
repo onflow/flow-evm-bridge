@@ -49,6 +49,9 @@ contract CrossVMBridgeERC721FulfillmentTest is Test {
     }
 
     function test_FulfillToEVMMintSucceeds() public {
+        bool exists = erc721Impl.exists(fulfilledId);
+        assertFalse(exists);
+
         // Ensure fulfilledId is nonexistent
         vm.expectRevert(
             abi.encodeWithSelector(IERC721Errors.ERC721NonexistentToken.selector, fulfilledId)
@@ -68,7 +71,9 @@ contract CrossVMBridgeERC721FulfillmentTest is Test {
 
         // Confirm id was fulfilled to recipient
         address ownerOf = erc721Impl.ownerOf(fulfilledId);
+        exists = erc721Impl.exists(fulfilledId);
         assertEq(recipient, ownerOf);
+        assertTrue(exists);
 
         // Confirm overridden before & after hooks executed
         uint256 postFulfillmentBeforeCounter = erc721Impl.beforeCounter();
