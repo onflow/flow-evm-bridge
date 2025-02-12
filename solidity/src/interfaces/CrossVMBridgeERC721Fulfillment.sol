@@ -63,7 +63,7 @@ abstract contract CrossVMBridgeERC721Fulfillment is ICrossVMBridgeERC721Fulfillm
      * @param _id the ID of the token in question
      */
     function exists(uint256 _id) public view returns (bool) {
-        return _ownerOf(_id) == address(0);
+        return _ownerOf(_id) != address(0);
     }
 
     /**
