@@ -59,7 +59,8 @@ func SetAllAddresses(bridgeEnv *bridge.Environment, coreEnv *coreContracts.Envir
 func GetCadenceContractShouldSucceed(t *testing.T, path string, bridgeEnv bridge.Environment, coreEnv coreContracts.Environment) {
 	contract, err := bridge.GetCadenceContractCode(path, bridgeEnv, coreEnv)
 	assert.Nil(t, err)
-	assert.NotContains(t, contract, "import \"")
+	assert.NotContains(t, string(contract), "import \"")
+	assert.NotContains(t, string(contract), "import 0x")
 }
 
 // Tests that all the Cadence contract getters work properly
@@ -142,9 +143,10 @@ func TestSolidityContracts(t *testing.T) {
 // Tests that a specific script path should succeed when retrieving it
 // and verifies that all the import placeholders have been replaced
 func GetScriptShouldSucceed(t *testing.T, path string, bridgeEnv bridge.Environment, coreEnv coreContracts.Environment) {
-	contract, err := bridge.GetCadenceScriptCode(path, bridgeEnv, coreEnv)
+	script, err := bridge.GetCadenceScriptCode(path, bridgeEnv, coreEnv)
 	assert.Nil(t, err)
-	assert.NotContains(t, contract, "import \"")
+	assert.NotContains(t, string(script), "import \"")
+	assert.NotContains(t, string(script), "import 0x")
 }
 
 func TestScripts(t *testing.T) {
@@ -161,8 +163,8 @@ func TestScripts(t *testing.T) {
 	pathPrefix := "cadence/scripts/"
 
 	// Should be missing EVM and FlowEVMBridge
-	contract, err := bridge.GetCadenceContractCode(pathPrefix+"bridge/batch_evm_address_requires_onboarding.cdc", bridgeEnv, coreEnv)
-	assert.NotNil(t, contract)
+	script, err := bridge.GetCadenceScriptCode(pathPrefix+"bridge/batch_evm_address_requires_onboarding.cdc", bridgeEnv, coreEnv)
+	assert.NotNil(t, script)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "EVM")
 	assert.Contains(t, err.Error(), "FlowEVMBridge")
@@ -175,9 +177,10 @@ func TestScripts(t *testing.T) {
 // Tests that a specific transaction path should succeed when retrieving it
 // and verifies that all the import placeholders have been replaced
 func GetTransactionShouldSucceed(t *testing.T, path string, bridgeEnv bridge.Environment, coreEnv coreContracts.Environment) {
-	contract, err := bridge.GetCadenceTransactionCode(path, bridgeEnv, coreEnv)
+	tx, err := bridge.GetCadenceTransactionCode(path, bridgeEnv, coreEnv)
 	assert.Nil(t, err)
-	assert.NotContains(t, contract, "import \"")
+	assert.NotContains(t, string(tx), "import \"")
+	assert.NotContains(t, string(tx), "import 0x")
 }
 
 func TestTransactions(t *testing.T) {
@@ -194,8 +197,8 @@ func TestTransactions(t *testing.T) {
 	pathPrefix := "cadence/transactions/"
 
 	// Should be missing EVM and FlowEVMBridgeConfig
-	contract, err := bridge.GetCadenceContractCode(pathPrefix+"bridge/admin/blocklist/block_cadence_type.cdc", bridgeEnv, coreEnv)
-	assert.NotNil(t, contract)
+	tx, err := bridge.GetCadenceTransactionCode(pathPrefix+"bridge/admin/blocklist/block_cadence_type.cdc", bridgeEnv, coreEnv)
+	assert.NotNil(t, tx)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "EVM")
 	assert.Contains(t, err.Error(), "FlowEVMBridgeConfig")
@@ -203,4 +206,5 @@ func TestTransactions(t *testing.T) {
 	SetAllAddresses(&bridgeEnv, &coreEnv)
 
 	GetTransactionShouldSucceed(t, pathPrefix+"bridge/admin/blocklist/block_evm_address.cdc", bridgeEnv, coreEnv)
+	GetTransactionShouldSucceed(t, pathPrefix+"evm/create_account.cdc", bridgeEnv, coreEnv)
 }

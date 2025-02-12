@@ -226,18 +226,17 @@ func withHexPrefix(address string) string {
 
 func ReplaceAddress(code, placeholder, replacement string) string {
 	if len(replacement) > 0 {
+		placeholderWithoutQuotes := placeholder[1 : len(placeholder)-1]
 		code = strings.ReplaceAll(
 			code,
 			placeholder,
-			withHexPrefix(replacement),
+			placeholderWithoutQuotes+"from "+withHexPrefix(replacement),
 		)
 	}
 	return code
 }
 
 func ReplaceAddresses(code string, bridgeEnv Environment, coreEnv coreContracts.Environment) string {
-
-	code = coreContracts.ReplaceAddresses(code, coreEnv)
 
 	code = ReplaceAddress(
 		code,
@@ -373,6 +372,8 @@ func ReplaceAddresses(code string, bridgeEnv Environment, coreEnv coreContracts.
 		placeholderStringUtilsAddress,
 		bridgeEnv.StringUtilsAddress,
 	)
+
+	code = coreContracts.ReplaceAddresses(code, coreEnv)
 
 	return code
 }
