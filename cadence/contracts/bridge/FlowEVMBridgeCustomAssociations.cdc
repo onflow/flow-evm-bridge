@@ -17,9 +17,12 @@ access(all) contract FlowEVMBridgeCustomAssociations {
     /// Event emitted whenever a custom association is established
     access(all) event CustomAssociationEstablished(
         type: Type,
-        evmAddress: String,
+        evmContractAddress: String,
         nativeVMRawValue: UInt8,
         updatedFromBridged: Bool,
+        fulfillmentMinterType: String?,
+        fulfillmentMinterOrigin: Address?,
+        fulfillmentMinterCapID: UInt64?,
         fulfillmentMinterUUID: UInt64?,
         configUUID: UInt64
     )
@@ -61,6 +64,17 @@ access(all) contract FlowEVMBridgeCustomAssociations {
                 updatedFromBridged: updatedFromBridged,
                 fulfillmentMinter: fulfillmentMinter
             )
+        emit CustomAssociationEstablished(
+            type: type,
+            evmContractAddress: evmContractAddress.toString(),
+            nativeVMRawValue: nativeVM.rawValue,
+            updatedFromBridged: updatedFromBridged,
+            fulfillmentMinterType: fulfillmentMinter != nil ? fulfillmentMinter!.borrow()!.getType().identifier : nil,
+            fulfillmentMinterOrigin: fulfillmentMinter?.address ?? nil,
+            fulfillmentMinterCapID: fulfillmentMinter?.id ?? nil,
+            fulfillmentMinterUUID: fulfillmentMinter != nil ? fulfillmentMinter!.borrow()!.uuid : nil,
+            configUUID: config.uuid
+        )
         self.associationsByEVMAddress[config.evmContractAddress.toString()] = type
         self.associationsConfig[type] <-! config
     }
