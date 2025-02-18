@@ -5,7 +5,7 @@ go 1.23
 toolchain go1.23.1
 
 require (
-	github.com/onflow/flow-core-contracts/lib/go/templates v1.5.1-0.20250211212523-f6bd4c3d8d32
+	github.com/onflow/flow-core-contracts/lib/go/templates v1.6.0
 	github.com/onflow/flow-evm-bridge/bridge v0.0.0-00010101000000-000000000000
 	github.com/stretchr/testify v1.9.0
 )
@@ -36,8 +36,11 @@ require (
 	github.com/onflow/atree v0.8.0-rc.6 // indirect
 	github.com/onflow/cadence v1.0.0-preview.51 // indirect
 	github.com/onflow/crypto v0.25.1 // indirect
+	github.com/onflow/flow-core-contracts/lib/go/contracts v1.6.0 // indirect
+	github.com/onflow/flow-ft/lib/go/contracts v1.0.1 // indirect
 	github.com/onflow/flow-ft/lib/go/templates v1.0.1 // indirect
 	github.com/onflow/flow-go-sdk v1.0.0-preview.54 // indirect
+	github.com/onflow/flow-nft/lib/go/contracts v1.2.3 // indirect
 	github.com/onflow/flow-nft/lib/go/templates v1.2.1 // indirect
 	github.com/onflow/flow/protobuf/go/flow v0.4.3 // indirect
 	github.com/onflow/go-ethereum v1.13.4 // indirect

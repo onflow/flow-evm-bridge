@@ -701,7 +701,7 @@ func GetSolidityContractCode(contractName string) (string, error) {
 
 // 	/// Deploy registry ///
 // 	//
-// 	// Get the Cadence args json for the factory deployment args
+// 	// Get the Cadence args json for the registry deployment args
 // 	registryArgsPath := filepath.Join(dir, "cadence/args/deploy-deployment-registry-args.json")
 // 	// Retrieve the bytecode from the JSON args
 // 	// Future implementations should use flowkit to handle this after fixing dependency issues
@@ -952,16 +952,6 @@ func GetSolidityContractCode(contractName string) (string, error) {
 
 // 	// log.Printf("SETUP COMPLETE! Bridge is now unpaused and ready for use.")
 // 	log.Printf("SETUP COMPLETE! Bridge is still paused - be sure to unpause before use.")
-// }
-
-// // Extracts the deployed contract address from the TransactionExecuted event
-// func getContractAddressFromEVMEvent(res *OverflowResult) string {
-// 	evts := res.GetEventsWithName("TransactionExecuted")
-// 	contractAddr := evts[0].Fields["contractAddress"]
-// 	if contractAddr == nil {
-// 		log.Fatal("Contract address not found in event")
-// 	}
-// 	return strings.ToLower(strings.Split(contractAddr.(string), "x")[1])
 // }
 
 func buildUSDCFlowVaultIdentifier(addrString string) string {
