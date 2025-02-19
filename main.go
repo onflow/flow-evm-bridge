@@ -753,24 +753,6 @@ func GetSolidityContractCode(contractName string) (string, error) {
 // 	// Iterate over contracts in the contracts map
 // 	for _, name := range contracts {
 
-// 		log.Printf("Deploying contract: %s...", name)
-
-// 		contract, err := o.State.Config().Contracts.ByName(name)
-// 		checkNoErr(err)
-// 		contractPath := filepath.Join(dir, contract.Location)
-// 		contractCode, err := os.ReadFile(contractPath)
-// 		checkNoErr(err)
-
-// 		// If the contract is already deployed as-is, skip deployment
-// 		a, err := o.GetAccount(ctx, "flow-evm-bridge")
-// 		checkNoErr(err)
-// 		log.Printf("Checking if contract %s is already deployed...", name)
-// 		if a.Contracts[name] != nil {
-// 			log.Printf("Contract %s already deployed, skipping...", name)
-// 			continue
-// 		}
-// 		log.Printf("Contract %s not found on %s, deploying...", name, network)
-
 // 		var args []cadence.Value
 // 		if name == "FlowEVMBridgeUtils" {
 // 			args = []cadence.Value{cadence.String(factoryAddr)}
@@ -783,23 +765,6 @@ func GetSolidityContractCode(contractName string) (string, error) {
 // 	}
 // 	log.Printf("Cadence contracts deployed...Pausing bridge for setup...")
 
-// 	// If emulator, deploy USDCFlow contract
-// 	if network == "emulator" {
-// 		log.Printf("Emulator detected...deploying USDCFlow contract...")
-
-// 		usdcContract, err := o.State.Config().Contracts.ByName("USDCFlow")
-// 		checkNoErr(err)
-
-// 		usdcPath := filepath.Join(dir, usdcContract.Location)
-// 		usdcCode, err := os.ReadFile(usdcPath)
-// 		checkNoErr(err)
-
-// 		err = o.AddContract(ctx, "flow-evm-bridge", usdcCode, []cadence.Value{}, usdcPath, true)
-// 		checkNoErr(err)
-
-// 		log.Printf("USDCFlow contract deployed...")
-// 	}
-
 // 	// Pause the bridge for setup
 // 	var pauseResult = o.Tx("bridge/admin/pause/update_bridge_pause_status",
 // 		WithSigner("flow-evm-bridge"),
@@ -808,6 +773,9 @@ func GetSolidityContractCode(contractName string) (string, error) {
 // 	checkNoErr(pauseResult.Err)
 
 // 	log.Printf("Bridge deployed and paused...")
+
+//*********************************************************************
+//*********************************************************************
 
 // 	/* --- USDCFlow TokenHandler Configuration --- */
 
