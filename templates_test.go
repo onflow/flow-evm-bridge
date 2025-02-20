@@ -103,7 +103,6 @@ func TestCadenceContracts(t *testing.T) {
 	GetCadenceContractShouldSucceed(t, pathPrefix+"bridge/interfaces/IFlowEVMNFTBridge.cdc", bridgeEnv, coreEnv)
 	GetCadenceContractShouldSucceed(t, pathPrefix+"bridge/interfaces/IFlowEVMTokenBridge.cdc", bridgeEnv, coreEnv)
 	GetCadenceContractShouldSucceed(t, pathPrefix+"bridge/FlowEVMBridge.cdc", bridgeEnv, coreEnv)
-	GetCadenceContractShouldSucceed(t, pathPrefix+"bridge/FlowEVMBridgeAccessor.cdc", bridgeEnv, coreEnv)
 	GetCadenceContractShouldSucceed(t, pathPrefix+"bridge/FlowEVMBridgeConfig.cdc", bridgeEnv, coreEnv)
 	GetCadenceContractShouldSucceed(t, pathPrefix+"bridge/FlowEVMBridgeHandlers.cdc", bridgeEnv, coreEnv)
 	GetCadenceContractShouldSucceed(t, pathPrefix+"bridge/FlowEVMBridgeNFTEscrow.cdc", bridgeEnv, coreEnv)
@@ -116,6 +115,10 @@ func TestCadenceContracts(t *testing.T) {
 	GetCadenceContractShouldSucceed(t, pathPrefix+"utils/Serialize.cdc", bridgeEnv, coreEnv)
 	GetCadenceContractShouldSucceed(t, pathPrefix+"utils/SerializeMetadata.cdc", bridgeEnv, coreEnv)
 	GetCadenceContractShouldSucceed(t, pathPrefix+"utils/StringUtils.cdc", bridgeEnv, coreEnv)
+
+	GetCadenceContractShouldSucceed(t, pathPrefix+"bridge/FlowEVMBridgeAccessor.cdc", bridgeEnv, coreEnv)
+	contract, err = bridge.GetCadenceContractCode(pathPrefix+"bridge/FlowEVMBridgeAccessor.cdc", bridgeEnv, coreEnv)
+	assert.Contains(t, string(contract), "name: \"FlowEVMBridgeAccessor\"")
 }
 
 // Tests that a specific solidity contract name should succeed when retrieving it

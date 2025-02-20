@@ -303,11 +303,13 @@ func ReplaceAddresses(code string, bridgeEnv Environment, coreEnv coreContracts.
 		placeholderFlowEVMBridgeAddress,
 		bridgeEnv.FlowEVMBridgeAddress,
 	)
-	code = ReplaceAddress(
-		code,
-		placeholderFlowEVMBridgeAccessorAddress,
-		bridgeEnv.FlowEVMBridgeAccessorAddress,
-	)
+	if !strings.Contains(code, "contract FlowEVMBridgeAccessor") {
+		code = ReplaceAddress(
+			code,
+			placeholderFlowEVMBridgeAccessorAddress,
+			bridgeEnv.FlowEVMBridgeAccessorAddress,
+		)
+	}
 	code = ReplaceAddress(
 		code,
 		placeholderFlowEVMBridgeConfigAddress,
