@@ -236,7 +236,7 @@ func ReplaceAddress(code, placeholder, replacement string) string {
 		code = strings.ReplaceAll(
 			code,
 			placeholder,
-			placeholderWithoutQuotes+"from "+withHexPrefix(replacement),
+			placeholderWithoutQuotes+" from "+withHexPrefix(replacement),
 		)
 	}
 	return code

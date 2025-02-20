@@ -88,6 +88,11 @@ func TestCadenceContracts(t *testing.T) {
 
 	SetAllAddresses(&bridgeEnv, &coreEnv)
 
+	contract, err = bridge.GetCadenceContractCode(pathPrefix+"utils/StringUtils.cdc", bridgeEnv, coreEnv)
+	assert.NotNil(t, contract)
+	assert.Contains(t, string(contract), "import ")
+	assert.Contains(t, string(contract), " from ")
+
 	GetCadenceContractShouldSucceed(t, pathPrefix+"bridge/interfaces/CrossVMToken.cdc", bridgeEnv, coreEnv)
 	GetCadenceContractShouldSucceed(t, pathPrefix+"bridge/interfaces/FlowEVMBridgeHandlerInterfaces.cdc", bridgeEnv, coreEnv)
 	GetCadenceContractShouldSucceed(t, pathPrefix+"bridge/interfaces/IBridgePermissions.cdc", bridgeEnv, coreEnv)
