@@ -93,6 +93,9 @@ import (
 //go:embed cadence/scripts/utils/token_uri.cdc
 //go:embed cadence/scripts/utils/total_supply.cdc
 
+//go:embed cadence/transactions/bridge/admin/deploy_bridge_utils.cdc
+//go:embed cadence/transactions/bridge/admin/deploy_bridge_accessor.cdc
+
 //go:embed cadence/transactions/bridge/admin/blocklist/block_cadence_type.cdc
 //go:embed cadence/transactions/bridge/admin/blocklist/block_evm_address.cdc
 //go:embed cadence/transactions/bridge/admin/blocklist/unblock_cadence_type.cdc
@@ -155,6 +158,9 @@ import (
 //go:embed cadence/args/bridged-nft-code-chunks-args-emulator.json
 //go:embed cadence/args/bridged-token-code-chunks-args-emulator.json
 //go:embed cadence/args/deploy-factory-args.json
+//go:embed cadence/args/deploy-deployment-registry-args.json
+//go:embed cadence/args/deploy-erc20-deployer-args.json
+//go:embed cadence/args/deploy-erc721-deployer-args.json
 var content embed.FS
 
 var (
