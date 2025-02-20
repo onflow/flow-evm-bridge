@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	coreContracts "github.com/onflow/flow-core-contracts/lib/go/templates"
-	"github.com/onflow/flow-evm-bridge/bridge"
+	bridge "github.com/onflow/flow-evm-bridge"
 )
 
 const (
