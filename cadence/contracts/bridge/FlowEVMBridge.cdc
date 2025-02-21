@@ -3,6 +3,7 @@ import "FungibleToken"
 import "FungibleTokenMetadataViews"
 import "NonFungibleToken"
 import "MetadataViews"
+import "CrossVMMetadataViews"
 import "ViewResolver"
 
 import "EVM"
@@ -15,6 +16,7 @@ import "IFlowEVMNFTBridge"
 import "IFlowEVMTokenBridge"
 import "CrossVMNFT"
 import "CrossVMToken"
+import "FlowEVMBridgeCustomAssociations"
 import "FlowEVMBridgeConfig"
 import "FlowEVMBridgeHandlerInterfaces"
 import "FlowEVMBridgeUtils"
@@ -55,7 +57,6 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
     /**************************
         Public Onboarding
     **************************/
-
 
     /// Onboards a given asset by type to the bridge. Since we're onboarding by Cadence Type, the asset must be defined
     /// in a third-party contract. Attempting to onboard a bridge-defined asset will result in an error as the asset has
@@ -166,6 +167,97 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         //
         // Deploy a defining Cadence contract to the bridge account
         self.deployDefiningContract(evmContractAddress: address)
+    }
+
+    access(all)
+    fun registerCrossVMNFT(
+        type: Type,
+        fulfillmentMinter: Capability<auth(FlowEVMBridgeCustomAssociations.FulfillFromEVM) &{FlowEVMBridgeCustomAssociations.NFTFulfillmentMinter}>?
+    ) {
+        pre {
+            !FlowEVMBridgeConfig.isCadenceTypeBlocked(type):
+            "This Cadence Type ".concat(type.identifier).concat(" is currently opted-out of bridge onboarding")
+            type.isSubtype(of: Type<@{NonFungibleToken.NFT}>()):
+            "The provided Type ".concat(type.identifier).concat(" is not an NFT - only NFTs can register as cross-VM")
+            !type.isSubtype(of: Type<@{FungibleToken.Vault}>()):
+            "The provided Type ".concat(type.identifier).concat(" is also a FungibleToken Vault - only NFTs can register as cross-VM")
+            FlowEVMBridgeCustomAssociations.getEVMAddressAssociated(with: type) == nil:
+            "A custom association has already been registered for type ".concat(type.identifier)
+                .concat(" with EVM contract ")
+                .concat(FlowEVMBridgeCustomAssociations.getEVMAddressAssociated(with: type)!.toString())
+        }
+        let contractAddress = type.address!
+        let contractName = type.contractName!
+        let viewResolver = getAccount(contractAddress).contracts.borrow<&{ViewResolver}>(name: contractName)
+            ?? panic("Contract ".concat(contractName).concat(" at ").concat(contractAddress.toString())
+            .concat(" does not conform to ViewResolver so there's no way to get the cross-VM metadata"))
+        let evmPointer = viewResolver.resolveContractView(
+                resourceType: type,
+                viewType: Type<CrossVMMetadataViews.EVMPointer>()
+            ) as! CrossVMMetadataViews.EVMPointer?
+            ?? panic("The CrossVMMetadataViews.EVMPointer is not supported by the type ".concat(type.identifier))
+
+        // get pointer on EVM side
+        let cadenceAddrRes = FlowEVMBridgeUtils.call(
+            signature: "getCadenceAddress()",
+            targetEVMAddress: evmPointer.evmContractAddress,
+            args: [],
+            gasLimit: FlowEVMBridgeConfig.gasLimit,
+            value: 0.0
+        )
+        let cadenceIdentifierRes = FlowEVMBridgeUtils.call(
+            signature: "getCadenceIdentifier()",
+            targetEVMAddress: evmPointer.evmContractAddress,
+            args: [],
+            gasLimit: FlowEVMBridgeConfig.gasLimit,
+            value: 0.0
+        )
+        assert(cadenceAddrRes.status == EVM.Status.successful)
+        assert(cadenceIdentifierRes.status == EVM.Status.successful)
+        let decodedCadenceAddr = EVM.decodeABI(types: [Type<String>()], data: cadenceAddrRes.data)
+        let decodedCadenceIdentifier = EVM.decodeABI(types: [Type<String>()], data: cadenceIdentifierRes.data)
+        assert(decodedCadenceAddr.length == 1)
+        assert(decodedCadenceIdentifier.length == 1)
+        var cadenceAddrStr = decodedCadenceAddr[0] as! String
+        if cadenceAddrStr[1] != "x" {
+            cadenceAddrStr = "0x".concat(cadenceAddrStr)
+        }
+        let cadenceIdentifier = decodedCadenceIdentifier[0] as! String
+        let cadenceAddr = Address.fromString(cadenceAddrStr) ?? panic("Could not construct Address from EVM contract's associated Cadence address ".concat(cadenceAddrStr))
+        let cadenceType = CompositeType(cadenceIdentifier)  ?? panic("Could not construct Address from EVM contract's associated Cadence address ".concat(cadenceIdentifier))
+
+        // assert values match
+        assert(contractAddress == cadenceAddr)
+        assert(type == cadenceType)
+
+        // if evm-native, check supportsInterface() for CrossVMBridgeERC721Fulfillment
+        if evmPointer.nativeVM == CrossVMMetadataViews.VM.Cadence {
+            let supportsRes = FlowEVMBridgeUtils.call(
+                signature: "supportsInterface(bytes4)",
+                targetEVMAddress: evmPointer.evmContractAddress,
+                args: [EVM.EVMBytes4(value: 0x2e608d7.toBigEndianBytes().toConstantSized<[UInt8; 4]>()!)],
+                gasLimit: FlowEVMBridgeConfig.gasLimit,
+                value: 0.0
+            )
+            assert(supportsRes.status == EVM.Status.successful)
+            let decodedSupports = EVM.decodeABI(types: [Type<Bool>()], data: supportsRes.data)
+            assert(decodedSupports.length == 1)
+            let supports = decodedSupports[0] as! Bool
+            assert(supports)
+        }
+
+        // determine if onboarded via permissionless path
+        let updatedFromBridged = FlowEVMBridgeConfig.getEVMAddressAssociated(with: type) != nil
+            || FlowEVMBridgeConfig.getTypeAssociated(with: evmPointer.evmContractAddress) != nil
+
+        // saveCustomAssociation
+        FlowEVMBridgeCustomAssociations.saveCustomAssociation(
+            type: type,
+            evmContractAddress: evmPointer.evmContractAddress,
+            nativeVM: evmPointer.nativeVM,
+            updatedFromBridged: updatedFromBridged,
+            fulfillmentMinter: fulfillmentMinter
+        )
     }
 
     /*************************

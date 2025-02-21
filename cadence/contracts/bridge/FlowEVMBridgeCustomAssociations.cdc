@@ -27,6 +27,29 @@ access(all) contract FlowEVMBridgeCustomAssociations {
         configUUID: UInt64
     )
 
+    access(all)
+    view fun getEVMAddressAssociated(with type: Type): EVM.EVMAddress? {
+        return self.associationsConfig[type]?.getEVMContractAddress() ?? nil
+    }
+
+    access(all)
+    view fun getTypeAssociated(with evmAddress: EVM.EVMAddress): Type? {
+        return self.associationsByEVMAddress[evmAddress.toString()]
+    }
+
+    access(all)
+    fun getEVMPointerAsRegistered(forType: Type): CrossVMMetadataViews.EVMPointer? {
+        if let config = &self.associationsConfig[forType] as &CustomConfig? {
+            return CrossVMMetadataViews.EVMPointer(
+                cadenceType: config.getCadenceType(),
+                cadenceContractAddress: config.getCadenceType().address!,
+                evmContractAddress: config.getEVMContractAddress(),
+                nativeVM: config.getNativeVM()
+            )
+        }
+        return nil
+    }
+
     /// Allows the bridge contracts to preserve a custom association. Will revert if a custom association already exists
     ///
     /// @param type: The Cadence Type of the associated asset.
@@ -114,7 +137,7 @@ access(all) contract FlowEVMBridgeCustomAssociations {
             }
         }
     }
-    
+
     /// Resource containing all relevant information for the VM bridge to fulfill bridge requests. This is a resource
     /// instead of a struct to ensure contained Capabilities cannot be copied
     ///
@@ -159,6 +182,26 @@ access(all) contract FlowEVMBridgeCustomAssociations {
         access(all)
         view fun check(): Bool? {
             return self.fulfillmentMinter?.check() ?? nil
+        }
+
+        access(all)
+        view fun getCadenceType(): Type {
+            return self.type
+        }
+
+        access(all)
+        view fun getEVMContractAddress(): EVM.EVMAddress {
+            return self.evmContractAddress
+        }
+
+        access(all)
+        view fun getNativeVM(): CrossVMMetadataViews.VM {
+            return self.nativeVM
+        }
+
+        access(all)
+        view fun isUpdatedFromBridged(): Bool {
+            return self.updatedFromBridged
         }
 
         access(account)

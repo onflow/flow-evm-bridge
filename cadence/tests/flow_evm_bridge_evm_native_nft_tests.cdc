@@ -14,7 +14,7 @@ access(all) let alice = Test.createAccount()
 access(all) let bob = Test.createAccount()
 
 // ExampleEVMNativeNFT
-access(all) let exampleNFTIdentifier = "A.0000000000000008.ExampleEVMNativeNFT.NFT"
+access(all) let exampleEVMNativeNFTIdentifier = "A.0000000000000008.ExampleEVMNativeNFT.NFT"
 access(all) var mintedNFTID: UInt64 = 0
 
 // Bridge-related EVM contract values
@@ -374,8 +374,14 @@ fun setup() {
 }
 
 access(all)
-fun testMintRegisterCrossVMNFTSucceeds() {
+fun testRegisterCrossVMNFTSucceeds() {
     // run the registration transaction, must succeed
+    registerCrossVMNFT(
+        signer: exampleEVMNativeNFTAccount,
+        nftTypeIdentifier: exampleEVMNativeNFTIdentifier,
+        fulfillmentMinterPath: ExampleEVMNativeNFT.FulfillmentMinterStoragePath,
+        beFailed: false
+    )
     // assert on events
     // get the association from bridge config
     // assert Type:EVMAddress association
