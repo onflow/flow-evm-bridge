@@ -57,8 +57,14 @@ access(all) var snapshot: UInt64 = 0
 
 access(all)
 fun setup() {
-    // Deploy supporting util contracts
+    // TEMPORARY: Only included until emulator auto-deploys CrossVMMetadataViews
     var err = Test.deployContract(
+        name: "CrossVMMetadataViews",
+        path: "../../imports/631e88ae7f1d7c20/CrossVMMetadataViews.cdc",
+        arguments: []
+    )
+    // Deploy supporting util contracts
+    err = Test.deployContract(
         name: "ArrayUtils",
         path: "../contracts/utils/ArrayUtils.cdc",
         arguments: []
@@ -127,6 +133,12 @@ fun setup() {
     err = Test.deployContract(
         name: "FlowEVMBridgeHandlerInterfaces",
         path: "../contracts/bridge/interfaces/FlowEVMBridgeHandlerInterfaces.cdc",
+        arguments: []
+    )
+    Test.expect(err, Test.beNil())
+    err = Test.deployContract(
+        name: "FlowEVMBridgeCustomAssociations",
+        path: "../contracts/bridge/FlowEVMBridgeCustomAssociations.cdc",
         arguments: []
     )
     Test.expect(err, Test.beNil())

@@ -41,6 +41,12 @@
 				"testing": "0000000000000008"
 			}
 		},
+		"ExampleEVMNativeNFT": {
+			"source": "./cadence/contracts/example-assets/cross-vm-nfts/ExampleEVMNativeNFT.cdc",
+			"aliases": {
+				"testing": "0000000000000008"
+			}
+		},
 		"ExampleToken": {
 			"source": "./cadence/contracts/example-assets/ExampleToken.cdc",
 			"aliases": {
@@ -65,6 +71,13 @@
 				"mainnet": "1e4aa0b87d10b141",
 				"testing": "0000000000000007",
 				"testnet": "dfc20aee650fcbdf"
+			}
+		},
+		"FlowEVMBridgeCustomAssociations": {
+			"source": "./cadence/contracts/bridge/FlowEVMBridgeCustomAssociations.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"testing": "0000000000000007"
 			}
 		},
 		"FlowEVMBridgeConfig": {
@@ -262,7 +275,9 @@
 			"source": "testnet://631e88ae7f1d7c20.CrossVMMetadataViews",
 			"hash": "2857b50a3253f1c2414c151d75e4e961b280f4dfafa7d7b0a34a143790074a41",
 			"aliases": {
-				"testnet": "631e88ae7f1d7c20"
+				"mainnet": "631e88ae7f1d7c20",
+				"testnet": "631e88ae7f1d7c20",
+				"testing": "0000000000000001"
 			}
 		},
 		"EVM": {
