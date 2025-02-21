@@ -1,6 +1,17 @@
 import "FlowEVMBridgeCustomAssociations"
 import "FlowEVMBridge"
 
+/// This transaction will register an NFT type as a custom cross-VM NFT. The Cadence contract must implement the
+/// CrossVMMetadata.EVMPointer view and the corresponding ERC721 must implement ICrossVM interface such that the Type
+/// points to the EVM contract and vice versa. If the NFT is EVM-native, a
+/// FlowEVMBridgeCustomAssociations.NFTFulfillmentMinter Capability must be provided, allowing the bridge to fulfill
+/// requests moving the ERC721 from EVM into Cadence.
+///
+/// See FLIP-318 for more information on implementing custom cross-VM NFTs: https://github.com/onflow/flips/issues/318
+/// 
+/// @param nftTypeIdentifer: The type identifier of the NFT being registered as a custom cross-VM implementation
+/// @param fulfillmentMinterPath: The StoragePath where the NFTFulfillmentMinter is stored
+///
 transaction(nftTypeIdentifier: String, fulfillmentMinterPath: StoragePath?) {
 
     let nftType: Type
