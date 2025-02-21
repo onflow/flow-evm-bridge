@@ -418,9 +418,15 @@ access(all) contract ExampleEVMNativeNFT: NonFungibleToken, ICrossVM, ICrossVMAs
                 from: /storage/evm
             )!
 
+        // Append the constructor args to the provided contract bytecode
+        let cadenceAddressStr = self.account.address.toString()
+        let cadenceIdentifier = Type<@ExampleEVMNativeNFT.NFT>().identifier
+        let encodedConstructorArgs = EVM.encodeABI([cadenceAddressStr, cadenceIdentifier])
+        let finalBytecode = erc721Bytecode.decodeHex().concat(encodedConstructorArgs)
+
         // Deploy the provided EVM contract, passing the defined value of FLOW on init
         let deployResult = coa.deploy(
-            code: erc721Bytecode.decodeHex(),
+            code: finalBytecode,
             gasLimit: 15_000_000,
             value: EVM.Balance(attoflow: 0)
         )

@@ -2,6 +2,7 @@ pragma solidity 0.8.24;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import {ICrossVM} from "../../interfaces/ICrossVM.sol";
 
 /**
  * @title EVMNativeERC721
@@ -18,9 +19,27 @@ import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
  * For more information on cross-VM NFTs, see Flow's developer documentation as well as
  * FLIP-318: https://github.com/onflow/flips/issues/318
  */
-contract EVMNativeERC721 is ERC721, Ownable {
+contract EVMNativeERC721 is ERC721, Ownable, ICrossVM {
     
-    constructor() ERC721("EVMNativeERC721", "EVMXMPL") Ownable(msg.sender) {}
+    string cadenceAddress;
+    string cadenceIdentifier;
+
+    constructor(
+        string memory cadenceAddress_,
+        string memory cadenceIdentifier_
+
+    ) ERC721("EVMNativeERC721", "EVMXMPL") Ownable(msg.sender) {
+        cadenceAddress = cadenceAddress_;
+        cadenceIdentifier = cadenceIdentifier_;
+    }
+
+    function getCadenceAddress() external view returns (string memory) {
+        return cadenceAddress;
+    }
+
+    function getCadenceIdentifier() external view returns (string memory) {
+        return cadenceIdentifier;
+    }
 
     function safeMint(address to, uint256 tokenId) public onlyOwner {
         _safeMint(to, tokenId);
