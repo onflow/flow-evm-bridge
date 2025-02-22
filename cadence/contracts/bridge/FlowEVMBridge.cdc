@@ -70,10 +70,10 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         pre {
             !FlowEVMBridgeConfig.isPaused(): "Bridge operations are currently paused"
             !FlowEVMBridgeConfig.isCadenceTypeBlocked(type):
-                "This Cadence Type ".concat(type.identifier).concat(" is currently blocked from being onboarded")
+            "This Cadence Type ".concat(type.identifier).concat(" is currently blocked from being onboarded")
             self.typeRequiresOnboarding(type) == true: "Onboarding is not needed for this type"
             FlowEVMBridgeUtils.typeAllowsBridging(type):
-                "This type is not supported as defined by the project's development team"
+            "This Cadence Type ".concat(type.identifier).concat(" is currently opted-out of bridge onboarding")
             FlowEVMBridgeUtils.isCadenceNative(type: type): "Only Cadence-native assets can be onboarded by Type"
         }
         /* Provision fees */
@@ -175,7 +175,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         fulfillmentMinter: Capability<auth(FlowEVMBridgeCustomAssociations.FulfillFromEVM) &{FlowEVMBridgeCustomAssociations.NFTFulfillmentMinter}>?
     ) {
         pre {
-            !FlowEVMBridgeConfig.isCadenceTypeBlocked(type):
+            FlowEVMBridgeUtils.typeAllowsBridging(type):
             "This Cadence Type ".concat(type.identifier).concat(" is currently opted-out of bridge onboarding")
             type.isSubtype(of: Type<@{NonFungibleToken.NFT}>()):
             "The provided Type ".concat(type.identifier).concat(" is not an NFT - only NFTs can register as cross-VM")
@@ -185,65 +185,49 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
             "A custom association has already been registered for type ".concat(type.identifier)
                 .concat(" with EVM contract ")
                 .concat(FlowEVMBridgeCustomAssociations.getEVMAddressAssociated(with: type)!.toString())
+            !FlowEVMBridgeConfig.isCadenceTypeBlocked(type):
+            "Type ".concat(type.identifier).concat(" has been blocked from onboarding")
         }
-        let contractAddress = type.address!
-        let contractName = type.contractName!
-        let viewResolver = getAccount(contractAddress).contracts.borrow<&{ViewResolver}>(name: contractName)
-            ?? panic("Contract ".concat(contractName).concat(" at ").concat(contractAddress.toString())
-            .concat(" does not conform to ViewResolver so there's no way to get the cross-VM metadata"))
-        let evmPointer = viewResolver.resolveContractView(
-                resourceType: type,
-                viewType: Type<CrossVMMetadataViews.EVMPointer>()
-            ) as! CrossVMMetadataViews.EVMPointer?
+        // Get the Cadence side EVMPointer
+        let evmPointer = FlowEVMBridgeUtils.getEVMPointer(forType: type)
             ?? panic("The CrossVMMetadataViews.EVMPointer is not supported by the type ".concat(type.identifier))
-
-        // get pointer on EVM side
-        let cadenceAddrRes = FlowEVMBridgeUtils.call(
-            signature: "getCadenceAddress()",
-            targetEVMAddress: evmPointer.evmContractAddress,
-            args: [],
-            gasLimit: FlowEVMBridgeConfig.gasLimit,
-            value: 0.0
+        assert(!FlowEVMBridgeConfig.isEVMAddressBlocked(evmPointer.evmContractAddress),
+            message: "Type ".concat(type.identifier).concat(" has been blocked from onboarding"))
+        assert(
+            FlowEVMBridgeUtils.evmAddressAllowsBridging(evmPointer.evmContractAddress),
+            message: "This contract is not supported as defined by the project's development team"
         )
-        let cadenceIdentifierRes = FlowEVMBridgeUtils.call(
-            signature: "getCadenceIdentifier()",
-            targetEVMAddress: evmPointer.evmContractAddress,
-            args: [],
-            gasLimit: FlowEVMBridgeConfig.gasLimit,
-            value: 0.0
-        )
-        assert(cadenceAddrRes.status == EVM.Status.successful)
-        assert(cadenceIdentifierRes.status == EVM.Status.successful)
-        let decodedCadenceAddr = EVM.decodeABI(types: [Type<String>()], data: cadenceAddrRes.data)
-        let decodedCadenceIdentifier = EVM.decodeABI(types: [Type<String>()], data: cadenceIdentifierRes.data)
-        assert(decodedCadenceAddr.length == 1)
-        assert(decodedCadenceIdentifier.length == 1)
-        var cadenceAddrStr = decodedCadenceAddr[0] as! String
-        if cadenceAddrStr[1] != "x" {
-            cadenceAddrStr = "0x".concat(cadenceAddrStr)
-        }
-        let cadenceIdentifier = decodedCadenceIdentifier[0] as! String
-        let cadenceAddr = Address.fromString(cadenceAddrStr) ?? panic("Could not construct Address from EVM contract's associated Cadence address ".concat(cadenceAddrStr))
-        let cadenceType = CompositeType(cadenceIdentifier)  ?? panic("Could not construct Address from EVM contract's associated Cadence address ".concat(cadenceIdentifier))
 
-        // assert values match
-        assert(contractAddress == cadenceAddr)
-        assert(type == cadenceType)
+        // Get pointer on EVM side
+        let cadenceAddr = FlowEVMBridgeUtils.getCorrespondingCadenceAddressFromCrossVM(evmContract: evmPointer.evmContractAddress)
+        let cadenceType = FlowEVMBridgeUtils.getCorrespondingCadenceTypeFromCrossVM(evmContract: evmPointer.evmContractAddress)
+
+        // Assert both point to each other
+        assert(
+            type.address == cadenceAddr,
+            message: "Mismatched Cadence Address pointers: ".concat(type.address!.toString()).concat(" and ").concat(cadenceAddr.toString())
+        )
+        assert(
+            type == cadenceType,
+            message: "Mistmatched type pointers: ".concat(type.identifier).concat(" and ").concat(cadenceType.identifier)
+        )
 
         // if evm-native, check supportsInterface() for CrossVMBridgeERC721Fulfillment
         if evmPointer.nativeVM == CrossVMMetadataViews.VM.Cadence {
-            let supportsRes = FlowEVMBridgeUtils.call(
-                signature: "supportsInterface(bytes4)",
-                targetEVMAddress: evmPointer.evmContractAddress,
-                args: [EVM.EVMBytes4(value: 0x2e608d7.toBigEndianBytes().toConstantSized<[UInt8; 4]>()!)],
-                gasLimit: FlowEVMBridgeConfig.gasLimit,
-                value: 0.0
+            assert(
+                FlowEVMBridgeUtils.supportsCadenceNativeNFTEVMInterfaces(evmContract: evmPointer.evmContractAddress),
+                message:
+                    "Corresponding EVM contract does not implement necessary EVM interfaces ICrossVMBridgeERC721Fulfillment and/or ICrossVMBridgeCallable. "
+                    .concat("All Cadence-native cross-VM NFTs must implement these interfaces and grant the bridge COA")
+                    .concat(" the ability to fulfill bridge requests moving NFTs into EVM.")
             )
-            assert(supportsRes.status == EVM.Status.successful)
-            let decodedSupports = EVM.decodeABI(types: [Type<Bool>()], data: supportsRes.data)
-            assert(decodedSupports.length == 1)
-            let supports = decodedSupports[0] as! Bool
-            assert(supports)
+            let designatedVMBridgeAddress = FlowEVMBridgeUtils.getVMBridgeAddressFromICrossVMBridgeCallable(evmContract: evmPointer.evmContractAddress)
+            assert(
+                designatedVMBridgeAddress.equals(FlowEVMBridgeUtils.getBridgeCOAEVMAddress()),
+                message: "ICrossVMBridgeCallable declared ".concat(designatedVMBridgeAddress.toString())
+                    .concat(" as vmBridgeAddress which must be declared as ")
+                    .concat(FlowEVMBridgeUtils.getBridgeCOAEVMAddress().toString())
+            )
         }
 
         // determine if onboarded via permissionless path
