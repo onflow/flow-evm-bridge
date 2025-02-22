@@ -200,6 +200,16 @@ fun getBridgeCOAAddressHex(): String {
 }
 
 access(all)
+fun getTypeAssociated(with evmAddress: String): String {
+    var associatedTypeResult = _executeScript(
+        "./scripts/get_associated_type_identifier.cdc",
+        [evmAddress]
+    )
+    Test.expect(associatedTypeResult, Test.beSucceeded())
+    return associatedTypeResult.returnValue as! String? ?? panic("Problem getting associated Type as String")
+}
+
+access(all)
 fun getAssociatedEVMAddressHex(with typeIdentifier: String): String {
     var associatedEVMAddressResult = _executeScript(
         "../scripts/bridge/get_associated_evm_address.cdc",

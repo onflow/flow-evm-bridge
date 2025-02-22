@@ -375,16 +375,16 @@ fun setup() {
 
 access(all)
 fun testRegisterCrossVMNFTSucceeds() {
-    // run the registration transaction, must succeed
     registerCrossVMNFT(
         signer: exampleEVMNativeNFTAccount,
         nftTypeIdentifier: exampleEVMNativeNFTIdentifier,
         fulfillmentMinterPath: ExampleEVMNativeNFT.FulfillmentMinterStoragePath,
         beFailed: false
     )
-    // assert on events
-    // get the association from bridge config
-    // assert Type:EVMAddress association
+    let associatedEVMAddress = getAssociatedEVMAddressHex(with: exampleEVMNativeNFTIdentifier)
+    Test.assertEqual(erc721AddressHex, associatedEVMAddress)
+    let associatedType = getTypeAssociated(with: erc721AddressHex)
+    Test.assertEqual(exampleEVMNativeNFTIdentifier, associatedType)
 }
 
 access(all)
