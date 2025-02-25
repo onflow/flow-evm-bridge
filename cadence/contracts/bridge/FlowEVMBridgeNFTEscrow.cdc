@@ -81,6 +81,15 @@ access(all) contract FlowEVMBridgeNFTEscrow {
         Bridge Methods
     ***********************/
 
+    /// Returns whether escrow is initialized for a given type
+    ///
+    access(account)
+    fun isEscrowInitialized(forType: Type): Bool {
+        let lockerPath = FlowEVMBridgeUtils.deriveEscrowStoragePath(fromType: forType)
+            ?? panic("Problem deriving Locker path for NFT type identifier=".concat(forType.identifier))
+        return self.account.storage.type(at: lockerPath) != nil
+    }
+
     /// Initializes the Locker for the given NFT type if it hasn't been initialized yet
     ///
     access(account) fun initializeEscrow(forType: Type, name: String, symbol: String, erc721Address: EVM.EVMAddress) {
