@@ -169,6 +169,13 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         self.deployDefiningContract(evmContractAddress: address)
     }
 
+    /// Registers a custom cross-VM NFT implementation, allowing projects to integrate their Cadence & EVM contracts
+    /// such that the VM bridge facilitates movement between VMs as the integrated implementations.
+    ///
+    /// @param type: The NFT Type to register as cross-VM NFT
+    /// @param fulfillmentMinter: The optional NFTFulfillmentMinter Capability. This parameter is required for
+    ///     EVM-native NFTs
+    ///
     access(all)
     fun registerCrossVMNFT(
         type: Type,
@@ -228,6 +235,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
                     .concat(" as vmBridgeAddress which must be declared as ")
                     .concat(FlowEVMBridgeUtils.getBridgeCOAEVMAddress().toString())
             )
+
         }
 
         // determine if onboarded via permissionless path
