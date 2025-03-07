@@ -81,16 +81,26 @@ access(all) contract FlowEVMBridgeNFTEscrow {
         Bridge Methods
     ***********************/
 
+    /// Returns whether escrow is initialized for a given type
+    ///
+    access(account)
+    fun isEscrowInitialized(forType: Type): Bool {
+        let lockerPath = FlowEVMBridgeUtils.deriveEscrowStoragePath(fromType: forType)
+            ?? panic("Problem deriving Locker path for NFT type identifier=\(forType.identifier)")
+        return self.account.storage.type(at: lockerPath) != nil
+    }
+
     /// Initializes the Locker for the given NFT type if it hasn't been initialized yet
     ///
     access(account) fun initializeEscrow(forType: Type, name: String, symbol: String, erc721Address: EVM.EVMAddress) {
         let lockerPath = FlowEVMBridgeUtils.deriveEscrowStoragePath(fromType: forType)
-            ?? panic("Problem deriving Locker path for NFT type identifier=".concat(forType.identifier))
-        if self.account.storage.type(at: lockerPath) != nil {
-            panic("NFT Locker already stored at storage path=".concat(lockerPath.toString()))
-        }
+            ?? panic("Problem deriving Locker path for NFT type identifier=\(forType.identifier)")
+        assert(
+            self.account.storage.type(at: lockerPath) == nil,
+            message: "NFT Locker already stored at storage path=\(lockerPath.toString())"
+        )
 
-        let locker <- create Locker(name: name, symbol: symbol, lockedType: forType, erc721Address: erc721Address)
+        let locker <- create Locker(name: name, symbol: symbol, lockedType: forType)
         self.account.storage.save(<-locker, to: lockerPath)
     }
 
@@ -98,7 +108,7 @@ access(all) contract FlowEVMBridgeNFTEscrow {
     ///
     access(account) fun lockNFT(_ nft: @{NonFungibleToken.NFT}): UInt64 {
         let locker = self.borrowLocker(forType: nft.getType())
-            ?? panic("Problem borrowing reference to Locker for NFT type identifier=".concat(nft.getType().identifier))
+            ?? panic("Problem borrowing reference to Locker for NFT type identifier=\(nft.getType().identifier)")
 
         let preStorageSnapshot = self.account.storage.used
         locker.deposit(token: <-nft)
@@ -118,7 +128,7 @@ access(all) contract FlowEVMBridgeNFTEscrow {
     ///
     access(account) fun unlockNFT(type: Type, id: UInt64): @{NonFungibleToken.NFT} {
         let locker = self.borrowLocker(forType: type)
-            ?? panic("Problem borrowing reference to Locker for NFT type identifier=".concat(type.identifier))
+            ?? panic("Problem borrowing reference to Locker for NFT type identifier=\(type.identifier)")
         return <- locker.withdraw(withdrawID: id)
     }
 
@@ -154,8 +164,6 @@ access(all) contract FlowEVMBridgeNFTEscrow {
         access(all) let name: String
         /// Corresponding symbol assigned in the tokens' corresponding ERC20 contract
         access(all) let symbol: String
-        /// Corresponding ERC721 address for the locked NFTs
-        access(all) let erc721Address: EVM.EVMAddress
         /// The type of NFTs this Locker escrows
         access(all) let lockedType: Type
         /// Count of locked NFTs as ownedNFTs.length may exceed computation limits
@@ -165,11 +173,10 @@ access(all) contract FlowEVMBridgeNFTEscrow {
         /// Maps EVM NFT ID to Flow NFT ID, covering cross-VM project NFTs
         access(self) let evmIDToFlowID: {UInt256: UInt64}
 
-        init(name: String, symbol: String, lockedType: Type, erc721Address: EVM.EVMAddress) {
+        init(name: String, symbol: String, lockedType: Type) {
             self.name = name
             self.symbol = symbol
             self.lockedType = lockedType
-            self.erc721Address = erc721Address
             self.lockedNFTCount = 0
             self.ownedNFTs <- {}
             self.evmIDToFlowID = {}
@@ -275,8 +282,7 @@ access(all) contract FlowEVMBridgeNFTEscrow {
         fun deposit(token: @{NonFungibleToken.NFT}) {
             pre {
                 self.borrowNFT(token.id) == nil:
-                "NFT type=".concat(token.getType().identifier).concat(" with id=").concat(token.id.toString())
-                    .concat(" already exists in the Locker")
+                "NFT type=\(token.getType().identifier) with id=\(token.id.toString()) already exists in the Locker"
             }
             if let evmID = CrossVMNFT.getEVMID(from: &token as &{NonFungibleToken.NFT}) {
                 self.evmIDToFlowID[evmID] = token.id
@@ -292,8 +298,7 @@ access(all) contract FlowEVMBridgeNFTEscrow {
             // Should not happen, but prevent potential underflow
             assert(
                 self.lockedNFTCount > 0,
-                message: "Attempting to withdraw NFT id=".concat(withdrawID.toString())
-                .concat(" - no NFTs of type=").concat(self.lockedType.identifier).concat(" to withdraw")
+                message: "Attempting to withdraw NFT id=\(withdrawID.toString()) - no NFTs of type=\(self.lockedType.identifier) to withdraw"
             )
             self.lockedNFTCount = self.lockedNFTCount - 1
             let token <- self.ownedNFTs.remove(key: withdrawID)!
@@ -310,8 +315,7 @@ access(all) contract FlowEVMBridgeNFTEscrow {
             return <- create Locker(
                 name: self.name,
                 symbol: self.symbol,
-                lockedType: self.lockedType,
-                erc721Address: self.erc721Address
+                lockedType: self.lockedType
             )
         }
     }
