@@ -81,6 +81,15 @@ access(all) contract FlowEVMBridgeNFTEscrow {
         Bridge Methods
     ***********************/
 
+    /// Returns whether escrow is initialized for a given type
+    ///
+    access(account)
+    fun isEscrowInitialized(forType: Type): Bool {
+        let lockerPath = FlowEVMBridgeUtils.deriveEscrowStoragePath(fromType: forType)
+            ?? panic("Problem deriving Locker path for NFT type identifier=".concat(forType.identifier))
+        return self.account.storage.type(at: lockerPath) != nil
+    }
+
     /// Initializes the Locker for the given NFT type if it hasn't been initialized yet
     ///
     access(account) fun initializeEscrow(forType: Type, name: String, symbol: String, erc721Address: EVM.EVMAddress) {
@@ -90,7 +99,7 @@ access(all) contract FlowEVMBridgeNFTEscrow {
             panic("NFT Locker already stored at storage path=".concat(lockerPath.toString()))
         }
 
-        let locker <- create Locker(name: name, symbol: symbol, lockedType: forType, erc721Address: erc721Address)
+        let locker <- create Locker(name: name, symbol: symbol, lockedType: forType)
         self.account.storage.save(<-locker, to: lockerPath)
     }
 
@@ -154,8 +163,6 @@ access(all) contract FlowEVMBridgeNFTEscrow {
         access(all) let name: String
         /// Corresponding symbol assigned in the tokens' corresponding ERC20 contract
         access(all) let symbol: String
-        /// Corresponding ERC721 address for the locked NFTs
-        access(all) let erc721Address: EVM.EVMAddress
         /// The type of NFTs this Locker escrows
         access(all) let lockedType: Type
         /// Count of locked NFTs as ownedNFTs.length may exceed computation limits
@@ -165,11 +172,10 @@ access(all) contract FlowEVMBridgeNFTEscrow {
         /// Maps EVM NFT ID to Flow NFT ID, covering cross-VM project NFTs
         access(self) let evmIDToFlowID: {UInt256: UInt64}
 
-        init(name: String, symbol: String, lockedType: Type, erc721Address: EVM.EVMAddress) {
+        init(name: String, symbol: String, lockedType: Type) {
             self.name = name
             self.symbol = symbol
             self.lockedType = lockedType
-            self.erc721Address = erc721Address
             self.lockedNFTCount = 0
             self.ownedNFTs <- {}
             self.evmIDToFlowID = {}
@@ -310,8 +316,7 @@ access(all) contract FlowEVMBridgeNFTEscrow {
             return <- create Locker(
                 name: self.name,
                 symbol: self.symbol,
-                lockedType: self.lockedType,
-                erc721Address: self.erc721Address
+                lockedType: self.lockedType
             )
         }
     }
