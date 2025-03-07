@@ -1,11 +1,11 @@
 pragma solidity 0.8.24;
 
 import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import {CrossVMBridgeERC721Fulfillment} from "../interfaces/CrossVMBridgeERC721Fulfillment.sol";
+import {CrossVMBridgeERC721Fulfillment} from "../../interfaces/CrossVMBridgeERC721Fulfillment.sol";
 
 /**
-  * @title CadenceNativeERC721
-  * @dev This contract is a minimal ERC721 implementation demonstrating the use of the
+ * @title CadenceNativeERC721
+ * @dev This contract is a minimal ERC721 implementation demonstrating the use of the
  * CrossVMBridgeERC721Fulfillment base contract. Such ERC721 contracts are intended for use in
  * cross-VM NFT implementations where projects deploy both a Cadence & Solidity definition with
  * movement of individual NFTs facilitated by Flow's canonical VM bridge.

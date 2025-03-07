@@ -8,7 +8,7 @@ import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import {ICrossVMBridgeCallable} from "../src/interfaces/ICrossVMBridgeCallable.sol";
 import {ICrossVMBridgeERC721Fulfillment} from "../src/interfaces/ICrossVMBridgeERC721Fulfillment.sol";
 import {ICrossVMBridgeERC721Fulfillment} from "../src/interfaces/ICrossVMBridgeERC721Fulfillment.sol";
-import {CadenceNativeERC721} from "../src/example-assets/CadenceNativeERC721.sol";
+import {CadenceNativeERC721} from "../src/example-assets/cross-vm-nfts/CadenceNativeERC721.sol";
 
 contract CrossVMBridgeERC721FulfillmentTest is Test {
     CadenceNativeERC721 internal erc721Impl;
