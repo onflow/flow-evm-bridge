@@ -80,8 +80,7 @@ access(all) contract FlowEVMBridgeCustomAssociationTypes {
                 fulfillmentMinter?.check() ?? true:
                 "Invalid NFTFulfillmentMinter Capability provided. Ensure the Capability is properly issued and active."
                 fulfillmentMinter != nil ? fulfillmentMinter!.borrow()!.getFulfilledType() == type : true:
-                "NFTFulfillmentMinter fulfills ".concat(fulfillmentMinter!.borrow()!.getFulfilledType().identifier)
-                    .concat(" but expected ").concat(type.identifier)
+                "NFTFulfillmentMinter fulfills \(fulfillmentMinter!.borrow()!.getFulfilledType().identifier) but expected \(type.identifier)"
             }
             self.type = type
             self.evmContractAddress = evmContractAddress
@@ -115,11 +114,10 @@ access(all) contract FlowEVMBridgeCustomAssociationTypes {
         view fun borrowFulfillmentMinter(): auth(FulfillFromEVM) &{NFTFulfillmentMinter} {
             pre  {
                 self.fulfillmentMinter != nil:
-                "CustomConfig for type ".concat(self.type.identifier)
-                    .concat(" was not assigned a NFTFulfillmentMinter.")
+                "CustomConfig for type \(self.type.identifier) was not assigned a NFTFulfillmentMinter."
             }
             return self.fulfillmentMinter!.borrow()
-                ?? panic("NFTFulfillmentMinter for type ".concat(self.type.identifier).concat(" is now invalid."))
+                ?? panic("NFTFulfillmentMinter for type \(self.type.identifier) is now invalid.")
         }
     }
 

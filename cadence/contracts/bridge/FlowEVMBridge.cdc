@@ -184,26 +184,25 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
     ) {
         pre {
             FlowEVMBridgeUtils.typeAllowsBridging(type):
-            "This Cadence Type ".concat(type.identifier).concat(" is currently opted-out of bridge onboarding")
+            "This Cadence Type \(type.identifier) is currently opted-out of bridge onboarding"
             type.isSubtype(of: Type<@{NonFungibleToken.NFT}>()):
-            "The provided Type ".concat(type.identifier).concat(" is not an NFT - only NFTs can register as cross-VM")
+            "The provided Type \(type.identifier) is not an NFT - only NFTs can register as cross-VM"
             !type.isSubtype(of: Type<@{FungibleToken.Vault}>()):
-            "The provided Type ".concat(type.identifier).concat(" is also a FungibleToken Vault - only NFTs can register as cross-VM")
+            "The provided Type \(type.identifier) is also a FungibleToken Vault - only NFTs can register as cross-VM"
             FlowEVMBridgeCustomAssociations.getEVMAddressAssociated(with: type) == nil:
-            "A custom association has already been registered for type ".concat(type.identifier)
-                .concat(" with EVM contract ")
+            "A custom association has already been registered for type \(type.identifier) with EVM contract "
                 .concat(FlowEVMBridgeCustomAssociations.getEVMAddressAssociated(with: type)!.toString())
             !FlowEVMBridgeConfig.isCadenceTypeBlocked(type):
-            "Type ".concat(type.identifier).concat(" has been blocked from onboarding")
+            "Type \(type.identifier) has been blocked from onboarding"
         }
         // Get the Cadence side EVMPointer
         let evmPointer = FlowEVMBridgeUtils.getEVMPointer(forType: type)
-            ?? panic("The CrossVMMetadataViews.EVMPointer is not supported by the type ".concat(type.identifier))
+            ?? panic("The CrossVMMetadataViews.EVMPointer is not supported by the type \(type.identifier).")
         assert(!FlowEVMBridgeConfig.isEVMAddressBlocked(evmPointer.evmContractAddress),
-            message: "Type ".concat(type.identifier).concat(" has been blocked from onboarding"))
+            message: "Type \(type.identifier) has been blocked from onboarding.")
         assert(
             FlowEVMBridgeUtils.evmAddressAllowsBridging(evmPointer.evmContractAddress),
-            message: "This contract is not supported as defined by the project's development team"
+            message: "The contract \(evmPointer.evmContractAddress.toString()) developers have opted out of VM bridge integration."
         )
 
         // Get pointer on EVM side
@@ -213,11 +212,11 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         // Assert both point to each other
         assert(
             type.address == cadenceAddr,
-            message: "Mismatched Cadence Address pointers: ".concat(type.address!.toString()).concat(" and ").concat(cadenceAddr.toString())
+            message: "Mismatched Cadence Address pointers: \(type.address!.toString()) and \(cadenceAddr.toString())"
         )
         assert(
             type == cadenceType,
-            message: "Mistmatched type pointers: ".concat(type.identifier).concat(" and ").concat(cadenceType.identifier)
+            message: "Mistmatched type pointers: \(type.identifier) and \(cadenceType.identifier)"
         )
 
         // if evm-native, check supportsInterface() for CrossVMBridgeERC721Fulfillment
@@ -232,9 +231,8 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
             let designatedVMBridgeAddress = FlowEVMBridgeUtils.getVMBridgeAddressFromICrossVMBridgeCallable(evmContract: evmPointer.evmContractAddress)
             assert(
                 designatedVMBridgeAddress.equals(FlowEVMBridgeUtils.getBridgeCOAEVMAddress()),
-                message: "ICrossVMBridgeCallable declared ".concat(designatedVMBridgeAddress.toString())
-                    .concat(" as vmBridgeAddress which must be declared as ")
-                    .concat(FlowEVMBridgeUtils.getBridgeCOAEVMAddress().toString())
+                message: "ICrossVMBridgeCallable declared \(designatedVMBridgeAddress.toString())"
+                    .concat(" as vmBridgeAddress which must be declared as \(FlowEVMBridgeUtils.getBridgeCOAEVMAddress().toString())")
             )
 
         }

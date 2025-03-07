@@ -84,17 +84,14 @@ access(all) contract FlowEVMBridgeCustomAssociations {
         fulfillmentMinter: Capability<auth(FlowEVMBridgeCustomAssociationTypes.FulfillFromEVM) &{FlowEVMBridgeCustomAssociationTypes.NFTFulfillmentMinter}>?
     ) {
         pre {
+            self.associationsConfig[type] == nil:
+            "Type \(type.identifier) already has a custom association with \(self.borrowNFTCustomConfig(forType: type)!.getEVMContractAddress().toString())"
             type.isSubtype(of: Type<@{NonFungibleToken.NFT}>()):
             "Only NFT cross-VM associations are currently supported but \(type.identifier) is not an NFT implementation"
-            self.associationsConfig[type] == nil:
-            "Type ".concat(type.identifier).concat(" already has a custom association with ")
-                .concat(self.borrowNFTCustomConfig(forType: type)!.getEVMContractAddress().toString())
             self.associationsByEVMAddress[evmContractAddress.toString()] == nil:
-            "EVM Address ".concat(evmContractAddress.toString()).concat(" already has a custom association with ")
-                .concat(self.borrowNFTCustomConfig(forType: type)!.getCadenceType().identifier)
+            "EVM Address \(evmContractAddress.toString()) already has a custom association with \(self.borrowNFTCustomConfig(forType: type)!.getCadenceType().identifier)"
             fulfillmentMinter?.check() ?? true:
-            "The NFTFulfillmentMinter Capability issued from ".concat(fulfillmentMinter!.address.toString())
-                .concat(" is invalid. Ensure the Capability is properly issued and active.")
+            "The NFTFulfillmentMinter Capability issued from \(fulfillmentMinter!.address.toString()) is invalid. Ensure the Capability is properly issued and active."
         }
         let config <- FlowEVMBridgeCustomAssociationTypes.createNFTCustomConfig(
                 type: type,
