@@ -27,16 +27,28 @@ access(all) contract FlowEVMBridgeCustomAssociations {
         configUUID: UInt64
     )
 
+    /// Retrieves the EVM address associated with the given Cadence Type if it has been registered as a cross-VM asset
+    ///
+    /// @param with: The Cadence Type to query against
+    ///
     access(all)
     view fun getEVMAddressAssociated(with type: Type): EVM.EVMAddress? {
         return self.associationsConfig[type]?.getEVMContractAddress() ?? nil
     }
 
+    /// Retrieves the Cadence Type associated with the given EVM address if it has been registered as a cross-VM asset
+    ///
+    /// @param with: The EVM contract address to query against
+    ///
     access(all)
     view fun getTypeAssociated(with evmAddress: EVM.EVMAddress): Type? {
         return self.associationsByEVMAddress[evmAddress.toString()]
     }
 
+    /// Returns an EVMPointer containing the data at the time of registration
+    ///
+    /// @param forType: The Cadence Type to query against
+    ///
     access(all)
     fun getEVMPointerAsRegistered(forType: Type): CrossVMMetadataViews.EVMPointer? {
         if let config = &self.associationsConfig[forType] as &CustomConfig? {
