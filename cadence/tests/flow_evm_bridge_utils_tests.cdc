@@ -90,6 +90,12 @@ fun setup() {
     )
     Test.expect(err, Test.beNil())
     err = Test.deployContract(
+        name: "FlowEVMBridgeCustomAssociationTypes",
+        path: "../contracts/bridge/FlowEVMBridgeCustomAssociationTypes.cdc",
+        arguments: []
+    )
+    Test.expect(err, Test.beNil())
+    err = Test.deployContract(
         name: "FlowEVMBridgeCustomAssociations",
         path: "../contracts/bridge/FlowEVMBridgeCustomAssociations.cdc",
         arguments: []

@@ -1,3 +1,4 @@
+import "FlowEVMBridgeCustomAssociationTypes"
 import "FlowEVMBridgeCustomAssociations"
 import "FlowEVMBridge"
 
@@ -15,7 +16,7 @@ import "FlowEVMBridge"
 transaction(nftTypeIdentifier: String, fulfillmentMinterPath: StoragePath?) {
 
     let nftType: Type
-    let fulfillmentMinterCap: Capability<auth(FlowEVMBridgeCustomAssociations.FulfillFromEVM) &{FlowEVMBridgeCustomAssociations.NFTFulfillmentMinter}>?
+    let fulfillmentMinterCap: Capability<auth(FlowEVMBridgeCustomAssociationTypes.FulfillFromEVM) &{FlowEVMBridgeCustomAssociationTypes.NFTFulfillmentMinter}>?
 
     prepare(signer: auth(BorrowValue, StorageCapabilities) &Account) {
         self.nftType = CompositeType(nftTypeIdentifier) ?? panic("Could not construct type from identifier ".concat(nftTypeIdentifier))
@@ -25,7 +26,7 @@ transaction(nftTypeIdentifier: String, fulfillmentMinterPath: StoragePath?) {
                 message: "There was no resource found at provided path ".concat(fulfillmentMinterPath!.toString())
             )
             self.fulfillmentMinterCap = signer.capabilities.storage
-                .issue<auth(FlowEVMBridgeCustomAssociations.FulfillFromEVM) &{FlowEVMBridgeCustomAssociations.NFTFulfillmentMinter}>(
+                .issue<auth(FlowEVMBridgeCustomAssociationTypes.FulfillFromEVM) &{FlowEVMBridgeCustomAssociationTypes.NFTFulfillmentMinter}>(
                     fulfillmentMinterPath!
                 )
         } else {

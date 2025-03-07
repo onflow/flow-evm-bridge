@@ -16,6 +16,7 @@ import "IFlowEVMNFTBridge"
 import "IFlowEVMTokenBridge"
 import "CrossVMNFT"
 import "CrossVMToken"
+import "FlowEVMBridgeCustomAssociationTypes"
 import "FlowEVMBridgeCustomAssociations"
 import "FlowEVMBridgeConfig"
 import "FlowEVMBridgeHandlerInterfaces"
@@ -179,7 +180,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
     access(all)
     fun registerCrossVMNFT(
         type: Type,
-        fulfillmentMinter: Capability<auth(FlowEVMBridgeCustomAssociations.FulfillFromEVM) &{FlowEVMBridgeCustomAssociations.NFTFulfillmentMinter}>?
+        fulfillmentMinter: Capability<auth(FlowEVMBridgeCustomAssociationTypes.FulfillFromEVM) &{FlowEVMBridgeCustomAssociationTypes.NFTFulfillmentMinter}>?
     ) {
         pre {
             FlowEVMBridgeUtils.typeAllowsBridging(type):

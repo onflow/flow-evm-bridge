@@ -19,7 +19,7 @@ import "EVM"
 
 import "ICrossVM"
 import "ICrossVMAsset"
-import "FlowEVMBridgeCustomAssociations"
+import "FlowEVMBridgeCustomAssociationTypes"
 
 access(all) contract ExampleEVMNativeNFT: NonFungibleToken, ICrossVM, ICrossVMAsset {
 
@@ -356,12 +356,12 @@ access(all) contract ExampleEVMNativeNFT: NonFungibleToken, ICrossVM, ICrossVMAs
         return nil
     }
 
-    /* FlowEVMBridgeCustomAssociations.NFTFulfillmentMinter Conformance */
+    /* FlowEVMBridgeCustomAssociationTypes.NFTFulfillmentMinter Conformance */
 
     /// Resource that allows the bridge to mint Cadence NFTs as needed when fulfilling movement of
     /// EVM-native ERC721 tokens from Flow EVM.
     ///
-    access(all) resource NFTMinter : FlowEVMBridgeCustomAssociations.NFTFulfillmentMinter {
+    access(all) resource NFTMinter : FlowEVMBridgeCustomAssociationTypes.NFTFulfillmentMinter {
 
         /// Getter for the type of NFT that's fulfilled by this implementation
         ///
@@ -377,7 +377,7 @@ access(all) contract ExampleEVMNativeNFT: NonFungibleToken, ICrossVM, ICrossVMAs
         ///
         /// @return The NFT fulfilled from EVM as its Cadence implementation
         ///
-        access(FlowEVMBridgeCustomAssociations.FulfillFromEVM)
+        access(FlowEVMBridgeCustomAssociationTypes.FulfillFromEVM)
         fun fulfillFromEVM(id: UInt256): @{NonFungibleToken.NFT} {
             return <- create NFT(erc721ID: id)
         }
