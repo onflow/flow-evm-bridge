@@ -40,9 +40,8 @@ access(all) contract FlowEVMBridgeCustomAssociationTypes {
     /// interface allows for extensibility in the event future config types are added in the future for various asset
     /// types.
     ///
-    /// TODO: Consider case for TokenMinter in the event we update to cover Tokens
     access(all) resource interface CustomConfig {
-        access(all) view fun check(): Bool?
+        access(all) view fun checkFulfillmentMinter(): Bool?
         access(all) view fun getCadenceType(): Type
         access(all) view fun getEVMContractAddress(): EVM.EVMAddress
         access(all) view fun getNativeVM(): CrossVMMetadataViews.VM
@@ -89,27 +88,33 @@ access(all) contract FlowEVMBridgeCustomAssociationTypes {
             self.fulfillmentMinter = fulfillmentMinter
         }
 
-        /// Returns true/false on the fulfillment minter Capability
-        access(all) view fun check(): Bool? {
+        /// Returns true/false on the fulfillment minter Capability. If no Capability is stored, nil is returned
+        access(all) view fun checkFulfillmentMinter(): Bool? {
             return self.fulfillmentMinter?.check() ?? nil
         }
 
+        /// Returns the Cadence Type related to this custom cross-VM NFT configuration
         access(all) view fun getCadenceType(): Type {
             return self.type
         }
 
+        /// Returns the EVM contract address related to this custom cross-VM NFT configuration
         access(all) view fun getEVMContractAddress(): EVM.EVMAddress {
             return self.evmContractAddress
         }
 
+        /// Returns the VM in which the NFT is distributed
         access(all) view fun getNativeVM(): CrossVMMetadataViews.VM {
             return self.nativeVM
         }
 
+        /// True if the NFT was originally onboarded to the bridge 
         access(all) view fun isUpdatedFromBridged(): Bool {
             return self.updatedFromBridged
         }
 
+        /// Returns a reference to the NFTFulfillmentMinter, allowing the bridge contracts to fulfill EVM-native NFTs
+        /// moving into Cadence
         access(account)
         view fun borrowFulfillmentMinter(): auth(FulfillFromEVM) &{NFTFulfillmentMinter} {
             pre  {
@@ -121,6 +126,7 @@ access(all) contract FlowEVMBridgeCustomAssociationTypes {
         }
     }
 
+    /// Allows bridge contracts to create an NFTCustomConfig resource from the provided arguments
     access(account)
     fun createNFTCustomConfig(
         type: Type,

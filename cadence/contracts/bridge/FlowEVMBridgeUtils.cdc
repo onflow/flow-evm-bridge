@@ -755,7 +755,7 @@ contract FlowEVMBridgeUtils {
     /// @return The resulting Cadence Address as declared associated by the provided EVM contract
     ///
     access(all)
-    fun getCorrespondingCadenceAddressFromCrossVM(evmContract: EVM.EVMAddress): Address {
+    fun getDeclaredCadenceAddressFromCrossVM(evmContract: EVM.EVMAddress): Address {
         let cadenceAddrRes = self.call(
             signature: "getCadenceAddress()",
             targetEVMAddress: evmContract,
@@ -773,17 +773,17 @@ contract FlowEVMBridgeUtils {
         return Address.fromString(cadenceAddrStr) ?? panic("Could not construct Address from EVM contract's associated Cadence address ".concat(cadenceAddrStr))
     }
 
-    /// Gets the corresponding Cadence Type declared by an EVM contract in conformance to the ICrossVM.sol contract
+    /// Gets the declared Cadence Type declared by an EVM contract in conformance to the ICrossVM.sol contract
     /// interface. Reverts if the EVM call is unsuccessful.
     /// NOTE: Just because an EVM contract declares an association does not mean it it is valid!
     ///
-    /// @param evmContract: The ICrossVM.sol conforming EVM contract from which to retrieve the corresponding Cadence
+    /// @param evmContract: The ICrossVM.sol conforming EVM contract from which to retrieve the Declared Cadence
     ///     Type
     ///
     /// @return The resulting Cadence Type as declared associated by the provided EVM contract
     ///
     access(all)
-    fun getCorrespondingCadenceTypeFromCrossVM(evmContract: EVM.EVMAddress): Type {
+    fun getDeclaredCadenceTypeFromCrossVM(evmContract: EVM.EVMAddress): Type {
         let cadenceIdentifierRes = self.call(
             signature: "getCadenceIdentifier()",
             targetEVMAddress: evmContract,
