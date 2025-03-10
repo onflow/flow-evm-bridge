@@ -732,7 +732,7 @@ contract FlowEVMBridgeUtils {
     }
 
     /// Converts the given amount of Cadence fungible tokens to the equivalent amount in ERC20 tokens based on the
-    /// ERC20s decimals. Note that there may be some loss of decimal precision as UFix64 supports precision for 8 
+    /// ERC20s decimals. Note that there may be some loss of decimal precision as UFix64 supports precision for 8
     /// decimal places. Reverts on EVM call failure.
     ///
     /// @param amount: The amount of Cadence fungible tokens to convert
@@ -745,17 +745,17 @@ contract FlowEVMBridgeUtils {
         return self.ufix64ToUInt256(value: amount, decimals: self.getTokenDecimals(evmContractAddress: erc20Address))
     }
 
-    /// Gets the corresponding Cadence contract address declared by an EVM contract in conformance to the ICrossVM.sol
+    /// Gets the declared Cadence contract address declared by an EVM contract in conformance to the ICrossVM.sol
     /// contract interface. Reverts if the EVM call is unsuccessful.
     /// NOTE: Just because an EVM contract declares an association does not mean it it is valid!
     ///
-    /// @param evmContract: The ICrossVM.sol conforming EVM contract from which to retrieve the corresponding Cadence
+    /// @param evmContract: The ICrossVM.sol conforming EVM contract from which to retrieve the declared Cadence
     ///     contract address
     ///
-    /// @return The resulting Cadence Address as declared associated by the provided EVM contract
+    /// @return The resulting Cadence Address as declared associated by the provided EVM contract or nil if the call fails
     ///
     access(all)
-    fun getDeclaredCadenceAddressFromCrossVM(evmContract: EVM.EVMAddress): Address {
+    fun getDeclaredCadenceAddressFromCrossVM(evmContract: EVM.EVMAddress): Address? {
         let cadenceAddrRes = self.call(
             signature: "getCadenceAddress()",
             targetEVMAddress: evmContract,
@@ -763,27 +763,30 @@ contract FlowEVMBridgeUtils {
             gasLimit: FlowEVMBridgeConfig.gasLimit,
             value: 0.0
         )
-        assert(cadenceAddrRes.status == EVM.Status.successful)
+        if cadenceAddrRes.status != EVM.Status.successful {
+            return nil
+        }
         let decodedCadenceAddr = EVM.decodeABI(types: [Type<String>()], data: cadenceAddrRes.data)
         assert(decodedCadenceAddr.length == 1)
         var cadenceAddrStr = decodedCadenceAddr[0] as! String
         if cadenceAddrStr[1] != "x" {
             cadenceAddrStr = "0x".concat(cadenceAddrStr)
         }
-        return Address.fromString(cadenceAddrStr) ?? panic("Could not construct Address from EVM contract's associated Cadence address ".concat(cadenceAddrStr))
+        return Address.fromString(cadenceAddrStr) ?? nil
     }
 
     /// Gets the declared Cadence Type declared by an EVM contract in conformance to the ICrossVM.sol contract
     /// interface. Reverts if the EVM call is unsuccessful.
     /// NOTE: Just because an EVM contract declares an association does not mean it it is valid!
     ///
-    /// @param evmContract: The ICrossVM.sol conforming EVM contract from which to retrieve the Declared Cadence
+    /// @param evmContract: The ICrossVM.sol conforming EVM contract from which to retrieve the declared Cadence
     ///     Type
     ///
-    /// @return The resulting Cadence Type as declared associated by the provided EVM contract
+    /// @return The resulting Cadence Type as declared associated by the provided EVM contract or nil if the call fails
+    ///
     ///
     access(all)
-    fun getDeclaredCadenceTypeFromCrossVM(evmContract: EVM.EVMAddress): Type {
+    fun getDeclaredCadenceTypeFromCrossVM(evmContract: EVM.EVMAddress): Type? {
         let cadenceIdentifierRes = self.call(
             signature: "getCadenceIdentifier()",
             targetEVMAddress: evmContract,
@@ -791,11 +794,13 @@ contract FlowEVMBridgeUtils {
             gasLimit: FlowEVMBridgeConfig.gasLimit,
             value: 0.0
         )
-        assert(cadenceIdentifierRes.status == EVM.Status.successful)
+        if cadenceIdentifierRes.status != EVM.Status.successful {
+            return nil
+        }
         let decodedCadenceIdentifier = EVM.decodeABI(types: [Type<String>()], data: cadenceIdentifierRes.data)
         assert(decodedCadenceIdentifier.length == 1)
         let cadenceIdentifier = decodedCadenceIdentifier[0] as! String
-        return CompositeType(cadenceIdentifier) ?? panic("Could not construct Address from EVM contract's associated Cadence address ".concat(cadenceIdentifier))
+        return CompositeType(cadenceIdentifier) ?? nil
     }
 
     /// Returns whether the provided EVM contract conforms to ICrossVMBridgeERC721Fulfillment.sol contract interface.

@@ -77,6 +77,14 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
             "This Cadence Type ".concat(type.identifier).concat(" is currently opted-out of bridge onboarding")
             FlowEVMBridgeUtils.isCadenceNative(type: type): "Only Cadence-native assets can be onboarded by Type"
         }
+        /* Custom cross-VM Implementation check */
+        //
+        // Register as a custom cross-VM implementation if detected
+        if FlowEVMBridgeUtils.getEVMPointer(forType: type) != nil {
+            self.registerCrossVMNFT(type: type, fulfillmentMinter: nil, feeProvider: feeProvider)
+            return
+        }
+
         /* Provision fees */
         //
         // Withdraw from feeProvider and deposit to self
@@ -147,6 +155,16 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
             !FlowEVMBridgeConfig.isEVMAddressBlocked(address):
                 "This EVM contract ".concat(address.toString()).concat(" is currently blocked from being onboarded")
         }
+        /* Custom cross-VM Implementation check */
+        //
+        let cadenceAddr = FlowEVMBridgeUtils.getDeclaredCadenceAddressFromCrossVM(evmContract: address)
+        let cadenceType = FlowEVMBridgeUtils.getDeclaredCadenceTypeFromCrossVM(evmContract: address)
+        // Register as a custom cross-VM implementation if detected
+        if cadenceAddr != nil && cadenceType != nil {
+            self.registerCrossVMNFT(type: cadenceType!, fulfillmentMinter: nil, feeProvider: feeProvider)
+            return
+        }
+
         /* Validate the EVM contract */
         //
         // Ensure the project has not opted out of bridge support
@@ -180,7 +198,8 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
     access(all)
     fun registerCrossVMNFT(
         type: Type,
-        fulfillmentMinter: Capability<auth(FlowEVMBridgeCustomAssociationTypes.FulfillFromEVM) &{FlowEVMBridgeCustomAssociationTypes.NFTFulfillmentMinter}>?
+        fulfillmentMinter: Capability<auth(FlowEVMBridgeCustomAssociationTypes.FulfillFromEVM) &{FlowEVMBridgeCustomAssociationTypes.NFTFulfillmentMinter}>?,
+        feeProvider: auth(FungibleToken.Withdraw) &{FungibleToken.Provider}
     ) {
         pre {
             FlowEVMBridgeUtils.typeAllowsBridging(type):
@@ -198,6 +217,9 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
                 .concat(FlowEVMBridgeCustomAssociations.getEVMAddressAssociated(with: type)!.toString())
                 .concat(". Custom associations can only be declared once for any given Cadence Type or EVM contract")
         }
+        // Withdraw fee from feeProvider and deposit
+        FlowEVMBridgeUtils.depositFee(feeProvider, feeAmount: FlowEVMBridgeConfig.onboardFee)
+
         // Get the Cadence side EVMPointer
         let evmPointer = FlowEVMBridgeUtils.getEVMPointer(forType: type)
             ?? panic("The CrossVMMetadataViews.EVMPointer is not supported by the type \(type.identifier).")
@@ -216,7 +238,9 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
 
         // Get pointer on EVM side
         let cadenceAddr = FlowEVMBridgeUtils.getDeclaredCadenceAddressFromCrossVM(evmContract: evmPointer.evmContractAddress)
+            ?? panic("Could not retrieve a Cadence address declaration from the EVM contract \(evmPointer.evmContractAddress.toString())")
         let cadenceType = FlowEVMBridgeUtils.getDeclaredCadenceTypeFromCrossVM(evmContract: evmPointer.evmContractAddress)
+            ?? panic("Could not retrieve a Cadence Type declaration from the EVM contract \(evmPointer.evmContractAddress.toString())")
 
         // Assert both point to each other
         assert(
