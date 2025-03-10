@@ -196,7 +196,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
             FlowEVMBridgeCustomAssociations.getEVMAddressAssociated(with: type) == nil:
             "A custom association has already been declared for type \(type.identifier) with EVM address "
                 .concat(FlowEVMBridgeCustomAssociations.getEVMAddressAssociated(with: type)!.toString())
-                .concat(". Custom associations can only be declared once")
+                .concat(". Custom associations can only be declared once for any given Cadence Type or EVM contract")
         }
         // Get the Cadence side EVMPointer
         let evmPointer = FlowEVMBridgeUtils.getEVMPointer(forType: type)
@@ -209,9 +209,9 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         )
         assert(
             FlowEVMBridgeCustomAssociations.getTypeAssociated(with: evmPointer.evmContractAddress) == nil,
-            message: "A custom association has already been declared for type \(type.identifier) with EVM address "
-                .concat(FlowEVMBridgeCustomAssociations.getEVMAddressAssociated(with: type)!.toString())
-                .concat(". Custom associations can only be declared once")
+            message: "A custom association has already been declared for type \(evmPointer.evmContractAddress.toString()) with Type "
+                .concat(FlowEVMBridgeCustomAssociations.getTypeAssociated(with: evmPointer.evmContractAddress)?.identifier ?? "<UNKNOWN>")
+                .concat(". Custom associations can only be declared once for any given Cadence Type or EVM contract")
         )
 
         // Get pointer on EVM side
@@ -240,8 +240,8 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
                     .concat(" as vmBridgeAddress which must be declared as \(FlowEVMBridgeUtils.getBridgeCOAEVMAddress().toString())"))
         }
         // Assess if the NFT has been previously onboarded to the bridge
-        let legacyEVMAssoc = FlowEVMBridgeConfig.getEVMAddressAssociated(with: type) != nil
-        let legacyCadenceAssoc = FlowEVMBridgeConfig.getTypeAssociated(with: evmPointer.evmContractAddress) != nil
+        let legacyEVMAssoc = FlowEVMBridgeConfig.getEVMAddressAssociated(with: type)
+        let legacyCadenceAssoc = FlowEVMBridgeConfig.getTypeAssociated(with: evmPointer.evmContractAddress)
         let updatedFromBridged = legacyEVMAssoc != nil || legacyCadenceAssoc != nil
         if legacyEVMAssoc != nil && legacyCadenceAssoc != nil {
             // Registering an NFT where both custom contracts have a bridged representation
