@@ -4,6 +4,7 @@ import BlockchainHelpers
 import "MetadataViews"
 import "EVM"
 import "ExampleEVMNativeNFT"
+import "FlowEVMBridgeCustomAssociations"
 
 import "test_helpers.cdc"
 
@@ -380,7 +381,13 @@ fun setup() {
 }
 
 access(all)
-fun testRegisterCrossVMNFTSucceeds() {
+fun testRegisterEVMNativeNFTAsCrossVMSucceeds() {
+    snapshot = getCurrentBlockHeight()
+
+    var requiresOnboarding = evmAddressRequiresOnboarding(erc721AddressHex)
+        ?? panic("Problem getting onboarding requirement")
+    Test.assertEqual(true, requiresOnboarding)
+
     registerCrossVMNFT(
         signer: exampleEVMNativeNFTAccount,
         nftTypeIdentifier: exampleEVMNativeNFTIdentifier,
@@ -391,6 +398,37 @@ fun testRegisterCrossVMNFTSucceeds() {
     Test.assertEqual(erc721AddressHex, associatedEVMAddress)
     let associatedType = getTypeAssociated(with: erc721AddressHex)
     Test.assertEqual(exampleEVMNativeNFTIdentifier, associatedType)
+
+    requiresOnboarding = evmAddressRequiresOnboarding(erc721AddressHex)
+        ?? panic("Problem getting onboarding requirement")
+    Test.assertEqual(false, requiresOnboarding)
+
+    let evts = Test.eventsOfType(Type<FlowEVMBridgeCustomAssociations.CustomAssociationEstablished>())
+    Test.assertEqual(1, evts.length)
+    let associationEvt = evts[0] as! FlowEVMBridgeCustomAssociations.CustomAssociationEstablished
+    Test.assertEqual(Type<@ExampleEVMNativeNFT.NFT>(), associationEvt.type)
+    Test.assertEqual(erc721AddressHex, associationEvt.evmContractAddress)
+    Test.assertEqual(UInt8(1), associationEvt.nativeVMRawValue)
+    Test.assertEqual(false, associationEvt.updatedFromBridged)
+    Test.assertEqual(Type<@ExampleEVMNativeNFT.NFTMinter>().identifier, associationEvt.fulfillmentMinterType!)
+}
+
+access(all)
+fun testOnboardEVMNativeNFTFails() {
+    Test.reset(to: snapshot)
+
+    var requiresOnboarding = evmAddressRequiresOnboarding(erc721AddressHex)
+        ?? panic("Problem getting onboarding requirement")
+    Test.assertEqual(true, requiresOnboarding)
+
+    // EVM-native cross-VM NFTs require NFTFulfillmentMinter Capability when onboarding
+    // Onboarding via the permissionless path should fail as the Capability is not provided
+    let onboardingResult = executeTransaction(
+        "../transactions/bridge/onboarding/onboard_by_evm_address.cdc",
+        [erc721AddressHex],
+        alice
+    )
+    Test.expect(onboardingResult, Test.beFailed())
 }
 
 access(all)
