@@ -306,6 +306,17 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
             updatedFromBridged: updatedFromBridged,
             fulfillmentMinter: fulfillmentMinter
         )
+
+        if !FlowEVMBridgeNFTEscrow.isInitialized(forType: type) {
+            let name = FlowEVMBridgeUtils.getName(evmContractAddress: evmPointer.evmContractAddress)
+            let symbol = FlowEVMBridgeUtils.getSymbol(evmContractAddress: evmPointer.evmContractAddress)
+            FlowEVMBridgeNFTEscrow.initializeEscrow(
+                forType: type,
+                name: name,
+                symbol: symbol,
+                erc721Address: evmPointer.evmContractAddress
+            )
+        }
     }
 
     /*************************
