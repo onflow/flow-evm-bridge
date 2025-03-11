@@ -21,6 +21,7 @@ import "ICrossVM"
 import "ICrossVMAsset"
 import "SerializeMetadata"
 import "FlowEVMBridgeCustomAssociationTypes"
+import "FlowEVMBridgeUtils"
 
 access(all) contract ExampleCadenceNativeNFT: NonFungibleToken, ICrossVM, ICrossVMAsset {
 
@@ -121,6 +122,7 @@ access(all) contract ExampleCadenceNativeNFT: NonFungibleToken, ICrossVM, ICross
                 Type<MetadataViews.NFTCollectionDisplay>(),
                 Type<MetadataViews.Serial>(),
                 Type<MetadataViews.Traits>(),
+                Type<MetadataViews.EVMBridgedMetadata>(),
                 Type<CrossVMMetadataViews.EVMBytesMetadata>(),
                 Type<CrossVMMetadataViews.EVMPointer>()
             ]
@@ -158,6 +160,13 @@ access(all) contract ExampleCadenceNativeNFT: NonFungibleToken, ICrossVM, ICross
                     traitsView.addTrait(fooTrait)
                     
                     return traitsView
+                case Type<MetadataViews.EVMBridgedMetadata>():
+                    let dataURI = SerializeMetadata.serializeNFTMetadataAsURI(&self as &{NonFungibleToken.NFT})
+                    return MetadataViews.EVMBridgedMetadata(
+                        name: ExampleCadenceNativeNFT.name,
+                        symbol: ExampleCadenceNativeNFT.symbol,
+                        uri: MetadataViews.URI(baseURI: nil, value: dataURI)
+                    )
                 case Type<CrossVMMetadataViews.EVMBytesMetadata>():
                     // Resolving this view allows the VM bridge to pass abi-encoded metadata into the corresponding
                     // ERC721 implementation at the time of bridging. Below, this NFT's metadata is serialized then
@@ -272,6 +281,7 @@ access(all) contract ExampleCadenceNativeNFT: NonFungibleToken, ICrossVM, ICross
         return [
             Type<MetadataViews.NFTCollectionData>(),
             Type<MetadataViews.NFTCollectionDisplay>(),
+            Type<MetadataViews.EVMBridgedMetadata>(),
             Type<CrossVMMetadataViews.EVMPointer>()
         ]
     }
@@ -311,6 +321,16 @@ access(all) contract ExampleCadenceNativeNFT: NonFungibleToken, ICrossVM, ICross
                     socials: {
                         "twitter": MetadataViews.ExternalURL("https://twitter.com/flow_blockchain")
                     }
+                )
+            case Type<MetadataViews.EVMBridgedMetadata>():
+                let collectionDisplay = (self.resolveContractView(resourceType: nil, viewType: Type<MetadataViews.NFTCollectionDisplay>())
+                    as! MetadataViews.NFTCollectionDisplay?)!
+                let dataURI = SerializeMetadata.serializeFromDisplays(nftDisplay: nil, collectionDisplay: collectionDisplay)
+                    ?? panic("Could not serialize contract-level metadata for ExampleCadenceNativeNFT")
+                return MetadataViews.EVMBridgedMetadata(
+                    name: self.name,
+                    symbol: self.symbol,
+                    uri: MetadataViews.URI(baseURI: nil, value: dataURI)
                 )
             case Type<CrossVMMetadataViews.EVMPointer>():
                 return CrossVMMetadataViews.EVMPointer(
@@ -364,12 +384,15 @@ access(all) contract ExampleCadenceNativeNFT: NonFungibleToken, ICrossVM, ICross
     ///     CadenceOwnedAccount. Any account can deploy the corresponding ERC721 contract, but it's done here for
     ///     demonstration and ease of EVM contract assignment.
     ///
-    init(erc721Bytecode: String) {
+    init(erc721Bytecode: String, name: String, symbol: String) {
 
         // Set the named paths
         self.CollectionStoragePath = /storage/ExampleCadenceNativeNFTCollection
         self.CollectionPublicPath = /public/ExampleCadenceNativeNFTFulfillmentMinter
         self.MinterStoragePath = /storage/ExampleCadenceNativeNFTMinter
+
+        self.name = name
+        self.symbol = symbol
 
         // Create a Collection resource and save it to storage
         let collection <- create Collection()
@@ -394,9 +417,11 @@ access(all) contract ExampleCadenceNativeNFT: NonFungibleToken, ICrossVM, ICross
             )!
 
         // Append the constructor args to the provided contract bytecode
+        // NOTE: Be sure to confirm the order of your contract's constructor args and encode accordingly
         let cadenceAddressStr = self.account.address.toString()
         let cadenceIdentifier = Type<@ExampleCadenceNativeNFT.NFT>().identifier
-        let encodedConstructorArgs = EVM.encodeABI([cadenceAddressStr, cadenceIdentifier])
+        let vmBridgeAddress = FlowEVMBridgeUtils.getBridgeCOAEVMAddress()
+        let encodedConstructorArgs = EVM.encodeABI([name, symbol, cadenceAddressStr, cadenceIdentifier, vmBridgeAddress])
         let finalBytecode = erc721Bytecode.decodeHex().concat(encodedConstructorArgs)
 
         // Deploy the provided EVM contract, passing the defined value of FLOW on init
@@ -411,36 +436,6 @@ access(all) contract ExampleCadenceNativeNFT: NonFungibleToken, ICrossVM, ICross
         )
 
         self.evmContractAddress = deployResult.deployedContract!
-
-        // Assign name & symbol based on ERC721 contract
-        let nameRes = coa.call(
-            to: self.evmContractAddress,
-            data: EVM.encodeABIWithSignature("name()", []),
-            gasLimit: 100_000,
-            value: EVM.Balance(attoflow: 0)
-        )
-        let symbolRes = coa.call(
-            to: self.evmContractAddress,
-            data: EVM.encodeABIWithSignature("symbol()", []),
-            gasLimit: 100_000,
-            value: EVM.Balance(attoflow: 0)
-        )
-        assert(
-            nameRes.status == EVM.Status.successful,
-            message: "Error on ERC721.name() call with message: ".concat(nameRes.errorMessage)
-        )
-        assert(
-            symbolRes.status == EVM.Status.successful,
-            message: "Error on ERC721.symbol() call with message: ".concat(symbolRes.errorMessage)
-        )
-
-        let decodedNameData = EVM.decodeABI(types: [Type<String>()], data: nameRes.data)
-        let decodedSymbolData = EVM.decodeABI(types: [Type<String>()], data: symbolRes.data)
-        assert(decodedNameData.length == 1, message: "Unexpected name() return length of ".concat(decodedNameData.length.toString()))
-        assert(decodedSymbolData.length == 1, message: "Unexpected symbol() return length of ".concat(decodedSymbolData.length.toString()))
-
-        self.name = decodedNameData[0] as! String
-        self.symbol = decodedSymbolData[0] as! String
     }
 }
  
