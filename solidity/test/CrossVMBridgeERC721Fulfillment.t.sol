@@ -16,6 +16,8 @@ contract CrossVMBridgeERC721FulfillmentTest is Test {
 
     string name;
     string symbol;
+    string cadenceAddress;
+    string cadenceIdentifier;
     address vmBridge;
 
     address recipient;
@@ -27,6 +29,8 @@ contract CrossVMBridgeERC721FulfillmentTest is Test {
     function setUp() public {
         name = "name";
         symbol = "symbol";
+        cadenceAddress = "0xf8d6e0586b0a20c7"; // example Cadence contract address
+        cadenceIdentifier = "A.f8d6e0586b0a20c7.ExampleCadenceNativeNFT.NFT"; // example Cadence NFT Type identifier
 
         vmBridge = address(100);
         recipient = address(101);
@@ -34,7 +38,7 @@ contract CrossVMBridgeERC721FulfillmentTest is Test {
         fulfilledId = 42;
         bridgedBytes = abi.encode(expectedTokenURI);
 
-        erc721Impl = new CadenceNativeERC721(name, symbol, vmBridge);
+        erc721Impl = new CadenceNativeERC721(name, symbol, cadenceAddress, cadenceIdentifier, vmBridge);
     }
 
     function test_VMBridgeAddressMatches() public view {

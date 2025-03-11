@@ -29,6 +29,8 @@ contract CadenceNativeERC721 is ERC721URIStorage, CrossVMBridgeERC721Fulfillment
     constructor(
         string memory name_,
         string memory symbol_,
+        string memory cadenceAddress_,
+        string memory cadenceIdentifier_,
         address _vmBridgeAddress
     ) CrossVMBridgeERC721Fulfillment(_vmBridgeAddress) ERC721(name_, symbol_) {}
 
