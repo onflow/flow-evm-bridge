@@ -3,6 +3,7 @@ pragma solidity 0.8.24;
 import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import {ERC721URIStorage} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import {CrossVMBridgeERC721Fulfillment} from "../../interfaces/CrossVMBridgeERC721Fulfillment.sol";
+import {ICrossVM} from "../../interfaces/ICrossVM.sol";
 
 /**
  * @title CadenceNativeERC721
@@ -21,18 +22,33 @@ import {CrossVMBridgeERC721Fulfillment} from "../../interfaces/CrossVMBridgeERC7
  * For more information on cross-VM NFTs, see Flow's developer documentation as well as
  * FLIP-318: https://github.com/onflow/flips/issues/318
  */
-contract CadenceNativeERC721 is ERC721URIStorage, CrossVMBridgeERC721Fulfillment {
+contract CadenceNativeERC721 is ICrossVM, ERC721URIStorage, CrossVMBridgeERC721Fulfillment {
     
-    // included to test before & after fulfillment hooks
+    // included to test before fulfillment hook
     uint256 public beforeCounter;
+
+    // ICrossVM fields
+    string private _cadenceAddress;
+    string private _cadenceIdentifier;
     
     constructor(
         string memory name_,
         string memory symbol_,
         string memory cadenceAddress_,
         string memory cadenceIdentifier_,
-        address _vmBridgeAddress
-    ) CrossVMBridgeERC721Fulfillment(_vmBridgeAddress) ERC721(name_, symbol_) {}
+        address vmBridgeAddress_
+    ) CrossVMBridgeERC721Fulfillment(vmBridgeAddress_) ERC721(name_, symbol_) {
+        _cadenceAddress = cadenceAddress_;
+        _cadenceIdentifier = cadenceIdentifier_;
+    }
+
+    function getCadenceAddress() external view returns (string memory) {
+        return _cadenceAddress;
+    }
+
+    function getCadenceIdentifier() external view returns (string memory) {
+        return _cadenceIdentifier;
+    }
 
     function supportsInterface(bytes4 interfaceId) public view override(ERC721URIStorage, CrossVMBridgeERC721Fulfillment) returns (bool) {
         return super.supportsInterface(interfaceId);

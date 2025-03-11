@@ -6,6 +6,7 @@ import {console} from "forge-std/console.sol";
 import {IERC721Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import {ICrossVM} from "../src/interfaces/ICrossVM.sol";
 import {ICrossVMBridgeCallable} from "../src/interfaces/ICrossVMBridgeCallable.sol";
 import {ICrossVMBridgeERC721Fulfillment} from "../src/interfaces/ICrossVMBridgeERC721Fulfillment.sol";
 import {ICrossVMBridgeERC721Fulfillment} from "../src/interfaces/ICrossVMBridgeERC721Fulfillment.sol";
@@ -44,6 +45,13 @@ contract CrossVMBridgeERC721FulfillmentTest is Test {
     function test_VMBridgeAddressMatches() public view {
         address actualVMBridge = erc721Impl.vmBridgeAddress();
         assertEq(vmBridge, actualVMBridge);
+    }
+
+    function test_ICrossVMValuesMatch() public view {
+        string memory actualCadenceAddress = ICrossVM(erc721Impl).getCadenceAddress();
+        string memory actualCadenceIdentifier = ICrossVM(erc721Impl).getCadenceIdentifier();
+        assertEq(cadenceAddress, actualCadenceAddress);
+        assertEq(cadenceIdentifier, actualCadenceIdentifier);
     }
 
     function test_FulfillToEVMAsUnauthorizedFails() public {
