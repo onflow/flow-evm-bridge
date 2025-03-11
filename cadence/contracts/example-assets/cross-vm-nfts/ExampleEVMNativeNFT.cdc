@@ -27,8 +27,10 @@ access(all) contract ExampleEVMNativeNFT: NonFungibleToken, ICrossVM, ICrossVMAs
     access(self) let name: String
     access(self) let symbol: String
     
-    /// Path where the fulfillment minter should be stored
     /// The standard paths for the collection are stored in the collection resource type
+    access(all) let CollectionStoragePath: StoragePath
+    access(all) let CollectionPublicPath: PublicPath
+    /// Path where the fulfillment minter should be stored
     access(all) let FulfillmentMinterStoragePath: StoragePath
 
     /* ICrossVMAsset conformance */
@@ -151,7 +153,6 @@ access(all) contract ExampleEVMNativeNFT: NonFungibleToken, ICrossVM, ICrossVMAs
                 Type<MetadataViews.NFTCollectionData>(),
                 Type<MetadataViews.NFTCollectionDisplay>(),
                 Type<MetadataViews.Serial>(),
-                Type<MetadataViews.Traits>(),
                 Type<MetadataViews.EVMBridgedMetadata>(),
                 Type<CrossVMMetadataViews.EVMPointer>()
             ]
@@ -204,14 +205,8 @@ access(all) contract ExampleEVMNativeNFT: NonFungibleToken, ICrossVM, ICrossVMAs
         /// NFT is a resource type with an `UInt64` ID field
         access(all) var ownedNFTs: @{UInt64: {NonFungibleToken.NFT}}
 
-        access(all) var storagePath: StoragePath
-        access(all) var publicPath: PublicPath
-
         init () {
             self.ownedNFTs <- {}
-            let identifier = "cadenceExampleEVMNativeNFTCollection"
-            self.storagePath = StoragePath(identifier: identifier)!
-            self.publicPath = PublicPath(identifier: identifier)!
         }
 
         /// getSupportedNFTTypes returns a list of NFT types that this receiver accepts
@@ -311,8 +306,8 @@ access(all) contract ExampleEVMNativeNFT: NonFungibleToken, ICrossVM, ICrossVMAs
         switch viewType {
             case Type<MetadataViews.NFTCollectionData>():
                 let collectionData = MetadataViews.NFTCollectionData(
-                    storagePath: /storage/cadenceExampleEVMNativeNFTCollection,
-                    publicPath: /public/cadenceExampleEVMNativeNFTCollection,
+                    storagePath: self.CollectionStoragePath,
+                    publicPath: self.CollectionPublicPath,
                     publicCollection: Type<&ExampleEVMNativeNFT.Collection>(),
                     publicLinkedType: Type<&ExampleEVMNativeNFT.Collection>(),
                     createEmptyCollectionFunction: (fun(): @{NonFungibleToken.Collection} {
@@ -392,17 +387,17 @@ access(all) contract ExampleEVMNativeNFT: NonFungibleToken, ICrossVM, ICrossVMAs
     init(erc721Bytecode: String) {
 
         // Set the named paths
-        self.FulfillmentMinterStoragePath = /storage/cadenceExampleEVMNativeNFTFulfillmentMinter
+        self.CollectionStoragePath = /storage/ExampleEVMNativeNFTCollection
+        self.CollectionPublicPath = /public/ExampleEVMNativeNFTFulfillmentMinter
+        self.FulfillmentMinterStoragePath = /storage/ExampleEVMNativeNFTFulfillmentMinter
 
         // Create a Collection resource and save it to storage
         let collection <- create Collection()
-        let defaultStoragePath = collection.storagePath
-        let defaultPublicPath = collection.publicPath
-        self.account.storage.save(<-collection, to: defaultStoragePath)
+        self.account.storage.save(<-collection, to: self.CollectionStoragePath)
 
         // Create a public capability for the collection
-        let collectionCap = self.account.capabilities.storage.issue<&ExampleEVMNativeNFT.Collection>(defaultStoragePath)
-        self.account.capabilities.publish(collectionCap, at: defaultPublicPath)
+        let collectionCap = self.account.capabilities.storage.issue<&ExampleEVMNativeNFT.Collection>(self.CollectionStoragePath)
+        self.account.capabilities.publish(collectionCap, at: self.CollectionPublicPath)
 
         // Create a Minter resource and save it to storage
         let minter <- create NFTMinter()
