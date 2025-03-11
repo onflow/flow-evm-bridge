@@ -1,6 +1,7 @@
 pragma solidity 0.8.24;
 
 import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import {ERC721URIStorage} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import {CrossVMBridgeERC721Fulfillment} from "../../interfaces/CrossVMBridgeERC721Fulfillment.sol";
 
 /**
@@ -20,17 +21,24 @@ import {CrossVMBridgeERC721Fulfillment} from "../../interfaces/CrossVMBridgeERC7
  * For more information on cross-VM NFTs, see Flow's developer documentation as well as
  * FLIP-318: https://github.com/onflow/flips/issues/318
  */
-contract CadenceNativeERC721 is CrossVMBridgeERC721Fulfillment {
+contract CadenceNativeERC721 is ERC721URIStorage, CrossVMBridgeERC721Fulfillment {
     
     // included to test before & after fulfillment hooks
     uint256 public beforeCounter;
-    uint256 public afterCounter;
     
     constructor(
         string memory name_,
         string memory symbol_,
         address _vmBridgeAddress
     ) CrossVMBridgeERC721Fulfillment(_vmBridgeAddress) ERC721(name_, symbol_) {}
+
+    function supportsInterface(bytes4 interfaceId) public view override(ERC721URIStorage, CrossVMBridgeERC721Fulfillment) returns (bool) {
+        return super.supportsInterface(interfaceId);
+    }
+    
+    function tokenURI(uint256 id) public view override(ERC721, ERC721URIStorage) returns (string memory) {
+        return super.tokenURI(id);
+    }
 
     /**
      * @dev This hook executes before the fulfillment into EVM executes. It's overridden here as
@@ -60,6 +68,7 @@ contract CadenceNativeERC721 is CrossVMBridgeERC721Fulfillment {
      *      bridging into EVM
      */
     function _afterFulfillment(address _to, uint256 _id, bytes memory _data) internal override {
-        afterCounter += 1;
+        string memory decodedURI = abi.decode(_data, (string));
+        _setTokenURI(_id, decodedURI);
     }
 }
