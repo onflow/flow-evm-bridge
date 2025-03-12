@@ -2,6 +2,9 @@ import "NonFungibleToken"
 import "CrossVMMetadataViews"
 import "EVM"
 
+/// This contract defines types required for custom cross-VM associations as used in FlowEVMBridgeCustomAssociation
+/// and in EVM-native cross-VM NFTs.
+///
 access(all) contract FlowEVMBridgeCustomAssociationTypes {
 
     access(all) entitlement FulfillFromEVM
