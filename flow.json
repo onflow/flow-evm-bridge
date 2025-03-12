@@ -27,6 +27,12 @@
 				"testnet": "dfc20aee650fcbdf"
 			}
 		},
+		"ExampleCadenceNativeNFT": {
+			"source": "./cadence/contracts/example-assets/cross-vm-nfts/ExampleCadenceNativeNFT.cdc",
+			"aliases": {
+				"testing": "0000000000000008"
+			}
+		},
 		"ExampleHandledToken": {
 			"source": "./cadence/contracts/example-assets/ExampleHandledToken.cdc",
 			"aliases": {
