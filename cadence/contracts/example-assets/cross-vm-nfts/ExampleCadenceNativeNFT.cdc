@@ -183,7 +183,7 @@ access(all) contract ExampleCadenceNativeNFT: NonFungibleToken, ICrossVM, ICross
                         cadenceType: self.getType(),
                         cadenceContractAddress: self.getType().address!,
                         evmContractAddress: ExampleCadenceNativeNFT.getEVMContractAddress(),
-                        nativeVM: CrossVMMetadataViews.VM.EVM
+                        nativeVM: CrossVMMetadataViews.VM.Cadence
                     )
             }
             return nil
@@ -337,7 +337,7 @@ access(all) contract ExampleCadenceNativeNFT: NonFungibleToken, ICrossVM, ICross
                     cadenceType: Type<@ExampleCadenceNativeNFT.NFT>(),
                     cadenceContractAddress: self.account.address,
                     evmContractAddress: self.getEVMContractAddress(),
-                    nativeVM: CrossVMMetadataViews.VM.EVM
+                    nativeVM: CrossVMMetadataViews.VM.Cadence
                 )
         }
         return nil
