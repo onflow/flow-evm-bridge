@@ -42,6 +42,7 @@ fun setup() {
         path: "../../imports/631e88ae7f1d7c20/CrossVMMetadataViews.cdc",
         arguments: []
     )
+    Test.expect(err, Test.beNil())
     // Deploy supporting util contracts
     err = Test.deployContract(
         name: "ArrayUtils",
@@ -411,6 +412,22 @@ fun testRegisterEVMNativeNFTAsCrossVMSucceeds() {
     Test.assertEqual(UInt8(1), associationEvt.nativeVMRawValue)
     Test.assertEqual(false, associationEvt.updatedFromBridged)
     Test.assertEqual(Type<@ExampleEVMNativeNFT.NFTMinter>().identifier, associationEvt.fulfillmentMinterType!)
+}
+
+access(all)
+fun testRegisterEVMNativeNFTWithoutMinterFails() {
+    Test.reset(to: snapshot)
+
+    var requiresOnboarding = evmAddressRequiresOnboarding(erc721AddressHex)
+        ?? panic("Problem getting onboarding requirement")
+    Test.assertEqual(true, requiresOnboarding)
+
+    registerCrossVMNFT(
+        signer: exampleEVMNativeNFTAccount,
+        nftTypeIdentifier: exampleEVMNativeNFTIdentifier,
+        fulfillmentMinterPath: nil,
+        beFailed: true
+    )
 }
 
 access(all)

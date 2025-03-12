@@ -42,6 +42,7 @@ fun setup() {
         path: "../../imports/631e88ae7f1d7c20/CrossVMMetadataViews.cdc",
         arguments: []
     )
+    Test.expect(err, Test.beNil())
     // Deploy supporting util contracts
     err = Test.deployContract(
         name: "ArrayUtils",
@@ -428,6 +429,7 @@ fun testOnboardCadenceNativeNFTByIdentifierSucceeds() {
     var typeRequiresOnboarding = typeRequiresOnboardingByIdentifier(exampleCadenceNativeNFTIdentifier)
         ?? panic("Problem getting onboarding requirement by identifier")
     Test.assertEqual(true, addrRequiresOnboarding)
+    Test.assertEqual(true, typeRequiresOnboarding)
 
     // Cadence-native onboarding
     let onboardingResult = executeTransaction(
