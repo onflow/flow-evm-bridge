@@ -27,7 +27,7 @@ access(all) contract FlowEVMBridgeCustomAssociationTypes {
         access(FulfillFromEVM)
         fun fulfillFromEVM(id: UInt256): @{NonFungibleToken.NFT} {
             pre {
-                id < UInt256(UInt64.max):
+                id <= UInt256(UInt64.max):
                 "The requested ID \(id.toString()) exceeds the maximum assignable Cadence NFT ID \(UInt64.max.toString())"
             }
             post {
@@ -44,11 +44,11 @@ access(all) contract FlowEVMBridgeCustomAssociationTypes {
     /// types.
     ///
     access(all) resource interface CustomConfig {
-        access(all) view fun checkFulfillmentMinter(): Bool?
         access(all) view fun getCadenceType(): Type
         access(all) view fun getEVMContractAddress(): EVM.EVMAddress
         access(all) view fun getNativeVM(): CrossVMMetadataViews.VM
         access(all) view fun isUpdatedFromBridged(): Bool
+        access(all) view fun checkFulfillmentMinter(): Bool?
     }
 
     /// Resource containing all relevant information for the VM bridge to fulfill NFT bridge requests. This is a resource
@@ -91,11 +91,6 @@ access(all) contract FlowEVMBridgeCustomAssociationTypes {
             self.fulfillmentMinter = fulfillmentMinter
         }
 
-        /// Returns true/false on the fulfillment minter Capability. If no Capability is stored, nil is returned
-        access(all) view fun checkFulfillmentMinter(): Bool? {
-            return self.fulfillmentMinter?.check() ?? nil
-        }
-
         /// Returns the Cadence Type related to this custom cross-VM NFT configuration
         access(all) view fun getCadenceType(): Type {
             return self.type
@@ -114,6 +109,11 @@ access(all) contract FlowEVMBridgeCustomAssociationTypes {
         /// True if the NFT was originally onboarded to the bridge 
         access(all) view fun isUpdatedFromBridged(): Bool {
             return self.updatedFromBridged
+        }
+
+        /// Returns true/false on the fulfillment minter Capability. If no Capability is stored, nil is returned
+        access(all) view fun checkFulfillmentMinter(): Bool? {
+            return self.fulfillmentMinter?.check() ?? nil
         }
 
         /// Returns a reference to the NFTFulfillmentMinter, allowing the bridge contracts to fulfill EVM-native NFTs
