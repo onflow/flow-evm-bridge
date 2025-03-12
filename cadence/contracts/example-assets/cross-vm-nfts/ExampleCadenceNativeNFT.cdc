@@ -1,14 +1,12 @@
 /* 
-*
-*  This is an example implementation of a Flow Non-Fungible Token
-*  using the V2 standard.
-*  It is not part of the official standard but it assumed to be
-*  similar to how many NFTs would implement the core functionality.
-*
-*  This contract does not implement any sophisticated classification
-*  system for its NFTs. It defines a simple NFT with minimal metadata.
-*   
-*/
+ *
+ * This is an example implementation of a Cadence-native cross-VM NFT. Cadence-native here meaning 
+ * that the NFT is distributed in Cadence and cross-VM meaning that the project is deployed across
+ * Cadence & EVM (as an ERC721). Movement between VMs is facilitated by the canonical VM bridge.
+ * 
+ * For more information on cross-VM NFT implementations, see FLIP-318: (https://github.com/onflow/flips/issues/318)
+ *   
+ */
 
 import "NonFungibleToken"
 import "ViewResolver"
