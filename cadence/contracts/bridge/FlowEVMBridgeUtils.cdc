@@ -425,7 +425,9 @@ contract FlowEVMBridgeUtils {
         )
     }
 
-    /// Retrieves the EVMPointer view from a given type's defining contract if the view is supported
+    /// Retrieves the EVMPointer view from a given type's defining contract if the view is supported.
+    /// NOTE: This does not guarantee the association is valid, only that the defining Cadence contract declares
+    /// the association.
     ///
     /// @param from: The type for which to retrieve the EVMPointer view
     ///
@@ -1098,7 +1100,7 @@ contract FlowEVMBridgeUtils {
         Type Identifier Utils
      ***************************/
 
-    /// Returns the contract address from the given Type's identifier
+    /// Returns the contract address from the given Type
     ///
     /// @param fromType: The Type to extract the contract address from
     ///
@@ -1106,14 +1108,10 @@ contract FlowEVMBridgeUtils {
     ///
     access(all)
     view fun getContractAddress(fromType: Type): Address? {
-        // Split identifier of format A.<CONTRACT_ADDRESS>.<CONTRACT_NAME>.<OBJECT_NAME>
-        if let identifierSplit = self.splitObjectIdentifier(identifier: fromType.identifier) {
-            return Address.fromString("0x".concat(identifierSplit[1]))
-        }
-        return nil
+        return fromType.address
     }
 
-    /// Returns the contract name from the given Type's identifier
+    /// Returns the defining contract name from the given Type
     ///
     /// @param fromType: The Type to extract the contract name from
     ///
@@ -1121,14 +1119,11 @@ contract FlowEVMBridgeUtils {
     ///
     access(all)
     view fun getContractName(fromType: Type): String? {
-        // Split identifier of format A.<CONTRACT_ADDRESS>.<CONTRACT_NAME>.<OBJECT_NAME>
-        if let identifierSplit = self.splitObjectIdentifier(identifier: fromType.identifier) {
-            return identifierSplit[2]
-        }
-        return nil
+        return fromType.contractName
     }
 
-    /// Returns the object's name from the given Type's identifier
+    /// Returns the object's name from the given Type's identifier where the identifier is in the format
+    /// of: A.<CONTRACT_ADDRESS_SANS_0x>.<CONTRACT_NAME>.<OBJECT_NAME>
     ///
     /// @param fromType: The Type to extract the object name from
     ///
@@ -1136,7 +1131,6 @@ contract FlowEVMBridgeUtils {
     ///
     access(all)
     view fun getObjectName(fromType: Type): String? {
-        // Split identifier of format A.<CONTRACT_ADDRESS>.<CONTRACT_NAME>.<OBJECT_NAME>
         if let identifierSplit = self.splitObjectIdentifier(identifier: fromType.identifier) {
             return identifierSplit[3]
         }
