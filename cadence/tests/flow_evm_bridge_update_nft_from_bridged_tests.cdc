@@ -412,6 +412,11 @@ fun testOnboardExampleNFTSucceeds() {
 
 access(all)
 fun testUpdateToCustomAssociationSucceeds() {
+    // Previously onboarded with a bridged ERC721 representation in EVM
+    var typeRequiresOnboarding = typeRequiresOnboardingByIdentifier(exampleNFTIdentifier)
+        ?? panic("Problem getting onboarding requirement by identifier")
+    Test.assertEqual(false, typeRequiresOnboarding)
+
     // Create a COA in exampleNFT account
     createCOA(signer: exampleNFTAccount, fundingAmount: 0.0)
     // Deploy the cadence native ERC721
@@ -452,7 +457,7 @@ fun testUpdateToCustomAssociationSucceeds() {
     Test.expect(updateResult, Test.beSucceeded())
 
     // Validate onboarding status
-    var typeRequiresOnboarding = typeRequiresOnboardingByIdentifier(exampleNFTIdentifier)
+    typeRequiresOnboarding = typeRequiresOnboardingByIdentifier(exampleNFTIdentifier)
         ?? panic("Problem getting onboarding requirement by identifier")
     Test.assertEqual(false, typeRequiresOnboarding)
 
@@ -473,6 +478,8 @@ fun testUpdateToCustomAssociationSucceeds() {
     Test.assertEqual(UInt8(0), associationEvt.nativeVMRawValue)
     Test.assertEqual(true, associationEvt.updatedFromBridged)
     Test.assertEqual(nil, associationEvt.fulfillmentMinterType)
+
+    Test.assertEqual("0x\(getAssociatedEVMAddressHex(with: exampleNFTIdentifier))", customERC721AddressHex.toLower())
 }
 
 access(all)
