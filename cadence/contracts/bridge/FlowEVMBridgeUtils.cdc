@@ -813,10 +813,11 @@ contract FlowEVMBridgeUtils {
     ///
     access(all)
     fun supportsICrossVMBridgeERC721Fulfillment(evmContract: EVM.EVMAddress): Bool {
+        let interfaceID = EVM.EVMBytes4(value: "2e608d70".decodeHex().toConstantSized<[UInt8; 4]>()!)
         let supportsRes = self.call(
             signature: "supportsInterface(bytes4)",
             targetEVMAddress: evmContract,
-            args: [EVM.EVMBytes4(value: 0x2e608d7.toBigEndianBytes().toConstantSized<[UInt8; 4]>()!)],
+            args: [interfaceID],
             gasLimit: FlowEVMBridgeConfig.gasLimit,
             value: 0.0
         )
@@ -840,10 +841,11 @@ contract FlowEVMBridgeUtils {
     ///
     access(all)
     fun supportsICrossVMBridgeCallable(evmContract: EVM.EVMAddress): Bool {
+        let interfaceID = EVM.EVMBytes4(value: "b7f9a9ec".decodeHex().toConstantSized<[UInt8; 4]>()!)
         let supportsRes = self.call(
             signature: "supportsInterface(bytes4)",
             targetEVMAddress: evmContract,
-            args: [EVM.EVMBytes4(value: 0xb7f9a9ec.toBigEndianBytes().toConstantSized<[UInt8; 4]>()!)],
+            args: [interfaceID],
             gasLimit: FlowEVMBridgeConfig.gasLimit,
             value: 0.0
         )
@@ -867,7 +869,7 @@ contract FlowEVMBridgeUtils {
     access(all)
     fun supportsCadenceNativeNFTEVMInterfaces(evmContract: EVM.EVMAddress): Bool {
         return self.supportsICrossVMBridgeCallable(evmContract: evmContract)
-            && self.supportsICrossVMBridgeCallable(evmContract: evmContract)
+            && self.supportsICrossVMBridgeERC721Fulfillment(evmContract: evmContract)
     }
 
     /// Returns the VM Bridge address designated by the ICrossVMBridgeCallable conforming EVM contract. Reverts on call
