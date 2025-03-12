@@ -211,7 +211,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
             "The provided Type \(type.identifier) is also a FungibleToken Vault - only NFTs can register as cross-VM"
             !FlowEVMBridgeConfig.isCadenceTypeBlocked(type):
             "Type \(type.identifier) has been blocked from onboarding"
-            type.address != self.account.address:
+            FlowEVMBridgeUtils.isCadenceNative(type: type):
             "Attempting to register a bridge-deployed NFT - cannot update a bridge-defined asset"
             FlowEVMBridgeCustomAssociations.getEVMAddressAssociated(with: type) == nil:
             "A custom association has already been declared for type \(type.identifier) with EVM address "
@@ -228,6 +228,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         // Get the Cadence side EVMPointer
         let evmPointer = FlowEVMBridgeUtils.getEVMPointer(forType: type)
             ?? panic("The CrossVMMetadataViews.EVMPointer is not supported by the type \(type.identifier).")
+        // EVM contract checks
         assert(!FlowEVMBridgeConfig.isEVMAddressBlocked(evmPointer.evmContractAddress),
             message: "Type \(type.identifier) has been blocked from onboarding.")
         assert(
@@ -239,6 +240,12 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
             message: "A custom association has already been declared for type \(evmPointer.evmContractAddress.toString()) with Type "
                 .concat(FlowEVMBridgeCustomAssociations.getTypeAssociated(with: evmPointer.evmContractAddress)?.identifier ?? "<UNKNOWN>")
                 .concat(". Custom associations can only be declared once for any given Cadence Type or EVM contract")
+        )
+        assert(
+            FlowEVMBridgeUtils.isERC721(evmContractAddress: evmPointer.evmContractAddress)
+            && !FlowEVMBridgeUtils.isERC20(evmContractAddress: evmPointer.evmContractAddress),
+            message: "Cross-VM NFTs must be implemented as ERC721 exclusively, but detected an invalid EVM interface "
+                .concat("at EVM contract \(evmPointer.evmContractAddress.toString())")
         )
 
         // Get pointer on EVM side
