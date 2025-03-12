@@ -415,6 +415,46 @@ fun testRegisterEVMNativeNFTAsCrossVMSucceeds() {
 }
 
 access(all)
+fun testRegisterAgainFails() {
+    Test.reset(to: snapshot)
+
+    var requiresOnboarding = evmAddressRequiresOnboarding(erc721AddressHex)
+        ?? panic("Problem getting onboarding requirement")
+    Test.assertEqual(true, requiresOnboarding)
+
+    registerCrossVMNFT(
+        signer: exampleEVMNativeNFTAccount,
+        nftTypeIdentifier: exampleEVMNativeNFTIdentifier,
+        fulfillmentMinterPath: ExampleEVMNativeNFT.FulfillmentMinterStoragePath,
+        beFailed: false
+    )
+    let associatedEVMAddress = getAssociatedEVMAddressHex(with: exampleEVMNativeNFTIdentifier)
+    Test.assertEqual(erc721AddressHex, associatedEVMAddress)
+    let associatedType = getTypeAssociated(with: erc721AddressHex)
+    Test.assertEqual(exampleEVMNativeNFTIdentifier, associatedType)
+
+    requiresOnboarding = evmAddressRequiresOnboarding(erc721AddressHex)
+        ?? panic("Problem getting onboarding requirement")
+    Test.assertEqual(false, requiresOnboarding)
+
+    let evts = Test.eventsOfType(Type<FlowEVMBridgeCustomAssociations.CustomAssociationEstablished>())
+    Test.assertEqual(1, evts.length)
+    let associationEvt = evts[0] as! FlowEVMBridgeCustomAssociations.CustomAssociationEstablished
+    Test.assertEqual(Type<@ExampleEVMNativeNFT.NFT>(), associationEvt.type)
+    Test.assertEqual(erc721AddressHex, associationEvt.evmContractAddress)
+    Test.assertEqual(UInt8(1), associationEvt.nativeVMRawValue)
+    Test.assertEqual(false, associationEvt.updatedFromBridged)
+    Test.assertEqual(Type<@ExampleEVMNativeNFT.NFTMinter>().identifier, associationEvt.fulfillmentMinterType!)
+
+    registerCrossVMNFT(
+        signer: exampleEVMNativeNFTAccount,
+        nftTypeIdentifier: exampleEVMNativeNFTIdentifier,
+        fulfillmentMinterPath: ExampleEVMNativeNFT.FulfillmentMinterStoragePath,
+        beFailed: true
+    )
+}
+
+access(all)
 fun testRegisterEVMNativeNFTWithoutMinterFails() {
     Test.reset(to: snapshot)
 
