@@ -18,7 +18,7 @@ access(all) contract FlowEVMBridgeCustomAssociations {
 
     /// Event emitted whenever a custom association is established
     access(all) event CustomAssociationEstablished(
-        type: Type,
+        type: String,
         evmContractAddress: String,
         nativeVMRawValue: UInt8,
         updatedFromBridged: Bool,
@@ -101,7 +101,7 @@ access(all) contract FlowEVMBridgeCustomAssociations {
                 fulfillmentMinter: fulfillmentMinter
             )
         emit CustomAssociationEstablished(
-            type: type,
+            type: type.identifier,
             evmContractAddress: evmContractAddress.toString(),
             nativeVMRawValue: nativeVM.rawValue,
             updatedFromBridged: updatedFromBridged,

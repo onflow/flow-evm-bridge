@@ -382,7 +382,7 @@ fun setup() {
 }
 
 access(all)
-fun testRegisterEVMNativeNFTAsCrossVMSucceeds() {
+fun testRegisterCadenceNativeNFTAsCrossVMSucceeds() {
     snapshot = getCurrentBlockHeight()
 
     var addrRequiresOnboarding = evmAddressRequiresOnboarding(erc721AddressHex)
@@ -413,7 +413,7 @@ fun testRegisterEVMNativeNFTAsCrossVMSucceeds() {
     let evts = Test.eventsOfType(Type<FlowEVMBridgeCustomAssociations.CustomAssociationEstablished>())
     Test.assertEqual(1, evts.length)
     let associationEvt = evts[0] as! FlowEVMBridgeCustomAssociations.CustomAssociationEstablished
-    Test.assertEqual(Type<@ExampleCadenceNativeNFT.NFT>(), associationEvt.type)
+    Test.assertEqual(exampleCadenceNativeNFTIdentifier, associationEvt.type)
     Test.assertEqual(erc721AddressHex, associationEvt.evmContractAddress)
     Test.assertEqual(UInt8(0), associationEvt.nativeVMRawValue)
     Test.assertEqual(false, associationEvt.updatedFromBridged)
@@ -452,7 +452,7 @@ fun testRegisterAgainFails() {
     let evts = Test.eventsOfType(Type<FlowEVMBridgeCustomAssociations.CustomAssociationEstablished>())
     Test.assertEqual(1, evts.length)
     let associationEvt = evts[0] as! FlowEVMBridgeCustomAssociations.CustomAssociationEstablished
-    Test.assertEqual(Type<@ExampleCadenceNativeNFT.NFT>(), associationEvt.type)
+    Test.assertEqual(exampleCadenceNativeNFTIdentifier, associationEvt.type)
     Test.assertEqual(erc721AddressHex, associationEvt.evmContractAddress)
     Test.assertEqual(UInt8(0), associationEvt.nativeVMRawValue)
     Test.assertEqual(false, associationEvt.updatedFromBridged)
@@ -495,7 +495,7 @@ fun testOnboardCadenceNativeNFTByIdentifierSucceeds() {
     let evts = Test.eventsOfType(Type<FlowEVMBridgeCustomAssociations.CustomAssociationEstablished>())
     Test.assertEqual(1, evts.length)
     let associationEvt = evts[0] as! FlowEVMBridgeCustomAssociations.CustomAssociationEstablished
-    Test.assertEqual(Type<@ExampleCadenceNativeNFT.NFT>(), associationEvt.type)
+    Test.assertEqual(exampleCadenceNativeNFTIdentifier, associationEvt.type)
     Test.assertEqual(erc721AddressHex, associationEvt.evmContractAddress)
     Test.assertEqual(UInt8(0), associationEvt.nativeVMRawValue)
     Test.assertEqual(false, associationEvt.updatedFromBridged)
@@ -530,7 +530,7 @@ fun testOnboardCadenceNativeNFTByEVMAddressSucceeds() {
     let evts = Test.eventsOfType(Type<FlowEVMBridgeCustomAssociations.CustomAssociationEstablished>())
     Test.assertEqual(1, evts.length)
     let associationEvt = evts[0] as! FlowEVMBridgeCustomAssociations.CustomAssociationEstablished
-    Test.assertEqual(Type<@ExampleCadenceNativeNFT.NFT>(), associationEvt.type)
+    Test.assertEqual(exampleCadenceNativeNFTIdentifier, associationEvt.type)
     Test.assertEqual(erc721AddressHex, associationEvt.evmContractAddress)
     Test.assertEqual(UInt8(0), associationEvt.nativeVMRawValue)
     Test.assertEqual(false, associationEvt.updatedFromBridged)

@@ -438,7 +438,6 @@ fun testUpdateToCustomAssociationSucceeds() {
     var evts = Test.eventsOfType(Type<EVM.TransactionExecuted>())
     let deployedEvt = evts[evts.length - 1] as! EVM.TransactionExecuted
     customERC721AddressHex = deployedEvt.contractAddress
-    log(customERC721AddressHex)
 
     // Save that deployed address to exampleNFT account storage at /storage/erc721ContractAddress
     let saveAddressResult = executeTransaction(
@@ -473,7 +472,7 @@ fun testUpdateToCustomAssociationSucceeds() {
     evts = Test.eventsOfType(Type<FlowEVMBridgeCustomAssociations.CustomAssociationEstablished>())
     Test.assertEqual(1, evts.length)
     let associationEvt = evts[0] as! FlowEVMBridgeCustomAssociations.CustomAssociationEstablished
-    Test.assertEqual(Type<@ExampleNFT.NFT>(), associationEvt.type)
+    Test.assertEqual(exampleNFTIdentifier, associationEvt.type)
     Test.assertEqual(customERC721AddressHex.toLower(), "0x\(associationEvt.evmContractAddress)")
     Test.assertEqual(UInt8(0), associationEvt.nativeVMRawValue)
     Test.assertEqual(true, associationEvt.updatedFromBridged)

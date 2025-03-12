@@ -407,7 +407,7 @@ fun testRegisterEVMNativeNFTAsCrossVMSucceeds() {
     let evts = Test.eventsOfType(Type<FlowEVMBridgeCustomAssociations.CustomAssociationEstablished>())
     Test.assertEqual(1, evts.length)
     let associationEvt = evts[0] as! FlowEVMBridgeCustomAssociations.CustomAssociationEstablished
-    Test.assertEqual(Type<@ExampleEVMNativeNFT.NFT>(), associationEvt.type)
+    Test.assertEqual(exampleEVMNativeNFTIdentifier, associationEvt.type)
     Test.assertEqual(erc721AddressHex, associationEvt.evmContractAddress)
     Test.assertEqual(UInt8(1), associationEvt.nativeVMRawValue)
     Test.assertEqual(false, associationEvt.updatedFromBridged)
@@ -440,7 +440,7 @@ fun testRegisterAgainFails() {
     let evts = Test.eventsOfType(Type<FlowEVMBridgeCustomAssociations.CustomAssociationEstablished>())
     Test.assertEqual(1, evts.length)
     let associationEvt = evts[0] as! FlowEVMBridgeCustomAssociations.CustomAssociationEstablished
-    Test.assertEqual(Type<@ExampleEVMNativeNFT.NFT>(), associationEvt.type)
+    Test.assertEqual(exampleEVMNativeNFTIdentifier, associationEvt.type)
     Test.assertEqual(erc721AddressHex, associationEvt.evmContractAddress)
     Test.assertEqual(UInt8(1), associationEvt.nativeVMRawValue)
     Test.assertEqual(false, associationEvt.updatedFromBridged)
