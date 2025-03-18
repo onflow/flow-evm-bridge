@@ -51,33 +51,6 @@ access(all) contract ExampleCadenceNativeNFT: NonFungibleToken, ICrossVM, ICross
         return self.evmContractAddress
     }
 
-    /* --- Internal Helpers --- */
-
-    access(self) fun call(
-        signature: String,
-        targetEVMAddress: EVM.EVMAddress,
-        args: [AnyStruct],
-        gasLimit: UInt64,
-        value: UFix64
-    ): EVM.Result {
-        let calldata = EVM.encodeABIWithSignature(signature, args)
-        let valueBalance = EVM.Balance(attoflow: 0)
-        valueBalance.setFLOW(flow: value)
-        return self.borrowCOA().call(
-            to: targetEVMAddress,
-            data: calldata,
-            gasLimit: gasLimit,
-            value: valueBalance
-        )
-    }
-
-    access(self) view fun borrowCOA(): auth(EVM.Owner) &EVM.CadenceOwnedAccount {
-        return self.account.storage.borrow<auth(EVM.Owner) &EVM.CadenceOwnedAccount>(
-            from: /storage/evm
-        ) ?? panic("Could not borrow CadenceOwnedAccount (COA) from /storage/evm. "
-            .concat("Ensure this account has a COA configured to successfully call into EVM."))
-    }
-
     /// We choose the name NFT here, but this type can have any name now
     /// because the interface does not require it to have a specific name any more
     access(all) resource NFT: NonFungibleToken.NFT, ViewResolver.Resolver {
