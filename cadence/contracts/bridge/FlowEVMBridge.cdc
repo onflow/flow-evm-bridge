@@ -233,11 +233,11 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
             message: "Type \(type.identifier) has been blocked from onboarding.")
         assert(
             FlowEVMBridgeUtils.evmAddressAllowsBridging(evmPointer.evmContractAddress),
-            message: "The contract \(evmPointer.evmContractAddress.toString()) developers have opted out of VM bridge integration."
+            message: "The EVM contract \(evmPointer.evmContractAddress.toString()) developers have opted out of VM bridge integration."
         )
         assert(
             FlowEVMBridgeCustomAssociations.getTypeAssociated(with: evmPointer.evmContractAddress) == nil,
-            message: "A custom association has already been declared for type \(evmPointer.evmContractAddress.toString()) with Type "
+            message: "A custom association has already been declared for EVM address \(evmPointer.evmContractAddress.toString()) with Cadence Type "
                 .concat(FlowEVMBridgeCustomAssociations.getTypeAssociated(with: evmPointer.evmContractAddress)?.identifier ?? "<UNKNOWN>")
                 .concat(". Custom associations can only be declared once for any given Cadence Type or EVM contract")
         )
