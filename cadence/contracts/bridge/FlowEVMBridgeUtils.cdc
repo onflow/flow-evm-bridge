@@ -434,7 +434,7 @@ contract FlowEVMBridgeUtils {
     /// @return The resolved EVMPointer view for the given type or nil if the view is unsupported
     ///
     access(all)
-    fun getEVMPointer(forType: Type): CrossVMMetadataViews.EVMPointer? {
+    fun getEVMPointerView(forType: Type): CrossVMMetadataViews.EVMPointer? {
         let contractAddress = forType.address!
         let contractName = forType.contractName!
         if let viewResolver = getAccount(contractAddress).contracts.borrow<&{ViewResolver}>(name: contractName) {

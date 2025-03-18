@@ -80,7 +80,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         /* Custom cross-VM Implementation check */
         //
         // Register as a custom cross-VM implementation if detected
-        if FlowEVMBridgeUtils.getEVMPointer(forType: type) != nil {
+        if FlowEVMBridgeUtils.getEVMPointerView(forType: type) != nil {
             self.registerCrossVMNFT(type: type, fulfillmentMinter: nil, feeProvider: feeProvider)
             return
         }
@@ -226,7 +226,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         /* Get pointers from both contracts */
         //
         // Get the Cadence side EVMPointer
-        let evmPointer = FlowEVMBridgeUtils.getEVMPointer(forType: type)
+        let evmPointer = FlowEVMBridgeUtils.getEVMPointerView(forType: type)
             ?? panic("The CrossVMMetadataViews.EVMPointer is not supported by the type \(type.identifier).")
         // EVM contract checks
         assert(!FlowEVMBridgeConfig.isEVMAddressBlocked(evmPointer.evmContractAddress),
