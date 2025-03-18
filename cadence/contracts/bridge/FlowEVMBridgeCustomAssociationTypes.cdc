@@ -1,3 +1,4 @@
+import "FungibleToken"
 import "NonFungibleToken"
 import "CrossVMMetadataViews"
 import "EVM"
@@ -45,6 +46,7 @@ access(all) contract FlowEVMBridgeCustomAssociationTypes {
     ///
     access(all) resource interface CustomConfig {
         access(all) view fun getCadenceType(): Type
+        access(all) view fun getCadenceStandardInterfaceTypes(): {Type: Bool}
         access(all) view fun getEVMContractAddress(): EVM.EVMAddress
         access(all) view fun getNativeVM(): CrossVMMetadataViews.VM
         access(all) view fun isUpdatedFromBridged(): Bool
@@ -77,6 +79,8 @@ access(all) contract FlowEVMBridgeCustomAssociationTypes {
             fulfillmentMinter: Capability<auth(FulfillFromEVM) &{NFTFulfillmentMinter}>?
         ) {
             pre {
+                type.isSubtype(of: Type<@{NonFungibleToken.NFT}>()):
+                "The provided Type \(type.identifier) is not an NFT implementation - only NFTs are supported by NFTCustomConfig"
                 nativeVM == CrossVMMetadataViews.VM.EVM ? fulfillmentMinter != nil : true:
                 "EVM-native NFTs must provide an NFTFulfillmentMinter Capability."
                 fulfillmentMinter?.check() ?? true:
@@ -94,6 +98,11 @@ access(all) contract FlowEVMBridgeCustomAssociationTypes {
         /// Returns the Cadence Type related to this custom cross-VM NFT configuration
         access(all) view fun getCadenceType(): Type {
             return self.type
+        }
+
+        /// Returns the Cadence standard Types supported by this CustomConfig implementation
+        access(all) view fun getCadenceStandardInterfaceTypes(): {Type: Bool} {
+            return {Type<@{NonFungibleToken.NFT}>(): true}
         }
 
         /// Returns the EVM contract address related to this custom cross-VM NFT configuration
