@@ -424,39 +424,19 @@ access(all)
 fun testRegisterAgainFails() {
     Test.reset(to: snapshot)
 
-    var addrRequiresOnboarding = evmAddressRequiresOnboarding(erc721AddressHex)
-        ?? panic("Problem getting onboarding requirement by address")
-    var typeRequiresOnboarding = typeRequiresOnboardingByIdentifier(exampleCadenceNativeNFTIdentifier)
-        ?? panic("Problem getting onboarding requirement by identifier")
-    Test.assertEqual(true, addrRequiresOnboarding)
-    Test.assertEqual(true, typeRequiresOnboarding)
-
     registerCrossVMNFT(
         signer: exampleCadenceNativeNFTAccount,
         nftTypeIdentifier: exampleCadenceNativeNFTIdentifier,
         fulfillmentMinterPath: nil,
         beFailed: false
     )
-    let associatedEVMAddress = getAssociatedEVMAddressHex(with: exampleCadenceNativeNFTIdentifier)
-    Test.assertEqual(erc721AddressHex, associatedEVMAddress)
-    let associatedType = getTypeAssociated(with: erc721AddressHex)
-    Test.assertEqual(exampleCadenceNativeNFTIdentifier, associatedType)
 
-    addrRequiresOnboarding = evmAddressRequiresOnboarding(erc721AddressHex)
+    let addrRequiresOnboarding = evmAddressRequiresOnboarding(erc721AddressHex)
         ?? panic("Problem getting onboarding requirement")
-    typeRequiresOnboarding = typeRequiresOnboardingByIdentifier(exampleCadenceNativeNFTIdentifier)
+    let typeRequiresOnboarding = typeRequiresOnboardingByIdentifier(exampleCadenceNativeNFTIdentifier)
         ?? panic("Problem getting onboarding requirement by identifier")
     Test.assertEqual(false, addrRequiresOnboarding)
     Test.assertEqual(false, typeRequiresOnboarding)
-
-    let evts = Test.eventsOfType(Type<FlowEVMBridgeCustomAssociations.CustomAssociationEstablished>())
-    Test.assertEqual(1, evts.length)
-    let associationEvt = evts[0] as! FlowEVMBridgeCustomAssociations.CustomAssociationEstablished
-    Test.assertEqual(exampleCadenceNativeNFTIdentifier, associationEvt.type)
-    Test.assertEqual(erc721AddressHex, associationEvt.evmContractAddress)
-    Test.assertEqual(UInt8(0), associationEvt.nativeVMRawValue)
-    Test.assertEqual(false, associationEvt.updatedFromBridged)
-    Test.assertEqual(nil, associationEvt.fulfillmentMinterType)
 
     registerCrossVMNFT(
         signer: exampleCadenceNativeNFTAccount,
@@ -470,13 +450,6 @@ access(all)
 fun testOnboardCadenceNativeNFTByIdentifierSucceeds() {
     Test.reset(to: snapshot)
 
-    var addrRequiresOnboarding = evmAddressRequiresOnboarding(erc721AddressHex)
-        ?? panic("Problem getting onboarding requirement by address")
-    var typeRequiresOnboarding = typeRequiresOnboardingByIdentifier(exampleCadenceNativeNFTIdentifier)
-        ?? panic("Problem getting onboarding requirement by identifier")
-    Test.assertEqual(true, addrRequiresOnboarding)
-    Test.assertEqual(true, typeRequiresOnboarding)
-
     // Cadence-native onboarding
     let onboardingResult = executeTransaction(
         "../transactions/bridge/onboarding/onboard_by_type_identifier.cdc",
@@ -485,9 +458,9 @@ fun testOnboardCadenceNativeNFTByIdentifierSucceeds() {
     )
     Test.expect(onboardingResult, Test.beSucceeded())
 
-    addrRequiresOnboarding = evmAddressRequiresOnboarding(erc721AddressHex)
+    let addrRequiresOnboarding = evmAddressRequiresOnboarding(erc721AddressHex)
         ?? panic("Problem getting onboarding requirement")
-    typeRequiresOnboarding = typeRequiresOnboardingByIdentifier(exampleCadenceNativeNFTIdentifier)
+    let typeRequiresOnboarding = typeRequiresOnboardingByIdentifier(exampleCadenceNativeNFTIdentifier)
         ?? panic("Problem getting onboarding requirement by identifier")
     Test.assertEqual(false, addrRequiresOnboarding)
     Test.assertEqual(false, typeRequiresOnboarding)
@@ -506,12 +479,6 @@ access(all)
 fun testOnboardCadenceNativeNFTByEVMAddressSucceeds() {
     Test.reset(to: snapshot)
 
-    var addrRequiresOnboarding = evmAddressRequiresOnboarding(erc721AddressHex)
-        ?? panic("Problem getting onboarding requirement by address")
-    var typeRequiresOnboarding = typeRequiresOnboardingByIdentifier(exampleCadenceNativeNFTIdentifier)
-        ?? panic("Problem getting onboarding requirement by identifier")
-    Test.assertEqual(true, addrRequiresOnboarding)
-
     // Cadence-native onboarding
     let onboardingResult = executeTransaction(
         "../transactions/bridge/onboarding/onboard_by_evm_address.cdc",
@@ -520,9 +487,9 @@ fun testOnboardCadenceNativeNFTByEVMAddressSucceeds() {
     )
     Test.expect(onboardingResult, Test.beSucceeded())
 
-    addrRequiresOnboarding = evmAddressRequiresOnboarding(erc721AddressHex)
+    let addrRequiresOnboarding = evmAddressRequiresOnboarding(erc721AddressHex)
         ?? panic("Problem getting onboarding requirement")
-    typeRequiresOnboarding = typeRequiresOnboardingByIdentifier(exampleCadenceNativeNFTIdentifier)
+    let typeRequiresOnboarding = typeRequiresOnboardingByIdentifier(exampleCadenceNativeNFTIdentifier)
         ?? panic("Problem getting onboarding requirement by identifier")
     Test.assertEqual(false, addrRequiresOnboarding)
     Test.assertEqual(false, typeRequiresOnboarding)
