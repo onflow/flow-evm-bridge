@@ -212,7 +212,8 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
             !FlowEVMBridgeConfig.isCadenceTypeBlocked(type):
             "Type \(type.identifier) has been blocked from onboarding"
             FlowEVMBridgeUtils.isCadenceNative(type: type):
-            "Attempting to register a bridge-deployed NFT - cannot update a bridge-defined asset"
+            "Attempting to register a bridge-deployed NFT - cannot update a bridge-defined asset. If updating your EVM "
+                .concat("contract's Cadence association, deploy your Cadence NFT contract and register using the newly defined Cadence type")
             FlowEVMBridgeCustomAssociations.getEVMAddressAssociated(with: type) == nil:
             "A custom association has already been declared for type \(type.identifier) with EVM address "
                 .concat(FlowEVMBridgeCustomAssociations.getEVMAddressAssociated(with: type)!.toString())
