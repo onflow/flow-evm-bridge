@@ -4,6 +4,7 @@ import BlockchainHelpers
 import "MetadataViews"
 import "EVM"
 import "ExampleEVMNativeNFT"
+import "MaliciousNFTFulfillmentMinter"
 import "FlowEVMBridgeCustomAssociations"
 
 import "test_helpers.cdc"
@@ -332,6 +333,14 @@ fun setup() {
     Test.expect(err, Test.beNil())
     erc721AddressHex = ExampleEVMNativeNFT.getEVMContractAddress().toString()
 
+    // Deploying to test malicious registration with unrelated NFTFulfillmentMinter
+    err = Test.deployContract(
+        name: "MaliciousNFTFulfillmentMinter",
+        path: "./contracts/MaliciousNFTFulfillmentMinter.cdc",
+        arguments: []
+    )
+    Test.expect(err, Test.beNil())
+
     // Configure metadata views for bridged NFTS & FTs
     let setBridgedNFTDisplayViewResult = executeTransaction(
         "../transactions/bridge/admin/metadata/set_bridged_nft_display_view.cdc",
@@ -466,6 +475,22 @@ fun testRegisterEVMNativeNFTWithoutMinterFails() {
         signer: exampleEVMNativeNFTAccount,
         nftTypeIdentifier: exampleEVMNativeNFTIdentifier,
         fulfillmentMinterPath: nil,
+        beFailed: true
+    )
+}
+
+access(all)
+fun testRegisterEVMNativeNFTWithUnrelatedMinterFails() {
+    Test.reset(to: snapshot)
+
+    var requiresOnboarding = evmAddressRequiresOnboarding(erc721AddressHex)
+        ?? panic("Problem getting onboarding requirement")
+    Test.assertEqual(true, requiresOnboarding)
+
+    registerCrossVMNFT(
+        signer: Test.getAccount(0x0000000000000009),
+        nftTypeIdentifier: exampleEVMNativeNFTIdentifier,
+        fulfillmentMinterPath: MaliciousNFTFulfillmentMinter.StoragePath,
         beFailed: true
     )
 }

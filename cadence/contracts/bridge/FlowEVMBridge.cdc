@@ -217,6 +217,12 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
             "A custom association has already been declared for type \(type.identifier) with EVM address "
                 .concat(FlowEVMBridgeCustomAssociations.getEVMAddressAssociated(with: type)!.toString())
                 .concat(". Custom associations can only be declared once for any given Cadence Type or EVM contract")
+            fulfillmentMinter?.check() ?? true:
+            "NFTFulfillmentMinter Capability is invalid - "
+                .concat("Issue a new Capability<auth(FlowEVMBridgeCustomAssociationTypes.FulfillFromEVM) &{FlowEVMBridgeCustomAssociationTypes.NFTFulfillmentMinter}> and try again")
+            fulfillmentMinter != nil ? fulfillmentMinter!.borrow()!.getType().address! == type.address! : true:
+            "NFTFulfillmentMinter must be defined by a contract deployed to the registered type address \(type.address!) "
+                .concat(" but found defining address of \(fulfillmentMinter!.borrow()!.getType().address!)")
         }
         /* Provision fees */
         //

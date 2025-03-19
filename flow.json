@@ -228,6 +228,12 @@
 				"testnet": "dfc20aee650fcbdf"
 			}
 		},
+		"MaliciousNFTFulfillmentMinter": {
+			"source": "./cadence/tests/contracts/MaliciousNFTFulfillmentMinter.cdc",
+			"aliases": {
+				"testing": "0000000000000009"
+			}
+		},
 		"ScopedFTProviders": {
 			"source": "./cadence/contracts/utils/ScopedFTProviders.cdc",
 			"aliases": {
