@@ -1,16 +1,40 @@
 import Test
 import BlockchainHelpers
 
+import "CrossVMMetadataViews"
 import "EVM"
+import "FlowEVMBridgeUtils"
+import "FlowEVMBridgeConfig"
+import "ExampleCadenceNativeNFT"
+import "ExampleEVMNativeNFT"
 
 import "test_helpers.cdc"
 
 access(all) let serviceAccount = Test.serviceAccount()
 access(all) let bridgeAccount = Test.getAccount(0x0000000000000007)
 
+access(all) var cadenceNativeERC721AddressHex: String = ""
+access(all) var evmNativeERC721AddressHex: String = ""
+
 access(all)
 fun setup() {
     setupBridge(bridgeAccount: bridgeAccount, serviceAccount: serviceAccount, unpause: true)
+
+    var err = Test.deployContract(
+        name: "ExampleCadenceNativeNFT",
+        path: "../contracts/example-assets/cross-vm-nfts/ExampleCadenceNativeNFT.cdc",
+        arguments: [getCadenceNativeERC721Bytecode(), "Example Cadence-Native NFT", "XMPL"]
+    )
+    Test.expect(err, Test.beNil())
+    cadenceNativeERC721AddressHex = ExampleCadenceNativeNFT.getEVMContractAddress().toString()
+
+    err = Test.deployContract(
+        name: "ExampleEVMNativeNFT",
+        path: "../contracts/example-assets/cross-vm-nfts/ExampleEVMNativeNFT.cdc",
+        arguments: [getEVMNativeERC721Bytecode()]
+    )
+    Test.expect(err, Test.beNil())
+    evmNativeERC721AddressHex = ExampleEVMNativeNFT.getEVMContractAddress().toString()
 }
 
 access(all)
@@ -185,3 +209,158 @@ fun testIntegerPartMaxUFix64AsUInt256ToUFix64Fails() {
     )
     Test.expect(convertedResult, Test.beFailed())
 }
+
+access(all)
+fun testGetEVMPointerViewSucceeds() {
+    let type = Type<@ExampleCadenceNativeNFT.NFT>()
+    let res = executeScript(
+        "../scripts/nft/get_evm_pointer_from_identifier.cdc",
+        [type.identifier]
+    )
+    Test.expect(res, Test.beSucceeded())
+    let view = res.returnValue as! CrossVMMetadataViews.EVMPointer?
+        ?? panic("Could not get EVMPointerView for \(type.identifier) via FlowEVMBridgeUtils")
+
+    Test.assertEqual(type, view.cadenceType)
+    Test.assertEqual(type.address!, view.cadenceContractAddress)
+    Test.assertEqual(cadenceNativeERC721AddressHex, view.evmContractAddress.toString().toLower())
+}
+
+access(all)
+fun testGetDeclaredCadenceAddressFromCrossVM() {
+    // Negative case
+    var res = executeScript(
+        "../scripts/utils/get_declared_cadence_address.cdc",
+        [FlowEVMBridgeUtils.getBridgeFactoryEVMAddress().toString()] // not an ICrossVM.sol conforming contract - should return nil
+    )
+    Test.expect(res, Test.beSucceeded())
+    
+    var declaredAddr = res.returnValue as! Address?
+    Test.assertEqual(nil, declaredAddr)
+
+    // Positive case
+    res = executeScript(
+        "../scripts/utils/get_declared_cadence_address.cdc",
+        [ExampleCadenceNativeNFT.getEVMContractAddress().toString()]
+    )
+    Test.expect(res, Test.beSucceeded())
+
+    declaredAddr = res.returnValue as! Address? ?? panic("Could not get declared Cadence address from cross-VM EVM contract")
+    Test.assertEqual(Type<@ExampleCadenceNativeNFT.NFT>().address, declaredAddr)
+}
+
+access(all)
+fun testGetDeclaredCadenceTypeFromCrossVM() {
+    // Negative case
+    var res = executeScript(
+        "../scripts/utils/get_declared_cadence_type.cdc",
+        [FlowEVMBridgeUtils.getBridgeFactoryEVMAddress().toString()] // not an ICrossVM.sol conforming contract - should return nil
+    )
+    Test.expect(res, Test.beSucceeded())
+    
+    var declaredType = res.returnValue as! Type?
+    Test.assertEqual(nil, declaredType)
+
+    // Positive case
+    res = executeScript(
+        "../scripts/utils/get_declared_cadence_type.cdc",
+        [ExampleCadenceNativeNFT.getEVMContractAddress().toString()]
+    )
+    Test.expect(res, Test.beSucceeded())
+
+    declaredType = res.returnValue as! Type? ?? panic("Could not get declared Cadence address from cross-VM EVM contract")
+    Test.assertEqual(Type<@ExampleCadenceNativeNFT.NFT>(), declaredType!)
+}
+
+access(all)
+fun testSupportsICrossVMBridgeERC721Fulfillment() {
+    // Negative case
+    var res = executeScript(
+        "../scripts/utils/supports_icross_vm_bridge_erc721_fulfillment.cdc",
+        [ExampleEVMNativeNFT.getEVMContractAddress().toString()] // not a conforming contract - should return false
+    )
+    Test.expect(res, Test.beSucceeded())
+    
+    var supports = res.returnValue as! Bool
+    Test.assertEqual(false, supports)
+
+    // Positive case
+    res = executeScript(
+        "../scripts/utils/supports_icross_vm_bridge_erc721_fulfillment.cdc",
+        [ExampleCadenceNativeNFT.getEVMContractAddress().toString()]
+    )
+    Test.expect(res, Test.beSucceeded())
+
+    supports = res.returnValue as! Bool
+    Test.assertEqual(true, supports)
+}
+
+access(all)
+fun testSupportsICrossVMBridgeCallable() {
+    // Negative case
+    var res = executeScript(
+        "../scripts/utils/supports_icross_vm_bridge_callable.cdc",
+        [ExampleEVMNativeNFT.getEVMContractAddress().toString()] // not a conforming contract - should return false
+    )
+    Test.expect(res, Test.beSucceeded())
+    
+    var supports = res.returnValue as! Bool
+    Test.assertEqual(false, supports)
+
+    // Positive case
+    res = executeScript(
+        "../scripts/utils/supports_icross_vm_bridge_callable.cdc",
+        [ExampleCadenceNativeNFT.getEVMContractAddress().toString()]
+    )
+    Test.expect(res, Test.beSucceeded())
+
+    supports = res.returnValue as! Bool
+    Test.assertEqual(true, supports)
+}
+
+access(all)
+fun testSupportsCadenceNativeNFTEVMInterfaces() {
+    // Negative case
+    var res = executeScript(
+        "../scripts/utils/supports_cadence_native_nft_evm_interfaces.cdc",
+        [ExampleEVMNativeNFT.getEVMContractAddress().toString()] // not a conforming contract - should return false
+    )
+    Test.expect(res, Test.beSucceeded())
+    
+    var supports = res.returnValue as! Bool
+    Test.assertEqual(false, supports)
+
+    // Positive case
+    res = executeScript(
+        "../scripts/utils/supports_cadence_native_nft_evm_interfaces.cdc",
+        [ExampleCadenceNativeNFT.getEVMContractAddress().toString()]
+    )
+    Test.expect(res, Test.beSucceeded())
+
+    supports = res.returnValue as! Bool
+    Test.assertEqual(true, supports)
+}
+
+access(all)
+fun testGetVMBridgeAddressFromICrossVMBridgeCallable() {
+    // Negative case
+    var res = executeScript(
+        "../scripts/utils/get_vm_bridge_address_from_icross_vm.cdc",
+        [ExampleEVMNativeNFT.getEVMContractAddress().toString()] // not a conforming contract - should return false
+    )
+    Test.expect(res, Test.beSucceeded())
+    
+    var address = res.returnValue as! EVM.EVMAddress?
+    Test.assertEqual(nil, address)
+
+    // Positive case
+    res = executeScript(
+        "../scripts/utils/get_vm_bridge_address_from_icross_vm.cdc",
+        [ExampleCadenceNativeNFT.getEVMContractAddress().toString()]
+    )
+    Test.expect(res, Test.beSucceeded())
+
+    address = res.returnValue as! EVM.EVMAddress? ?? panic("Could not get declared VM bridge address from ICrossVMBridgeCallable")
+    Test.assertEqual(getBridgeCOAAddressHex(), address!.toString().toLower())
+}
+

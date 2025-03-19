@@ -882,7 +882,7 @@ contract FlowEVMBridgeUtils {
     /// @return The EVM address designated as the VM bridge address in the provided contract
     ///
     access(all)
-    fun getVMBridgeAddressFromICrossVMBridgeCallable(evmContract: EVM.EVMAddress): EVM.EVMAddress {
+    fun getVMBridgeAddressFromICrossVMBridgeCallable(evmContract: EVM.EVMAddress): EVM.EVMAddress? {
         let cadenceIdentifierRes = self.call(
             signature: "vmBridgeAddress()",
             targetEVMAddress: evmContract,
@@ -890,10 +890,11 @@ contract FlowEVMBridgeUtils {
             gasLimit: FlowEVMBridgeConfig.gasLimit,
             value: 0.0
         )
-        assert(cadenceIdentifierRes.status == EVM.Status.successful)
+        if cadenceIdentifierRes.status != EVM.Status.successful {
+            return nil
+        }
         let decodedCadenceIdentifier = EVM.decodeABI(types: [Type<EVM.EVMAddress>()], data: cadenceIdentifierRes.data)
-        assert(decodedCadenceIdentifier.length == 1)
-        return decodedCadenceIdentifier[0] as! EVM.EVMAddress
+        return decodedCadenceIdentifier.length == 1 ? decodedCadenceIdentifier[0] as! EVM.EVMAddress : nil
     }
 
     /************************

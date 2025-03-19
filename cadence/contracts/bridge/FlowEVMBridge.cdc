@@ -282,6 +282,8 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
                     .concat("and/or ICrossVMBridgeCallable. All Cadence-native cross-VM NFTs must implement these interfaces and ")
                     .concat("grant the bridge COA the ability to fulfill bridge requests moving NFTs into EVM."))
             let designatedVMBridgeAddress = FlowEVMBridgeUtils.getVMBridgeAddressFromICrossVMBridgeCallable(evmContract: evmPointer.evmContractAddress)
+                ?? panic("Could not recover declared VM bridge address from EVM contract \(evmPointer.evmContractAddress.toString()). "
+                    .concat("Ensure the contract conforms to ICrossVMBridgeCallable and declare the vmBridgeAddress as \(FlowEVMBridgeUtils.getBridgeCOAEVMAddress().toString())"))
             assert(designatedVMBridgeAddress.equals(FlowEVMBridgeUtils.getBridgeCOAEVMAddress()),
                 message: "ICrossVMBridgeCallable declared \(designatedVMBridgeAddress.toString())"
                     .concat(" as vmBridgeAddress which must be declared as \(FlowEVMBridgeUtils.getBridgeCOAEVMAddress().toString())"))
