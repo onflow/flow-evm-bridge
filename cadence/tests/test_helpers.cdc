@@ -592,7 +592,7 @@ fun setupBridge(bridgeAccount: Test.TestAccount, serviceAccount: Test.TestAccoun
     // TEMPORARY: Only included until emulator auto-deploys CrossVMMetadataViews
     var err = Test.deployContract(
         name: "CrossVMMetadataViews",
-        path: "../../imports/631e88ae7f1d7c20/CrossVMMetadataViews.cdc",
+        path: "../../imports/1d7e57aa55817448/CrossVMMetadataViews.cdc",
         arguments: []
     )
     // Deploy supporting util contracts
