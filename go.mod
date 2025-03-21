@@ -5,8 +5,7 @@ go 1.23
 toolchain go1.23.1
 
 require (
-	github.com/onflow/flow-core-contracts/lib/go/templates v1.5.1-0.20250211212523-f6bd4c3d8d32
-	github.com/onflow/flow-evm-bridge/bridge v0.0.0-00010101000000-000000000000
+	github.com/onflow/flow-core-contracts/lib/go/templates v1.6.1
 	github.com/stretchr/testify v1.9.0
 )
 
@@ -69,5 +68,3 @@ require (
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-replace github.com/onflow/flow-evm-bridge/bridge => ./

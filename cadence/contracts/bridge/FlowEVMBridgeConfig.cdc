@@ -1,6 +1,7 @@
 import "EVM"
 
 import "FlowEVMBridgeHandlerInterfaces"
+import "FlowEVMBridgeCustomAssociations"
 
 /// This contract is used to store configuration information shared by FlowEVMBridge contracts
 ///
@@ -116,10 +117,11 @@ contract FlowEVMBridgeConfig {
     ///
     access(all)
     view fun getEVMAddressAssociated(with type: Type): EVM.EVMAddress? {
-        if !self.typeHasTokenHandler(type) {
-            return self.registeredTypes[type]?.evmAddress
+        if self.typeHasTokenHandler(type) {
+            return self.borrowTokenHandler(type)!.getTargetEVMAddress()
         }
-        return self.borrowTokenHandler(type)!.getTargetEVMAddress()
+        let customAssociation = FlowEVMBridgeCustomAssociations.getEVMAddressAssociated(with: type)
+        return customAssociation ?? self.registeredTypes[type]?.evmAddress
     }
 
     /// Retrieves the type associated with a given EVMAddress if it has been onboarded to the bridge
@@ -127,7 +129,8 @@ contract FlowEVMBridgeConfig {
     access(all)
     view fun getTypeAssociated(with evmAddress: EVM.EVMAddress): Type? {
         let evmAddressHex = evmAddress.toString()
-        return self.evmAddressHexToType[evmAddressHex]
+        let customAssociation = FlowEVMBridgeCustomAssociations.getTypeAssociated(with: evmAddress)
+        return customAssociation ?? self.evmAddressHexToType[evmAddressHex]
     }
 
     /// Returns whether the given EVMAddress is currently blocked from onboarding to the bridge

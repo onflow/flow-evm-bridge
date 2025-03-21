@@ -1,11 +1,13 @@
 pragma solidity 0.8.24;
 
 import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import {CrossVMBridgeERC721Fulfillment} from "../interfaces/CrossVMBridgeERC721Fulfillment.sol";
+import {ERC721URIStorage} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
+import {CrossVMBridgeERC721Fulfillment} from "../../interfaces/CrossVMBridgeERC721Fulfillment.sol";
+import {ICrossVM} from "../../interfaces/ICrossVM.sol";
 
 /**
-  * @title CadenceNativeERC721
-  * @dev This contract is a minimal ERC721 implementation demonstrating the use of the
+ * @title CadenceNativeERC721
+ * @dev This contract is a minimal ERC721 implementation demonstrating the use of the
  * CrossVMBridgeERC721Fulfillment base contract. Such ERC721 contracts are intended for use in
  * cross-VM NFT implementations where projects deploy both a Cadence & Solidity definition with
  * movement of individual NFTs facilitated by Flow's canonical VM bridge.
@@ -20,17 +22,41 @@ import {CrossVMBridgeERC721Fulfillment} from "../interfaces/CrossVMBridgeERC721F
  * For more information on cross-VM NFTs, see Flow's developer documentation as well as
  * FLIP-318: https://github.com/onflow/flips/issues/318
  */
-contract CadenceNativeERC721 is CrossVMBridgeERC721Fulfillment {
+contract CadenceNativeERC721 is ICrossVM, ERC721URIStorage, CrossVMBridgeERC721Fulfillment {
     
-    // included to test before & after fulfillment hooks
+    // included to test before fulfillment hook
     uint256 public beforeCounter;
-    uint256 public afterCounter;
+
+    // ICrossVM fields
+    string private _cadenceAddress;
+    string private _cadenceIdentifier;
     
     constructor(
         string memory name_,
         string memory symbol_,
-        address _vmBridgeAddress
-    ) CrossVMBridgeERC721Fulfillment(_vmBridgeAddress) ERC721(name_, symbol_) {}
+        string memory cadenceAddress_,
+        string memory cadenceIdentifier_,
+        address vmBridgeAddress_
+    ) CrossVMBridgeERC721Fulfillment(vmBridgeAddress_) ERC721(name_, symbol_) {
+        _cadenceAddress = cadenceAddress_;
+        _cadenceIdentifier = cadenceIdentifier_;
+    }
+
+    function getCadenceAddress() external view returns (string memory) {
+        return _cadenceAddress;
+    }
+
+    function getCadenceIdentifier() external view returns (string memory) {
+        return _cadenceIdentifier;
+    }
+
+    function supportsInterface(bytes4 interfaceId) public view override(ERC721URIStorage, CrossVMBridgeERC721Fulfillment) returns (bool) {
+        return super.supportsInterface(interfaceId);
+    }
+    
+    function tokenURI(uint256 id) public view override(ERC721, ERC721URIStorage) returns (string memory) {
+        return super.tokenURI(id);
+    }
 
     /**
      * @dev This hook executes before the fulfillment into EVM executes. It's overridden here as
@@ -60,6 +86,7 @@ contract CadenceNativeERC721 is CrossVMBridgeERC721Fulfillment {
      *      bridging into EVM
      */
     function _afterFulfillment(address _to, uint256 _id, bytes memory _data) internal override {
-        afterCounter += 1;
+        string memory decodedURI = abi.decode(_data, (string));
+        _setTokenURI(_id, decodedURI);
     }
 }

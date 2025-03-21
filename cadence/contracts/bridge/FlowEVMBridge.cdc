@@ -3,6 +3,7 @@ import "FungibleToken"
 import "FungibleTokenMetadataViews"
 import "NonFungibleToken"
 import "MetadataViews"
+import "CrossVMMetadataViews"
 import "ViewResolver"
 
 import "EVM"
@@ -15,6 +16,8 @@ import "IFlowEVMNFTBridge"
 import "IFlowEVMTokenBridge"
 import "CrossVMNFT"
 import "CrossVMToken"
+import "FlowEVMBridgeCustomAssociationTypes"
+import "FlowEVMBridgeCustomAssociations"
 import "FlowEVMBridgeConfig"
 import "FlowEVMBridgeHandlerInterfaces"
 import "FlowEVMBridgeUtils"
@@ -56,7 +59,6 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         Public Onboarding
     **************************/
 
-
     /// Onboards a given asset by type to the bridge. Since we're onboarding by Cadence Type, the asset must be defined
     /// in a third-party contract. Attempting to onboard a bridge-defined asset will result in an error as the asset has
     /// already been onboarded to the bridge.
@@ -69,12 +71,20 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         pre {
             !FlowEVMBridgeConfig.isPaused(): "Bridge operations are currently paused"
             !FlowEVMBridgeConfig.isCadenceTypeBlocked(type):
-                "This Cadence Type ".concat(type.identifier).concat(" is currently blocked from being onboarded")
+            "This Cadence Type ".concat(type.identifier).concat(" is currently blocked from being onboarded")
             self.typeRequiresOnboarding(type) == true: "Onboarding is not needed for this type"
             FlowEVMBridgeUtils.typeAllowsBridging(type):
-                "This type is not supported as defined by the project's development team"
+            "This Cadence Type ".concat(type.identifier).concat(" is currently opted-out of bridge onboarding")
             FlowEVMBridgeUtils.isCadenceNative(type: type): "Only Cadence-native assets can be onboarded by Type"
         }
+        /* Custom cross-VM Implementation check */
+        //
+        // Register as a custom cross-VM implementation if detected
+        if FlowEVMBridgeUtils.getEVMPointerView(forType: type) != nil {
+            self.registerCrossVMNFT(type: type, fulfillmentMinter: nil, feeProvider: feeProvider)
+            return
+        }
+
         /* Provision fees */
         //
         // Withdraw from feeProvider and deposit to self
@@ -145,6 +155,16 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
             !FlowEVMBridgeConfig.isEVMAddressBlocked(address):
                 "This EVM contract ".concat(address.toString()).concat(" is currently blocked from being onboarded")
         }
+        /* Custom cross-VM Implementation check */
+        //
+        let cadenceAddr = FlowEVMBridgeUtils.getDeclaredCadenceAddressFromCrossVM(evmContract: address)
+        let cadenceType = FlowEVMBridgeUtils.getDeclaredCadenceTypeFromCrossVM(evmContract: address)
+        // Register as a custom cross-VM implementation if detected
+        if cadenceAddr != nil && cadenceType != nil {
+            self.registerCrossVMNFT(type: cadenceType!, fulfillmentMinter: nil, feeProvider: feeProvider)
+            return
+        }
+
         /* Validate the EVM contract */
         //
         // Ensure the project has not opted out of bridge support
@@ -166,6 +186,153 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         //
         // Deploy a defining Cadence contract to the bridge account
         self.deployDefiningContract(evmContractAddress: address)
+    }
+
+    /// Registers a custom cross-VM NFT implementation, allowing projects to integrate their Cadence & EVM contracts
+    /// such that the VM bridge facilitates movement between VMs as the integrated implementations.
+    ///
+    /// @param type: The NFT Type to register as cross-VM NFT
+    /// @param fulfillmentMinter: The optional NFTFulfillmentMinter Capability. This parameter is required for
+    ///     EVM-native NFTs
+    /// @param feeProvider: A reference to a FungibleToken Provider from which the bridging fee is withdrawn in $FLOW
+    ///
+    access(all)
+    fun registerCrossVMNFT(
+        type: Type,
+        fulfillmentMinter: Capability<auth(FlowEVMBridgeCustomAssociationTypes.FulfillFromEVM) &{FlowEVMBridgeCustomAssociationTypes.NFTFulfillmentMinter}>?,
+        feeProvider: auth(FungibleToken.Withdraw) &{FungibleToken.Provider}
+    ) {
+        pre {
+            FlowEVMBridgeUtils.typeAllowsBridging(type):
+            "This Cadence Type \(type.identifier) is currently opted-out of bridge onboarding"
+            type.isSubtype(of: Type<@{NonFungibleToken.NFT}>()):
+            "The provided Type \(type.identifier) is not an NFT - only NFTs can register as cross-VM"
+            !type.isSubtype(of: Type<@{FungibleToken.Vault}>()):
+            "The provided Type \(type.identifier) is also a FungibleToken Vault - only NFTs can register as cross-VM"
+            !FlowEVMBridgeConfig.isCadenceTypeBlocked(type):
+            "Type \(type.identifier) has been blocked from onboarding"
+            FlowEVMBridgeUtils.isCadenceNative(type: type):
+            "Attempting to register a bridge-deployed NFT - cannot update a bridge-defined asset. If updating your EVM "
+                .concat("contract's Cadence association, deploy your Cadence NFT contract and register using the newly defined Cadence type")
+            FlowEVMBridgeCustomAssociations.getEVMAddressAssociated(with: type) == nil:
+            "A custom association has already been declared for type \(type.identifier) with EVM address "
+                .concat(FlowEVMBridgeCustomAssociations.getEVMAddressAssociated(with: type)!.toString())
+                .concat(". Custom associations can only be declared once for any given Cadence Type or EVM contract")
+            fulfillmentMinter?.check() ?? true:
+            "NFTFulfillmentMinter Capability is invalid - Issue a new "
+                .concat("Capability<auth(FlowEVMBridgeCustomAssociationTypes.FulfillFromEVM) &{FlowEVMBridgeCustomAssociationTypes.NFTFulfillmentMinter}> and try again")
+            fulfillmentMinter != nil ? fulfillmentMinter!.borrow()!.getType().address! == type.address! : true:
+            "NFTFulfillmentMinter must be defined by a contract deployed to the registered type address \(type.address!) "
+                .concat(" but found defining address of \(fulfillmentMinter!.borrow()!.getType().address!)")
+        }
+        /* Provision fees */
+        //
+        // Withdraw fee from feeProvider and deposit
+        FlowEVMBridgeUtils.depositFee(feeProvider, feeAmount: FlowEVMBridgeConfig.onboardFee)
+
+        /* Get pointers from both contracts */
+        //
+        // Get the Cadence side EVMPointer
+        let evmPointer = FlowEVMBridgeUtils.getEVMPointerView(forType: type)
+            ?? panic("The CrossVMMetadataViews.EVMPointer is not supported by the type \(type.identifier).")
+        // EVM contract checks
+        assert(!FlowEVMBridgeConfig.isEVMAddressBlocked(evmPointer.evmContractAddress),
+            message: "Type \(type.identifier) has been blocked from onboarding.")
+        assert(
+            FlowEVMBridgeUtils.evmAddressAllowsBridging(evmPointer.evmContractAddress),
+            message: "The EVM contract \(evmPointer.evmContractAddress.toString()) developers have opted out of VM bridge integration."
+        )
+        assert(
+            FlowEVMBridgeCustomAssociations.getTypeAssociated(with: evmPointer.evmContractAddress) == nil,
+            message: "A custom association has already been declared for EVM address \(evmPointer.evmContractAddress.toString()) with Cadence Type "
+                .concat(FlowEVMBridgeCustomAssociations.getTypeAssociated(with: evmPointer.evmContractAddress)?.identifier ?? "<UNKNOWN>")
+                .concat(". Custom associations can only be declared once for any given Cadence Type or EVM contract")
+        )
+        assert(
+            FlowEVMBridgeUtils.isERC721(evmContractAddress: evmPointer.evmContractAddress)
+            && !FlowEVMBridgeUtils.isERC20(evmContractAddress: evmPointer.evmContractAddress),
+            message: "Cross-VM NFTs must be implemented as ERC721 exclusively, but detected an invalid EVM interface "
+                .concat("at EVM contract \(evmPointer.evmContractAddress.toString())")
+        )
+
+        // Get pointer on EVM side
+        let cadenceAddr = FlowEVMBridgeUtils.getDeclaredCadenceAddressFromCrossVM(evmContract: evmPointer.evmContractAddress)
+            ?? panic("Could not retrieve a Cadence address declaration from the EVM contract \(evmPointer.evmContractAddress.toString())")
+        let cadenceType = FlowEVMBridgeUtils.getDeclaredCadenceTypeFromCrossVM(evmContract: evmPointer.evmContractAddress)
+            ?? panic("Could not retrieve a Cadence Type declaration from the EVM contract \(evmPointer.evmContractAddress.toString())")
+
+        /* Pointer validation */
+        //
+        // Assert both point to each other
+        assert(
+            type.address == cadenceAddr,
+            message: "Mismatched Cadence Address pointers: \(type.address!.toString()) and \(cadenceAddr.toString())"
+        )
+        assert(
+            type == cadenceType,
+            message: "Mistmatched type pointers: \(type.identifier) and \(cadenceType.identifier)"
+        )
+
+        /* Cross-VM conformance check */
+        //
+        // Check supportsInterface() for CrossVMBridgeERC721Fulfillment if NFT is Cadence-native
+        if evmPointer.nativeVM == CrossVMMetadataViews.VM.Cadence {
+            assert(FlowEVMBridgeUtils.supportsCadenceNativeNFTEVMInterfaces(evmContract: evmPointer.evmContractAddress),
+                message: "Corresponding EVM contract does not implement necessary EVM interfaces ICrossVMBridgeERC721Fulfillment "
+                    .concat("and/or ICrossVMBridgeCallable. All Cadence-native cross-VM NFTs must implement these interfaces and ")
+                    .concat("grant the bridge COA the ability to fulfill bridge requests moving NFTs into EVM."))
+            let designatedVMBridgeAddress = FlowEVMBridgeUtils.getVMBridgeAddressFromICrossVMBridgeCallable(evmContract: evmPointer.evmContractAddress)
+                ?? panic("Could not recover declared VM bridge address from EVM contract \(evmPointer.evmContractAddress.toString()). "
+                    .concat("Ensure the contract conforms to ICrossVMBridgeCallable and declare the vmBridgeAddress as \(FlowEVMBridgeUtils.getBridgeCOAEVMAddress().toString())"))
+            assert(designatedVMBridgeAddress.equals(FlowEVMBridgeUtils.getBridgeCOAEVMAddress()),
+                message: "ICrossVMBridgeCallable declared \(designatedVMBridgeAddress.toString())"
+                    .concat(" as vmBridgeAddress which must be declared as \(FlowEVMBridgeUtils.getBridgeCOAEVMAddress().toString())"))
+        }
+        
+        /* Native VM consistency check */
+        //
+        // Assess if the NFT has been previously onboarded to the bridge
+        let legacyEVMAssoc = FlowEVMBridgeConfig.getEVMAddressAssociated(with: type)
+        let legacyCadenceAssoc = FlowEVMBridgeConfig.getTypeAssociated(with: evmPointer.evmContractAddress)
+        let updatedFromBridged = legacyEVMAssoc != nil || legacyCadenceAssoc != nil
+        if legacyEVMAssoc != nil && legacyCadenceAssoc != nil {
+            // Registering an NFT where both custom contracts have a bridged representation
+            // TODO: Handle this edge case for registration & migration bridging transactions
+            panic("Registering NFT contracts that both have bridged NFTs which is not currently supported.")
+        } else if updatedFromBridged {
+            // Ensure the native VM is consistent if the NFT has been previously onboarded via the permissionless path
+            if legacyEVMAssoc != nil {
+                assert(evmPointer.nativeVM == CrossVMMetadataViews.VM.Cadence,
+                    message: "Attempting to register NFT \(type.identifier) as EVM-native after it has already been "
+                        .concat("onboarded as Cadence-native. This NFT must be configured as Cadence-native with an ERC721 ")
+                        .concat("implementing CrossVMBridgeERC721Fulfillment base contract allowing the bridge to fulfill ")
+                        .concat("NFTs moving into EVM"))
+            } else {
+                assert(evmPointer.nativeVM == CrossVMMetadataViews.VM.EVM,
+                    message: "Attempting to register NFT \(type.identifier) as Cadence-native after it has already been "
+                        .concat("onboarded as EVM-native. This NFT must be configured as EVM-native and provide an NFTFulfillmentMinter ")
+                        .concat("Capability so the bridge may fulfill NFTs moving into Cadence."))
+            }
+        }
+
+        FlowEVMBridgeCustomAssociations.saveCustomAssociation(
+            type: type,
+            evmContractAddress: evmPointer.evmContractAddress,
+            nativeVM: evmPointer.nativeVM,
+            updatedFromBridged: updatedFromBridged,
+            fulfillmentMinter: fulfillmentMinter
+        )
+
+        if !FlowEVMBridgeNFTEscrow.isInitialized(forType: type) {
+            let name = FlowEVMBridgeUtils.getName(evmContractAddress: evmPointer.evmContractAddress)
+            let symbol = FlowEVMBridgeUtils.getSymbol(evmContractAddress: evmPointer.evmContractAddress)
+            FlowEVMBridgeNFTEscrow.initializeEscrow(
+                forType: type,
+                name: name,
+                symbol: symbol,
+                erc721Address: evmPointer.evmContractAddress
+            )
+        }
     }
 
     /*************************

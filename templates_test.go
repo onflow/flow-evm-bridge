@@ -1,4 +1,4 @@
-package contracts_test
+package bridge_test
 
 import (
 	"testing"
@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	coreContracts "github.com/onflow/flow-core-contracts/lib/go/templates"
-	"github.com/onflow/flow-evm-bridge/bridge"
+	bridge "github.com/onflow/flow-evm-bridge"
 )
 
 const (
@@ -22,6 +22,7 @@ func SetAllAddresses(bridgeEnv *bridge.Environment, coreEnv *coreContracts.Envir
 	coreEnv.BurnerAddress = fakeAddr
 	coreEnv.NonFungibleTokenAddress = fakeAddr
 	coreEnv.MetadataViewsAddress = fakeAddr
+	coreEnv.CrossVMMetadataViewsAddress = fakeAddr
 	coreEnv.CryptoAddress = fakeAddr
 	coreEnv.FlowFeesAddress = fakeAddr
 	coreEnv.FlowTokenAddress = fakeAddr
@@ -47,6 +48,8 @@ func SetAllAddresses(bridgeEnv *bridge.Environment, coreEnv *coreContracts.Envir
 	bridgeEnv.FlowEVMBridgeTemplatesAddress = fakeAddr
 	bridgeEnv.FlowEVMBridgeTokenEscrowAddress = fakeAddr
 	bridgeEnv.FlowEVMBridgeUtilsAddress = fakeAddr
+	bridgeEnv.FlowEVMBridgeCustomAssociationTypesAddress = fakeAddr
+	bridgeEnv.FlowEVMBridgeCustomAssociationsAddress = fakeAddr
 	bridgeEnv.ArrayUtilsAddress = fakeAddr
 	bridgeEnv.ScopedFTProvidersAddress = fakeAddr
 	bridgeEnv.SerializeAddress = fakeAddr
@@ -88,6 +91,11 @@ func TestCadenceContracts(t *testing.T) {
 
 	SetAllAddresses(&bridgeEnv, &coreEnv)
 
+	contract, err = bridge.GetCadenceContractCode(pathPrefix+"utils/StringUtils.cdc", bridgeEnv, coreEnv)
+	assert.NotNil(t, contract)
+	assert.Contains(t, string(contract), "import ")
+	assert.Contains(t, string(contract), " from ")
+
 	GetCadenceContractShouldSucceed(t, pathPrefix+"bridge/interfaces/CrossVMToken.cdc", bridgeEnv, coreEnv)
 	GetCadenceContractShouldSucceed(t, pathPrefix+"bridge/interfaces/FlowEVMBridgeHandlerInterfaces.cdc", bridgeEnv, coreEnv)
 	GetCadenceContractShouldSucceed(t, pathPrefix+"bridge/interfaces/IBridgePermissions.cdc", bridgeEnv, coreEnv)
@@ -98,7 +106,6 @@ func TestCadenceContracts(t *testing.T) {
 	GetCadenceContractShouldSucceed(t, pathPrefix+"bridge/interfaces/IFlowEVMNFTBridge.cdc", bridgeEnv, coreEnv)
 	GetCadenceContractShouldSucceed(t, pathPrefix+"bridge/interfaces/IFlowEVMTokenBridge.cdc", bridgeEnv, coreEnv)
 	GetCadenceContractShouldSucceed(t, pathPrefix+"bridge/FlowEVMBridge.cdc", bridgeEnv, coreEnv)
-	GetCadenceContractShouldSucceed(t, pathPrefix+"bridge/FlowEVMBridgeAccessor.cdc", bridgeEnv, coreEnv)
 	GetCadenceContractShouldSucceed(t, pathPrefix+"bridge/FlowEVMBridgeConfig.cdc", bridgeEnv, coreEnv)
 	GetCadenceContractShouldSucceed(t, pathPrefix+"bridge/FlowEVMBridgeHandlers.cdc", bridgeEnv, coreEnv)
 	GetCadenceContractShouldSucceed(t, pathPrefix+"bridge/FlowEVMBridgeNFTEscrow.cdc", bridgeEnv, coreEnv)
@@ -106,11 +113,17 @@ func TestCadenceContracts(t *testing.T) {
 	GetCadenceContractShouldSucceed(t, pathPrefix+"bridge/FlowEVMBridgeTemplates.cdc", bridgeEnv, coreEnv)
 	GetCadenceContractShouldSucceed(t, pathPrefix+"bridge/FlowEVMBridgeTokenEscrow.cdc", bridgeEnv, coreEnv)
 	GetCadenceContractShouldSucceed(t, pathPrefix+"bridge/FlowEVMBridgeUtils.cdc", bridgeEnv, coreEnv)
+	GetCadenceContractShouldSucceed(t, pathPrefix+"bridge/FlowEVMBridgeCustomAssociationTypes.cdc", bridgeEnv, coreEnv)
+	GetCadenceContractShouldSucceed(t, pathPrefix+"bridge/FlowEVMBridgeCustomAssociations.cdc", bridgeEnv, coreEnv)
 	GetCadenceContractShouldSucceed(t, pathPrefix+"utils/ArrayUtils.cdc", bridgeEnv, coreEnv)
 	GetCadenceContractShouldSucceed(t, pathPrefix+"utils/ScopedFTProviders.cdc", bridgeEnv, coreEnv)
 	GetCadenceContractShouldSucceed(t, pathPrefix+"utils/Serialize.cdc", bridgeEnv, coreEnv)
 	GetCadenceContractShouldSucceed(t, pathPrefix+"utils/SerializeMetadata.cdc", bridgeEnv, coreEnv)
 	GetCadenceContractShouldSucceed(t, pathPrefix+"utils/StringUtils.cdc", bridgeEnv, coreEnv)
+
+	GetCadenceContractShouldSucceed(t, pathPrefix+"bridge/FlowEVMBridgeAccessor.cdc", bridgeEnv, coreEnv)
+	contract, err = bridge.GetCadenceContractCode(pathPrefix+"bridge/FlowEVMBridgeAccessor.cdc", bridgeEnv, coreEnv)
+	assert.Contains(t, string(contract), "name: \"FlowEVMBridgeAccessor\"")
 }
 
 // Tests that a specific solidity contract name should succeed when retrieving it

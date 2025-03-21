@@ -1,6 +1,7 @@
 import "NonFungibleToken"
 import "FungibleToken"
 import "MetadataViews"
+import "CrossVMMetadataViews"
 import "FungibleTokenMetadataViews"
 import "ViewResolver"
 import "FlowToken"
@@ -424,6 +425,27 @@ contract FlowEVMBridgeUtils {
         )
     }
 
+    /// Retrieves the EVMPointer view from a given type's defining contract if the view is supported.
+    /// NOTE: This does not guarantee the association is valid, only that the defining Cadence contract declares
+    /// the association.
+    ///
+    /// @param from: The type for which to retrieve the EVMPointer view
+    ///
+    /// @return The resolved EVMPointer view for the given type or nil if the view is unsupported
+    ///
+    access(all)
+    fun getEVMPointerView(forType: Type): CrossVMMetadataViews.EVMPointer? {
+        let contractAddress = forType.address!
+        let contractName = forType.contractName!
+        if let viewResolver = getAccount(contractAddress).contracts.borrow<&{ViewResolver}>(name: contractName) {
+            return viewResolver.resolveContractView(
+                resourceType: forType,
+                viewType: Type<CrossVMMetadataViews.EVMPointer>()
+            ) as? CrossVMMetadataViews.EVMPointer? ?? nil
+        }
+        return nil
+    }
+
     /************************
         EVM Call Wrappers
      ************************/
@@ -712,7 +734,7 @@ contract FlowEVMBridgeUtils {
     }
 
     /// Converts the given amount of Cadence fungible tokens to the equivalent amount in ERC20 tokens based on the
-    /// ERC20s decimals. Note that there may be some loss of decimal precision as UFix64 supports precision for 8 
+    /// ERC20s decimals. Note that there may be some loss of decimal precision as UFix64 supports precision for 8
     /// decimal places. Reverts on EVM call failure.
     ///
     /// @param amount: The amount of Cadence fungible tokens to convert
@@ -723,6 +745,156 @@ contract FlowEVMBridgeUtils {
     access(all)
     fun convertCadenceAmountToERC20Amount(_ amount: UFix64, erc20Address: EVM.EVMAddress): UInt256 {
         return self.ufix64ToUInt256(value: amount, decimals: self.getTokenDecimals(evmContractAddress: erc20Address))
+    }
+
+    /// Gets the declared Cadence contract address declared by an EVM contract in conformance to the ICrossVM.sol
+    /// contract interface. Reverts if the EVM call is unsuccessful.
+    /// NOTE: Just because an EVM contract declares an association does not mean it it is valid!
+    ///
+    /// @param evmContract: The ICrossVM.sol conforming EVM contract from which to retrieve the declared Cadence
+    ///     contract address
+    ///
+    /// @return The resulting Cadence Address as declared associated by the provided EVM contract or nil if the call fails
+    ///
+    access(all)
+    fun getDeclaredCadenceAddressFromCrossVM(evmContract: EVM.EVMAddress): Address? {
+        let cadenceAddrRes = self.call(
+            signature: "getCadenceAddress()",
+            targetEVMAddress: evmContract,
+            args: [],
+            gasLimit: FlowEVMBridgeConfig.gasLimit,
+            value: 0.0
+        )
+        if cadenceAddrRes.status != EVM.Status.successful {
+            return nil
+        }
+        let decodedCadenceAddr = EVM.decodeABI(types: [Type<String>()], data: cadenceAddrRes.data)
+        assert(decodedCadenceAddr.length == 1)
+        var cadenceAddrStr = decodedCadenceAddr[0] as! String
+        if cadenceAddrStr[1] != "x" {
+            cadenceAddrStr = "0x".concat(cadenceAddrStr)
+        }
+        return Address.fromString(cadenceAddrStr) ?? nil
+    }
+
+    /// Gets the declared Cadence Type declared by an EVM contract in conformance to the ICrossVM.sol contract
+    /// interface. Reverts if the EVM call is unsuccessful.
+    /// NOTE: Just because an EVM contract declares an association does not mean it it is valid!
+    ///
+    /// @param evmContract: The ICrossVM.sol conforming EVM contract from which to retrieve the declared Cadence
+    ///     Type
+    ///
+    /// @return The resulting Cadence Type as declared associated by the provided EVM contract or nil if the call fails
+    ///
+    ///
+    access(all)
+    fun getDeclaredCadenceTypeFromCrossVM(evmContract: EVM.EVMAddress): Type? {
+        let cadenceIdentifierRes = self.call(
+            signature: "getCadenceIdentifier()",
+            targetEVMAddress: evmContract,
+            args: [],
+            gasLimit: FlowEVMBridgeConfig.gasLimit,
+            value: 0.0
+        )
+        if cadenceIdentifierRes.status != EVM.Status.successful {
+            return nil
+        }
+        let decodedCadenceIdentifier = EVM.decodeABI(types: [Type<String>()], data: cadenceIdentifierRes.data)
+        assert(decodedCadenceIdentifier.length == 1)
+        let cadenceIdentifier = decodedCadenceIdentifier[0] as! String
+        return CompositeType(cadenceIdentifier) ?? nil
+    }
+
+    /// Returns whether the provided EVM contract conforms to ICrossVMBridgeERC721Fulfillment.sol contract interface.
+    /// Doing so is one of two interfaces that must be implemented for Cadence-native cross-VM NFTs to be successfully
+    /// registered
+    ///
+    /// @param evmContract: The EVM contract to check for ICrossVMBridgeERC721 conformance
+    ///
+    /// @return True if conformance is found, false otherwise
+    ///
+    access(all)
+    fun supportsICrossVMBridgeERC721Fulfillment(evmContract: EVM.EVMAddress): Bool {
+        let interfaceID = EVM.EVMBytes4(value: "2e608d70".decodeHex().toConstantSized<[UInt8; 4]>()!)
+        let supportsRes = self.call(
+            signature: "supportsInterface(bytes4)",
+            targetEVMAddress: evmContract,
+            args: [interfaceID],
+            gasLimit: FlowEVMBridgeConfig.gasLimit,
+            value: 0.0
+        )
+        if supportsRes.status != EVM.Status.successful {
+            return false
+        }
+        let decodedSupports = EVM.decodeABI(types: [Type<Bool>()], data: supportsRes.data)
+        if decodedSupports.length != 1 {
+            return false
+        }
+        return decodedSupports[0] as! Bool
+    }
+
+    /// Returns whether the provided EVM contract conforms to ICrossVMBridgeCallable.sol contract interface.
+    /// Doing so is one of two interfaces that must be implemented for Cadence-native cross-VM NFTs to be successfully
+    /// registered
+    ///
+    /// @param evmContract: The EVM contract to check for ICrossVMBridgeCallable conformance
+    ///
+    /// @return True if conformance is found, false otherwise
+    ///
+    access(all)
+    fun supportsICrossVMBridgeCallable(evmContract: EVM.EVMAddress): Bool {
+        let interfaceID = EVM.EVMBytes4(value: "b7f9a9ec".decodeHex().toConstantSized<[UInt8; 4]>()!)
+        let supportsRes = self.call(
+            signature: "supportsInterface(bytes4)",
+            targetEVMAddress: evmContract,
+            args: [interfaceID],
+            gasLimit: FlowEVMBridgeConfig.gasLimit,
+            value: 0.0
+        )
+        if supportsRes.status != EVM.Status.successful {
+            return false
+        }
+        let decodedSupports = EVM.decodeABI(types: [Type<Bool>()], data: supportsRes.data)
+        if decodedSupports.length != 1 {
+            return false
+        }
+        return decodedSupports[0] as! Bool
+    }
+
+    /// Returns whether the provided EVM contract conforms to both ICrossVMBridgeERC721Fulfillment and
+    /// ICrossVMBridgeCallable Solidity contract interfaces
+    ///
+    /// @param evmContract: The EVM contract to check for conformance
+    ///
+    /// @return True if conformance is found, false otherwise
+    ///
+    access(all)
+    fun supportsCadenceNativeNFTEVMInterfaces(evmContract: EVM.EVMAddress): Bool {
+        return self.supportsICrossVMBridgeCallable(evmContract: evmContract)
+            && self.supportsICrossVMBridgeERC721Fulfillment(evmContract: evmContract)
+    }
+
+    /// Returns the VM Bridge address designated by the ICrossVMBridgeCallable conforming EVM contract. Reverts on call
+    /// failure.
+    ///
+    /// @param evmContract: The ICrossVMBridgeCallable EVM contract from which to retrieve the value
+    ///
+    /// @return The EVM address designated as the VM bridge address in the provided contract
+    ///
+    access(all)
+    fun getVMBridgeAddressFromICrossVMBridgeCallable(evmContract: EVM.EVMAddress): EVM.EVMAddress? {
+        let cadenceIdentifierRes = self.call(
+            signature: "vmBridgeAddress()",
+            targetEVMAddress: evmContract,
+            args: [],
+            gasLimit: FlowEVMBridgeConfig.gasLimit,
+            value: 0.0
+        )
+        if cadenceIdentifierRes.status != EVM.Status.successful {
+            return nil
+        }
+        let decodedCadenceIdentifier = EVM.decodeABI(types: [Type<EVM.EVMAddress>()], data: cadenceIdentifierRes.data)
+        return decodedCadenceIdentifier.length == 1 ? decodedCadenceIdentifier[0] as! EVM.EVMAddress : nil
     }
 
     /************************
@@ -929,7 +1101,7 @@ contract FlowEVMBridgeUtils {
         Type Identifier Utils
      ***************************/
 
-    /// Returns the contract address from the given Type's identifier
+    /// Returns the contract address from the given Type
     ///
     /// @param fromType: The Type to extract the contract address from
     ///
@@ -937,14 +1109,10 @@ contract FlowEVMBridgeUtils {
     ///
     access(all)
     view fun getContractAddress(fromType: Type): Address? {
-        // Split identifier of format A.<CONTRACT_ADDRESS>.<CONTRACT_NAME>.<OBJECT_NAME>
-        if let identifierSplit = self.splitObjectIdentifier(identifier: fromType.identifier) {
-            return Address.fromString("0x".concat(identifierSplit[1]))
-        }
-        return nil
+        return fromType.address
     }
 
-    /// Returns the contract name from the given Type's identifier
+    /// Returns the defining contract name from the given Type
     ///
     /// @param fromType: The Type to extract the contract name from
     ///
@@ -952,14 +1120,11 @@ contract FlowEVMBridgeUtils {
     ///
     access(all)
     view fun getContractName(fromType: Type): String? {
-        // Split identifier of format A.<CONTRACT_ADDRESS>.<CONTRACT_NAME>.<OBJECT_NAME>
-        if let identifierSplit = self.splitObjectIdentifier(identifier: fromType.identifier) {
-            return identifierSplit[2]
-        }
-        return nil
+        return fromType.contractName
     }
 
-    /// Returns the object's name from the given Type's identifier
+    /// Returns the object's name from the given Type's identifier where the identifier is in the format
+    /// of: A.<CONTRACT_ADDRESS_SANS_0x>.<CONTRACT_NAME>.<OBJECT_NAME>
     ///
     /// @param fromType: The Type to extract the object name from
     ///
@@ -967,7 +1132,6 @@ contract FlowEVMBridgeUtils {
     ///
     access(all)
     view fun getObjectName(fromType: Type): String? {
-        // Split identifier of format A.<CONTRACT_ADDRESS>.<CONTRACT_NAME>.<OBJECT_NAME>
         if let identifierSplit = self.splitObjectIdentifier(identifier: fromType.identifier) {
             return identifierSplit[3]
         }

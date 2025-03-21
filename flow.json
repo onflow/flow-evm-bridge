@@ -27,6 +27,18 @@
 				"testnet": "dfc20aee650fcbdf"
 			}
 		},
+		"ExampleCadenceNativeNFT": {
+			"source": "./cadence/contracts/example-assets/cross-vm-nfts/ExampleCadenceNativeNFT.cdc",
+			"aliases": {
+				"testing": "0000000000000008"
+			}
+		},
+		"ExampleEVMNativeNFT": {
+			"source": "./cadence/contracts/example-assets/cross-vm-nfts/ExampleEVMNativeNFT.cdc",
+			"aliases": {
+				"testing": "0000000000000008"
+			}
+		},
 		"ExampleHandledToken": {
 			"source": "./cadence/contracts/example-assets/ExampleHandledToken.cdc",
 			"aliases": {
@@ -74,6 +86,20 @@
 				"mainnet": "1e4aa0b87d10b141",
 				"testing": "0000000000000007",
 				"testnet": "dfc20aee650fcbdf"
+			}
+		},
+		"FlowEVMBridgeCustomAssociationTypes": {
+			"source": "./cadence/contracts/bridge/FlowEVMBridgeCustomAssociationTypes.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"testing": "0000000000000007"
+			}
+		},
+		"FlowEVMBridgeCustomAssociations": {
+			"source": "./cadence/contracts/bridge/FlowEVMBridgeCustomAssociations.cdc",
+			"aliases": {
+				"emulator": "f8d6e0586b0a20c7",
+				"testing": "0000000000000007"
 			}
 		},
 		"FlowEVMBridgeHandlerInterfaces": {
@@ -202,6 +228,12 @@
 				"testnet": "dfc20aee650fcbdf"
 			}
 		},
+		"MaliciousNFTFulfillmentMinter": {
+			"source": "./cadence/tests/contracts/MaliciousNFTFulfillmentMinter.cdc",
+			"aliases": {
+				"testing": "0000000000000009"
+			}
+		},
 		"ScopedFTProviders": {
 			"source": "./cadence/contracts/utils/ScopedFTProviders.cdc",
 			"aliases": {
@@ -258,9 +290,18 @@
 				"testnet": "9a0766d93b6608b7"
 			}
 		},
+		"CrossVMMetadataViews": {
+			"source": "mainnet://1d7e57aa55817448.CrossVMMetadataViews",
+			"hash": "dded0271279d3ca75f30b56f7552994d8b8bc4f75ef94a4a8d9d6b089e06c25c",
+			"aliases": {
+				"mainnet": "1d7e57aa55817448",
+				"testing": "0000000000000001",
+				"testnet": "631e88ae7f1d7c20"
+			}
+		},
 		"EVM": {
 			"source": "mainnet://e467b9dd11fa00df.EVM",
-			"hash": "5c69921fa06088b477e2758e122636b39d3d3eb5316807c206c5680d9ac74c7e",
+			"hash": "68e203784a1fde2a491ddcf522417bf43403efe1795f3b88e76a8ee961e5940b",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "e467b9dd11fa00df",
