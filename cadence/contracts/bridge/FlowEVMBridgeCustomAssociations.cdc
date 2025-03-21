@@ -115,6 +115,22 @@ access(all) contract FlowEVMBridgeCustomAssociations {
         self.associationsConfig[type] <-! config
     }
 
+    access(account) fun pauseCustomConfig(forType: Type) {
+        let config = self.borrowNFTCustomConfig(forType: forType)
+            ?? panic("No CustomConfig found for type \(forType.identifier) - cannot pause config that does not exist")
+        if config.isPaused() {
+            config.setPauseStatus(true)
+        }
+    }
+
+    access(account) fun unpauseCustomConfig(forType: Type) {
+        let config = self.borrowNFTCustomConfig(forType: forType)
+            ?? panic("No CustomConfig found for type \(forType.identifier) - cannot unpause config that does not exist")
+        if config.isPaused() {
+            config.setPauseStatus(false)
+        }
+    }
+
     /// Returns a reference to the NFTCustomConfig if it exists, nil otherwise
     ///
     access(self)
