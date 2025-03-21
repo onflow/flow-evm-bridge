@@ -22,6 +22,7 @@ func SetAllAddresses(bridgeEnv *bridge.Environment, coreEnv *coreContracts.Envir
 	coreEnv.BurnerAddress = fakeAddr
 	coreEnv.NonFungibleTokenAddress = fakeAddr
 	coreEnv.MetadataViewsAddress = fakeAddr
+	coreEnv.CrossVMMetadataViewsAddress = fakeAddr
 	coreEnv.CryptoAddress = fakeAddr
 	coreEnv.FlowFeesAddress = fakeAddr
 	coreEnv.FlowTokenAddress = fakeAddr
@@ -47,6 +48,8 @@ func SetAllAddresses(bridgeEnv *bridge.Environment, coreEnv *coreContracts.Envir
 	bridgeEnv.FlowEVMBridgeTemplatesAddress = fakeAddr
 	bridgeEnv.FlowEVMBridgeTokenEscrowAddress = fakeAddr
 	bridgeEnv.FlowEVMBridgeUtilsAddress = fakeAddr
+	bridgeEnv.FlowEVMBridgeCustomAssociationTypesAddress = fakeAddr
+	bridgeEnv.FlowEVMBridgeCustomAssociationsAddress = fakeAddr
 	bridgeEnv.ArrayUtilsAddress = fakeAddr
 	bridgeEnv.ScopedFTProvidersAddress = fakeAddr
 	bridgeEnv.SerializeAddress = fakeAddr
@@ -110,6 +113,8 @@ func TestCadenceContracts(t *testing.T) {
 	GetCadenceContractShouldSucceed(t, pathPrefix+"bridge/FlowEVMBridgeTemplates.cdc", bridgeEnv, coreEnv)
 	GetCadenceContractShouldSucceed(t, pathPrefix+"bridge/FlowEVMBridgeTokenEscrow.cdc", bridgeEnv, coreEnv)
 	GetCadenceContractShouldSucceed(t, pathPrefix+"bridge/FlowEVMBridgeUtils.cdc", bridgeEnv, coreEnv)
+	GetCadenceContractShouldSucceed(t, pathPrefix+"bridge/FlowEVMBridgeCustomAssociationTypes.cdc", bridgeEnv, coreEnv)
+	GetCadenceContractShouldSucceed(t, pathPrefix+"bridge/FlowEVMBridgeCustomAssociations.cdc", bridgeEnv, coreEnv)
 	GetCadenceContractShouldSucceed(t, pathPrefix+"utils/ArrayUtils.cdc", bridgeEnv, coreEnv)
 	GetCadenceContractShouldSucceed(t, pathPrefix+"utils/ScopedFTProviders.cdc", bridgeEnv, coreEnv)
 	GetCadenceContractShouldSucceed(t, pathPrefix+"utils/Serialize.cdc", bridgeEnv, coreEnv)

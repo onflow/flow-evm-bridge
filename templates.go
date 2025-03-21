@@ -31,6 +31,8 @@ import (
 //go:embed cadence/contracts/bridge/FlowEVMBridgeTemplates.cdc
 //go:embed cadence/contracts/bridge/FlowEVMBridgeTokenEscrow.cdc
 //go:embed cadence/contracts/bridge/FlowEVMBridgeUtils.cdc
+//go:embed cadence/contracts/bridge/FlowEVMBridgeCustomAssociationTypes.cdc
+//go:embed cadence/contracts/bridge/FlowEVMBridgeCustomAssociations.cdc
 //go:embed cadence/contracts/utils/ArrayUtils.cdc
 //go:embed cadence/contracts/utils/ScopedFTProviders.cdc
 //go:embed cadence/contracts/utils/Serialize.cdc
@@ -164,25 +166,27 @@ import (
 var content embed.FS
 
 var (
-	placeholderCrossVMNFTAddress                     = "\"CrossVMNFT\""
-	placeholderCrossVMTokenAddress                   = "\"CrossVMToken\""
-	placeholderFlowEVMBridgeHandlerInterfacesAddress = "\"FlowEVMBridgeHandlerInterfaces\""
-	placeholderIBridgePermissionsAddress             = "\"IBridgePermissions\""
-	placeholderICrossVMAddress                       = "\"ICrossVM\""
-	placeholderICrossVMAssetAddress                  = "\"ICrossVMAsset\""
-	placeholderIEVMBridgeNFTMinterAddress            = "\"IEVMBridgeNFTMinter\""
-	placeholderIEVMBridgeTokenMinterAddress          = "\"IEVMBridgeTokenMinter\""
-	placeholderIFlowEVMNFTBridgeAddress              = "\"IFlowEVMNFTBridge\""
-	placeholderIFlowEVMTokenBridgeAddress            = "\"IFlowEVMTokenBridge\""
-	placeholderFlowEVMBridgeAddress                  = "\"FlowEVMBridge\""
-	placeholderFlowEVMBridgeAccessorAddress          = "\"FlowEVMBridgeAccessor\""
-	placeholderFlowEVMBridgeConfigAddress            = "\"FlowEVMBridgeConfig\""
-	placeholderFlowEVMBridgeHandlersAddress          = "\"FlowEVMBridgeHandlers\""
-	placeholderFlowEVMBridgeNFTEscrowAddress         = "\"FlowEVMBridgeNFTEscrow\""
-	placeholderFlowEVMBridgeResolverAddress          = "\"FlowEVMBridgeResolver\""
-	placeholderFlowEVMBridgeTemplatesAddress         = "\"FlowEVMBridgeTemplates\""
-	placeholderFlowEVMBridgeTokenEscrowAddress       = "\"FlowEVMBridgeTokenEscrow\""
-	placeholderFlowEVMBridgeUtilsAddress             = "\"FlowEVMBridgeUtils\""
+	placeholderCrossVMNFTAddress                          = "\"CrossVMNFT\""
+	placeholderCrossVMTokenAddress                        = "\"CrossVMToken\""
+	placeholderFlowEVMBridgeHandlerInterfacesAddress      = "\"FlowEVMBridgeHandlerInterfaces\""
+	placeholderIBridgePermissionsAddress                  = "\"IBridgePermissions\""
+	placeholderICrossVMAddress                            = "\"ICrossVM\""
+	placeholderICrossVMAssetAddress                       = "\"ICrossVMAsset\""
+	placeholderIEVMBridgeNFTMinterAddress                 = "\"IEVMBridgeNFTMinter\""
+	placeholderIEVMBridgeTokenMinterAddress               = "\"IEVMBridgeTokenMinter\""
+	placeholderIFlowEVMNFTBridgeAddress                   = "\"IFlowEVMNFTBridge\""
+	placeholderIFlowEVMTokenBridgeAddress                 = "\"IFlowEVMTokenBridge\""
+	placeholderFlowEVMBridgeAddress                       = "\"FlowEVMBridge\""
+	placeholderFlowEVMBridgeAccessorAddress               = "\"FlowEVMBridgeAccessor\""
+	placeholderFlowEVMBridgeConfigAddress                 = "\"FlowEVMBridgeConfig\""
+	placeholderFlowEVMBridgeHandlersAddress               = "\"FlowEVMBridgeHandlers\""
+	placeholderFlowEVMBridgeNFTEscrowAddress              = "\"FlowEVMBridgeNFTEscrow\""
+	placeholderFlowEVMBridgeResolverAddress               = "\"FlowEVMBridgeResolver\""
+	placeholderFlowEVMBridgeTemplatesAddress              = "\"FlowEVMBridgeTemplates\""
+	placeholderFlowEVMBridgeTokenEscrowAddress            = "\"FlowEVMBridgeTokenEscrow\""
+	placeholderFlowEVMBridgeUtilsAddress                  = "\"FlowEVMBridgeUtils\""
+	placeholderFlowEVMBridgeCustomAssociationTypesAddress = "\"FlowEVMBridgeCustomAssociationTypes\""
+	placeholderFlowEVMBridgeCustomAssociationsAddress     = "\"FlowEVMBridgeCustomAssociations\""
 
 	placeholderArrayUtilsAddress        = "\"ArrayUtils\""
 	placeholderScopedFTProvidersAddress = "\"ScopedFTProviders\""
@@ -192,30 +196,32 @@ var (
 )
 
 type Environment struct {
-	CrossVMNFTAddress                     string
-	CrossVMTokenAddress                   string
-	FlowEVMBridgeHandlerInterfacesAddress string
-	IBridgePermissionsAddress             string
-	ICrossVMAddress                       string
-	ICrossVMAssetAddress                  string
-	IEVMBridgeNFTMinterAddress            string
-	IEVMBridgeTokenMinterAddress          string
-	IFlowEVMNFTBridgeAddress              string
-	IFlowEVMTokenBridgeAddress            string
-	FlowEVMBridgeAddress                  string
-	FlowEVMBridgeAccessorAddress          string
-	FlowEVMBridgeConfigAddress            string
-	FlowEVMBridgeHandlersAddress          string
-	FlowEVMBridgeNFTEscrowAddress         string
-	FlowEVMBridgeResolverAddress          string
-	FlowEVMBridgeTemplatesAddress         string
-	FlowEVMBridgeTokenEscrowAddress       string
-	FlowEVMBridgeUtilsAddress             string
-	ArrayUtilsAddress                     string
-	ScopedFTProvidersAddress              string
-	SerializeAddress                      string
-	SerializeMetadataAddress              string
-	StringUtilsAddress                    string
+	CrossVMNFTAddress                          string
+	CrossVMTokenAddress                        string
+	FlowEVMBridgeHandlerInterfacesAddress      string
+	IBridgePermissionsAddress                  string
+	ICrossVMAddress                            string
+	ICrossVMAssetAddress                       string
+	IEVMBridgeNFTMinterAddress                 string
+	IEVMBridgeTokenMinterAddress               string
+	IFlowEVMNFTBridgeAddress                   string
+	IFlowEVMTokenBridgeAddress                 string
+	FlowEVMBridgeAddress                       string
+	FlowEVMBridgeAccessorAddress               string
+	FlowEVMBridgeConfigAddress                 string
+	FlowEVMBridgeHandlersAddress               string
+	FlowEVMBridgeNFTEscrowAddress              string
+	FlowEVMBridgeResolverAddress               string
+	FlowEVMBridgeTemplatesAddress              string
+	FlowEVMBridgeTokenEscrowAddress            string
+	FlowEVMBridgeUtilsAddress                  string
+	FlowEVMBridgeCustomAssociationTypesAddress string
+	FlowEVMBridgeCustomAssociationsAddress     string
+	ArrayUtilsAddress                          string
+	ScopedFTProvidersAddress                   string
+	SerializeAddress                           string
+	SerializeMetadataAddress                   string
+	StringUtilsAddress                         string
 }
 
 func withHexPrefix(address string) string {
@@ -349,6 +355,18 @@ func ReplaceAddresses(code string, bridgeEnv Environment, coreEnv coreContracts.
 		code,
 		placeholderFlowEVMBridgeUtilsAddress,
 		bridgeEnv.FlowEVMBridgeUtilsAddress,
+	)
+
+	code = ReplaceAddress(
+		code,
+		placeholderFlowEVMBridgeCustomAssociationTypesAddress,
+		bridgeEnv.FlowEVMBridgeCustomAssociationTypesAddress,
+	)
+
+	code = ReplaceAddress(
+		code,
+		placeholderFlowEVMBridgeCustomAssociationsAddress,
+		bridgeEnv.FlowEVMBridgeCustomAssociationsAddress,
 	)
 
 	code = ReplaceAddress(

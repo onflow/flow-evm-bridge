@@ -1,12 +1,11 @@
 .PHONY: test
-test: 
-	sh local/run_cadence_tests.sh
+test:
 	go test
+
+.PHONY: check-tidy
+check-tidy:
+	go mod tidy
+	git diff --exit-code
 
 .PHONY: ci
 ci: check-tidy test
-
-.PHONY: check-tidy
-check-tidy: 
-	go mod tidy
-	git diff --exit-code
