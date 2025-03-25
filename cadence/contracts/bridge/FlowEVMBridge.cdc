@@ -270,7 +270,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         )
         assert(
             type == cadenceType,
-            message: "Mistmatched type pointers: \(type.identifier) and \(cadenceType.identifier)"
+            message: "Mismatched type pointers: \(type.identifier) and \(cadenceType.identifier)"
         )
 
         /* Cross-VM conformance check */
