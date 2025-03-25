@@ -279,9 +279,8 @@ contract FlowEVMBridgeConfig {
                 }
             }
         }
-        if evmAddress.length == 0 {
-            panic("There was no association found for type \(type.identifier). To block the type from onboarding, use the CadenceBlocklist.")
-        }
+        assert(evmAddress.length == 0,
+            message: "There was no association found for type \(type.identifier). To block the type from onboarding, use the CadenceBlocklist.")
         emit AssetPauseStatusUpdated(paused: pause, type: type.identifier, evmAddress: evmAddress)
     }
 
