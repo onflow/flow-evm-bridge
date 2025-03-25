@@ -258,30 +258,29 @@ contract FlowEVMBridgeConfig {
     access(self)
     fun updatePauseStatus(_ type: Type, pause: Bool) {
         var evmAddress = ""
+        var updated = false
         if let customAssoc = FlowEVMBridgeCustomAssociations.getEVMAddressAssociated(with: type) {
+            updated = FlowEVMBridgeCustomAssociations.isCustomConfigPaused(forType: type)! != pause
+            // Called methods no-op internally, so check for status update is skipped here
             pause ? FlowEVMBridgeCustomAssociations.pauseCustomConfig(forType: type)
                 : FlowEVMBridgeCustomAssociations.unpauseCustomConfig(forType: type)
+            // Assign the EVM address based on the CustomConfig value
             evmAddress = customAssoc.toString()
         }
         if let bridgedAssoc = &FlowEVMBridgeConfig.registeredTypes[type] as &TypeEVMAssociation? {
-            // no-op if already paused
-            if pause && !bridgedAssoc.isPaused {
-                bridgedAssoc.pause()
-                if evmAddress.length == 0 {
-                    // assign as bridge association only if custom association does not exist
-                    evmAddress = bridgedAssoc.evmAddress.toString()
-                }
-            } else if !pause && bridgedAssoc.isPaused {
-                bridgedAssoc.unpause()
-                if evmAddress.length == 0 {
-                    // assign as bridge association only if custom association does not exist
-                    evmAddress = bridgedAssoc.evmAddress.toString()
-                }
+            if evmAddress.length == 0 {
+                // Assign as bridge association only if custom association does not exist
+                evmAddress = bridgedAssoc.evmAddress.toString()
+            }
+            // No-op if already meets pause status, otherwise update as specified
+            if (pause && !bridgedAssoc.isPaused) || (!pause && bridgedAssoc.isPaused) {
+                updated = true
+                pause ? bridgedAssoc.pause() : bridgedAssoc.unpause()
             }
         }
-        assert(evmAddress.length == 0,
+        assert(evmAddress.length > 0,
             message: "There was no association found for type \(type.identifier). To block the type from onboarding, use the CadenceBlocklist.")
-        emit AssetPauseStatusUpdated(paused: pause, type: type.identifier, evmAddress: evmAddress)
+        if updated { emit AssetPauseStatusUpdated(paused: pause, type: type.identifier, evmAddress: evmAddress) }
     }
 
     /*****************

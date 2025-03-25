@@ -33,6 +33,8 @@ access(all) contract FlowEVMBridgeCustomAssociations {
     ///
     /// @param with: The Cadence Type to query against
     ///
+    /// @return The EVM address configured as associated with the provided Cadence Type
+    ///
     access(all)
     view fun getEVMAddressAssociated(with type: Type): EVM.EVMAddress? {
         return self.associationsConfig[type]?.getEVMContractAddress() ?? nil
@@ -42,6 +44,8 @@ access(all) contract FlowEVMBridgeCustomAssociations {
     ///
     /// @param with: The EVM contract address to query against
     ///
+    /// @return The Cadence Type configured as associated with the provided EVM address
+    ///
     access(all)
     view fun getTypeAssociated(with evmAddress: EVM.EVMAddress): Type? {
         return self.associationsByEVMAddress[evmAddress.toString()]
@@ -50,6 +54,8 @@ access(all) contract FlowEVMBridgeCustomAssociations {
     /// Returns an EVMPointer containing the data at the time of registration
     ///
     /// @param forType: The Cadence Type to query against
+    ///
+    /// @return a copy of the EVMPointer view as registered with the bridge
     ///
     access(all)
     fun getEVMPointerAsRegistered(forType: Type): CrossVMMetadataViews.EVMPointer? {
@@ -62,6 +68,19 @@ access(all) contract FlowEVMBridgeCustomAssociations {
             )
         }
         return nil
+    }
+
+    /// Returns whether the related CustomConfig is currently paused or not. `nil` is returned if a CustomConfig is not
+    /// found for the given Type
+    ///
+    /// @param forType: The Cadence Type for which to retrieve a registered CustomConfig
+    ///
+    /// @return true if the CustomConfig is paused, false if registered and unpaused, nil if unregistered as a custom
+    ///     association
+    ///
+    access(all)
+    view fun isCustomConfigPaused(forType: Type): Bool? {
+        return self.borrowNFTCustomConfig(forType: forType)?.isPaused() ?? nil
     }
 
     /// Allows the bridge contracts to preserve a custom association. Will revert if a custom association already exists
