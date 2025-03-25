@@ -474,7 +474,7 @@ contract FlowEVMBridgeConfig {
         fun pauseType(_ type: Type) {
             pre {
                 FlowEVMBridgeConfig.getEVMAddressAssociated(with: type) != nil || FlowEVMBridgeCustomAssociations.getEVMAddressAssociated(with: type) != nil:
-                "Could not find an a bridged or custom association for type \(type.identifier) - cannot pause a type without an association"
+                "Could not find a bridged or custom association for type \(type.identifier) - cannot pause a type without an association"
             }
             FlowEVMBridgeConfig.updatePauseStatus(type, pause: true)
         }
@@ -489,7 +489,7 @@ contract FlowEVMBridgeConfig {
         fun unpauseType(_ type: Type) {
             pre {
                 FlowEVMBridgeConfig.getEVMAddressAssociated(with: type) != nil || FlowEVMBridgeCustomAssociations.getEVMAddressAssociated(with: type) != nil:
-                "Could not find an a bridged or custom association for type \(type.identifier) - cannot unpause a type without an association"
+                "Could not find a bridged or custom association for type \(type.identifier) - cannot unpause a type without an association"
             }
             FlowEVMBridgeConfig.updatePauseStatus(type, pause: false)
         }
