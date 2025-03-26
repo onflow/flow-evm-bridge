@@ -1425,6 +1425,22 @@ contract FlowEVMBridgeUtils {
         assert(bridgePostBalance == bridgePreBalance + amount, message: "Transfer to bridge escrow failed")
     }
 
+    /// Executes a `burn(uint256)` call targeting the provided ERC721 contract address. Reverts if the call is
+    /// unsuccessful
+    ///
+    access(account)
+    fun mustBurnERC721(erc721Address: EVM.EVMAddress, id: UInt256) {
+        let burnResult = FlowEVMBridgeUtils.call(
+            signature: "burn(uint256)",
+            targetEVMAddress: erc721Address,
+            args: [id],
+            gasLimit: FlowEVMBridgeConfig.gasLimit,
+            value: 0.0
+        )
+        assert(burnResult.status == EVM.Status.successful,
+            message: "0x\(erc721Address.toString()).burn(\(id)) failed with error code \(burnResult.errorCode) and message: \(burnResult.errorMessage)")
+    }
+
     /// Calls to the bridge factory to deploy an ERC721/ERC20 contract and returns the deployed contract address
     ///
     access(account)
