@@ -151,6 +151,21 @@ contract FlowEVMBridgeConfig {
         Bridge Account Methods
      ****************************/
 
+    /// Returns whether the given Type has a TokenHandler configured
+    ///
+    access(account)
+    view fun typeHasTokenHandler(_ type: Type): Bool {
+        return self.typeToTokenHandlers[type] != nil
+    }
+
+    /// Returns whether the given EVMAddress has a TokenHandler configured
+    ///
+    access(account)
+    view fun evmAddressHasTokenHandler(_ evmAddress: EVM.EVMAddress): Bool {
+        let associatedType = self.getTypeAssociated(with: evmAddress)
+        return associatedType != nil ? self.typeHasTokenHandler(associatedType!) : false
+    }
+
     /// Enables bridge contracts to add new associations between types and EVM addresses
     ///
     access(account)
@@ -168,21 +183,6 @@ contract FlowEVMBridgeConfig {
         self.evmAddressHexToType[evmAddressHex] = type
 
         emit AssociationUpdated(type: type.identifier, evmAddress: evmAddressHex)
-    }
-
-    /// Returns whether the given Type has a TokenHandler configured
-    ///
-    access(account)
-    view fun typeHasTokenHandler(_ type: Type): Bool {
-        return self.typeToTokenHandlers[type] != nil
-    }
-
-    /// Returns whether the given EVMAddress has a TokenHandler configured
-    ///
-    access(account)
-    view fun evmAddressHasTokenHandler(_ evmAddress: EVM.EVMAddress): Bool {
-        let associatedType = self.getTypeAssociated(with: evmAddress)
-        return associatedType != nil ? self.typeHasTokenHandler(associatedType!) : false
     }
 
     /// Adds a TokenHandler to the bridge configuration
