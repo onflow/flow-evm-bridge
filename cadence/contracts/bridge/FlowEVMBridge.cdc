@@ -288,7 +288,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
                 message: "ICrossVMBridgeCallable declared \(designatedVMBridgeAddress.toString())"
                     .concat(" as vmBridgeAddress which must be declared as \(FlowEVMBridgeUtils.getBridgeCOAEVMAddress().toString())"))
         }
-        
+
         /* Native VM consistency check */
         //
         // Assess if the NFT has been previously onboarded to the bridge
@@ -421,12 +421,8 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
 
         /* Secure NFT in escrow & deposit calculated fees */
         //
-        // Lock the NFT & calculate the storage used by the NFT
-        let storageUsed = FlowEVMBridgeNFTEscrow.lockNFT(<-token)
-        // Calculate the bridge fee on current rates
-        let feeAmount = FlowEVMBridgeUtils.calculateBridgeFee(bytes: storageUsed)
         // Withdraw fee from feeProvider and deposit
-        FlowEVMBridgeUtils.depositFee(feeProvider, feeAmount: feeAmount)
+        self.escrowNFTAndWithdrawFee(token: <-token, from: feeProvider)
 
         /* Determine EVM handling */
         //
@@ -496,12 +492,8 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         let data = CrossVMMetadataViews.getEVMBytesMetadata(&token as &{ViewResolver.Resolver})
         FlowEVMBridgeUtils.mustFulfillNFTToEVM(erc721Address: customERC721, to: to, id: id, maybeBytes: data?.bytes)
 
-        // Lock the NFT & calculate the storage used by the NFT
-        let storageUsed = FlowEVMBridgeNFTEscrow.lockNFT(<-token)
-        // Calculate the bridge fee on current rates
-        let feeAmount = FlowEVMBridgeUtils.calculateBridgeFee(bytes: storageUsed)
-        // Withdraw fee from feeProvider and deposit
-        FlowEVMBridgeUtils.depositFee(feeProvider, feeAmount: feeAmount)
+        // Escrow the NFT & charge the bridge fee
+        self.escrowNFTAndWithdrawFee(token: <-token, from: feeProvider)
     }
 
     access(self)
@@ -510,11 +502,19 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         to: EVM.EVMAddress,
         feeProvider: auth(FungibleToken.Withdraw) &{FungibleToken.Provider}
     ) {
+        let type = token.getType()
+        let id = UInt256(token.id)
+        let customERC721 = FlowEVMBridgeCustomAssociations.getEVMAddressAssociated(with: token.getType())!
+
         if !FlowEVMBridgeUtils.isCadenceNative(type: token.getType()) {
-            // Bridge-defined token means this is a 
+            // Bridge-defined token means this is a bridge token - burn the token
+            Burner.burn(<-token)
+        } else {
+            // Escrow the NFT & charge the bridge fee
+            self.escrowNFTAndWithdrawFee(token: <-token, from: feeProvider)
         }
 
-        Burner.burn(<-token)
+        FlowEVMBridgeUtils.mustSafeTransferERC721(erc721Address: customERC721, to: to, id: id)
     }
 
     access(self)
@@ -931,5 +931,20 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
             isERC721: evmOnboardingValues.isERC721,
             evmContractAddress: evmContractAddress.toString()
         )
+    }
+
+    /// Escrows the provided NFT and withdraws the bridging fee on the basis of a base fee + storage fee
+    ///
+    access(self)
+    fun escrowNFTAndWithdrawFee(
+        token: @{NonFungibleToken.NFT},
+        from: auth(FungibleToken.Withdraw) &{FungibleToken.Provider}
+    ) {
+        // Lock the NFT & calculate the storage used by the NFT
+        let storageUsed = FlowEVMBridgeNFTEscrow.lockNFT(<-token)
+        // Calculate the bridge fee on current rates
+        let feeAmount = FlowEVMBridgeUtils.calculateBridgeFee(bytes: storageUsed)
+        // Withdraw fee from feeProvider and deposit
+        FlowEVMBridgeUtils.depositFee(from, feeAmount: feeAmount)
     }
 }
