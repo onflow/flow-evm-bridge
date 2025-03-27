@@ -1280,6 +1280,27 @@ contract FlowEVMBridgeUtils {
         assert(toPostStatus, message: "Recipient does not own the NFT after minting")
     }
 
+    /// Executes a safeMint call on the given ERC721 contract address, minting an ERC721 to the named recipient and
+    /// asserting pre- and post-state changes. Assumes the bridge COA has the authority to mint the NFT.
+    ///
+    access(account)
+    fun mustFulfillNFTToEVM(erc721Address: EVM.EVMAddress, to: EVM.EVMAddress, id: UInt256, maybeBytes: EVM.EVMBytes?) {
+        let fulfillResult = self.call(
+            signature: "fulfillToEVM(address,uint256,bytes)",
+            targetEVMAddress: erc721Address,
+            args: [to, id, maybeBytes ?? EVM.EVMBytes(value: [])],
+            gasLimit: FlowEVMBridgeConfig.gasLimit,
+            value: 0.0
+        )
+        assert(
+            fulfillResult.status == EVM.Status.successful,
+            message: "Fulfill ERC721 \(erc721Address.toString()) with id \(id) to \(to.toString()) failed with error code \(fulfillResult.errorCode): \(fulfillResult.errorMessage)"
+        )
+
+        let toPostStatus = self.isOwner(ofNFT: id, owner: to, evmContractAddress: erc721Address)
+        assert(toPostStatus, message: "Recipient does not own the NFT after minting")
+    }
+
     /// Executes updateTokenURI call on the given ERC721 contract address, updating the tokenURI of the NFT. This is
     /// not a standard ERC721 function, but is implemented in the bridge-deployed ERC721 implementation to enable
     /// synchronization of token metadata with Cadence NFT state on bridging.
