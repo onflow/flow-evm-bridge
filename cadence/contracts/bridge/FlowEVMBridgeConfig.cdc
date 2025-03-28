@@ -105,13 +105,10 @@ contract FlowEVMBridgeConfig {
     ///
     access(all)
     view fun isTypePaused(_ type: Type): Bool? {
-        if !self.typeHasTokenHandler(type) {
-            // Most all assets will fall into this block - check if the asset is onboarded and paused
-            return self.registeredTypes[type]?.isPaused ?? nil
-        }
-        let customConfigStatus = FlowEVMBridgeCustomAssociations.isCustomConfigPaused(forType: type) ?? false
-        // If the asset has a TokenHandler, return true if either the Handler is paused or the type is paused
-        return self.borrowTokenHandler(type)!.isEnabled() == false || customConfigStatus || self.registeredTypes[type]?.isPaused == true
+        // Paused if the type has a token handler & it's disabled, a custom config has been paused or the bridge config has been paused
+        return !(self.borrowTokenHandler(type)?.isEnabled() ?? true)
+            || FlowEVMBridgeCustomAssociations.isCustomConfigPaused(forType: type) ?? false
+            || self.registeredTypes[type]?.isPaused == true
     }
 
     /// Retrieves the EVMAddress associated with a given Type if it has been onboarded to the bridge
