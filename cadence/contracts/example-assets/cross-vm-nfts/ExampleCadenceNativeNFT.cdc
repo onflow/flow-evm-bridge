@@ -266,8 +266,8 @@ access(all) contract ExampleCadenceNativeNFT: NonFungibleToken, ICrossVM, ICross
         switch viewType {
             case Type<MetadataViews.NFTCollectionData>():
                 let collectionData = MetadataViews.NFTCollectionData(
-                    storagePath: /storage/cadenceExampleCadenceNativeNFTCollection,
-                    publicPath: /public/cadenceExampleCadenceNativeNFTCollection,
+                    storagePath: ExampleCadenceNativeNFT.CollectionStoragePath,
+                    publicPath: ExampleCadenceNativeNFT.CollectionPublicPath,
                     publicCollection: Type<&ExampleCadenceNativeNFT.Collection>(),
                     publicLinkedType: Type<&ExampleCadenceNativeNFT.Collection>(),
                     createEmptyCollectionFunction: (fun(): @{NonFungibleToken.Collection} {
