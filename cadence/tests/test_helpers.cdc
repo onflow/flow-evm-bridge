@@ -437,6 +437,22 @@ fun resolveLockedTokenView(bridgeAddress: Address, vaultTypeIdentifier: String, 
     return resolvedViewResult.returnValue as! AnyStruct?
 }
 
+access(all)
+fun getTokenURI(erc721AddrHex: String, id: UInt256): String {
+    let uriResult = _executeScript("../scripts/utils/token_uri.cdc", [erc721AddrHex, id])
+    Test.expect(uriResult, Test.beSucceeded())
+
+    return uriResult.returnValue as! String
+}
+
+access(all)
+fun serializeNFT(address: Address, storagePathIdentifier: String, id: UInt64): String? {
+    let serializeResult = _executeScript("../scripts/serialize/serialize_nft.cdc", [address, storagePathIdentifier, id])
+    Test.expect(serializeResult, Test.beSucceeded())
+
+    return serializeResult.returnValue as! String?
+}
+
 /* --- Transaction Helpers --- */
 
 access(all)
