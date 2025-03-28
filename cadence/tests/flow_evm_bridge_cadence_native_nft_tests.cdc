@@ -175,18 +175,28 @@ fun testOnboardCadenceNativeNFTByEVMAddressSucceeds() {
 
 access(all)
 fun testBridgeNFTToEVMSucceeds() {
-    // create tmp account
-    // fund account
-    // create COA in account
-    // mint the ERC721 from the right account to the tmp account COA
-    // assert on ownerOf
-    // bridge from EVM
-    // assert on events
-    // assert EVM NFT is in escrow under bridge COA
-    // ensure signer has the bridged NFT in their collection
-    // assert metadata values from Cadence NFT
+    snapshot = getCurrentBlockHeight()
+    // create tmp account & setup
+    let user = Test.createAccount()
+    setupAccount(user, flowAmount: 10.0, coaAmount: 1.0)
+
+    // mint the NFT to the user & get the id
+    mintNFT(signer: exampleCadenceNativeNFTAccount, recipient: user.address, name: "Example Cadence-Native NFT", description: "Test Minting")
+    let ids = getIDs(ownerAddr: user.address, storagePathIdentifier: "ExampleCadenceNativeNFTCollection")
+    Test.assertEqual(1, ids.length)
+
     // bridge to EVM
+    bridgeNFTToEVM(
+        signer: user,
+        nftIdentifier: exampleCadenceNativeNFTIdentifier,
+        nftID: ids[0],
+        bridgeAccountAddr: bridgeAccount.address,
+        beFailed: false
+    )
     // assert on events
+    // assert ERC721 is in escrow under bridge COA
+    // ensure user owns the fulfilled ERC721 token
+    // assert metadata values from Cadence NFT
 }
 
 access(all)
@@ -200,5 +210,26 @@ fun testBridgeERC721FromEVMSucceeds() {
     // assert on events
     // assert EVM NFT is in escrow under bridge COA
     // ensure signer has the bridged NFT in their collection
-    // assert metadata values from Cadence NFT 
+    // assert metadata values from Cadence NFT
+}
+
+access(all)
+fun setupAccount(_ user: Test.TestAccount, flowAmount: UFix64, coaAmount: UFix64) {
+    // fund account
+    transferFlow(signer: serviceAccount, recipient: user.address, amount: flowAmount)
+    // create COA in account
+    createCOA(signer: user, fundingAmount: coaAmount)
+    // setup the collection in the user account
+    setupGenericNFTCollection(signer: user, nftIdentifier: exampleCadenceNativeNFTIdentifier)
+}
+
+access(all)
+fun mintNFT(
+    signer: Test.TestAccount,
+    recipient: Address,
+    name: String,
+    description: String
+) {
+    let mintResult = executeTransaction("../transactions/example-assets/example-cadence-native-nft/mint_nft.cdc", [recipient, name, description], signer)
+    Test.expect(mintResult, Test.beSucceeded())
 }

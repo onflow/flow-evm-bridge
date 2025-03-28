@@ -147,6 +147,16 @@ fun getExampleNFTAsCrossVMCode(): String {
     return exampleNFTAsCrossVMCode
 }
 
+/* --- Custom Matchers --- */
+
+
+access(all)
+fun beNonNil(): Test.Matcher {
+    return Test.newMatcher(fun (_ value: AnyStruct): Bool {
+        return value.getType() != Type<Never>()
+    })
+}
+
 /* --- Event Value Helpers --- */
 
 access(all)
@@ -253,6 +263,7 @@ fun getIDs(ownerAddr: Address, storagePathIdentifier: String): [UInt64] {
         [ownerAddr, storagePathIdentifier]
     )
     Test.expect(idResult, Test.beSucceeded())
+    Test.expect(idResult.returnValue, beNonNil())
     return idResult.returnValue as! [UInt64]? ?? panic("Problem getting NFT IDs")
 }
 
@@ -456,6 +467,16 @@ fun createCOA(signer: Test.TestAccount, fundingAmount: UFix64) {
         signer
     )
     Test.expect(createCOAResult, Test.beSucceeded())
+}
+
+access(all)
+fun setupGenericNFTCollection(signer: Test.TestAccount, nftIdentifier: String) {
+    let setupResult = _executeTransaction(
+        "../transactions/example-assets/setup/setup_generic_nft_collection.cdc",
+        [nftIdentifier],
+        signer
+    )
+    Test.expect(setupResult, Test.beSucceeded())
 }
 
 access(all)
