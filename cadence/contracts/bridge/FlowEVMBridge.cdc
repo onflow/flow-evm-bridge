@@ -351,7 +351,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
             self.typeRequiresOnboarding(token.getType()) == false: "NFT must first be onboarded"
             FlowEVMBridgeConfig.isTypePaused(token.getType()) == false: "Bridging is currently paused for this NFT"
         }
-        let bridgedAssoc = FlowEVMBridgeConfig.getEVMAddressAssociated(with: token.getType())
+        let bridgedAssoc = FlowEVMBridgeConfig.getLegacyEVMAddressAssociated(with: token.getType())
         let customAssocByType = FlowEVMBridgeCustomAssociations.getEVMAddressAssociated(with: token.getType())
         let customAssocByEVMAddr =  bridgedAssoc != nil ? FlowEVMBridgeCustomAssociations.getTypeAssociated(with: bridgedAssoc!) : nil
         // Common case
@@ -375,7 +375,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
             //     ->  escrow NFT
             //     ->  call fulfillToEVM with EVMBytesMetadata value
             // NFT is registered as cross-VM
-            self.handleCrossVMNFTToEVM(token: <-token, to: to, feeProvider: feeProvider)
+            return self.handleCrossVMNFTToEVM(token: <-token, to: to, feeProvider: feeProvider)
         } else if customAssocByType == nil && customAssocByEVMAddr != nil {
             // - [custom] bridged NFT to cross-VM ERC721 (legacy EVM association, custom association by EVM address to cross-VM type)
                 // !   bridge-defined
@@ -384,7 +384,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
                 // ->  burn NFT
                 // ->  transfer ERC721 from escrow
             // Dealing with a bridge-defined NFT after a custom association has been configured
-            self.handleUpdatedBridgedNFTToEVM(token: <-token, to: to, feeProvider: feeProvider)
+            return self.handleUpdatedBridgedNFTToEVM(token: <-token, to: to, feeProvider: feeProvider)
         }
         panic("UNKNOWN ERROR") // customAssocByType != nil && customAssocByEVMAddr != nil
     }
