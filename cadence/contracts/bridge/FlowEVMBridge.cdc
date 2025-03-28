@@ -270,7 +270,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         )
         assert(
             type == cadenceType,
-            message: "Mistmatched type pointers: \(type.identifier) and \(cadenceType.identifier)"
+            message: "Mismatched type pointers: \(type.identifier) and \(cadenceType.identifier)"
         )
 
         /* Cross-VM conformance check */
@@ -294,32 +294,26 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         // Assess if the NFT has been previously onboarded to the bridge
         let legacyEVMAssoc = FlowEVMBridgeConfig.getEVMAddressAssociated(with: type)
         let legacyCadenceAssoc = FlowEVMBridgeConfig.getTypeAssociated(with: evmPointer.evmContractAddress)
-        let updatedFromBridged = legacyEVMAssoc != nil || legacyCadenceAssoc != nil
-        if legacyEVMAssoc != nil && legacyCadenceAssoc != nil {
-            // Registering an NFT where both custom contracts have a bridged representation
-            // TODO: Handle this edge case for registration & migration bridging transactions
-            panic("Registering NFT contracts that both have bridged NFTs which is not currently supported.")
-        } else if updatedFromBridged {
-            // Ensure the native VM is consistent if the NFT has been previously onboarded via the permissionless path
-            if legacyEVMAssoc != nil {
-                assert(evmPointer.nativeVM == CrossVMMetadataViews.VM.Cadence,
-                    message: "Attempting to register NFT \(type.identifier) as EVM-native after it has already been "
-                        .concat("onboarded as Cadence-native. This NFT must be configured as Cadence-native with an ERC721 ")
-                        .concat("implementing CrossVMBridgeERC721Fulfillment base contract allowing the bridge to fulfill ")
-                        .concat("NFTs moving into EVM"))
-            } else {
-                assert(evmPointer.nativeVM == CrossVMMetadataViews.VM.EVM,
-                    message: "Attempting to register NFT \(type.identifier) as Cadence-native after it has already been "
-                        .concat("onboarded as EVM-native. This NFT must be configured as EVM-native and provide an NFTFulfillmentMinter ")
-                        .concat("Capability so the bridge may fulfill NFTs moving into Cadence."))
-            }
+        // Ensure the native VM is consistent if the NFT has been previously onboarded via the permissionless path
+        if legacyEVMAssoc != nil && legacyCadenceAssoc == nil {
+            assert(evmPointer.nativeVM == CrossVMMetadataViews.VM.Cadence,
+                message: "Attempting to register NFT \(type.identifier) as EVM-native after it has already been "
+                    .concat("onboarded as Cadence-native. This NFT must be configured as Cadence-native with an ERC721 ")
+                    .concat("implementing CrossVMBridgeERC721Fulfillment base contract allowing the bridge to fulfill ")
+                    .concat("NFTs moving into EVM"))
+        } else if legacyEVMAssoc == nil && legacyCadenceAssoc != nil  {
+            assert(evmPointer.nativeVM == CrossVMMetadataViews.VM.EVM,
+                message: "Attempting to register NFT \(type.identifier) as Cadence-native after it has already been "
+                    .concat("onboarded as EVM-native. This NFT must be configured as EVM-native and provide an NFTFulfillmentMinter ")
+                    .concat("Capability so the bridge may fulfill NFTs moving into Cadence."))
         }
+        // Notably, the edge case where legacyEVMAssoc != nil && legacyCadenceAssoc != nil it omitted - default to project-declared native VM in this case
 
         FlowEVMBridgeCustomAssociations.saveCustomAssociation(
             type: type,
             evmContractAddress: evmPointer.evmContractAddress,
             nativeVM: evmPointer.nativeVM,
-            updatedFromBridged: updatedFromBridged,
+            updatedFromBridged: legacyEVMAssoc != nil || legacyCadenceAssoc != nil,
             fulfillmentMinter: fulfillmentMinter
         )
 
