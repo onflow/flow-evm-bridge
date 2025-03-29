@@ -50,7 +50,9 @@ access(all) contract FlowEVMBridgeCustomAssociationTypes {
         access(all) view fun getEVMContractAddress(): EVM.EVMAddress
         access(all) view fun getNativeVM(): CrossVMMetadataViews.VM
         access(all) view fun isUpdatedFromBridged(): Bool
+        access(all) view fun isPaused(): Bool
         access(all) view fun checkFulfillmentMinter(): Bool?
+        access(account) fun setPauseStatus(_ paused: Bool)
     }
 
     /// Resource containing all relevant information for the VM bridge to fulfill NFT bridge requests. This is a resource
@@ -67,6 +69,8 @@ access(all) contract FlowEVMBridgeCustomAssociationTypes {
         /// Whether the asset was originally onboarded to the bridge via permissionless onboarding. In other words,
         /// whether there was first a bridge-defined implementation of the underlying asset.
         access(all) let updatedFromBridged: Bool
+        /// Flag determining if this config is paused from bridging - true: paused | false: unpaused
+        access(all) var pauseStatus: Bool
         /// An authorized Capability allowing the bridge to fulfill bridge requests moving the underlying asset from
         /// EVM. Required if the asset is EVM-native.
         access(self) let fulfillmentMinter: Capability<auth(FulfillFromEVM) &{NFTFulfillmentMinter}>?
@@ -92,6 +96,7 @@ access(all) contract FlowEVMBridgeCustomAssociationTypes {
             self.evmContractAddress = evmContractAddress
             self.nativeVM = nativeVM
             self.updatedFromBridged = updatedFromBridged
+            self.pauseStatus = false
             self.fulfillmentMinter = fulfillmentMinter
         }
 
@@ -120,6 +125,11 @@ access(all) contract FlowEVMBridgeCustomAssociationTypes {
             return self.updatedFromBridged
         }
 
+        /// True if currently paused, false if unpaused
+        access(all) view fun isPaused(): Bool {
+            return self.pauseStatus
+        }
+
         /// Returns true/false on the fulfillment minter Capability. If no Capability is stored, nil is returned
         access(all) view fun checkFulfillmentMinter(): Bool? {
             return self.fulfillmentMinter?.check() ?? nil
@@ -135,6 +145,10 @@ access(all) contract FlowEVMBridgeCustomAssociationTypes {
             }
             return self.fulfillmentMinter!.borrow()
                 ?? panic("NFTFulfillmentMinter for type \(self.type.identifier) is now invalid.")
+        }
+
+        access(account) fun setPauseStatus(_ paused: Bool) {
+            self.pauseStatus = paused
         }
     }
 
