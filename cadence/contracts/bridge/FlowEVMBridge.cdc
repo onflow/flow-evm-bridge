@@ -354,41 +354,21 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         let bridgedAssoc = FlowEVMBridgeConfig.getLegacyEVMAddressAssociated(with: token.getType())
         let customAssocByType = FlowEVMBridgeCustomAssociations.getEVMAddressAssociated(with: token.getType())
         let customAssocByEVMAddr =  bridgedAssoc != nil ? FlowEVMBridgeCustomAssociations.getTypeAssociated(with: bridgedAssoc!) : nil
-        // Common case
         if bridgedAssoc != nil && customAssocByType == nil && customAssocByEVMAddr == nil {
-            // - [permissionless] bridged NFT to native ERC721
-            //     !   type maps to EVM address in config table
-            //     !   no mapping found for EVM address or type in custom table
-            //     ->  continue as normal
-            // - [permissionless] native NFT to bridged ERC721
-            //     !   type maps to EVM address in config table
-            //     !   no mapping found for EVM address or type in custom table
-            //     ->  continue as normal
+            // Common case
             return self.legacyBridgeNFTToEVM(token: <-token, to: to, feeProvider: feeProvider)
-        }
-        assert(customAssocByType == nil || customAssocByEVMAddr == nil,
-            message: "UNKNOWN ERROR") // TODO
-        if customAssocByType != nil && customAssocByEVMAddr == nil {
-            // - [custom] cross-VM NFT to cross-VM ERC721
-            //     !   type has no association in config table
-            //     !   type maps to EVM address in custom table
-            //     ->  escrow NFT
-            //     ->  call fulfillToEVM with EVMBytesMetadata value
+        } else if customAssocByType != nil && customAssocByEVMAddr == nil {
             // NFT is registered as cross-VM
             return self.handleCrossVMNFTToEVM(token: <-token, to: to, feeProvider: feeProvider)
         } else if customAssocByType == nil && customAssocByEVMAddr != nil {
-            // - [custom] bridged NFT to cross-VM ERC721 (legacy EVM association, custom association by EVM address to cross-VM type)
-                // !   bridge-defined
-                // !   type maps to EVM address in config table
-                // !   config EVM address maps to different type in custom table
-                // ->  burn NFT
-                // ->  transfer ERC721 from escrow
             // Dealing with a bridge-defined NFT after a custom association has been configured
             return self.handleUpdatedBridgedNFTToEVM(token: <-token, to: to, feeProvider: feeProvider)
         }
         panic("UNKNOWN ERROR") // customAssocByType != nil && customAssocByEVMAddr != nil
     }
 
+    /// Handle permissionlessly onboarded NFTs where the bridge deployed and manages the non-native contract
+    ///
     access(self)
     fun legacyBridgeNFTToEVM(
         token: @{NonFungibleToken.NFT},
@@ -423,7 +403,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         // Does the bridge control the EVM contract associated with this type?
         let associatedAddress = FlowEVMBridgeConfig.getEVMAddressAssociated(with: tokenType)
             ?? panic("No EVMAddress found for token type")
-        let isFactoryDeployed = FlowEVMBridgeUtils.isEVMContractBridgeOwned(evmContractAddress: associatedAddress)
+        let isFactoryDeployed = FlowEVMBridgeUtils.isEVMContractBridgeOwned(evmContractAddress: associatedAddress) // TODO - update to condition on type to remove one EVM call
 
         /* Third-party controlled ERC721 handling */
         //
@@ -449,6 +429,8 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         }
     }
 
+    /// Handler for custom cross-VM NFTs according to how they registered
+    ///
     access(self)
     fun handleCrossVMNFTToEVM(
         token: @{NonFungibleToken.NFT},
@@ -462,6 +444,8 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
             self.handleEVMNativeCrossVMNFTToEVM(token: <-token, to: to, feeProvider: feeProvider)
     }
 
+    /// Handler for Cadence-native NFTs registered as a custom cross-VM implementation
+    ///
     access(self)
     fun handleCadenceNativeCrossVMNFTToEVM(
         token: @{NonFungibleToken.NFT},
@@ -490,6 +474,8 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         self.escrowNFTAndWithdrawFee(token: <-token, from: feeProvider)
     }
 
+    /// Handler for EVM-native NFTs registered as a custom cross-VM implementation
+    ///
     access(self)
     fun handleEVMNativeCrossVMNFTToEVM(
         token: @{NonFungibleToken.NFT},
@@ -507,16 +493,20 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
             // Escrow the NFT & charge the bridge fee
             self.escrowNFTAndWithdrawFee(token: <-token, from: feeProvider)
         }
-
+        // Transfer the ERC721 from escrow to the named recipient
         FlowEVMBridgeUtils.mustSafeTransferERC721(erc721Address: customERC721, to: to, id: id)
     }
 
+    /// Handler for NFTs that were once bridge-defined but were later updated to a registered custom cross-VM
+    /// implementation
+    ///
     access(self)
     fun handleUpdatedBridgedNFTToEVM(
         token: @{NonFungibleToken.NFT},
         to: EVM.EVMAddress,
         feeProvider: auth(FungibleToken.Withdraw) &{FungibleToken.Provider}
     ) {
+        // TODO
         destroy token
     }
 
