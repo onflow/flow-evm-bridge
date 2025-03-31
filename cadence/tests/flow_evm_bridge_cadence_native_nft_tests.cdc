@@ -268,7 +268,7 @@ fun testBridgeERC721FromEVMSucceeds() {
     Test.assertEqual(id, ids[0])
 }
 
-/* --- Case-Specific Helpers */
+/* --- Case-Specific Helpers --- */
 
 access(all)
 fun setupAccount(_ user: Test.TestAccount, flowAmount: UFix64, coaAmount: UFix64) {
