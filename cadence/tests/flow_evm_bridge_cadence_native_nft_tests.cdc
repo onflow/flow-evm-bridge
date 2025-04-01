@@ -120,13 +120,8 @@ access(all)
 fun testOnboardCadenceNativeNFTByIdentifierSucceeds() {
     Test.reset(to: snapshot)
 
-    // Cadence-native onboarding
-    let onboardingResult = executeTransaction(
-        "../transactions/bridge/onboarding/onboard_by_type_identifier.cdc",
-        [exampleCadenceNativeNFTIdentifier],
-        alice
-    )
-    Test.expect(onboardingResult, Test.beSucceeded())
+    // Onboarding by Cadence Type
+    onboardByTypeIdentifier(signer: alice, typeIdentifier: exampleCadenceNativeNFTIdentifier, beFailed: false)
 
     let addrRequiresOnboarding = evmAddressRequiresOnboarding(erc721AddressHex)
         ?? panic("Problem getting onboarding requirement")
@@ -149,13 +144,8 @@ access(all)
 fun testOnboardCadenceNativeNFTByEVMAddressSucceeds() {
     Test.reset(to: snapshot)
 
-    // Cadence-native onboarding
-    let onboardingResult = executeTransaction(
-        "../transactions/bridge/onboarding/onboard_by_evm_address.cdc",
-        [erc721AddressHex],
-        alice
-    )
-    Test.expect(onboardingResult, Test.beSucceeded())
+    // Onboarding by EVM address
+    onboardByEVMAddress(signer: alice, evmAddressHex: erc721AddressHex, beFailed: false)
 
     let addrRequiresOnboarding = evmAddressRequiresOnboarding(erc721AddressHex)
         ?? panic("Problem getting onboarding requirement")
@@ -177,6 +167,7 @@ fun testOnboardCadenceNativeNFTByEVMAddressSucceeds() {
 access(all)
 fun testBridgeNFTToEVMSucceeds() {
     snapshot = getCurrentBlockHeight()
+
     // create tmp account & setup
     let user = Test.createAccount()
     setupAccount(user, flowAmount: 10.0, coaAmount: 1.0)
@@ -287,6 +278,10 @@ fun mintNFT(
     name: String,
     description: String
 ) {
-    let mintResult = executeTransaction("../transactions/example-assets/example-cadence-native-nft/mint_nft.cdc", [recipient, name, description], signer)
+    let mintResult = executeTransaction(
+        "../transactions/example-assets/example-cadence-native-nft/mint_nft.cdc",
+        [recipient, name, description],
+        signer
+    )
     Test.expect(mintResult, Test.beSucceeded())
 }

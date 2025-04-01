@@ -157,12 +157,7 @@ fun testOnboardEVMNativeNFTFails() {
 
     // EVM-native cross-VM NFTs require NFTFulfillmentMinter Capability when onboarding
     // Onboarding via the permissionless path should fail as the Capability is not provided
-    let onboardingResult = executeTransaction(
-        "../transactions/bridge/onboarding/onboard_by_evm_address.cdc",
-        [erc721AddressHex],
-        alice
-    )
-    Test.expect(onboardingResult, Test.beFailed())
+    onboardByEVMAddress(signer: alice, evmAddressHex: erc721AddressHex, beFailed: true)
 }
 
 // TODO: uncomment once bridgeNFTFromEVM route is updated for cross-VM NFTs

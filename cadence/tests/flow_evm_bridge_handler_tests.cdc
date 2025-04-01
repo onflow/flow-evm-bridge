@@ -225,12 +225,7 @@ fun testOnboardHandledTokenByTypeFails() {
     Test.assertEqual(false, requiresOnboarding)
 
     // Should fails since request routes to TokenHandler and it's not enabled
-    let onboardingResult = executeTransaction(
-        "../transactions/bridge/onboarding/onboard_by_type_identifier.cdc",
-        [exampleTokenIdentifier],
-        alice
-    )
-    Test.expect(onboardingResult, Test.beFailed())
+    onboardByTypeIdentifier(signer: alice, typeIdentifier: exampleTokenIdentifier, beFailed: true)
 }
 
 // Since the erc20 Address has a TokenHandler, onboarding should fail
@@ -246,12 +241,7 @@ fun testOnboardHandledERC20ByEVMAddressFails() {
     Test.assertEqual(false, requiresOnboarding)
 
     // Should fails since request routes to TokenHandler and it's not enabled
-    var onboardingResult = executeTransaction(
-        "../transactions/bridge/onboarding/onboard_by_evm_address.cdc",
-        [erc20AddressHex],
-        alice
-    )
-    Test.expect(onboardingResult, Test.beFailed())
+    onboardByEVMAddress(signer: alice, evmAddressHex: erc20AddressHex, beFailed: true)
 }
 
 /* --- BRIDGING FUNGIBLE TOKENS - Test bridging both Cadence- & EVM-native fungible tokens --- */

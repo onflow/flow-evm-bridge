@@ -355,8 +355,8 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         let customAssocByType = FlowEVMBridgeCustomAssociations.getEVMAddressAssociated(with: token.getType())
         let customAssocByEVMAddr =  bridgedAssoc != nil ? FlowEVMBridgeCustomAssociations.getTypeAssociated(with: bridgedAssoc!) : nil
         if bridgedAssoc != nil && customAssocByType == nil && customAssocByEVMAddr == nil {
-            // Common case
-            return self.legacyBridgeNFTToEVM(token: <-token, to: to, feeProvider: feeProvider)
+            // Common case - bridge-defined ERC721 counterpart
+            return self.handleDefaultNFTToEVM(token: <-token, to: to, feeProvider: feeProvider)
         } else if customAssocByType != nil && customAssocByEVMAddr == nil {
             // NFT is registered as cross-VM
             return self.handleCrossVMNFTToEVM(token: <-token, to: to, feeProvider: feeProvider)
@@ -364,13 +364,14 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
             // Dealing with a bridge-defined NFT after a custom association has been configured
             return self.handleUpdatedBridgedNFTToEVM(token: <-token, to: to, feeProvider: feeProvider)
         }
-        panic("UNKNOWN ERROR") // customAssocByType != nil && customAssocByEVMAddr != nil
+        // customAssocByType != nil && customAssocByEVMAddr != nil
+        panic("Unknown error encountered bridging NFT \(token.getType().identifier) with ID \(token.id) to EVM recipient \(to.toString())")
     }
 
     /// Handle permissionlessly onboarded NFTs where the bridge deployed and manages the non-native contract
     ///
     access(self)
-    fun legacyBridgeNFTToEVM(
+    fun handleDefaultNFTToEVM(
         token: @{NonFungibleToken.NFT},
         to: EVM.EVMAddress,
         feeProvider: auth(FungibleToken.Withdraw) &{FungibleToken.Provider}
@@ -482,17 +483,17 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         to: EVM.EVMAddress,
         feeProvider: auth(FungibleToken.Withdraw) &{FungibleToken.Provider}
     ) {
+        if !FlowEVMBridgeUtils.isCadenceNative(type: token.getType()) {
+            // Bridge-defined token means this is a bridged token - passthrough to appropriate handler method
+            return self.handleUpdatedBridgedNFTToEVM(token: <-token, to: to, feeProvider: feeProvider)
+        }
         let type = token.getType()
         let id = UInt256(token.id)
         let customERC721 = FlowEVMBridgeCustomAssociations.getEVMAddressAssociated(with: token.getType())!
 
-        if !FlowEVMBridgeUtils.isCadenceNative(type: token.getType()) {
-            // Bridge-defined token means this is a bridge token - burn the token
-            Burner.burn(<-token)
-        } else {
-            // Escrow the NFT & charge the bridge fee
-            self.escrowNFTAndWithdrawFee(token: <-token, from: feeProvider)
-        }
+        // Escrow the NFT & charge the bridge fee
+        self.escrowNFTAndWithdrawFee(token: <-token, from: feeProvider)
+
         // Transfer the ERC721 from escrow to the named recipient
         FlowEVMBridgeUtils.mustSafeTransferERC721(erc721Address: customERC721, to: to, id: id)
     }
@@ -506,8 +507,20 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         to: EVM.EVMAddress,
         feeProvider: auth(FungibleToken.Withdraw) &{FungibleToken.Provider}
     ) {
-        // TODO
-        destroy token
+        pre {
+            !FlowEVMBridgeUtils.isCadenceNative(type: token.getType()):
+            "Expected a bridge-defined NFT but was provided NFT of type \(token.getType().identifier)"
+        }
+        let bridgedAssociation = FlowEVMBridgeConfig.getLegacyEVMAddressAssociated(with: token.getType())!
+        let updatedCadenceAssociation = FlowEVMBridgeCustomAssociations.getTypeAssociated(with: bridgedAssociation)
+            ?? panic("Could not find a custom cross-VM association for NFT \(token.getType().identifier) #\(token.id). "
+                .concat("The handleUpdatedBridgedNFTToEVM route is intended for bridged Cadence NFTs associated with ")
+                .concat(" ERC721 contracts that have registered as a custom cross-VM NFT collection."))
+        let tokenRef = (&token as &{NonFungibleToken.NFT}) as! &{CrossVMNFT.EVMNFT}
+        let evmID = tokenRef.evmID
+        Burner.burn(<-token)
+        // Transfer the ERC721 from escrow to the named recipient
+        FlowEVMBridgeUtils.mustSafeTransferERC721(erc721Address: bridgedAssociation, to: to, id: evmID)
     }
 
     /// Entrypoint to bridge ERC721 from EVM to Cadence as NonFungibleToken.NFT

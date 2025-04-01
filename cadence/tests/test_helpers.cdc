@@ -592,6 +592,26 @@ fun bridgeTokensFromEVM(
 }
 
 access(all)
+fun onboardByTypeIdentifier(signer: Test.TestAccount, typeIdentifier: String, beFailed: Bool) {
+    let onboardingResult = _executeTransaction(
+        "../transactions/bridge/onboarding/onboard_by_type_identifier.cdc",
+        [typeIdentifier],
+        signer
+    )
+    Test.expect(onboardingResult, beFailed ? Test.beFailed() : Test.beSucceeded())
+}
+
+access(all)
+fun onboardByEVMAddress(signer: Test.TestAccount, evmAddressHex: String, beFailed: Bool) {
+    let onboardingResult = _executeTransaction(
+        "../transactions/bridge/onboarding/onboard_by_evm_address.cdc",
+        [evmAddressHex],
+        signer
+    )
+    Test.expect(onboardingResult, beFailed ? Test.beFailed() : Test.beSucceeded())
+}
+
+access(all)
 fun registerCrossVMNFT(
     signer: Test.TestAccount,
     nftTypeIdentifier: String,
