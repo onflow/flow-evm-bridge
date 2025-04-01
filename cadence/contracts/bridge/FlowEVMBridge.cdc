@@ -404,7 +404,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         // Does the bridge control the EVM contract associated with this type?
         let associatedAddress = FlowEVMBridgeConfig.getEVMAddressAssociated(with: tokenType)
             ?? panic("No EVMAddress found for token type")
-        let isFactoryDeployed = FlowEVMBridgeUtils.isEVMContractBridgeOwned(evmContractAddress: associatedAddress) // TODO - update to condition on type to remove one EVM call
+        let isFactoryDeployed = FlowEVMBridgeUtils.isEVMContractBridgeOwned(evmContractAddress: associatedAddress)
 
         /* Third-party controlled ERC721 handling */
         //
