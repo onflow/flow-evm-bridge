@@ -1328,14 +1328,14 @@ contract FlowEVMBridgeUtils {
         owner: EVM.EVMAddress,
         id: UInt256,
         erc721Address: EVM.EVMAddress,
-        protectedTransferCall: fun (): EVM.Result
+        protectedTransferCall: fun (EVM.EVMAddress): EVM.Result
     ) {
         // Ensure the named owner is authorized to act on the NFT
         let isAuthorized = self.isOwnerOrApproved(ofNFT: id, owner: owner, evmContractAddress: erc721Address)
         assert(isAuthorized, message: "Named owner is not the owner of the ERC721")
 
         // Call the protected transfer function which should execute a transfer call from the owner to escrow
-        let transferResult = protectedTransferCall()
+        let transferResult = protectedTransferCall(erc721Address)
         assert(transferResult.status == EVM.Status.successful, message: "Transfer ERC721 to escrow via callback failed")
 
         // Validate the NFT is now owned by the bridge COA, escrow the NFT

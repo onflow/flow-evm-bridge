@@ -355,7 +355,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         let customAssocByType = FlowEVMBridgeCustomAssociations.getEVMAddressAssociated(with: token.getType())
         let customAssocByEVMAddr =  bridgedAssoc != nil ? FlowEVMBridgeCustomAssociations.getTypeAssociated(with: bridgedAssoc!) : nil
         if bridgedAssoc != nil && customAssocByType == nil && customAssocByEVMAddr == nil {
-            // Common case - bridge-defined ERC721 counterpart
+            // Common case - bridge-defined counterpart in non-native VM
             return self.handleDefaultNFTToEVM(token: <-token, to: to, feeProvider: feeProvider)
         } else if customAssocByType != nil && customAssocByEVMAddr == nil {
             // NFT is registered as cross-VM
@@ -526,12 +526,12 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
     /// Entrypoint to bridge ERC721 from EVM to Cadence as NonFungibleToken.NFT
     ///
     /// @param owner: The EVM address of the NFT owner. Current ownership and successful transfer (via
-    ///     `protectedTransferCall`) is validated before the bridge request is executed.
+    ///     `protectedApprovalCall`) is validated before the bridge request is executed.
     /// @param calldata: Caller-provided approve() call, enabling contract COA to operate on NFT in EVM contract
     /// @param id: The NFT ID to bridged
     /// @param evmContractAddress: Address of the EVM address defining the NFT being bridged - also call target
     /// @param feeProvider: A reference to a FungibleToken Provider from which the bridging fee is withdrawn in $FLOW
-    /// @param protectedTransferCall: A function that executes the transfer of the NFT from the named owner to the
+    /// @param protectedApprovalCall: A function that executes the transfer of the NFT from the named owner to the
     ///     bridge's COA. This function is expected to return a Result indicating the status of the transfer call.
     ///
     /// @returns The bridged NFT
@@ -542,7 +542,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         type: Type,
         id: UInt256,
         feeProvider: auth(FungibleToken.Withdraw) &{FungibleToken.Provider},
-        protectedTransferCall: fun (): EVM.Result
+        protectedTransferCall: fun (EVM.EVMAddress): EVM.Result
     ): @{NonFungibleToken.NFT} {
         pre {
             !FlowEVMBridgeConfig.isPaused(): "Bridge operations are currently paused"
@@ -550,6 +550,23 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
             self.typeRequiresOnboarding(type) == false: "NFT must first be onboarded"
             FlowEVMBridgeConfig.isTypePaused(type) == false: "Bridging is currently paused for this NFT"
         }
+        return <- self.handleDefaultNFTFromEVM(
+            owner: owner,
+            type: type,
+            id: id,
+            feeProvider: feeProvider,
+            protectedTransferCall: protectedTransferCall
+        )
+    }
+
+    access(self)
+    fun handleDefaultNFTFromEVM(
+        owner: EVM.EVMAddress,
+        type: Type,
+        id: UInt256,
+        feeProvider: auth(FungibleToken.Withdraw) &{FungibleToken.Provider},
+        protectedTransferCall: fun (EVM.EVMAddress): EVM.Result
+    ): @{NonFungibleToken.NFT} {
         /* Provision fee */
         //
         // Withdraw from feeProvider and deposit to self
