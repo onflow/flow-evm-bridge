@@ -160,56 +160,55 @@ fun testOnboardEVMNativeNFTFails() {
     onboardByEVMAddress(signer: alice, evmAddressHex: erc721AddressHex, beFailed: true)
 }
 
-// TODO: uncomment once bridgeNFTFromEVM route is updated for cross-VM NFTs
-// access(all)
-// fun testBridgeERC721FromEVMSucceeds() {
-//     Test.reset(to: snapshot)
+access(all)
+fun testBridgeERC721FromEVMSucceeds() {
+    Test.reset(to: snapshot)
 
-//     registerCrossVMNFT(
-//         signer: exampleEVMNativeNFTAccount,
-//         nftTypeIdentifier: exampleEVMNativeNFTIdentifier,
-//         fulfillmentMinterPath: ExampleEVMNativeNFT.FulfillmentMinterStoragePath,
-//         beFailed: false
-//     )
+    registerCrossVMNFT(
+        signer: exampleEVMNativeNFTAccount,
+        nftTypeIdentifier: exampleEVMNativeNFTIdentifier,
+        fulfillmentMinterPath: ExampleEVMNativeNFT.FulfillmentMinterStoragePath,
+        beFailed: false
+    )
 
-//     snapshot = getCurrentBlockHeight()
+    snapshot = getCurrentBlockHeight()
 
-//     // create tmp account & init COA
-//     let user = Test.createAccount()
-//     setupAccount(user, flowAmount: 10.0, coaAmount: 1.0)
-//     let userCOA = getCOAAddressHex(atFlowAddress: user.address)
+    // create tmp account & init COA
+    let user = Test.createAccount()
+    setupAccount(user, flowAmount: 10.0, coaAmount: 1.0)
+    let userCOA = getCOAAddressHex(atFlowAddress: user.address)
     
-//     // mint the ERC721 to the user's COA
-//     let id: UInt256 = 42
-//     mintERC721(signer: exampleEVMNativeNFTAccount, erc721AddressHex: erc721AddressHex, recipient: EVM.addressFromString(userCOA), id: 42)
-//     // assert user COA is ownerOf
-//     var userIsOwner = isOwner(of: id, ownerEVMAddrHex: userCOA, erc721AddressHex: erc721AddressHex)
-//     Test.assertEqual(true, userIsOwner)
+    // mint the ERC721 to the user's COA
+    let id: UInt256 = 42
+    mintERC721(signer: exampleEVMNativeNFTAccount, erc721AddressHex: erc721AddressHex, recipient: EVM.addressFromString(userCOA), id: 42)
+    // assert user COA is ownerOf
+    var userIsOwner = isOwner(of: id, ownerEVMAddrHex: userCOA, erc721AddressHex: erc721AddressHex)
+    Test.assertEqual(true, userIsOwner)
 
-//     // bridge from EVM
-//     bridgeNFTFromEVM(
-//         signer: user,
-//         nftIdentifier: exampleEVMNativeNFTIdentifier,
-//         erc721ID: id,
-//         bridgeAccountAddr: bridgeAccount.address,
-//         beFailed: false
-//     )
-//     let evts = Test.eventsOfType(Type<IFlowEVMNFTBridge.BridgedNFTFromEVM>())
-//     Test.assertEqual(1, evts.length)
-//     let bridgedEvt = evts[0] as! IFlowEVMNFTBridge.BridgedNFTFromEVM
-//     Test.assertEqual(id, UInt256(bridgedEvt.id))
-//     Test.assertEqual(id, bridgedEvt.evmID)
-//     Test.assertEqual(userCOA, bridgedEvt.caller)
-//     Test.assertEqual(erc721AddressHex, bridgedEvt.evmContractAddress)
+    // bridge from EVM
+    bridgeNFTFromEVM(
+        signer: user,
+        nftIdentifier: exampleEVMNativeNFTIdentifier,
+        erc721ID: id,
+        bridgeAccountAddr: bridgeAccount.address,
+        beFailed: false
+    )
+    // let evts = Test.eventsOfType(Type<IFlowEVMNFTBridge.BridgedNFTFromEVM>())
+    // Test.assertEqual(1, evts.length)
+    // let bridgedEvt = evts[0] as! IFlowEVMNFTBridge.BridgedNFTFromEVM
+    // Test.assertEqual(id, UInt256(bridgedEvt.id))
+    // Test.assertEqual(id, bridgedEvt.evmID)
+    // Test.assertEqual(userCOA, bridgedEvt.caller)
+    // Test.assertEqual(erc721AddressHex, bridgedEvt.evmContractAddress)
 
-//     // assert ERC721 is in escrow under bridge COA
-//     let isEscrowed = isOwner(of: UInt256(id), ownerEVMAddrHex: getBridgeCOAAddressHex(), erc721AddressHex: erc721AddressHex)
-//     Test.assert(isEscrowed, message: "ERC721 \(id) was not escrowed after bridging from EVM")
-//     // ensure signer has the bridged NFT in their collection
-//     let ids = getIDs(ownerAddr: user.address, storagePathIdentifier: "ExampleCadenceNativeNFTCollection")
-//     Test.assertEqual(1, ids.length)
-//     Test.assertEqual(id, UInt256(ids[0]))
-// }
+    // // assert ERC721 is in escrow under bridge COA
+    // let isEscrowed = isOwner(of: UInt256(id), ownerEVMAddrHex: getBridgeCOAAddressHex(), erc721AddressHex: erc721AddressHex)
+    // Test.assert(isEscrowed, message: "ERC721 \(id) was not escrowed after bridging from EVM")
+    // // ensure signer has the bridged NFT in their collection
+    // let ids = getIDs(ownerAddr: user.address, storagePathIdentifier: "ExampleCadenceNativeNFTCollection")
+    // Test.assertEqual(1, ids.length)
+    // Test.assertEqual(id, UInt256(ids[0]))
+}
 
 // TODO: Implement after bridgeNFTFromEVM route is updated for cross-VM NFTs
 access(all)

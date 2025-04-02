@@ -150,6 +150,14 @@ access(all) contract FlowEVMBridgeCustomAssociations {
         }
     }
 
+    access(account)
+    fun fulfillNFTFromEVM(forType: Type, id: UInt256): @{NonFungibleToken.NFT} {
+        let config = self.borrowNFTCustomConfig(forType: forType)
+            ?? panic("No CustomConfig found for type \(forType.identifier) - cannot fulfill NFT \(id) from EVM")
+        let minter = config.borrowFulfillmentMinter()
+        return <- minter.fulfillFromEVM(id: id)
+    }
+
     /// Returns a reference to the NFTCustomConfig if it exists, nil otherwise
     ///
     access(self)
