@@ -3,6 +3,7 @@ import BlockchainHelpers
 
 import "MetadataViews"
 import "EVM"
+import "IFlowEVMNFTBridge"
 import "ExampleEVMNativeNFT"
 import "MaliciousNFTFulfillmentMinter"
 import "FlowEVMBridgeCustomAssociations"
@@ -156,28 +157,61 @@ fun testOnboardEVMNativeNFTFails() {
 
     // EVM-native cross-VM NFTs require NFTFulfillmentMinter Capability when onboarding
     // Onboarding via the permissionless path should fail as the Capability is not provided
-    let onboardingResult = executeTransaction(
-        "../transactions/bridge/onboarding/onboard_by_evm_address.cdc",
-        [erc721AddressHex],
-        alice
-    )
-    Test.expect(onboardingResult, Test.beFailed())
+    onboardByEVMAddress(signer: alice, evmAddressHex: erc721AddressHex, beFailed: true)
 }
 
-access(all)
-fun testBridgeERC721FromEVMSucceeds() {
-    // create tmp account
-    // fund account
-    // create COA in account
-    // mint the ERC721 from the right account to the tmp account COA
-    // assert COA is ownerOf
-    // bridge from EVM
-    // assert on events
-    // assert EVM NFT is in escrow under bridge COA
-    // ensure signer has the bridged NFT in their collection
-    // assert metadata values from Cadence NFT 
-}
+// TODO: uncomment once bridgeNFTFromEVM route is updated for cross-VM NFTs
+// access(all)
+// fun testBridgeERC721FromEVMSucceeds() {
+//     Test.reset(to: snapshot)
 
+//     registerCrossVMNFT(
+//         signer: exampleEVMNativeNFTAccount,
+//         nftTypeIdentifier: exampleEVMNativeNFTIdentifier,
+//         fulfillmentMinterPath: ExampleEVMNativeNFT.FulfillmentMinterStoragePath,
+//         beFailed: false
+//     )
+
+//     snapshot = getCurrentBlockHeight()
+
+//     // create tmp account & init COA
+//     let user = Test.createAccount()
+//     setupAccount(user, flowAmount: 10.0, coaAmount: 1.0)
+//     let userCOA = getCOAAddressHex(atFlowAddress: user.address)
+    
+//     // mint the ERC721 to the user's COA
+//     let id: UInt256 = 42
+//     mintERC721(signer: exampleEVMNativeNFTAccount, erc721AddressHex: erc721AddressHex, recipient: EVM.addressFromString(userCOA), id: 42)
+//     // assert user COA is ownerOf
+//     var userIsOwner = isOwner(of: id, ownerEVMAddrHex: userCOA, erc721AddressHex: erc721AddressHex)
+//     Test.assertEqual(true, userIsOwner)
+
+//     // bridge from EVM
+//     bridgeNFTFromEVM(
+//         signer: user,
+//         nftIdentifier: exampleEVMNativeNFTIdentifier,
+//         erc721ID: id,
+//         bridgeAccountAddr: bridgeAccount.address,
+//         beFailed: false
+//     )
+//     let evts = Test.eventsOfType(Type<IFlowEVMNFTBridge.BridgedNFTFromEVM>())
+//     Test.assertEqual(1, evts.length)
+//     let bridgedEvt = evts[0] as! IFlowEVMNFTBridge.BridgedNFTFromEVM
+//     Test.assertEqual(id, UInt256(bridgedEvt.id))
+//     Test.assertEqual(id, bridgedEvt.evmID)
+//     Test.assertEqual(userCOA, bridgedEvt.caller)
+//     Test.assertEqual(erc721AddressHex, bridgedEvt.evmContractAddress)
+
+//     // assert ERC721 is in escrow under bridge COA
+//     let isEscrowed = isOwner(of: UInt256(id), ownerEVMAddrHex: getBridgeCOAAddressHex(), erc721AddressHex: erc721AddressHex)
+//     Test.assert(isEscrowed, message: "ERC721 \(id) was not escrowed after bridging from EVM")
+//     // ensure signer has the bridged NFT in their collection
+//     let ids = getIDs(ownerAddr: user.address, storagePathIdentifier: "ExampleCadenceNativeNFTCollection")
+//     Test.assertEqual(1, ids.length)
+//     Test.assertEqual(id, UInt256(ids[0]))
+// }
+
+// TODO: Implement after bridgeNFTFromEVM route is updated for cross-VM NFTs
 access(all)
 fun testBridgeNFTToEVMSucceeds() {
     // create tmp account
@@ -192,4 +226,32 @@ fun testBridgeNFTToEVMSucceeds() {
     // assert metadata values from Cadence NFT
     // bridge to EVM
     // assert on events
+}
+
+/* --- Case-Specific Helpers --- */
+
+access(all)
+fun setupAccount(_ user: Test.TestAccount, flowAmount: UFix64, coaAmount: UFix64) {
+    // fund account
+    transferFlow(signer: serviceAccount, recipient: user.address, amount: flowAmount)
+    // create COA in account
+    createCOA(signer: user, fundingAmount: coaAmount)
+    // setup the collection in the user account
+    setupGenericNFTCollection(signer: user, nftIdentifier: exampleEVMNativeNFTIdentifier)
+}
+
+access(all)
+fun mintERC721(
+    signer: Test.TestAccount,
+    erc721AddressHex: String,
+    recipient: EVM.EVMAddress,
+    id: UInt256
+) {
+    let calldata = String.encodeHex(EVM.encodeABIWithSignature("safeMint(address,uint256)", [recipient, id]))
+    let mintResult = executeTransaction(
+        "../transactions/evm/call.cdc",
+        [erc721AddressHex, calldata, UInt64(15_000_000), UInt(0)],
+        signer
+    )
+    Test.expect(mintResult, Test.beSucceeded())
 }

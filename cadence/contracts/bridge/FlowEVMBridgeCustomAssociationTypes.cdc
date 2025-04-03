@@ -8,6 +8,8 @@ import "EVM"
 ///
 access(all) contract FlowEVMBridgeCustomAssociationTypes {
 
+    access(all) event FulfilledFromEVM(type: String, requestedID: UInt256, resultID: UInt64, uuid: UInt64)
+
     access(all) entitlement FulfillFromEVM
 
     /// Resource interface used by EVM-native NFT collections allowing for the fulfillment of NFTs from EVM into Cadence
@@ -36,6 +38,7 @@ access(all) contract FlowEVMBridgeCustomAssociationTypes {
                 "Resulting NFT ID \(result.id.toString()) does not match requested ID \(id.toString())"
                 result.getType() == self.getFulfilledType():
                 "Expected \(self.getFulfilledType().identifier) but fulfilled \(result.getType().identifier)"
+                emit FulfilledFromEVM(type: result.getType().identifier, requestedID: id, resultID: result.id, uuid: result.uuid)
             }
         }
     }

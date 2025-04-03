@@ -4,6 +4,7 @@ import BlockchainHelpers
 import "MetadataViews"
 import "EVM"
 import "ExampleCadenceNativeNFT"
+import "IFlowEVMNFTBridge"
 import "FlowEVMBridgeCustomAssociations"
 
 import "test_helpers.cdc"
@@ -119,13 +120,8 @@ access(all)
 fun testOnboardCadenceNativeNFTByIdentifierSucceeds() {
     Test.reset(to: snapshot)
 
-    // Cadence-native onboarding
-    let onboardingResult = executeTransaction(
-        "../transactions/bridge/onboarding/onboard_by_type_identifier.cdc",
-        [exampleCadenceNativeNFTIdentifier],
-        alice
-    )
-    Test.expect(onboardingResult, Test.beSucceeded())
+    // Onboarding by Cadence Type
+    onboardByTypeIdentifier(signer: alice, typeIdentifier: exampleCadenceNativeNFTIdentifier, beFailed: false)
 
     let addrRequiresOnboarding = evmAddressRequiresOnboarding(erc721AddressHex)
         ?? panic("Problem getting onboarding requirement")
@@ -148,13 +144,8 @@ access(all)
 fun testOnboardCadenceNativeNFTByEVMAddressSucceeds() {
     Test.reset(to: snapshot)
 
-    // Cadence-native onboarding
-    let onboardingResult = executeTransaction(
-        "../transactions/bridge/onboarding/onboard_by_evm_address.cdc",
-        [erc721AddressHex],
-        alice
-    )
-    Test.expect(onboardingResult, Test.beSucceeded())
+    // Onboarding by EVM address
+    onboardByEVMAddress(signer: alice, evmAddressHex: erc721AddressHex, beFailed: false)
 
     let addrRequiresOnboarding = evmAddressRequiresOnboarding(erc721AddressHex)
         ?? panic("Problem getting onboarding requirement")
@@ -175,30 +166,122 @@ fun testOnboardCadenceNativeNFTByEVMAddressSucceeds() {
 
 access(all)
 fun testBridgeNFTToEVMSucceeds() {
-    // create tmp account
-    // fund account
-    // create COA in account
-    // mint the ERC721 from the right account to the tmp account COA
-    // assert on ownerOf
-    // bridge from EVM
-    // assert on events
-    // assert EVM NFT is in escrow under bridge COA
-    // ensure signer has the bridged NFT in their collection
-    // assert metadata values from Cadence NFT
+    snapshot = getCurrentBlockHeight()
+
+    // create tmp account & setup
+    let user = Test.createAccount()
+    setupAccount(user, flowAmount: 10.0, coaAmount: 1.0)
+    let userCOA = getCOAAddressHex(atFlowAddress: user.address)
+
+    // mint the NFT to the user & get the id
+    mintNFT(signer: exampleCadenceNativeNFTAccount, recipient: user.address, name: "Example Cadence-Native NFT", description: "Test Minting")
+    let ids = getIDs(ownerAddr: user.address, storagePathIdentifier: "ExampleCadenceNativeNFTCollection")
+    Test.assertEqual(1, ids.length)
+    let id = ids[0]
+
+    // serialize the NFT to compare from ERC721 side
+    let serialized = serializeNFT(address: user.address, storagePathIdentifier: "ExampleCadenceNativeNFTCollection", id: id)
+        ?? panic("Could not serialize NFT \(id)")
+
     // bridge to EVM
+    bridgeNFTToEVM(
+        signer: user,
+        nftIdentifier: exampleCadenceNativeNFTIdentifier,
+        nftID: id,
+        bridgeAccountAddr: bridgeAccount.address,
+        beFailed: false
+    )
     // assert on events
+    let bridgedEvts = Test.eventsOfType(Type<IFlowEVMNFTBridge.BridgedNFTToEVM>())
+    Test.assertEqual(1, bridgedEvts.length)
+    let bridgedEvt = bridgedEvts[0] as! IFlowEVMNFTBridge.BridgedNFTToEVM
+    Test.assertEqual(id, bridgedEvt.id)
+    Test.assertEqual(userCOA, bridgedEvt.to)
+    Test.assertEqual(erc721AddressHex, bridgedEvt.evmContractAddress)
+
+    // assert NFT is in bridge escrow
+    let isLocked = isNFTLocked(nftTypeIdentifier: exampleCadenceNativeNFTIdentifier, id: id)
+    Test.assert(isLocked, message: "NFT \(id) was supposed to be in escrow, but was not found in escrow after bridging")
+
+    // ensure user owns the fulfilled ERC721 token
+    let isOwner = isOwner(of: UInt256(id), ownerEVMAddrHex: userCOA, erc721AddressHex: erc721AddressHex)
+    Test.assert(isOwner, message: "User did not recieve ERC721 \(id) after bridging to EVM")
+
+    // assert metadata values match across VMs
+    let tokenURI = getTokenURI(erc721AddrHex: erc721AddressHex, id: UInt256(id))
+    Test.assertEqual(serialized, tokenURI)
 }
 
 access(all)
 fun testBridgeERC721FromEVMSucceeds() {
-    // create tmp account
-    // fund account
-    // create COA in account
-    // mint the ERC721 from the right account to the tmp account COA
-    // assert COA is ownerOf
+    Test.reset(to: snapshot)
+    // create tmp account & setup
+    let user = Test.createAccount()
+    setupAccount(user, flowAmount: 10.0, coaAmount: 1.0)
+    let userCOA = getCOAAddressHex(atFlowAddress: user.address)
+    // mint the NFT to the user & get the id
+    mintNFT(signer: exampleCadenceNativeNFTAccount, recipient: user.address, name: "Example Cadence-Native NFT", description: "Test Minting")
+    var ids = getIDs(ownerAddr: user.address, storagePathIdentifier: "ExampleCadenceNativeNFTCollection")
+    Test.assertEqual(1, ids.length)
+    let id = ids[0]
+    // bridge to EVM
+    bridgeNFTToEVM(
+        signer: user,
+        nftIdentifier: exampleCadenceNativeNFTIdentifier,
+        nftID: id,
+        bridgeAccountAddr: bridgeAccount.address,
+        beFailed: false
+    )
     // bridge from EVM
+    bridgeNFTFromEVM(
+        signer: user,
+        nftIdentifier: exampleCadenceNativeNFTIdentifier,
+        erc721ID: UInt256(id),
+        bridgeAccountAddr: bridgeAccount.address,
+        beFailed: false
+    )
     // assert on events
-    // assert EVM NFT is in escrow under bridge COA
+    let evts = Test.eventsOfType(Type<IFlowEVMNFTBridge.BridgedNFTFromEVM>())
+    Test.assertEqual(1, evts.length)
+    let bridgedEvt = evts[0] as! IFlowEVMNFTBridge.BridgedNFTFromEVM
+    Test.assertEqual(id, bridgedEvt.id)
+    Test.assertEqual(UInt256(id), bridgedEvt.evmID)
+    Test.assertEqual(userCOA, bridgedEvt.caller)
+    Test.assertEqual(erc721AddressHex, bridgedEvt.evmContractAddress)
+
+    // assert ERC721 is in escrow under bridge COA
+    let isEscrowed = isOwner(of: UInt256(id), ownerEVMAddrHex: getBridgeCOAAddressHex(), erc721AddressHex: erc721AddressHex)
+    Test.assert(isEscrowed, message: "ERC721 \(id) was not escrowed after bridging from EVM")
+
     // ensure signer has the bridged NFT in their collection
-    // assert metadata values from Cadence NFT 
+    ids = getIDs(ownerAddr: user.address, storagePathIdentifier: "ExampleCadenceNativeNFTCollection")
+    Test.assertEqual(1, ids.length)
+    Test.assertEqual(id, ids[0])
+}
+
+/* --- Case-Specific Helpers --- */
+
+access(all)
+fun setupAccount(_ user: Test.TestAccount, flowAmount: UFix64, coaAmount: UFix64) {
+    // fund account
+    transferFlow(signer: serviceAccount, recipient: user.address, amount: flowAmount)
+    // create COA in account
+    createCOA(signer: user, fundingAmount: coaAmount)
+    // setup the collection in the user account
+    setupGenericNFTCollection(signer: user, nftIdentifier: exampleCadenceNativeNFTIdentifier)
+}
+
+access(all)
+fun mintNFT(
+    signer: Test.TestAccount,
+    recipient: Address,
+    name: String,
+    description: String
+) {
+    let mintResult = executeTransaction(
+        "../transactions/example-assets/example-cadence-native-nft/mint_nft.cdc",
+        [recipient, name, description],
+        signer
+    )
+    Test.expect(mintResult, Test.beSucceeded())
 }

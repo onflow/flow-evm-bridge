@@ -116,12 +116,7 @@ fun testOnboardFlowTokenByTypeFails() {
     Test.assertEqual(false, requiresOnboarding)
 
     // Should fail since request routes to TokenHandler and it's not enabled
-    let onboardingResult = executeTransaction(
-        "../transactions/bridge/onboarding/onboard_by_type_identifier.cdc",
-        [flowTokenIdentifier],
-        alice
-    )
-    Test.expect(onboardingResult, Test.beFailed())
+    onboardByTypeIdentifier(signer: alice, typeIdentifier: flowTokenIdentifier, beFailed: true)
 }
 
 // Since the WFLOW Address has a TokenHandler, onboarding should fail
@@ -137,12 +132,7 @@ fun testOnboardWFLOWByEVMAddressFails() {
     Test.assertEqual(false, requiresOnboarding)
 
     // Should fails since request routes to TokenHandler and it's not enabled
-    var onboardingResult = executeTransaction(
-        "../transactions/bridge/onboarding/onboard_by_evm_address.cdc",
-        [wflowAddressHex],
-        alice
-    )
-    Test.expect(onboardingResult, Test.beFailed())
+    onboardByEVMAddress(signer: alice, evmAddressHex: wflowAddressHex, beFailed: true)
 }
 
 /* --- BRIDGING FLOW to EVM as WFLOW and WFLOW from EVM as FLOW --- */

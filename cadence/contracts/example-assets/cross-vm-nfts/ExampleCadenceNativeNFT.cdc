@@ -33,6 +33,8 @@ access(all) contract ExampleCadenceNativeNFT: NonFungibleToken, ICrossVM, ICross
     /// The storage path where the Minter is stored
     access(all) let MinterStoragePath: StoragePath
 
+    access(all) event MintedNFT(id: UInt64, to: Address?)
+
     /* ICrossVMAsset conformance */
 
     /// Returns the name of the asset
@@ -60,7 +62,6 @@ access(all) contract ExampleCadenceNativeNFT: NonFungibleToken, ICrossVM, ICross
         /// From the Display metadata view
         access(all) let name: String
         access(all) let description: String
-        access(all) let thumbnail: String
 
         /// Generic dictionary of traits the NFT has
         access(self) let metadata: {String: AnyStruct}
@@ -68,13 +69,11 @@ access(all) contract ExampleCadenceNativeNFT: NonFungibleToken, ICrossVM, ICross
         init(
             name: String,
             description: String,
-            thumbnail: String,
             metadata: {String: AnyStruct},
         ) {
             self.id = self.uuid
             self.name = name
             self.description = description
-            self.thumbnail = thumbnail
             self.metadata = metadata
         }
 
@@ -267,8 +266,8 @@ access(all) contract ExampleCadenceNativeNFT: NonFungibleToken, ICrossVM, ICross
         switch viewType {
             case Type<MetadataViews.NFTCollectionData>():
                 let collectionData = MetadataViews.NFTCollectionData(
-                    storagePath: /storage/cadenceExampleCadenceNativeNFTCollection,
-                    publicPath: /public/cadenceExampleCadenceNativeNFTCollection,
+                    storagePath: ExampleCadenceNativeNFT.CollectionStoragePath,
+                    publicPath: ExampleCadenceNativeNFT.CollectionPublicPath,
                     publicCollection: Type<&ExampleCadenceNativeNFT.Collection>(),
                     publicLinkedType: Type<&ExampleCadenceNativeNFT.Collection>(),
                     createEmptyCollectionFunction: (fun(): @{NonFungibleToken.Collection} {
@@ -326,8 +325,8 @@ access(all) contract ExampleCadenceNativeNFT: NonFungibleToken, ICrossVM, ICross
         access(all) fun mintNFT(
             name: String,
             description: String,
-            thumbnail: String
-        ): @ExampleCadenceNativeNFT.NFT {
+            to: &{NonFungibleToken.Collection}
+        ) {
 
             let metadata: {String: AnyStruct} = {}
             let currentBlock = getCurrentBlock()
@@ -341,11 +340,11 @@ access(all) contract ExampleCadenceNativeNFT: NonFungibleToken, ICrossVM, ICross
             var newNFT <- create NFT(
                 name: name,
                 description: description,
-                thumbnail: thumbnail,
                 metadata: metadata,
             )
 
-            return <-newNFT
+            emit MintedNFT(id: newNFT.id, to: to.owner?.address)
+            to.deposit(token: <-newNFT)
         }
     }
 

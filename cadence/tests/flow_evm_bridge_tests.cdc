@@ -342,23 +342,13 @@ fun testOnboardNFTByTypeSucceeds() {
         ?? panic("Problem getting onboarding status for type")
     Test.assertEqual(true, requiresOnboarding)
 
-    var onboardingResult = executeTransaction(
-        "../transactions/bridge/onboarding/onboard_by_type_identifier.cdc",
-        [exampleNFTIdentifier],
-        alice
-    )
-    Test.expect(onboardingResult, Test.beSucceeded())
+    onboardByTypeIdentifier(signer: alice, typeIdentifier: exampleNFTIdentifier, beFailed: false)
 
     requiresOnboarding = typeRequiresOnboardingByIdentifier(exampleNFTIdentifier)
         ?? panic("Problem getting onboarding status for type")
     Test.assertEqual(false, requiresOnboarding)
 
-    onboardingResult = executeTransaction(
-        "../transactions/bridge/onboarding/onboard_by_type_identifier.cdc",
-        [exampleNFTIdentifier],
-        alice
-    )
-    Test.expect(onboardingResult, Test.beFailed())
+    onboardByTypeIdentifier(signer: alice, typeIdentifier: exampleNFTIdentifier, beFailed: true)
 }
 
 access(all)
@@ -387,12 +377,7 @@ fun testOnboardAndBridgeNFTToEVMSucceeds() {
         ?? panic("Problem getting onboarding status for type")
     Test.assertEqual(false, requiresOnboarding)
 
-    let onboardingResult = executeTransaction(
-        "../transactions/bridge/onboarding/onboard_by_type_identifier.cdc",
-        [exampleNFTIdentifier],
-        alice
-    )
-    Test.expect(onboardingResult, Test.beFailed())
+    onboardByTypeIdentifier(signer: alice, typeIdentifier: exampleNFTIdentifier, beFailed: true)
 
     let associatedEVMAddressHex = getAssociatedEVMAddressHex(with: exampleNFTIdentifier)
     Test.assertEqual(40, associatedEVMAddressHex.length)
@@ -402,12 +387,8 @@ fun testOnboardAndBridgeNFTToEVMSucceeds() {
     Test.assertEqual(1, aliceOwnedIDs.length)
 
     // Confirm ownership on EVM side with Alice COA as owner of ERC721 representation
-    let isOwnerResult = executeScript(
-        "../scripts/utils/is_owner.cdc",
-        [UInt256(mintedNFTID1), aliceCOAAddressHex, associatedEVMAddressHex]
-    )
-    Test.expect(isOwnerResult, Test.beSucceeded())
-    Test.assertEqual(true, isOwnerResult.returnValue as! Bool? ?? panic("Problem getting owner status"))
+    let aliceIsOwner = isOwner(of: UInt256(mintedNFTID1), ownerEVMAddrHex: aliceCOAAddressHex, erc721AddressHex: associatedEVMAddressHex)
+    Test.assertEqual(true, aliceIsOwner)
 }
 
 access(all)
@@ -437,12 +418,7 @@ fun testOnboardAndCrossVMTransferNFTToEVMSucceeds() {
         ?? panic("Problem getting onboarding status for type")
     Test.assertEqual(false, requiresOnboarding)
 
-    let onboardingResult = executeTransaction(
-        "../transactions/bridge/onboarding/onboard_by_type_identifier.cdc",
-        [exampleNFTIdentifier],
-        alice
-    )
-    Test.expect(onboardingResult, Test.beFailed())
+    onboardByTypeIdentifier(signer: alice, typeIdentifier: exampleNFTIdentifier, beFailed: true)
 
     let associatedEVMAddressHex = getAssociatedEVMAddressHex(with: exampleNFTIdentifier)
     Test.assertEqual(40, associatedEVMAddressHex.length)
@@ -462,23 +438,13 @@ fun testOnboardTokenByTypeSucceeds() {
         ?? panic("Problem getting onboarding status for type")
     Test.assertEqual(true, requiresOnboarding)
 
-    var onboardingResult = executeTransaction(
-        "../transactions/bridge/onboarding/onboard_by_type_identifier.cdc",
-        [exampleTokenIdentifier],
-        alice
-    )
-    Test.expect(onboardingResult, Test.beSucceeded())
+    onboardByTypeIdentifier(signer: alice, typeIdentifier: exampleTokenIdentifier, beFailed: false)
 
     requiresOnboarding = typeRequiresOnboardingByIdentifier(exampleTokenIdentifier)
         ?? panic("Problem getting onboarding status for type")
     Test.assertEqual(false, requiresOnboarding)
 
-    onboardingResult = executeTransaction(
-        "../transactions/bridge/onboarding/onboard_by_type_identifier.cdc",
-        [exampleTokenIdentifier],
-        alice
-    )
-    Test.expect(onboardingResult, Test.beFailed())
+    onboardByTypeIdentifier(signer: alice, typeIdentifier: exampleTokenIdentifier, beFailed: true)
 }
 
 access(all)
@@ -506,12 +472,7 @@ fun testOnboardAndBridgeTokensToEVMSucceeds() {
         ?? panic("Problem getting onboarding status for type")
     Test.assertEqual(false, requiresOnboarding)
 
-    let onboardingResult = executeTransaction(
-        "../transactions/bridge/onboarding/onboard_by_type_identifier.cdc",
-        [exampleTokenIdentifier],
-        alice
-    )
-    Test.expect(onboardingResult, Test.beFailed())
+    onboardByTypeIdentifier(signer: alice, typeIdentifier: exampleTokenIdentifier, beFailed: true)
 
     let associatedEVMAddressHex = getAssociatedEVMAddressHex(with: exampleTokenIdentifier)
     Test.assertEqual(40, associatedEVMAddressHex.length)
@@ -554,12 +515,7 @@ fun testOnboardAndCrossVMTransferTokensToEVMSucceeds() {
         ?? panic("Problem getting onboarding status for type")
     Test.assertEqual(false, requiresOnboarding)
 
-    let onboardingResult = executeTransaction(
-        "../transactions/bridge/onboarding/onboard_by_type_identifier.cdc",
-        [exampleTokenIdentifier],
-        alice
-    )
-    Test.expect(onboardingResult, Test.beFailed())
+    onboardByTypeIdentifier(signer: alice, typeIdentifier: exampleTokenIdentifier, beFailed: true)
 
     let associatedEVMAddressHex = getAssociatedEVMAddressHex(with: exampleTokenIdentifier)
     Test.assertEqual(40, associatedEVMAddressHex.length)
@@ -631,12 +587,7 @@ fun testOnboardERC721ByEVMAddressSucceeds() {
     Test.expect(blockResult, Test.beSucceeded())
 
     // onboarding should fail as the EVM address is blocked
-    var onboardingResult = executeTransaction(
-        "../transactions/bridge/onboarding/onboard_by_evm_address.cdc",
-        [erc721AddressHex],
-        alice
-    )
-    Test.expect(onboardingResult, Test.beFailed())
+    onboardByEVMAddress(signer: alice, evmAddressHex: erc721AddressHex, beFailed: true)
 
     // Unblock the EVM address
     let unblockResult = executeTransaction(
@@ -652,23 +603,13 @@ fun testOnboardERC721ByEVMAddressSucceeds() {
         ?? panic("Problem getting onboarding requirement")
     Test.assertEqual(true, requiresOnboarding)
 
-    onboardingResult = executeTransaction(
-        "../transactions/bridge/onboarding/onboard_by_evm_address.cdc",
-        [erc721AddressHex],
-        alice
-    )
-    Test.expect(onboardingResult, Test.beSucceeded())
+    onboardByEVMAddress(signer: alice, evmAddressHex: erc721AddressHex, beFailed: false)
 
     requiresOnboarding = evmAddressRequiresOnboarding(erc721AddressHex)
         ?? panic("Problem getting onboarding requirement")
     Test.assertEqual(false, requiresOnboarding)
 
-    onboardingResult = executeTransaction(
-        "../transactions/bridge/onboarding/onboard_by_evm_address.cdc",
-        [erc721AddressHex],
-        alice
-    )
-    Test.expect(onboardingResult, Test.beFailed())
+    onboardByEVMAddress(signer: alice, evmAddressHex: erc721AddressHex, beFailed: true)
 }
 
 access(all)
@@ -678,23 +619,13 @@ fun testOnboardERC20ByEVMAddressSucceeds() {
         ?? panic("Problem getting onboarding requirement")
     Test.assertEqual(true, requiresOnboarding)
 
-    var onboardingResult = executeTransaction(
-        "../transactions/bridge/onboarding/onboard_by_evm_address.cdc",
-        [erc20AddressHex],
-        alice
-    )
-    Test.expect(onboardingResult, Test.beSucceeded())
+    onboardByEVMAddress(signer: alice, evmAddressHex: erc20AddressHex, beFailed: false)
 
     requiresOnboarding = evmAddressRequiresOnboarding(erc20AddressHex)
         ?? panic("Problem getting onboarding requirement")
     Test.assertEqual(false, requiresOnboarding)
 
-    onboardingResult = executeTransaction(
-        "../transactions/bridge/onboarding/onboard_by_evm_address.cdc",
-        [erc20AddressHex],
-        alice
-    )
-    Test.expect(onboardingResult, Test.beFailed())
+    onboardByEVMAddress(signer: alice, evmAddressHex: erc20AddressHex, beFailed: true)
 }
 
 access(all)

@@ -1280,6 +1280,27 @@ contract FlowEVMBridgeUtils {
         assert(toPostStatus, message: "Recipient does not own the NFT after minting")
     }
 
+    /// Executes a safeMint call on the given ERC721 contract address, minting an ERC721 to the named recipient and
+    /// asserting pre- and post-state changes. Assumes the bridge COA has the authority to mint the NFT.
+    ///
+    access(account)
+    fun mustFulfillNFTToEVM(erc721Address: EVM.EVMAddress, to: EVM.EVMAddress, id: UInt256, maybeBytes: EVM.EVMBytes?) {
+        let fulfillResult = self.call(
+            signature: "fulfillToEVM(address,uint256,bytes)",
+            targetEVMAddress: erc721Address,
+            args: [to, id, maybeBytes ?? EVM.EVMBytes(value: [])],
+            gasLimit: FlowEVMBridgeConfig.gasLimit,
+            value: 0.0
+        )
+        assert(
+            fulfillResult.status == EVM.Status.successful,
+            message: "Fulfill ERC721 \(erc721Address.toString()) with id \(id) to \(to.toString()) failed with error code \(fulfillResult.errorCode): \(fulfillResult.errorMessage)"
+        )
+
+        let toPostStatus = self.isOwner(ofNFT: id, owner: to, evmContractAddress: erc721Address)
+        assert(toPostStatus, message: "Recipient does not own the NFT after minting")
+    }
+
     /// Executes updateTokenURI call on the given ERC721 contract address, updating the tokenURI of the NFT. This is
     /// not a standard ERC721 function, but is implemented in the bridge-deployed ERC721 implementation to enable
     /// synchronization of token metadata with Cadence NFT state on bridging.
@@ -1423,6 +1444,22 @@ contract FlowEVMBridgeUtils {
         // Confirm the transfer of the expected was successful in both sending owner and recipient escrow
         assert(ownerPostBalance == ownerPreBalance - amount, message: "Transfer to owner failed")
         assert(bridgePostBalance == bridgePreBalance + amount, message: "Transfer to bridge escrow failed")
+    }
+
+    /// Executes a `burn(uint256)` call targeting the provided ERC721 contract address. Reverts if the call is
+    /// unsuccessful
+    ///
+    access(account)
+    fun mustBurnERC721(erc721Address: EVM.EVMAddress, id: UInt256) {
+        let burnResult = FlowEVMBridgeUtils.call(
+            signature: "burn(uint256)",
+            targetEVMAddress: erc721Address,
+            args: [id],
+            gasLimit: FlowEVMBridgeConfig.gasLimit,
+            value: 0.0
+        )
+        assert(burnResult.status == EVM.Status.successful,
+            message: "0x\(erc721Address.toString()).burn(\(id)) failed with error code \(burnResult.errorCode) and message: \(burnResult.errorMessage)")
     }
 
     /// Calls to the bridge factory to deploy an ERC721/ERC20 contract and returns the deployed contract address

@@ -2,7 +2,7 @@ import "EVM"
 
 /// Executes the calldata from the signer's COA
 ///
-transaction(evmContractAddressHex: String, calldata: String, gasLimit: UInt64, value: UFix64) {
+transaction(evmContractAddressHex: String, calldata: String, gasLimit: UInt64, value: UInt) {
 
     let evmAddress: EVM.EVMAddress
     let coa: auth(EVM.Call) &EVM.CadenceOwnedAccount
@@ -15,8 +15,7 @@ transaction(evmContractAddressHex: String, calldata: String, gasLimit: UInt64, v
     }
 
     execute {
-        let valueBalance = EVM.Balance(attoflow: 0)
-        valueBalance.setFLOW(flow: value)
+        let valueBalance = EVM.Balance(attoflow: value)
         let callResult = self.coa.call(
             to: self.evmAddress,
             data: calldata.decodeHex(),
