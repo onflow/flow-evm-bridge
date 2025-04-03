@@ -83,6 +83,20 @@ access(all) contract FlowEVMBridgeCustomAssociations {
         return self.borrowNFTCustomConfig(forType: forType)?.isPaused() ?? nil
     }
 
+    access(all)
+    fun getCustomConfigInfo(forType: Type): FlowEVMBridgeCustomAssociationTypes.CustomConfigInfo? {
+        if let config = self.borrowNFTCustomConfig(forType: forType) {
+            let fulfillmentMinterType = config.checkFulfillmentMinter() == true ? config.borrowFulfillmentMinter().getType() : nil
+            return FlowEVMBridgeCustomAssociationTypes.CustomConfigInfo(
+                updatedFromBridged: config.isUpdatedFromBridged(),
+                isPaused: config.isPaused(),
+                fulfillmentMinterType: fulfillmentMinterType,
+                evmPointer: self.getEVMPointerAsRegistered(forType: forType)!
+            )
+        }
+        return nil
+    }
+
     /// Allows the bridge contracts to preserve a custom association. Will revert if a custom association already exists
     ///
     /// @param type: The Cadence Type of the associated asset.

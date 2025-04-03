@@ -679,7 +679,60 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         feeProvider: auth(FungibleToken.Withdraw) &{FungibleToken.Provider},
         protectedTransferCall: fun (EVM.EVMAddress): EVM.Result
     ): @{NonFungibleToken.NFT} {
-        panic("")
+        pre {
+            FlowEVMBridgeUtils.isCadenceNative(type: type):
+            "Attempting to move bridge-defined NFT type \(type.identifier) from EVM as Cadence-native via handleCadenceNativeCrossVMNFTFromEVM"
+        }
+        let configInfo = FlowEVMBridgeCustomAssociations.getCustomConfigInfo(forType: type)!
+        if !configInfo.updatedFromBridged {
+            FlowEVMBridgeUtils.mustEscrowERC721(
+                owner: owner,
+                id: id,
+                erc721Address: configInfo.evmPointer.evmContractAddress,
+                protectedTransferCall: protectedTransferCall
+            )
+        } else {
+            let bridgedAssociation = FlowEVMBridgeConfig.getLegacyEVMAddressAssociated(with: type)!
+            if FlowEVMBridgeUtils.erc721Exists(erc721Address: bridgedAssociation, id: id) {
+                let bridgedTokenOwner = FlowEVMBridgeUtils.ownerOf(id: id, evmContractAddress: bridgedAssociation)!
+                if owner.equals(bridgedTokenOwner) {
+                    FlowEVMBridgeUtils.mustEscrowERC721(
+                        owner: owner,
+                        id: id,
+                        erc721Address: bridgedAssociation,
+                        protectedTransferCall: protectedTransferCall
+                    )
+                } else if configInfo.evmPointer.evmContractAddress.equals(bridgedTokenOwner) {
+                    FlowEVMBridgeUtils.mustEscrowERC721(
+                        owner: owner,
+                        id: id,
+                        erc721Address: configInfo.evmPointer.evmContractAddress,
+                        protectedTransferCall: protectedTransferCall
+                    )
+                    FlowEVMBridgeUtils.mustUnwrapERC721(
+                        id: id,
+                        erc721WrapperAddress: configInfo.evmPointer.evmContractAddress,
+                        underlyingEVMAddress: bridgedAssociation
+                    )
+                } else {
+                    panic("") // TODO
+                }
+                // must burn
+                FlowEVMBridgeUtils.mustBurnERC721(erc721Address: bridgedAssociation, id: id)
+            } else {
+                FlowEVMBridgeUtils.mustEscrowERC721(
+                    owner: owner,
+                    id: id,
+                    erc721Address: configInfo.evmPointer.evmContractAddress,
+                    protectedTransferCall: protectedTransferCall
+                )
+            }
+        }
+
+        return <-FlowEVMBridgeNFTEscrow.unlockNFT(
+            type: type,
+            id: FlowEVMBridgeNFTEscrow.getLockedCadenceID(type: type, evmID: id)!
+        )
     }
 
     access(self)
@@ -690,6 +743,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         feeProvider: auth(FungibleToken.Withdraw) &{FungibleToken.Provider},
         protectedTransferCall: fun (EVM.EVMAddress): EVM.Result
     ): @{NonFungibleToken.NFT} {
+        // TODO: Assertions
         var _type = type
         if !FlowEVMBridgeUtils.isCadenceNative(type: type) {
             // Find and assign the updated custom Cadence NFT Type associated with the EVM-native ERC721

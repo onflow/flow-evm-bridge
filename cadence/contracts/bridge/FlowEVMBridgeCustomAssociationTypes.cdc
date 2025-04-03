@@ -43,6 +43,25 @@ access(all) contract FlowEVMBridgeCustomAssociationTypes {
         }
     }
 
+    access(all) struct CustomConfigInfo {
+        access(all) let updatedFromBridged: Bool
+        access(all) let isPaused: Bool
+        access(all) let fulfillmentMinterType: Type?
+        access(all) let evmPointer: CrossVMMetadataViews.EVMPointer
+        
+        view init(
+            updatedFromBridged: Bool,
+            isPaused: Bool,
+            fulfillmentMinterType: Type?,
+            evmPointer: CrossVMMetadataViews.EVMPointer
+        ) {
+            self.updatedFromBridged = updatedFromBridged
+            self.isPaused = isPaused
+            self.fulfillmentMinterType = fulfillmentMinterType
+            self.evmPointer = evmPointer
+        }
+    }
+
     /// Resource interface retrieving all relevant information for the VM bridge to fulfill bridge requests. The
     /// interface allows for extensibility in the event future config types are added in the future for various asset
     /// types.

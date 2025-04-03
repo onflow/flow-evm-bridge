@@ -591,20 +591,23 @@ contract FlowEVMBridgeUtils {
     ///
     access(all)
     fun isOwner(ofNFT: UInt256, owner: EVM.EVMAddress, evmContractAddress: EVM.EVMAddress): Bool {
+        return self.ownerOf(id: ofNFT, evmContractAddress: evmContractAddress)?.equals(owner) ?? false
+    }
+
+    access(all)
+    fun ownerOf(id: UInt256, evmContractAddress: EVM.EVMAddress): EVM.EVMAddress? {
         let callResult = self.call(
                 signature: "ownerOf(uint256)",
                 targetEVMAddress: evmContractAddress,
-                args: [ofNFT],
+                args: [id],
                 gasLimit: FlowEVMBridgeConfig.gasLimit,
                 value: 0.0
             )
-        assert(callResult.status == EVM.Status.successful, message: "Call to ERC721.ownerOf(uint256) failed")
-        let decodedCallResult = EVM.decodeABI(types: [Type<EVM.EVMAddress>()], data: callResult.data)
-        if decodedCallResult.length == 1 {
-            let actualOwner = decodedCallResult[0] as! EVM.EVMAddress
-            return actualOwner.equals(owner)
+        if callResult.status == EVM.Status.failed {
+            return nil
         }
-        return false
+        let decodedCallResult = EVM.decodeABI(types: [Type<EVM.EVMAddress>()], data: callResult.data)
+        return decodedCallResult.length == 1 ? decodedCallResult[0] as! EVM.EVMAddress : nil
     }
 
     /// Returns whether the given owner is approved for the given NFT. Reverts on EVM call failure.
@@ -1341,6 +1344,36 @@ contract FlowEVMBridgeUtils {
         // Validate the NFT is now owned by the bridge COA, escrow the NFT
         let isEscrowed = self.isOwner(ofNFT: id, owner: self.getBridgeCOAEVMAddress(), evmContractAddress: erc721Address)
         assert(isEscrowed, message: "ERC721 was not successfully escrowed")
+    }
+
+    access(account)
+    fun mustUnwrapERC721(
+        id: UInt256,
+        erc721WrapperAddress: EVM.EVMAddress,
+        underlyingEVMAddress: EVM.EVMAddress
+    ) {
+        assert(
+            self.isOwner(ofNFT: id, owner: erc721WrapperAddress, evmContractAddress: underlyingEVMAddress),
+            message: "Attempting to unwrap \(underlyingEVMAddress.toString()) ID \(id), but token is not wrapped by \(erc721WrapperAddress.toString())"
+        )
+        let bridgeCOA = self.getBridgeCOAEVMAddress()
+
+        let unwrapResult: EVM.Result = self.call(
+            signature: "withdrawTo(address,uint256[])",
+            targetEVMAddress: erc721WrapperAddress,
+            args: [bridgeCOA, [id]],
+            gasLimit: FlowEVMBridgeConfig.gasLimit,
+            value: 0.0
+        )
+        assert(
+            unwrapResult.status == EVM.Status.successful,
+            message: "Call to \(erc721WrapperAddress.toString()) ERC721Wrapper.withdrawTo(address,uint256[]) failed"
+        )
+
+        assert(
+            self.isOwner(ofNFT: id, owner: bridgeCOA, evmContractAddress: underlyingEVMAddress),
+            message: "Unsuccessful escrow of wrapped ERC721 \(erc721WrapperAddress.toString()) wrapping underlying \(underlyingEVMAddress.toString()) ID \(id)"
+        )
     }
 
     /// Mints ERC20 tokens to the recipient and confirms that the recipient's balance was updated
