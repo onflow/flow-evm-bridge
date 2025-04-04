@@ -553,32 +553,35 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         let bridgedAssoc = FlowEVMBridgeConfig.getLegacyEVMAddressAssociated(with: type)
         let customAssocByType = FlowEVMBridgeCustomAssociations.getEVMAddressAssociated(with: type)
         let customAssocByEVMAddr =  bridgedAssoc != nil ? FlowEVMBridgeCustomAssociations.getTypeAssociated(with: bridgedAssoc!) : nil
+        // Initialize the internal handler method that will be used to move the NFT from EVM
+        var handler: (fun (EVM.EVMAddress, Type, UInt256, auth(FungibleToken.Withdraw) &{FungibleToken.Provider}, fun (EVM.EVMAddress): EVM.Result): @{NonFungibleToken.NFT})? = nil
         if bridgedAssoc != nil && customAssocByType == nil && customAssocByEVMAddr == nil {
             // Common case - bridge-defined counterpart in non-native VM
-            return <- self.handleDefaultNFTFromEVM(
-                owner: owner,
-                type: type,
-                id: id,
-                feeProvider: feeProvider,
-                protectedTransferCall: protectedTransferCall
-            )
+            handler = self.handleDefaultNFTFromEVM
         } else if customAssocByType != nil && customAssocByEVMAddr == nil {
             // NFT is registered as cross-VM
-            return <- self.handleCrossVMNFTFromEVM(
-                owner: owner,
-                type: type,
-                id: id,
-                feeProvider: feeProvider,
-                protectedTransferCall: protectedTransferCall
-            )
+            handler = self.handleCrossVMNFTFromEVM
         } else if customAssocByType == nil && customAssocByEVMAddr != nil {
-            // TODO
             // Dealing with a bridge-defined NFT after a custom association has been configured
-            // return self.handleUpdatedBridgedNFTToEVM(token: <-token, to: to, feeProvider: feeProvider)
-            panic("TODO")
+            handler = self.handleUpdatedBridgedNFTFromEVM
+        } else {
+            // customAssocByType != nil && customAssocByEVMAddr != nil
+            panic("Unknown error encountered bridging NFT \(type.identifier) with ID \(id) from EVM owner \(owner.toString())")
         }
-        // customAssocByType != nil && customAssocByEVMAddr != nil
-        panic("Unknown error encountered bridging NFT \(type.identifier) with ID \(id) from EVM owner \(owner.toString())")
+        // Return the bridged NFT, using the appropriate handler
+        return <- handler!(owner: owner, type: type, id: id, feeProvider: feeProvider, protectedTransferCall: protectedTransferCall)
+    }
+
+    access(self)
+    fun handleBridgeNFTFromEVM(
+        owner: EVM.EVMAddress,
+        type: Type,
+        id: UInt256,
+        feeProvider: auth(FungibleToken.Withdraw) &{FungibleToken.Provider},
+        protectedTransferCall: fun (EVM.EVMAddress): EVM.Result,
+        internalHandler: fun (EVM.EVMAddress, Type, UInt256, auth(FungibleToken.Withdraw) &{FungibleToken.Provider}, fun (EVM.EVMAddress): EVM.Result,): @{NonFungibleToken.NFT}
+    ): @{NonFungibleToken.NFT} {
+        return <- internalHandler(owner, type, id, feeProvider, protectedTransferCall)
     }
 
     access(self)
@@ -684,51 +687,48 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
             "Attempting to move bridge-defined NFT type \(type.identifier) from EVM as Cadence-native via handleCadenceNativeCrossVMNFTFromEVM"
         }
         let configInfo = FlowEVMBridgeCustomAssociations.getCustomConfigInfo(forType: type)!
-        if !configInfo.updatedFromBridged {
-            FlowEVMBridgeUtils.mustEscrowERC721(
-                owner: owner,
-                id: id,
-                erc721Address: configInfo.evmPointer.evmContractAddress,
-                protectedTransferCall: protectedTransferCall
-            )
-        } else {
-            let bridgedAssociation = FlowEVMBridgeConfig.getLegacyEVMAddressAssociated(with: type)!
-            if FlowEVMBridgeUtils.erc721Exists(erc721Address: bridgedAssociation, id: id) {
-                let bridgedTokenOwner = FlowEVMBridgeUtils.ownerOf(id: id, evmContractAddress: bridgedAssociation)!
-                if owner.equals(bridgedTokenOwner) {
-                    FlowEVMBridgeUtils.mustEscrowERC721(
-                        owner: owner,
-                        id: id,
-                        erc721Address: bridgedAssociation,
-                        protectedTransferCall: protectedTransferCall
-                    )
-                } else if configInfo.evmPointer.evmContractAddress.equals(bridgedTokenOwner) {
-                    FlowEVMBridgeUtils.mustEscrowERC721(
-                        owner: owner,
-                        id: id,
-                        erc721Address: configInfo.evmPointer.evmContractAddress,
-                        protectedTransferCall: protectedTransferCall
-                    )
-                    FlowEVMBridgeUtils.mustUnwrapERC721(
-                        id: id,
-                        erc721WrapperAddress: configInfo.evmPointer.evmContractAddress,
-                        underlyingEVMAddress: bridgedAssociation
-                    )
-                } else {
-                    panic("") // TODO
-                }
-                // must burn
-                FlowEVMBridgeUtils.mustBurnERC721(erc721Address: bridgedAssociation, id: id)
-            } else {
+        let customERC721 = configInfo.evmPointer.evmContractAddress
+        let bridgedAssociation = FlowEVMBridgeConfig.getLegacyEVMAddressAssociated(with: type)
+        let bridgedTokenExists = bridgedAssociation != nil ? FlowEVMBridgeUtils.erc721Exists(erc721Address: bridgedAssociation!, id: id) : false
+        if configInfo.updatedFromBridged && bridgedTokenExists {
+            let bridgedTokenOwner = FlowEVMBridgeUtils.ownerOf(id: id, evmContractAddress: bridgedAssociation!)!
+            if owner.equals(owner) {
                 FlowEVMBridgeUtils.mustEscrowERC721(
                     owner: owner,
                     id: id,
-                    erc721Address: configInfo.evmPointer.evmContractAddress,
+                    erc721Address: bridgedAssociation!,
                     protectedTransferCall: protectedTransferCall
                 )
+            } else if bridgedTokenOwner.equals(customERC721) {
+                // Bridged token owned by custom ERC721 - treat as OpenZeppelin's ERC721Wrapper, escrow & unwrap
+                FlowEVMBridgeUtils.mustEscrowERC721(
+                    owner: owner,
+                    id: id,
+                    erc721Address: customERC721,
+                    protectedTransferCall: protectedTransferCall
+                )
+                FlowEVMBridgeUtils.mustUnwrapERC721(
+                    id: id,
+                    erc721WrapperAddress: customERC721,
+                    underlyingEVMAddress: bridgedAssociation!
+                )
+            } else {
+                // Bridged token not wrapped nor owned by caller - could not determine owner
+                panic("Bridged ERC721 \(bridgedAssociation!.toString()) ID \(id) still exists after \(type.identifier) "
+                    .concat("was updated to associate with ERC721 \(customERC721.toString()), but the bridged token is ")
+                    .concat("neither wrapped nor owned by caller \(owner.toString()). Could not determine owner."))
             }
+            // Burn the bridged ERC721, taking the bridged representation out of circulation in favor of custom ERC721
+            FlowEVMBridgeUtils.mustBurnERC721(erc721Address: bridgedAssociation!, id: id)
+        } else {
+            FlowEVMBridgeUtils.mustEscrowERC721(
+                owner: owner,
+                id: id,
+                erc721Address: customERC721,
+                protectedTransferCall: protectedTransferCall
+            )
         }
-
+        // Cadence-native NFTs must be in escrow, so unlock & return
         return <-FlowEVMBridgeNFTEscrow.unlockNFT(
             type: type,
             id: FlowEVMBridgeNFTEscrow.getLockedCadenceID(type: type, evmID: id)!
@@ -743,8 +743,12 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         feeProvider: auth(FungibleToken.Withdraw) &{FungibleToken.Provider},
         protectedTransferCall: fun (EVM.EVMAddress): EVM.Result
     ): @{NonFungibleToken.NFT} {
-        // TODO: Assertions
+        pre {
+            id <= UInt256(UInt64.max):
+            "NFT ID \(id) is greater than the maximum Cadence ID \(UInt64.max) - cannot fulfill this NFT from EVM"
+        }
         var _type = type
+        // Burn if NFT is found to be bridge-defined as it's to be replaced by the registered custom cross-VM NFT
         if !FlowEVMBridgeUtils.isCadenceNative(type: type) {
             // Find and assign the updated custom Cadence NFT Type associated with the EVM-native ERC721
             let evmAddress = FlowEVMBridgeConfig.getEVMAddressAssociated(with: type)!
@@ -756,9 +760,6 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
             }
         }
 
-        assert(id <= UInt256(UInt64.max),
-            message: "NFT ID \(id) is greater than the maximum Cadence ID \(UInt64.max) - cannot fulfill this NFT from EVM")
-
         if FlowEVMBridgeNFTEscrow.isLocked(type: type, id: UInt64(id)) {
             // Unlock the NFT from escrow
             return <-FlowEVMBridgeNFTEscrow.unlockNFT(type: _type, id: UInt64(id))
@@ -766,6 +767,21 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
             // Otherwise, fulfill via configured NFTFulfillmentMinter
             return <- FlowEVMBridgeCustomAssociations.fulfillNFTFromEVM(forType: _type, id: id)
         }
+    }
+
+    access(self)
+    fun handleUpdatedBridgedNFTFromEVM(
+        owner: EVM.EVMAddress,
+        type: Type,
+        id: UInt256,
+        feeProvider: auth(FungibleToken.Withdraw) &{FungibleToken.Provider},
+        protectedTransferCall: fun (EVM.EVMAddress): EVM.Result
+    ): @{NonFungibleToken.NFT} {
+        pre {
+            FlowEVMBridgeUtils.isCadenceNative(type: type)
+        }
+        // TODO
+        panic("") // tmp
     }
 
     /**************************
