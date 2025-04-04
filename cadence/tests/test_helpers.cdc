@@ -338,6 +338,16 @@ fun isOwner(of: UInt256, ownerEVMAddrHex: String, erc721AddressHex: String): Boo
 }
 
 access(all)
+fun ownerOf(id: UInt256, erc721AddressHex: String): String? {
+    let ownerOfResult = _executeScript(
+        "../scripts/utils/owner_of.cdc",
+        [id, erc721AddressHex]
+    )
+    Test.expect(ownerOfResult, Test.beSucceeded())
+    return ownerOfResult.returnValue as! String? ?? panic("Problem getting owner of \(erc721AddressHex) \(id)")
+}
+
+access(all)
 fun getCadenceTotalSupply(contractAddress: Address, contractName: String, vaultIdentifier: String): UFix64? {
     let exampleTokenTotalSupplyResult = _executeScript(
         "../scripts/tokens/total_supply.cdc",

@@ -193,21 +193,21 @@ fun testBridgeERC721FromEVMSucceeds() {
         bridgeAccountAddr: bridgeAccount.address,
         beFailed: false
     )
-    // let evts = Test.eventsOfType(Type<IFlowEVMNFTBridge.BridgedNFTFromEVM>())
-    // Test.assertEqual(1, evts.length)
-    // let bridgedEvt = evts[0] as! IFlowEVMNFTBridge.BridgedNFTFromEVM
-    // Test.assertEqual(id, UInt256(bridgedEvt.id))
-    // Test.assertEqual(id, bridgedEvt.evmID)
-    // Test.assertEqual(userCOA, bridgedEvt.caller)
-    // Test.assertEqual(erc721AddressHex, bridgedEvt.evmContractAddress)
+    let evts = Test.eventsOfType(Type<IFlowEVMNFTBridge.BridgedNFTFromEVM>())
+    Test.assertEqual(1, evts.length)
+    let bridgedEvt = evts[0] as! IFlowEVMNFTBridge.BridgedNFTFromEVM
+    Test.assertEqual(id, UInt256(bridgedEvt.id))
+    Test.assertEqual(id, bridgedEvt.evmID)
+    Test.assertEqual(userCOA, bridgedEvt.caller)
+    Test.assertEqual(erc721AddressHex, bridgedEvt.evmContractAddress)
 
-    // // assert ERC721 is in escrow under bridge COA
-    // let isEscrowed = isOwner(of: UInt256(id), ownerEVMAddrHex: getBridgeCOAAddressHex(), erc721AddressHex: erc721AddressHex)
-    // Test.assert(isEscrowed, message: "ERC721 \(id) was not escrowed after bridging from EVM")
-    // // ensure signer has the bridged NFT in their collection
-    // let ids = getIDs(ownerAddr: user.address, storagePathIdentifier: "ExampleCadenceNativeNFTCollection")
-    // Test.assertEqual(1, ids.length)
-    // Test.assertEqual(id, UInt256(ids[0]))
+    // assert ERC721 is in escrow under bridge COA
+    let isEscrowed = isOwner(of: id, ownerEVMAddrHex: getBridgeCOAAddressHex(), erc721AddressHex: erc721AddressHex)
+    Test.assert(isEscrowed, message: "ERC721 \(id) was not escrowed after bridging from EVM")
+    // ensure signer has the bridged NFT in their collection
+    let ids = getIDs(ownerAddr: user.address, storagePathIdentifier: "ExampleEVMNativeNFTCollection")
+    Test.assertEqual(1, ids.length)
+    Test.assertEqual(id, UInt256(ids[0]))
 }
 
 // TODO: Implement after bridgeNFTFromEVM route is updated for cross-VM NFTs

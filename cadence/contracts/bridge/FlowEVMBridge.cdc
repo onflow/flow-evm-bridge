@@ -748,17 +748,20 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
             "NFT ID \(id) is greater than the maximum Cadence ID \(UInt64.max) - cannot fulfill this NFT from EVM"
         }
         var _type = type
+        let erc721Address = FlowEVMBridgeConfig.getEVMAddressAssociated(with: type)!
+
         // Burn if NFT is found to be bridge-defined as it's to be replaced by the registered custom cross-VM NFT
         if !FlowEVMBridgeUtils.isCadenceNative(type: type) {
             // Find and assign the updated custom Cadence NFT Type associated with the EVM-native ERC721
-            let evmAddress = FlowEVMBridgeConfig.getEVMAddressAssociated(with: type)!
-            _type = FlowEVMBridgeConfig.getTypeAssociated(with: evmAddress)!
+            _type = FlowEVMBridgeConfig.getTypeAssociated(with: erc721Address)!
 
             // Burn the bridged NFT token if it's locked
             if let cadenceID = FlowEVMBridgeNFTEscrow.getLockedCadenceID(type: type, evmID: id) {
                 Burner.burn(<-FlowEVMBridgeNFTEscrow.unlockNFT(type: type, id: cadenceID))
             }
         }
+
+        FlowEVMBridgeUtils.mustEscrowERC721(owner: owner, id: id, erc721Address: erc721Address, protectedTransferCall: protectedTransferCall)
 
         if FlowEVMBridgeNFTEscrow.isLocked(type: type, id: UInt64(id)) {
             // Unlock the NFT from escrow
@@ -778,7 +781,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         protectedTransferCall: fun (EVM.EVMAddress): EVM.Result
     ): @{NonFungibleToken.NFT} {
         pre {
-            FlowEVMBridgeUtils.isCadenceNative(type: type)
+            FlowEVMBridgeUtils.isCadenceNative(type: type): ""
         }
         // TODO
         panic("") // tmp
