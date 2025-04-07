@@ -94,24 +94,7 @@ fun testOnboardAndUpdateExampleNFTSucceeds() {
     // Create a COA in exampleNFT account
     createCOA(signer: exampleNFTAccount, fundingAmount: 0.0)
     // Deploy the cadence native ERC721
-    let encodedArgs = EVM.encodeABI([
-        "ExampleNFT",
-        "XMPL",
-        exampleNFTAccount.address.toString(),
-        exampleNFTIdentifier,
-        EVM.addressFromString(getBridgeCOAAddressHex())
-    ])
-    let finalBytecode = getCadenceNativeERC721Bytecode().decodeHex().concat(encodedArgs)
-    let erc721DeployResult = executeTransaction(
-        "../transactions/evm/deploy.cdc",
-        [String.encodeHex(finalBytecode), UInt64(15_000_000), 0.0],
-        exampleNFTAccount
-    )
-    Test.expect(erc721DeployResult, Test.beSucceeded())
-    // Get the deployed ERC721 address
-    evts = Test.eventsOfType(Type<EVM.TransactionExecuted>())
-    let deployedEvt = evts[evts.length - 1] as! EVM.TransactionExecuted
-    customERC721AddressHex = deployedEvt.contractAddress
+    customERC721AddressHex = deployCadenceNativeERC721(signer: exampleNFTAccount)
 
     // Save that deployed address to exampleNFT account storage at /storage/erc721ContractAddress
     let saveAddressResult = executeTransaction(
@@ -171,24 +154,7 @@ fun testBridgeNFTToEVMSucceeds() {
     // Create a COA in exampleNFT account
     createCOA(signer: exampleNFTAccount, fundingAmount: 0.0)
     // Deploy the cadence native ERC721
-    let encodedArgs = EVM.encodeABI([
-        "ExampleNFT",
-        "XMPL",
-        exampleNFTAccount.address.toString(),
-        exampleNFTIdentifier,
-        EVM.addressFromString(getBridgeCOAAddressHex())
-    ])
-    let finalBytecode = getCadenceNativeERC721Bytecode().decodeHex().concat(encodedArgs)
-    let erc721DeployResult = executeTransaction(
-        "../transactions/evm/deploy.cdc",
-        [String.encodeHex(finalBytecode), UInt64(15_000_000), 0.0],
-        exampleNFTAccount
-    )
-    Test.expect(erc721DeployResult, Test.beSucceeded())
-    // Get the deployed ERC721 address
-    var evts = Test.eventsOfType(Type<EVM.TransactionExecuted>())
-    let deployedEvt = evts[evts.length - 1] as! EVM.TransactionExecuted
-    let customERC721AddressHex = deployedEvt.contractAddress
+    let customERC721AddressHex = deployCadenceNativeERC721(signer: exampleNFTAccount)
 
     // Save that deployed address to exampleNFT account storage at /storage/erc721ContractAddress
     let saveAddressResult = executeTransaction(
@@ -244,13 +210,27 @@ fun testBridgeNFTToEVMSucceeds() {
     Test.assert(userIsOwner, message: "Expected user COA \(userCOA) to owner ERC721 \(customERC721AddressHex) \(id) after bridging, but ownership was not found")
 }
 
-// TODO: After updating bridge NFT from EVM route
 access(all)
-fun testBridgeERC721FromEVMSucceeds() {}
+fun testBridgeERC721FromEVMSucceeds() {
+    Test.reset(to: snapshot)
 
-// TODO: After updating bridge NFT from EVM route
+    // create tmp account & setup
+    let user = Test.createAccount()
+    setupAccount(user, flowAmount: 10.0, coaAmount: 1.0)
+    let userCOA = getCOAAddressHex(atFlowAddress: user.address)
+
+    // Onboard & update
+    onboardByTypeIdentifier(signer: user, typeIdentifier: exampleNFTIdentifier, beFailed: false)
+    // Create a COA in exampleNFT account
+    createCOA(signer: exampleNFTAccount, fundingAmount: 0.0)
+    // Deploy the cadence native ERC721 & assign the deployment address
+    let customERC721AddressHex = deployCadenceNativeERC721(signer: exampleNFTAccount)
+}
+
 access(all)
-fun testMigrationFromBridgedERC721Succeeds() {}
+fun testMigrationFromBridgedERC721Succeeds() {
+    
+}
 
 /* --- Case-Specific Helpers --- */
 
@@ -267,6 +247,31 @@ fun setupAccount(_ user: Test.TestAccount, flowAmount: UFix64, coaAmount: UFix64
         user
     )
     Test.expect(setupResult, Test.beSucceeded())
+}
+
+access(all)
+fun deployCadenceNativeERC721(signer: Test.TestAccount): String {
+    // Deploy the cadence native ERC721
+    let encodedArgs = EVM.encodeABI([
+        "ExampleNFT",
+        "XMPL",
+        exampleNFTAccount.address.toString(),
+        exampleNFTIdentifier,
+        EVM.addressFromString(getBridgeCOAAddressHex())
+    ])
+    let finalBytecode = getCadenceNativeERC721Bytecode().decodeHex().concat(encodedArgs)
+    let erc721DeployResult = executeTransaction(
+        "../transactions/evm/deploy.cdc",
+        [String.encodeHex(finalBytecode), UInt64(15_000_000), 0.0],
+        exampleNFTAccount
+    )
+    Test.expect(erc721DeployResult, Test.beSucceeded())
+
+    // Get the deployed ERC721 address
+    var evts = Test.eventsOfType(Type<EVM.TransactionExecuted>())
+    let customERC721AddressHex = getEVMAddressHexFromEvents(evts, idx: evts.length - 1)
+
+    return "0x\(customERC721AddressHex)"
 }
 
 access(all)
