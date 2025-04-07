@@ -96,21 +96,8 @@ fun testOnboardAndUpdateExampleNFTSucceeds() {
     // Deploy the cadence native ERC721
     customERC721AddressHex = deployCadenceNativeERC721(signer: exampleNFTAccount)
 
-    // Save that deployed address to exampleNFT account storage at /storage/erc721ContractAddress
-    let saveAddressResult = executeTransaction(
-        "./transactions/save_erc721_address.cdc",
-        [customERC721AddressHex],
-        exampleNFTAccount
-    )
-    Test.expect(saveAddressResult, Test.beSucceeded())
-
     // Update the ExampleNFT contract from hex code
-    let updateResult = executeTransaction(
-        "./transactions/update_contract.cdc",
-        ["ExampleNFT", getExampleNFTAsCrossVMCode()],
-        exampleNFTAccount
-    )
-    Test.expect(updateResult, Test.beSucceeded())
+    updateExampleNFT(signer: exampleNFTAccount)
 
     // Validate onboarding status
     typeRequiresOnboarding = typeRequiresOnboardingByIdentifier(exampleNFTIdentifier)
@@ -156,21 +143,8 @@ fun testBridgeNFTToEVMSucceeds() {
     // Deploy the cadence native ERC721
     let customERC721AddressHex = deployCadenceNativeERC721(signer: exampleNFTAccount)
 
-    // Save that deployed address to exampleNFT account storage at /storage/erc721ContractAddress
-    let saveAddressResult = executeTransaction(
-        "./transactions/save_erc721_address.cdc",
-        [customERC721AddressHex],
-        exampleNFTAccount
-    )
-    Test.expect(saveAddressResult, Test.beSucceeded())
-
     // Update the ExampleNFT contract from hex code
-    let updateResult = executeTransaction(
-        "./transactions/update_contract.cdc",
-        ["ExampleNFT", getExampleNFTAsCrossVMCode()],
-        exampleNFTAccount
-    )
-    Test.expect(updateResult, Test.beSucceeded())
+    updateExampleNFT(signer: exampleNFTAccount)
 
     // Register the updated ExampleNFT with the custom ERC721
     registerCrossVMNFT(
@@ -225,11 +199,70 @@ fun testBridgeERC721FromEVMSucceeds() {
     createCOA(signer: exampleNFTAccount, fundingAmount: 0.0)
     // Deploy the cadence native ERC721 & assign the deployment address
     let customERC721AddressHex = deployCadenceNativeERC721(signer: exampleNFTAccount)
+
+    // Update the ExampleNFT contract
+    updateExampleNFT(signer: exampleNFTAccount)
+
+    // Register the updated ExampleNFT with the custom ERC721
+    registerCrossVMNFT(
+        signer: exampleNFTAccount,
+        nftTypeIdentifier: exampleNFTIdentifier,
+        fulfillmentMinterPath: nil,
+        beFailed: false
+    )
+
+    // mint the NFT to the tmp account
+    mintNFT(signer: exampleNFTAccount, recipient: user.address)
+    var ids = getIDs(ownerAddr: user.address, storagePathIdentifier: "cadenceExampleNFTCollection")
+    Test.assertEqual(1, ids.length)
+    let id = ids[0]
+
+    // bridge to EVM
+    bridgeNFTToEVM(
+        signer: user,
+        nftIdentifier: exampleNFTIdentifier,
+        nftID: id,
+        bridgeAccountAddr: bridgeAccount.address,
+        beFailed: false
+    )
+
+    // assert NFT is in locked in Cadence-side escrow
+    let isLocked = isNFTLocked(nftTypeIdentifier: exampleNFTIdentifier, id: id)
+    Test.assert(isLocked, message: "Expected ExampleNFT to be locked in escrow, but NFT \(id) was not locked")
+    // ensure signer's COA owns the custom ERC721 token
+    let userIsOwner = isOwner(of: UInt256(id), ownerEVMAddrHex: userCOA, erc721AddressHex: customERC721AddressHex)
+    Test.assert(userIsOwner, message: "Expected user COA \(userCOA) to owner ERC721 \(customERC721AddressHex) \(id) after bridging, but ownership was not found")
+
+    bridgeNFTFromEVM(
+        signer: user,
+        nftIdentifier: exampleNFTIdentifier,
+        erc721ID: UInt256(id),
+        bridgeAccountAddr: bridgeAccount.address,
+        beFailed: false
+    )
+
+    // assert on events
+    let evts = Test.eventsOfType(Type<IFlowEVMNFTBridge.BridgedNFTFromEVM>())
+    Test.assertEqual(1, evts.length)
+    let bridgedEvt = evts[0] as! IFlowEVMNFTBridge.BridgedNFTFromEVM
+    Test.assertEqual(id, bridgedEvt.id)
+    Test.assertEqual(UInt256(id), bridgedEvt.evmID)
+    Test.assertEqual(userCOA, bridgedEvt.caller)
+    Test.assertEqual(customERC721AddressHex, "0x\(bridgedEvt.evmContractAddress)")
+
+    // assert ERC721 is in escrow under bridge COA
+    let isEscrowed = isOwner(of: UInt256(id), ownerEVMAddrHex: getBridgeCOAAddressHex(), erc721AddressHex: customERC721AddressHex)
+    Test.assert(isEscrowed, message: "ERC721 \(id) was not escrowed after bridging from EVM")
+
+    // ensure signer has the bridged NFT in their collection
+    ids = getIDs(ownerAddr: user.address, storagePathIdentifier: "cadenceExampleNFTCollection")
+    Test.assertEqual(1, ids.length)
+    Test.assertEqual(id, ids[0])
 }
 
 access(all)
 fun testMigrationFromBridgedERC721Succeeds() {
-    
+    // TODO
 }
 
 /* --- Case-Specific Helpers --- */
@@ -263,7 +296,7 @@ fun deployCadenceNativeERC721(signer: Test.TestAccount): String {
     let erc721DeployResult = executeTransaction(
         "../transactions/evm/deploy.cdc",
         [String.encodeHex(finalBytecode), UInt64(15_000_000), 0.0],
-        exampleNFTAccount
+        signer
     )
     Test.expect(erc721DeployResult, Test.beSucceeded())
 
@@ -271,7 +304,25 @@ fun deployCadenceNativeERC721(signer: Test.TestAccount): String {
     var evts = Test.eventsOfType(Type<EVM.TransactionExecuted>())
     let customERC721AddressHex = getEVMAddressHexFromEvents(evts, idx: evts.length - 1)
 
+    // Save that deployed address to exampleNFT account storage at /storage/erc721ContractAddress
+    let saveAddressResult = executeTransaction(
+        "./transactions/save_erc721_address.cdc",
+        [customERC721AddressHex],
+        signer
+    )
+    Test.expect(saveAddressResult, Test.beSucceeded())
+
     return "0x\(customERC721AddressHex)"
+}
+
+access(all)
+fun updateExampleNFT(signer: Test.TestAccount) {
+    let updateResult = executeTransaction(
+        "./transactions/update_contract.cdc",
+        ["ExampleNFT", getExampleNFTAsCrossVMCode()],
+        signer
+    )
+    Test.expect(updateResult, Test.beSucceeded())
 }
 
 access(all)
