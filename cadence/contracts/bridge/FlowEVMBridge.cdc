@@ -781,10 +781,32 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         protectedTransferCall: fun (EVM.EVMAddress): EVM.Result
     ): @{NonFungibleToken.NFT} {
         pre {
-            FlowEVMBridgeUtils.isCadenceNative(type: type): ""
+            !FlowEVMBridgeUtils.isCadenceNative(type: type): // expect this type to be bridge-defined
+            "Expected a bridge-defined NFT but was provided NFT of type \(type.identifier)"
+            id < UInt256(UInt64.max):
+            "Requested ID \(id) exceeds UIn64.max - Cross-VM NFT IDs must be within UInt64 range across Cadence & EVM implementations"
         }
-        // TODO
-        panic("") // tmp
+        // Assign the legacy and custom associations
+        let bridgedAssoc = FlowEVMBridgeConfig.getLegacyEVMAddressAssociated(with: type)!
+        let updatedTypeAssoc = FlowEVMBridgeConfig.getTypeAssociated(with: bridgedAssoc)!
+
+        // Confirm custom association is EVM-native
+        let configInfo = FlowEVMBridgeCustomAssociations.getCustomConfigInfo(forType: updatedTypeAssoc)!
+        assert(configInfo.evmPointer.nativeVM == CrossVMMetadataViews.VM.EVM,
+            message: "Expected native VM for ERC721 \(bridgedAssoc.toString()) associated with NFT type \(type.identifier) to be EVM-native")
+
+        FlowEVMBridgeUtils.mustEscrowERC721(owner: owner, id: id, erc721Address: bridgedAssoc, protectedTransferCall: protectedTransferCall)
+
+        // Check if originally associated bridged token is in escrow, burning if so
+        if let lockedCadenceID = FlowEVMBridgeNFTEscrow.getLockedCadenceID(type: type, evmID: id) {
+            Burner.burn(<-FlowEVMBridgeNFTEscrow.unlockNFT(type: type, id: lockedCadenceID))
+        }
+        // Either unlock if locked or fulfill via configured NFTFulfillmentMinter
+        if FlowEVMBridgeNFTEscrow.isLocked(type: updatedTypeAssoc, id: UInt64(id)) {
+            return <- FlowEVMBridgeNFTEscrow.unlockNFT(type: updatedTypeAssoc, id: UInt64(id))
+        } else {
+            return <- FlowEVMBridgeCustomAssociations.fulfillNFTFromEVM(forType: updatedTypeAssoc, id: id)
+        }
     }
 
     /**************************
