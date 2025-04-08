@@ -526,12 +526,12 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
     /// Entrypoint to bridge ERC721 from EVM to Cadence as NonFungibleToken.NFT
     ///
     /// @param owner: The EVM address of the NFT owner. Current ownership and successful transfer (via
-    ///     `protectedApprovalCall`) is validated before the bridge request is executed.
+    ///     `protectedTransferCall`) is validated before the bridge request is executed.
     /// @param calldata: Caller-provided approve() call, enabling contract COA to operate on NFT in EVM contract
     /// @param id: The NFT ID to bridged
     /// @param evmContractAddress: Address of the EVM address defining the NFT being bridged - also call target
     /// @param feeProvider: A reference to a FungibleToken Provider from which the bridging fee is withdrawn in $FLOW
-    /// @param protectedApprovalCall: A function that executes the transfer of the NFT from the named owner to the
+    /// @param protectedTransferCall: A function that executes the transfer of the NFT from the named owner to the
     ///     bridge's COA. This function is expected to return a Result indicating the status of the transfer call.
     ///
     /// @returns The bridged NFT
