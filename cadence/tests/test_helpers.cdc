@@ -348,6 +348,16 @@ fun ownerOf(id: UInt256, erc721AddressHex: String): String? {
 }
 
 access(all)
+fun erc721Exists(id: UInt256, erc721AddressHex: String): Bool {
+    let existsResult = _executeScript(
+        "../scripts/utils/erc721_exists.cdc",
+        [erc721AddressHex, id]
+    )
+    Test.expect(existsResult, Test.beSucceeded())
+    return existsResult.returnValue as! Bool? ?? panic("Problem getting existence of \(erc721AddressHex) \(id)")
+}
+
+access(all)
 fun getCadenceTotalSupply(contractAddress: Address, contractName: String, vaultIdentifier: String): UFix64? {
     let exampleTokenTotalSupplyResult = _executeScript(
         "../scripts/tokens/total_supply.cdc",
