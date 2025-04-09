@@ -13,7 +13,7 @@ access(all)
 contract FlowEVMBridgeAccessor {
 
     access(all) let StoragePath: StoragePath
-    
+
     /// BridgeAccessor implementation used by the EVM contract to route bridge calls from COA resources
     ///
     access(all)
@@ -198,5 +198,5 @@ contract FlowEVMBridgeAccessor {
         )
         let cap = self.account.capabilities.storage.issue<auth(EVM.Bridge) &BridgeAccessor>(self.StoragePath)
         self.account.inbox.publish(cap, name: "FlowEVMBridgeAccessor", recipient: publishToEVMAccount)
-    }    
+    }
 }
