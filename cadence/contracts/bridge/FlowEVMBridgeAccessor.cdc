@@ -181,16 +181,13 @@ contract FlowEVMBridgeAccessor {
         }
     }
 
+    /// Assesses whether the EVM contract address is associated with the provided type based on bridge associations
+    ///
     access(self)
     fun isValidEVMTarget(forType: Type, target: EVM.EVMAddress): Bool {
-        var isValidTarget = false
-        if let currentAssociation = FlowEVMBridge.getAssociatedEVMAddress(with: forType) {
-            isValidTarget = target.equals(currentAssociation)
-        }
-        if let bridgedAssociation = FlowEVMBridgeConfig.getLegacyEVMAddressAssociated(with: forType) {
-            isValidTarget = !isValidTarget ? target.equals(bridgedAssociation) : isValidTarget
-        }
-        return isValidTarget
+        let currentAssociation = FlowEVMBridge.getAssociatedEVMAddress(with: forType)
+        let bridgedAssociation = FlowEVMBridgeConfig.getLegacyEVMAddressAssociated(with: forType)
+        return currentAssociation?.equals(target) ?? false || bridgedAssociation?.equals(target) ?? false
     }
 
     init(publishToEVMAccount: Address) {
