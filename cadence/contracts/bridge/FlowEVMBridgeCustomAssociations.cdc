@@ -83,6 +83,12 @@ access(all) contract FlowEVMBridgeCustomAssociations {
         return self.borrowNFTCustomConfig(forType: forType)?.isPaused() ?? nil
     }
 
+    /// Returns metadata about a registered CustomConfig
+    ///
+    /// @param forType: The Cadence Type of the registered cross-VM asset
+    ///
+    /// @return The CustomConfigInfo struct if the type is registered, nil otherwise
+    ///
     access(all)
     fun getCustomConfigInfo(forType: Type): FlowEVMBridgeCustomAssociationTypes.CustomConfigInfo? {
         if let config = self.borrowNFTCustomConfig(forType: forType) {
@@ -148,6 +154,30 @@ access(all) contract FlowEVMBridgeCustomAssociations {
         self.associationsConfig[type] <-! config
     }
 
+    /// Allows bridge contracts to fulfill NFT bridging requests for EVM-native NFTs, using the provided
+    /// NFTFulfillmentMinter Capability provided by the project on cross-VM registration to mint a new NFT.
+    /// **NOTE:** Given the bridge's mint/escrow pattern for the non-native VM, any calls should first check that the 
+    /// requested NFT is not locked in escrow before minting.
+    ///
+    /// @param forType: The Cadence Type of the NFT being fulfilled
+    /// @param id: The ERC721 ID of the requested NFT
+    ///
+    /// @param
+    access(account)
+    fun fulfillNFTFromEVM(forType: Type, id: UInt256): @{NonFungibleToken.NFT} {
+        post {
+            result.getType() == forType:
+            "Requested \(forType.identifier) but got \(result.getType().identifier) on fulfillment from EVM"
+        }
+        let config = self.borrowNFTCustomConfig(forType: forType)
+            ?? panic("No CustomConfig found for type \(forType.identifier) - cannot fulfill NFT \(id) from EVM")
+        let minter = config.borrowFulfillmentMinter()
+        return <- minter.fulfillFromEVM(id: id)
+    }
+
+    /// Sets the associated CustomConfig as paused, preventing bridging operations on the associated implementations.
+    /// Expect a no-op in the event the CustomConfig is already paused
+    ///
     access(account) fun pauseCustomConfig(forType: Type) {
         let config = self.borrowNFTCustomConfig(forType: forType)
             ?? panic("No CustomConfig found for type \(forType.identifier) - cannot pause config that does not exist")
@@ -156,6 +186,9 @@ access(all) contract FlowEVMBridgeCustomAssociations {
         }
     }
 
+    /// Sets the associated CustomConfig as unpaused, preventing bridging operations on the associated implementations.
+    /// Expect a no-op in the event the CustomConfig is already paused
+    ///
     access(account) fun unpauseCustomConfig(forType: Type) {
         let config = self.borrowNFTCustomConfig(forType: forType)
             ?? panic("No CustomConfig found for type \(forType.identifier) - cannot unpause config that does not exist")
@@ -164,18 +197,9 @@ access(all) contract FlowEVMBridgeCustomAssociations {
         }
     }
 
-    access(account)
-    fun fulfillNFTFromEVM(forType: Type, id: UInt256): @{NonFungibleToken.NFT} {
-        let config = self.borrowNFTCustomConfig(forType: forType)
-            ?? panic("No CustomConfig found for type \(forType.identifier) - cannot fulfill NFT \(id) from EVM")
-        let minter = config.borrowFulfillmentMinter()
-        return <- minter.fulfillFromEVM(id: id)
-    }
-
     /// Returns a reference to the NFTCustomConfig if it exists, nil otherwise
     ///
-    access(self)
-    view fun borrowNFTCustomConfig(forType: Type): &FlowEVMBridgeCustomAssociationTypes.NFTCustomConfig? {
+    access(self) view fun borrowNFTCustomConfig(forType: Type): &FlowEVMBridgeCustomAssociationTypes.NFTCustomConfig? {
         let config = &self.associationsConfig[forType] as &{FlowEVMBridgeCustomAssociationTypes.CustomConfig}?
         return config as? &FlowEVMBridgeCustomAssociationTypes.NFTCustomConfig
     }

@@ -8,6 +8,7 @@ import "EVM"
 ///
 access(all) contract FlowEVMBridgeCustomAssociationTypes {
 
+    /// Emitted whenever an NFTFulfillmentMinter is used to fulfill an NFT from EVM
     access(all) event FulfilledFromEVM(type: String, requestedID: UInt256, resultID: UInt64, uuid: UInt64)
 
     access(all) entitlement FulfillFromEVM
@@ -43,6 +44,8 @@ access(all) contract FlowEVMBridgeCustomAssociationTypes {
         }
     }
 
+    /// Data structure containing information about a registered CustomConfig
+    ///
     access(all) struct CustomConfigInfo {
         access(all) let updatedFromBridged: Bool
         access(all) let isPaused: Bool

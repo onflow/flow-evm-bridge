@@ -594,6 +594,13 @@ contract FlowEVMBridgeUtils {
         return self.ownerOf(id: ofNFT, evmContractAddress: evmContractAddress)?.equals(owner) ?? false
     }
 
+    /// Returns the owner of a given ERC721 token
+    ///
+    /// @param id: The ID of the NFT to query
+    /// @param evmContractAddress: The ERC721 contract address to query
+    ///
+    /// @return The current owner's EVM address or nil if the `ownerOf` call is unsuccessful
+    /// 
     access(all)
     fun ownerOf(id: UInt256, evmContractAddress: EVM.EVMAddress): EVM.EVMAddress? {
         let callResult = self.call(
@@ -1346,6 +1353,11 @@ contract FlowEVMBridgeUtils {
         assert(isEscrowed, message: "ERC721 was not successfully escrowed")
     }
 
+    /// Unwraps an ERC721 token, calling `ERC721Wrapper.withdrawTo(address,uint256[])` on the provided wrapper address
+    /// and ensuring that the underlying ERC721 is owned by the bridge COA before returning.
+    /// NOTE: This method relies on implementation of OpenZeppelin's `ERC721Wrapper` contract interface, reverting if
+    /// the unwrap operation is unsuccessful.
+    ///
     access(account)
     fun mustUnwrapERC721(
         id: UInt256,
