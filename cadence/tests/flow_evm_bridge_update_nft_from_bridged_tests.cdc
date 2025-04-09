@@ -168,7 +168,7 @@ fun testBridgeNFTToEVMSucceeds() {
         bridgeAccountAddr: bridgeAccount.address,
         beFailed: false
     )
-    
+
     // assert on events
     let bridgedEvts = Test.eventsOfType(Type<IFlowEVMNFTBridge.BridgedNFTToEVM>())
     Test.assertEqual(1, bridgedEvts.length)
@@ -261,7 +261,7 @@ fun testBridgeERC721FromEVMSucceeds() {
 }
 
 access(all)
-fun testMigrationFromBridgedERC721Succeeds() {
+fun testBridgeFromEVMAfterUpdatingSucceeds() {
     Test.reset(to: snapshot)
 
     // create tmp account & setup
@@ -274,7 +274,7 @@ fun testMigrationFromBridgedERC721Succeeds() {
     var ids = getIDs(ownerAddr: user.address, storagePathIdentifier: "cadenceExampleNFTCollection")
     Test.assertEqual(1, ids.length)
     let id = ids[0]
-    
+
     // bridge to EVM - onboards via default permissionless route, deploying bridged ERC721 & minting to user
     bridgeNFTToEVM(
         signer: user,
@@ -314,7 +314,7 @@ fun testMigrationFromBridgedERC721Succeeds() {
         fulfillmentMinterPath: nil,
         beFailed: false
     )
-    
+
     // bridge NFT from EVM
     bridgeNFTFromEVM(
         signer: user,
@@ -331,7 +331,7 @@ fun testMigrationFromBridgedERC721Succeeds() {
     Test.assertEqual(UInt256(id), bridgedFromEvt.evmID)
     Test.assertEqual(userCOA, bridgedFromEvt.caller)
     Test.assertEqual(customERC721AddressHex, "0x\(bridgedFromEvt.evmContractAddress)")
-    
+
     // ensure user owns ExampleNFT
     ids = getIDs(ownerAddr: user.address, storagePathIdentifier: "cadenceExampleNFTCollection")
     Test.assertEqual(1, ids.length)
@@ -356,8 +356,82 @@ fun testMigrationFromBridgedERC721Succeeds() {
     Test.assertEqual(id, bridgedToEvt.id)
     Test.assertEqual(userCOA, bridgedToEvt.to)
     Test.assertEqual(customERC721AddressHex, "0x\(bridgedToEvt.evmContractAddress)")
-    
+
     // Ensure user was bridged the correct ERC721
+    let userOwnsCustomToken = isOwner(of: UInt256(id), ownerEVMAddrHex: userCOA, erc721AddressHex: customERC721AddressHex)
+    Test.assert(userOwnsBridgedToken, message: "User was not bridged custom ERC721 \(customERC721AddressHex) #\(id)")
+}
+
+access(all)
+fun testMigrateBridgedERC721TransactionSucceeds() {
+    Test.reset(to: snapshot)
+
+    // create tmp account & setup
+    let user = Test.createAccount()
+    setupAccount(user, flowAmount: 10.0, coaAmount: 1.0)
+    let userCOA = getCOAAddressHex(atFlowAddress: user.address)
+
+    // mint the NFT to the tmp account
+    mintNFT(signer: exampleNFTAccount, recipient: user.address)
+    var ids = getIDs(ownerAddr: user.address, storagePathIdentifier: "cadenceExampleNFTCollection")
+    Test.assertEqual(1, ids.length)
+    let id = ids[0]
+
+    // bridge to EVM - onboards via default permissionless route, deploying bridged ERC721 & minting to user
+    bridgeNFTToEVM(
+        signer: user,
+        nftIdentifier: exampleNFTIdentifier,
+        nftID: id,
+        bridgeAccountAddr: bridgeAccount.address,
+        beFailed: false
+    )
+    // get the bridge-defined ERC721 address post-onboarding
+    let bridgedERC721 = getAssociatedEVMAddressHex(with: exampleNFTIdentifier)
+    // assert on events
+    var bridgedToEvts = Test.eventsOfType(Type<IFlowEVMNFTBridge.BridgedNFTToEVM>())
+    Test.assertEqual(1, bridgedToEvts.length)
+    var bridgedToEvt = bridgedToEvts[0] as! IFlowEVMNFTBridge.BridgedNFTToEVM
+    Test.assertEqual(id, bridgedToEvt.id)
+    Test.assertEqual(userCOA, bridgedToEvt.to)
+    Test.assertEqual(bridgedERC721, bridgedToEvt.evmContractAddress)
+
+    // Ensure ownership of proper tokens
+    let userOwnsBridgedToken = isOwner(of: UInt256(id), ownerEVMAddrHex: userCOA, erc721AddressHex: bridgedERC721)
+    let isLocked = isNFTLocked(nftTypeIdentifier: exampleNFTIdentifier, id: id)
+    Test.assert(userOwnsBridgedToken, message: "User was not bridged NFT \(id)")
+    Test.assert(isLocked, message: "Example NFT \(id) is not locked in Cadence-side escrow after bridging to EVM")
+
+    /* Cross-VM Update & Registration */
+    //
+    // Create a COA in exampleNFT account
+    createCOA(signer: exampleNFTAccount, fundingAmount: 0.0)
+    // Deploy the cadence native ERC721 & assign the deployment address
+    let customERC721AddressHex = deployCadenceNativeERC721(signer: exampleNFTAccount)
+    // Update the ExampleNFT contract
+    updateExampleNFT(signer: exampleNFTAccount)
+    // Register the updated ExampleNFT with the custom ERC721
+    registerCrossVMNFT(
+        signer: exampleNFTAccount,
+        nftTypeIdentifier: exampleNFTIdentifier,
+        fulfillmentMinterPath: nil,
+        beFailed: false
+    )
+
+    // migrate the bridged ERC721 to the custom ERC721
+    let migrationResult = executeTransaction(
+        "../transactions/bridge/nft/batch_migrate_bridged_evm_nft.cdc",
+        [exampleNFTIdentifier, [UInt256(id)]],
+        user
+    )
+    // assert on events
+    bridgedToEvts = Test.eventsOfType(Type<IFlowEVMNFTBridge.BridgedNFTToEVM>())
+    Test.assertEqual(2, bridgedToEvts.length)
+    bridgedToEvt = bridgedToEvts[1] as! IFlowEVMNFTBridge.BridgedNFTToEVM
+    Test.assertEqual(id, bridgedToEvt.id)
+    Test.assertEqual(userCOA, bridgedToEvt.to)
+    Test.assertEqual(customERC721AddressHex, "0x\(bridgedToEvt.evmContractAddress)")
+
+    // Ensure user now owns the correct ERC721
     let userOwnsCustomToken = isOwner(of: UInt256(id), ownerEVMAddrHex: userCOA, erc721AddressHex: customERC721AddressHex)
     Test.assert(userOwnsBridgedToken, message: "User was not bridged custom ERC721 \(customERC721AddressHex) #\(id)")
 }
