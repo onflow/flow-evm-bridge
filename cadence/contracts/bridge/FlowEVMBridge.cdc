@@ -1039,7 +1039,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         let bridgedTokenExists = bridgedAssociation != nil ? FlowEVMBridgeUtils.erc721Exists(erc721Address: bridgedAssociation!, id: id) : false
         if configInfo.updatedFromBridged && bridgedTokenExists {
             let bridgedTokenOwner = FlowEVMBridgeUtils.ownerOf(id: id, evmContractAddress: bridgedAssociation!)!
-            if owner.equals(owner) {
+            if bridgedTokenOwner.equals(owner) {
                 FlowEVMBridgeUtils.mustEscrowERC721(
                     owner: owner,
                     id: id,
