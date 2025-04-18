@@ -1008,7 +1008,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
                 feeProvider: feeProvider,
                 protectedTransferCall: protectedTransferCall
             )
-        } else { // EVM-native case as there are only two possible VMs at the moment
+        } else { // EVM-native case as there are only two possible VMs
             return <- self.handleEVMNativeCrossVMNFTFromEVM(
                 owner: owner,
                 type: type,
