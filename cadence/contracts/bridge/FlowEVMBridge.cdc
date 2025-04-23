@@ -418,18 +418,6 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
     }
 
     access(self)
-    fun handleBridgeNFTFromEVM(
-        owner: EVM.EVMAddress,
-        type: Type,
-        id: UInt256,
-        feeProvider: auth(FungibleToken.Withdraw) &{FungibleToken.Provider},
-        protectedTransferCall: fun (EVM.EVMAddress): EVM.Result,
-        internalHandler: fun (EVM.EVMAddress, Type, UInt256, auth(FungibleToken.Withdraw) &{FungibleToken.Provider}, fun (EVM.EVMAddress): EVM.Result,): @{NonFungibleToken.NFT}
-    ): @{NonFungibleToken.NFT} {
-        return <- internalHandler(owner, type, id, feeProvider, protectedTransferCall)
-    }
-
-    access(self)
     fun handleDefaultNFTFromEVM(
         owner: EVM.EVMAddress,
         type: Type,
@@ -1008,7 +996,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
                 feeProvider: feeProvider,
                 protectedTransferCall: protectedTransferCall
             )
-        } else { // EVM-native case as there are only two possible VMs at the moment
+        } else { // EVM-native case as there are only two possible VMs
             return <- self.handleEVMNativeCrossVMNFTFromEVM(
                 owner: owner,
                 type: type,
