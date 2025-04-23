@@ -301,7 +301,7 @@
 		},
 		"EVM": {
 			"source": "mainnet://e467b9dd11fa00df.EVM",
-			"hash": "68e203784a1fde2a491ddcf522417bf43403efe1795f3b88e76a8ee961e5940b",
+			"hash": "df2065d3eebc1e690e0b52a3f293bdf6c22780c7a9e7ef48a708a651b87abdf0",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "e467b9dd11fa00df",

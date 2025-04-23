@@ -164,13 +164,19 @@ contract FlowEVMBridgeConfig {
         return associatedType != nil ? self.typeHasTokenHandler(associatedType!) : false
     }
 
+    /// Returns the Type associated with the provided EVM contract address if the association was established via
+    /// the permissionless onboarding path
+    ///
     access(account)
-    fun getLegacyTypeAssociated(with evmAddress: EVM.EVMAddress): Type? {
+    view fun getLegacyTypeAssociated(with evmAddress: EVM.EVMAddress): Type? {
         return self.evmAddressHexToType[evmAddress.toString()] ?? nil
     }
 
+    /// Returns the EVM contract address associated with the provided Type if the association was established via
+    /// the permissionless onboarding path
+    ///
     access(account)
-    fun getLegacyEVMAddressAssociated(with type: Type): EVM.EVMAddress? {
+    view fun getLegacyEVMAddressAssociated(with type: Type): EVM.EVMAddress? {
         if self.typeHasTokenHandler(type) {
             return self.borrowTokenHandler(type)!.getTargetEVMAddress()
         }

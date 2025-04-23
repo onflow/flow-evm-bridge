@@ -8,6 +8,7 @@ import "EVM"
 ///
 access(all) contract FlowEVMBridgeCustomAssociationTypes {
 
+    /// Emitted whenever an NFTFulfillmentMinter is used to fulfill an NFT from EVM
     access(all) event FulfilledFromEVM(type: String, requestedID: UInt256, resultID: UInt64, uuid: UInt64)
 
     access(all) entitlement FulfillFromEVM
@@ -40,6 +41,27 @@ access(all) contract FlowEVMBridgeCustomAssociationTypes {
                 "Expected \(self.getFulfilledType().identifier) but fulfilled \(result.getType().identifier)"
                 emit FulfilledFromEVM(type: result.getType().identifier, requestedID: id, resultID: result.id, uuid: result.uuid)
             }
+        }
+    }
+
+    /// Data structure containing information about a registered CustomConfig
+    ///
+    access(all) struct CustomConfigInfo {
+        access(all) let updatedFromBridged: Bool
+        access(all) let isPaused: Bool
+        access(all) let fulfillmentMinterType: Type?
+        access(all) let evmPointer: CrossVMMetadataViews.EVMPointer
+        
+        view init(
+            updatedFromBridged: Bool,
+            isPaused: Bool,
+            fulfillmentMinterType: Type?,
+            evmPointer: CrossVMMetadataViews.EVMPointer
+        ) {
+            self.updatedFromBridged = updatedFromBridged
+            self.isPaused = isPaused
+            self.fulfillmentMinterType = fulfillmentMinterType
+            self.evmPointer = evmPointer
         }
     }
 

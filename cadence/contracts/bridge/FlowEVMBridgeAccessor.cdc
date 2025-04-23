@@ -13,7 +13,7 @@ access(all)
 contract FlowEVMBridgeAccessor {
 
     access(all) let StoragePath: StoragePath
-    
+
     /// BridgeAccessor implementation used by the EVM contract to route bridge calls from COA resources
     ///
     access(all)
@@ -52,17 +52,24 @@ contract FlowEVMBridgeAccessor {
         ): @{NonFungibleToken.NFT} {
             // Define a callback function, enabling the bridge to act on the ephemeral COA reference in scope
             var executed = false
-            fun callback(): EVM.Result {
+            fun callback(target: EVM.EVMAddress): EVM.Result {
                 pre {
                     !executed: "Callback can only be executed once"
+                    FlowEVMBridge.getAssociatedEVMAddress(with: type) ?? FlowEVMBridgeConfig.getLegacyEVMAddressAssociated(with: type) != nil:
+                    "Could not find EVM association for NFT Type \(type.identifier) - ensure the NFT has been onboarded to the bridge & try again"
                 }
                 post {
                     executed: "Callback must be executed"
                 }
+                // Ensure the call is to an EVM contract known to be associated with the NFT Type as registered with
+                // the VM Bridge
+                let callAllowed = FlowEVMBridgeAccessor.isValidEVMTarget(forType: type, target: target)
+                assert(callAllowed,
+                    message: "Target EVM contract \(target.toString()) is not association with NFT Type \(type.identifier) - COA `safeTransferFrom` callback rejected")
+
                 executed = true
                 return caller.call(
-                    to: FlowEVMBridge.getAssociatedEVMAddress(with: type)
-                        ?? panic("No EVM address associated with type"),
+                    to: target,
                     data: EVM.encodeABIWithSignature(
                         "safeTransferFrom(address,address,uint256)",
                         [caller.address(), FlowEVMBridge.getBridgeCOAEVMAddress(), id]
@@ -172,6 +179,15 @@ contract FlowEVMBridgeAccessor {
         access(EVM.Bridge) fun setBridgeAccessor(_ accessorCap: Capability<auth(EVM.Bridge) &{EVM.BridgeAccessor}>) {
             self.bridgeAccessorCap = accessorCap
         }
+    }
+
+    /// Assesses whether the EVM contract address is associated with the provided type based on bridge associations
+    ///
+    access(self)
+    fun isValidEVMTarget(forType: Type, target: EVM.EVMAddress): Bool {
+        let currentAssociation = FlowEVMBridge.getAssociatedEVMAddress(with: forType)
+        let bridgedAssociation = FlowEVMBridgeConfig.getLegacyEVMAddressAssociated(with: forType)
+        return currentAssociation?.equals(target) ?? false || bridgedAssociation?.equals(target) ?? false
     }
 
     init(publishToEVMAccount: Address) {
