@@ -142,7 +142,7 @@ contract FlowEVMBridgeUtils {
     ///
     access(all)
     fun evmAddressAllowsBridging(_ address: EVM.EVMAddress): Bool {
-        let callResult = self.call(
+        let callResult = self.dryCall(
             signature: "allowsBridging()",
             targetEVMAddress: address,
             args: [],
@@ -193,7 +193,7 @@ contract FlowEVMBridgeUtils {
     access(all)
     fun isEVMContractBridgeOwned(evmContractAddress: EVM.EVMAddress): Bool {
         // Ask the bridge factory if the given contract address was deployed by the bridge
-        let callResult = self.call(
+        let callResult = self.dryCall(
                 signature: "isBridgeDeployed(address)",
                 targetEVMAddress: self.bridgeFactoryEVMAddress,
                 args: [evmContractAddress],
@@ -216,7 +216,7 @@ contract FlowEVMBridgeUtils {
     ///
     access(all)
     fun isERC721(evmContractAddress: EVM.EVMAddress): Bool {
-        let callResult = self.call(
+        let callResult = self.dryCall(
             signature: "isERC721(address)",
             targetEVMAddress: self.bridgeFactoryEVMAddress,
             args: [evmContractAddress],
@@ -240,7 +240,7 @@ contract FlowEVMBridgeUtils {
     ///
     access(all)
     fun isERC20(evmContractAddress: EVM.EVMAddress): Bool {
-        let callResult = self.call(
+        let callResult = self.dryCall(
             signature: "isERC20(address)",
             targetEVMAddress: self.bridgeFactoryEVMAddress,
             args: [evmContractAddress],
@@ -263,7 +263,7 @@ contract FlowEVMBridgeUtils {
     ///
     access(all)
     fun isValidEVMAsset(evmContractAddress: EVM.EVMAddress): Bool {
-        let callResult = self.call(
+        let callResult = self.dryCall(
             signature: "isValidAsset(address)",
             targetEVMAddress: self.bridgeFactoryEVMAddress,
             args: [evmContractAddress],
@@ -459,7 +459,7 @@ contract FlowEVMBridgeUtils {
     ///
     access(all)
     fun getName(evmContractAddress: EVM.EVMAddress): String {
-        let callResult = self.call(
+        let callResult = self.dryCall(
             signature: "name()",
             targetEVMAddress: evmContractAddress,
             args: [],
@@ -483,7 +483,7 @@ contract FlowEVMBridgeUtils {
     ///
     access(all)
     fun getSymbol(evmContractAddress: EVM.EVMAddress): String {
-        let callResult = self.call(
+        let callResult = self.dryCall(
             signature: "symbol()",
             targetEVMAddress: evmContractAddress,
             args: [],
@@ -506,7 +506,7 @@ contract FlowEVMBridgeUtils {
     ///
     access(all)
     fun getTokenURI(evmContractAddress: EVM.EVMAddress, id: UInt256): String {
-        let callResult = self.call(
+        let callResult = self.dryCall(
             signature: "tokenURI(uint256)",
             targetEVMAddress: evmContractAddress,
             args: [id],
@@ -529,7 +529,7 @@ contract FlowEVMBridgeUtils {
     ///
     access(all)
     fun getContractURI(evmContractAddress: EVM.EVMAddress): String? {
-        let callResult = self.call(
+        let callResult = self.dryCall(
             signature: "contractURI()",
             targetEVMAddress: evmContractAddress,
             args: [],
@@ -551,7 +551,7 @@ contract FlowEVMBridgeUtils {
     ///
     access(all)
     fun getTokenDecimals(evmContractAddress: EVM.EVMAddress): UInt8 {
-        let callResult = self.call(
+        let callResult = self.dryCall(
                 signature: "decimals()",
                 targetEVMAddress: evmContractAddress,
                 args: [],
@@ -603,7 +603,7 @@ contract FlowEVMBridgeUtils {
     /// 
     access(all)
     fun ownerOf(id: UInt256, evmContractAddress: EVM.EVMAddress): EVM.EVMAddress? {
-        let callResult = self.call(
+        let callResult = self.dryCall(
                 signature: "ownerOf(uint256)",
                 targetEVMAddress: evmContractAddress,
                 args: [id],
@@ -627,7 +627,7 @@ contract FlowEVMBridgeUtils {
     ///
     access(all)
     fun isApproved(ofNFT: UInt256, owner: EVM.EVMAddress, evmContractAddress: EVM.EVMAddress): Bool {
-        let callResult = self.call(
+        let callResult = self.dryCall(
             signature: "getApproved(uint256)",
             targetEVMAddress: evmContractAddress,
             args: [ofNFT],
@@ -656,7 +656,7 @@ contract FlowEVMBridgeUtils {
     fun erc721Exists(erc721Address: EVM.EVMAddress, id: UInt256): Bool {
         let existsResponse = EVM.decodeABI(
                 types: [Type<Bool>()],
-                data: self.call(
+                data: self.dryCall(
                     signature: "exists(uint256)",
                     targetEVMAddress: erc721Address,
                     args: [id],
@@ -678,7 +678,7 @@ contract FlowEVMBridgeUtils {
     ///
     access(all)
     fun balanceOf(owner: EVM.EVMAddress, evmContractAddress: EVM.EVMAddress): UInt256 {
-        let callResult = self.call(
+        let callResult = self.dryCall(
             signature: "balanceOf(address)",
             targetEVMAddress: evmContractAddress,
             args: [owner],
@@ -713,7 +713,7 @@ contract FlowEVMBridgeUtils {
     ///
     access(all)
     fun totalSupply(evmContractAddress: EVM.EVMAddress): UInt256 {
-        let callResult = self.call(
+        let callResult = self.dryCall(
             signature: "totalSupply()",
             targetEVMAddress: evmContractAddress,
             args: [],
@@ -768,7 +768,7 @@ contract FlowEVMBridgeUtils {
     ///
     access(all)
     fun getDeclaredCadenceAddressFromCrossVM(evmContract: EVM.EVMAddress): Address? {
-        let cadenceAddrRes = self.call(
+        let cadenceAddrRes = self.dryCall(
             signature: "getCadenceAddress()",
             targetEVMAddress: evmContract,
             args: [],
@@ -799,7 +799,7 @@ contract FlowEVMBridgeUtils {
     ///
     access(all)
     fun getDeclaredCadenceTypeFromCrossVM(evmContract: EVM.EVMAddress): Type? {
-        let cadenceIdentifierRes = self.call(
+        let cadenceIdentifierRes = self.dryCall(
             signature: "getCadenceIdentifier()",
             targetEVMAddress: evmContract,
             args: [],
@@ -826,7 +826,7 @@ contract FlowEVMBridgeUtils {
     access(all)
     fun supportsICrossVMBridgeERC721Fulfillment(evmContract: EVM.EVMAddress): Bool {
         let interfaceID = EVM.EVMBytes4(value: "2e608d70".decodeHex().toConstantSized<[UInt8; 4]>()!)
-        let supportsRes = self.call(
+        let supportsRes = self.dryCall(
             signature: "supportsInterface(bytes4)",
             targetEVMAddress: evmContract,
             args: [interfaceID],
@@ -854,7 +854,7 @@ contract FlowEVMBridgeUtils {
     access(all)
     fun supportsICrossVMBridgeCallable(evmContract: EVM.EVMAddress): Bool {
         let interfaceID = EVM.EVMBytes4(value: "b7f9a9ec".decodeHex().toConstantSized<[UInt8; 4]>()!)
-        let supportsRes = self.call(
+        let supportsRes = self.dryCall(
             signature: "supportsInterface(bytes4)",
             targetEVMAddress: evmContract,
             args: [interfaceID],
@@ -893,7 +893,7 @@ contract FlowEVMBridgeUtils {
     ///
     access(all)
     fun getVMBridgeAddressFromICrossVMBridgeCallable(evmContract: EVM.EVMAddress): EVM.EVMAddress? {
-        let cadenceIdentifierRes = self.call(
+        let cadenceIdentifierRes = self.dryCall(
             signature: "vmBridgeAddress()",
             targetEVMAddress: evmContract,
             args: [],
@@ -1233,6 +1233,28 @@ contract FlowEVMBridgeUtils {
         let valueBalance = EVM.Balance(attoflow: 0)
         valueBalance.setFLOW(flow: value)
         return self.borrowCOA().call(
+            to: targetEVMAddress,
+            data: calldata,
+            gasLimit: gasLimit,
+            value: valueBalance
+        )
+    }
+
+    /// Shared helper simplifying dryCalls using the bridge account's COA. Note that `COA.dryCall` does not execute the
+    /// call within EVM, serving solely as a mechanism for retrieving data from Flow-EVM environment.
+    ///
+    access(account)
+    fun dryCall(
+        signature: String,
+        targetEVMAddress: EVM.EVMAddress,
+        args: [AnyStruct],
+        gasLimit: UInt64,
+        value: UFix64
+    ): EVM.Result {
+        let calldata = EVM.encodeABIWithSignature(signature, args)
+        let valueBalance = EVM.Balance(attoflow: 0)
+        valueBalance.setFLOW(flow: value)
+        return self.borrowCOA().dryCall(
             to: targetEVMAddress,
             data: calldata,
             gasLimit: gasLimit,
