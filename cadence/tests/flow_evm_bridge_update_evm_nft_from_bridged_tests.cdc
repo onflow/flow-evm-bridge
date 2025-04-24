@@ -2,6 +2,7 @@ import Test
 import BlockchainHelpers
 
 import "MetadataViews"
+import "NonFungibleToken"
 import "EVM"
 import "ExampleEVMNativeNFTGivenEVMAddress"
 import "IFlowEVMNFTBridge"
@@ -18,7 +19,6 @@ access(all) var erc721COAHex = ""
 
 // Bridged NFT values
 access(all) var bridgedNFTIdentifier = ""
-access(all) var bridgedNFTID: UInt64 = 0
 
 // Custom Cadence Cross-VM NFT values
 access(all) var customNFTIdentifier: String = ""
@@ -108,43 +108,15 @@ fun testOnboardAndUpdateERC721Succeeds() {
 
     /* Setup EVM-native NFT for custom cross-VM registration */
 
-    // Deploy the cadence native ERC721
+    // Deploy the evm-native Cadence NFT contract
     let err = Test.deployContract(
             name: "ExampleEVMNativeNFTGivenEVMAddress",
             path: "../contracts/example-assets/cross-vm-nfts/ExampleEVMNativeNFTGivenEVMAddress.cdc",
             arguments: [proxyAddressHex] // NOTE: set the proxy address as the associated EVM address
         )
     Test.expect(err, Test.beNil())
-
     customNFTIdentifier = Type<@ExampleEVMNativeNFTGivenEVMAddress.NFT>().identifier
-
-    // Update the ERC721 implementation with a cross-VM compatible EVM deployment
-    let v2DeploymentResult = executeTransaction(
-        "../transactions/evm/deploy.cdc",
-        [getEVMNativeERC721UpgradableV2Bytecode(), UInt64(15_000_000), 0.0],
-        erc721Account
-    )
-    Test.expect(v2DeploymentResult, Test.beSucceeded())
-    // Assign the v2 implementation address
-    evts = Test.eventsOfType(Type<EVM.TransactionExecuted>())
-    erc721AddressHex = getEVMAddressHexFromEvents(evts, idx: evts.length - 1)
-
-    // Construct the upgradeToAndCall calldata
-    let initializeBytes = EVM.EVMBytes(value: EVM.encodeABIWithSignature(
-            "initializeV2(string,string)",
-            [erc721Account.address.toString(), customNFTIdentifier]
-        ))
-    let calldata = EVM.encodeABIWithSignature(
-            "upgradeToAndCall(address,bytes)",
-            [EVM.addressFromString(erc721AddressHex), initializeBytes]
-        )
-    // deploy the ERC1967Proxy contract
-    let upgradeResult = executeTransaction(
-        "../transactions/evm/call.cdc",
-        [proxyAddressHex, String.encodeHex(calldata), UInt64(15_000_000), UInt(0)],
-        erc721Account
-    )
-    Test.expect(upgradeResult, Test.beSucceeded())
+    upgradeERC721()
 
     /* Register custom cross-VM association */
 
@@ -185,7 +157,7 @@ fun testBridgeERC721FromEVMSucceeds() {
 
     /* Setup EVM-native NFT for custom cross-VM registration */
 
-    // Deploy the cadence native ERC721
+    // Deploy the evm-native Cadence NFT contract
     let err = Test.deployContract(
             name: "ExampleEVMNativeNFTGivenEVMAddress",
             path: "../contracts/example-assets/cross-vm-nfts/ExampleEVMNativeNFTGivenEVMAddress.cdc",
@@ -195,33 +167,7 @@ fun testBridgeERC721FromEVMSucceeds() {
 
     customNFTIdentifier = Type<@ExampleEVMNativeNFTGivenEVMAddress.NFT>().identifier
 
-    // Update the ERC721 implementation with a cross-VM compatible EVM deployment
-    let v2DeploymentResult = executeTransaction(
-        "../transactions/evm/deploy.cdc",
-        [getEVMNativeERC721UpgradableV2Bytecode(), UInt64(15_000_000), 0.0],
-        erc721Account
-    )
-    Test.expect(v2DeploymentResult, Test.beSucceeded())
-    // Assign the v2 implementation address
-    var evts = Test.eventsOfType(Type<EVM.TransactionExecuted>())
-    erc721AddressHex = getEVMAddressHexFromEvents(evts, idx: evts.length - 1)
-
-    // Construct the upgradeToAndCall calldata
-    let initializeBytes = EVM.EVMBytes(value: EVM.encodeABIWithSignature(
-            "initializeV2(string,string)",
-            [erc721Account.address.toString(), customNFTIdentifier]
-        ))
-    let calldata = EVM.encodeABIWithSignature(
-            "upgradeToAndCall(address,bytes)",
-            [EVM.addressFromString(erc721AddressHex), initializeBytes]
-        )
-    // deploy the ERC1967Proxy contract
-    let upgradeResult = executeTransaction(
-        "../transactions/evm/call.cdc",
-        [proxyAddressHex, String.encodeHex(calldata), UInt64(15_000_000), UInt(0)],
-        erc721Account
-    )
-    Test.expect(upgradeResult, Test.beSucceeded())
+    upgradeERC721()
 
     /* Register custom cross-VM association */
 
@@ -251,7 +197,7 @@ fun testBridgeERC721FromEVMSucceeds() {
         bridgeAccountAddr: bridgeAccount.address,
         beFailed: false
     )
-    evts = Test.eventsOfType(Type<IFlowEVMNFTBridge.BridgedNFTFromEVM>())
+    let evts = Test.eventsOfType(Type<IFlowEVMNFTBridge.BridgedNFTFromEVM>())
     Test.assertEqual(1, evts.length)
     let bridgedEvt = evts[0] as! IFlowEVMNFTBridge.BridgedNFTFromEVM
     Test.assertEqual(UInt64(erc721ID), bridgedEvt.id)
@@ -269,10 +215,259 @@ fun testBridgeERC721FromEVMSucceeds() {
     Test.assertEqual(UInt64(erc721ID), ids[0])
 }
 
-// TODO
-// - bridge from EVM then back to EVM
-// - bridge a bridged NFT back to EVM as the correct ERC721
-// - migrate bridged Cadence NFT to custom Cross-VM implementation
+access(all)
+fun testBridgeERC721ToEVMSucceeds() {
+    Test.reset(to: snapshot)
+
+    let user = Test.createAccount()
+    setupAccount(user, flowAmount: 10.0, coaAmount: 1.0)
+    let userCOAHex = getCOAAddressHex(atFlowAddress: user.address)
+
+    // Cadence-native permissionless onboarding
+    onboardByEVMAddress(signer: user, evmAddressHex: proxyAddressHex, beFailed: false)
+    // Assign the bridged NFT type after onboarding
+    bridgedNFTIdentifier = getTypeAssociated(with: proxyAddressHex)
+
+    /* Setup EVM-native NFT for custom cross-VM registration */
+
+    // Deploy the evm-native Cadence NFT contract
+    let err = Test.deployContract(
+            name: "ExampleEVMNativeNFTGivenEVMAddress",
+            path: "../contracts/example-assets/cross-vm-nfts/ExampleEVMNativeNFTGivenEVMAddress.cdc",
+            arguments: [proxyAddressHex] // NOTE: set the proxy address as the associated EVM address
+        )
+    Test.expect(err, Test.beNil())
+    customNFTIdentifier = Type<@ExampleEVMNativeNFTGivenEVMAddress.NFT>().identifier
+    upgradeERC721()
+
+    /* Register custom cross-VM association */
+
+    // Now register the updated ExampleNFT as cross-VM, associating the deployed ERC721
+    registerCrossVMNFT(
+        signer: erc721Account,
+        nftTypeIdentifier: customNFTIdentifier,
+        fulfillmentMinterPath: ExampleEVMNativeNFTGivenEVMAddress.FulfillmentMinterStoragePath,
+        beFailed: false
+    )
+
+    /* Mint the ERC721 & Bridge from EVM */
+
+    let mintCalldata = EVM.encodeABIWithSignature("safeMint(address,uint256)", [EVM.addressFromString(userCOAHex), erc721ID])
+    let mintRes = executeTransaction(
+        "../transactions/evm/call.cdc",
+        [proxyAddressHex, String.encodeHex(mintCalldata), UInt64(15_000_000), UInt(0)],
+        erc721Account
+    )
+    Test.expect(mintRes, Test.beSucceeded())
+
+    bridgeNFTFromEVM(
+        signer: user,
+        nftIdentifier: customNFTIdentifier,
+        erc721ID: erc721ID,
+        bridgeAccountAddr: bridgeAccount.address,
+        beFailed: false
+    )
+    bridgeNFTToEVM(
+        signer: user,
+        nftIdentifier: customNFTIdentifier,
+        nftID: UInt64(erc721ID),
+        bridgeAccountAddr: bridgeAccount.address,
+        beFailed: false
+    )
+    let evts = Test.eventsOfType(Type<IFlowEVMNFTBridge.BridgedNFTToEVM>())
+    Test.assertEqual(1, evts.length)
+    let bridgedEvt = evts[0] as! IFlowEVMNFTBridge.BridgedNFTToEVM
+    Test.assertEqual(UInt64(erc721ID), bridgedEvt.id)
+    Test.assertEqual(erc721ID, bridgedEvt.evmID)
+    Test.assertEqual(userCOAHex, bridgedEvt.to)
+    Test.assertEqual("0x\(proxyAddressHex)", "0x\(bridgedEvt.evmContractAddress)")
+
+    // assert ERC721 is in escrow under bridge COA
+    let userIsOwner = isOwner(of: erc721ID, ownerEVMAddrHex: userCOAHex, erc721AddressHex: proxyAddressHex)
+    Test.assert(userIsOwner, message: "ERC721 \(erc721ID) was not bridged to user after bridging to EVM")
+
+    // ensure Cadence NFT is escrowed
+    let isLocked = isNFTLocked(nftTypeIdentifier: customNFTIdentifier, id: UInt64(erc721ID))
+    Test.assert(isLocked, message: "Cadence NFT was not locked in NFT escrow after bridging to EVM")
+}
+
+access(all)
+fun testBridgeERC721ToEVMAfterUpdatingSucceeds() {
+    Test.reset(to: snapshot)
+
+    let user = Test.createAccount()
+    setupAccount(user, flowAmount: 10.0, coaAmount: 1.0)
+    let userCOAHex = getCOAAddressHex(atFlowAddress: user.address)
+
+    // Cadence-native permissionless onboarding
+    onboardByEVMAddress(signer: user, evmAddressHex: proxyAddressHex, beFailed: false)
+    // Assign the bridged NFT type after onboarding
+    bridgedNFTIdentifier = getTypeAssociated(with: proxyAddressHex)
+
+    /* Mint the ERC721 & Bridge from EVM as Bridged NFT */
+
+    let mintCalldata = EVM.encodeABIWithSignature("safeMint(address,uint256)", [EVM.addressFromString(userCOAHex), erc721ID])
+    let mintRes = executeTransaction(
+        "../transactions/evm/call.cdc",
+        [proxyAddressHex, String.encodeHex(mintCalldata), UInt64(15_000_000), UInt(0)],
+        erc721Account
+    )
+    Test.expect(mintRes, Test.beSucceeded())
+
+    bridgeNFTFromEVM(
+        signer: user,
+        nftIdentifier: bridgedNFTIdentifier,
+        erc721ID: erc721ID,
+        bridgeAccountAddr: bridgeAccount.address,
+        beFailed: false
+    )
+
+    // get the bridged NFT ID
+    let derivedERC721ContractName = deriveBridgedNFTContractName(evmAddressHex: proxyAddressHex)
+    let bridgedCollectionPathIdentifier = derivedERC721ContractName.concat("Collection")
+    let ids = getIDs(ownerAddr: user.address, storagePathIdentifier: bridgedCollectionPathIdentifier)
+    Test.assertEqual(1, ids.length)
+    let bridgedNFTID = ids[0]
+
+    /* Setup EVM-native NFT for custom cross-VM registration */
+
+    // Deploy the evm-native Cadence NFT contract
+    let err = Test.deployContract(
+            name: "ExampleEVMNativeNFTGivenEVMAddress",
+            path: "../contracts/example-assets/cross-vm-nfts/ExampleEVMNativeNFTGivenEVMAddress.cdc",
+            arguments: [proxyAddressHex] // NOTE: set the proxy address as the associated EVM address
+        )
+    Test.expect(err, Test.beNil())
+    customNFTIdentifier = Type<@ExampleEVMNativeNFTGivenEVMAddress.NFT>().identifier
+    upgradeERC721()
+
+    /* Register custom cross-VM association */
+
+    // Now register the updated ExampleNFT as cross-VM, associating the deployed ERC721
+    registerCrossVMNFT(
+        signer: erc721Account,
+        nftTypeIdentifier: customNFTIdentifier,
+        fulfillmentMinterPath: ExampleEVMNativeNFTGivenEVMAddress.FulfillmentMinterStoragePath,
+        beFailed: false
+    )
+
+    // Move the bridged NFT to EVM - should move as original ERC721 & the NFT should be burned
+    // since the Cadence association has been updated
+    bridgeNFTToEVM(
+        signer: user,
+        nftIdentifier: bridgedNFTIdentifier,
+        nftID: bridgedNFTID,
+        bridgeAccountAddr: bridgeAccount.address,
+        beFailed: false
+    )
+    var evts = Test.eventsOfType(Type<NonFungibleToken.NFT.ResourceDestroyed>())
+    Test.assertEqual(1, evts.length)
+    let destroyedEvt = evts[0] as! NonFungibleToken.NFT.ResourceDestroyed
+    Test.assertEqual(bridgedNFTID, destroyedEvt.id)
+
+    evts = Test.eventsOfType(Type<IFlowEVMNFTBridge.BridgedNFTToEVM>())
+    Test.assertEqual(1, evts.length)
+    let bridgedEvt = evts[0] as! IFlowEVMNFTBridge.BridgedNFTToEVM
+    Test.assertEqual(bridgedNFTID, bridgedEvt.id)
+    Test.assertEqual(erc721ID, bridgedEvt.evmID)
+    Test.assertEqual(userCOAHex, bridgedEvt.to)
+    Test.assertEqual("0x\(proxyAddressHex)", "0x\(bridgedEvt.evmContractAddress)")
+
+    // assert ERC721 is in escrow under bridge COA
+    let userIsOwner = isOwner(of: erc721ID, ownerEVMAddrHex: userCOAHex, erc721AddressHex: proxyAddressHex)
+    Test.assert(userIsOwner, message: "ERC721 \(erc721ID) was not bridged to user after bridging to EVM")
+
+    // ensure Cadence NFT is escrowed
+    let isLocked = isNFTLocked(nftTypeIdentifier: customNFTIdentifier, id: UInt64(erc721ID))
+    Test.assert(!isLocked, message: "Bridged NFT was found in bridge escrow, but it should have been burned")
+}
+
+access(all)
+fun testMigrateBridgedNFTAfterUpdatingSucceeds() {
+    Test.reset(to: snapshot)
+
+    let user = Test.createAccount()
+    setupAccount(user, flowAmount: 10.0, coaAmount: 1.0)
+    let userCOAHex = getCOAAddressHex(atFlowAddress: user.address)
+
+    // Cadence-native permissionless onboarding
+    onboardByEVMAddress(signer: user, evmAddressHex: proxyAddressHex, beFailed: false)
+    // Assign the bridged NFT type after onboarding
+    bridgedNFTIdentifier = getTypeAssociated(with: proxyAddressHex)
+
+    /* Mint the ERC721 & Bridge from EVM as Bridged NFT */
+
+    let mintCalldata = EVM.encodeABIWithSignature("safeMint(address,uint256)", [EVM.addressFromString(userCOAHex), erc721ID])
+    let mintRes = executeTransaction(
+        "../transactions/evm/call.cdc",
+        [proxyAddressHex, String.encodeHex(mintCalldata), UInt64(15_000_000), UInt(0)],
+        erc721Account
+    )
+    Test.expect(mintRes, Test.beSucceeded())
+
+    bridgeNFTFromEVM(
+        signer: user,
+        nftIdentifier: bridgedNFTIdentifier,
+        erc721ID: erc721ID,
+        bridgeAccountAddr: bridgeAccount.address,
+        beFailed: false
+    )
+
+    // get the bridged NFT ID
+    let derivedERC721ContractName = deriveBridgedNFTContractName(evmAddressHex: proxyAddressHex)
+    let bridgedCollectionPathIdentifier = derivedERC721ContractName.concat("Collection")
+    var ids = getIDs(ownerAddr: user.address, storagePathIdentifier: bridgedCollectionPathIdentifier)
+    Test.assertEqual(1, ids.length)
+    let bridgedNFTID = ids[0]
+
+    /* Setup EVM-native NFT for custom cross-VM registration */
+
+    // Deploy the evm-native Cadence NFT contract
+    let err = Test.deployContract(
+            name: "ExampleEVMNativeNFTGivenEVMAddress",
+            path: "../contracts/example-assets/cross-vm-nfts/ExampleEVMNativeNFTGivenEVMAddress.cdc",
+            arguments: [proxyAddressHex] // NOTE: set the proxy address as the associated EVM address
+        )
+    Test.expect(err, Test.beNil())
+    customNFTIdentifier = Type<@ExampleEVMNativeNFTGivenEVMAddress.NFT>().identifier
+    upgradeERC721()
+
+    /* Register custom cross-VM association */
+
+    // Now register the updated ExampleNFT as cross-VM, associating the deployed ERC721
+    registerCrossVMNFT(
+        signer: erc721Account,
+        nftTypeIdentifier: customNFTIdentifier,
+        fulfillmentMinterPath: ExampleEVMNativeNFTGivenEVMAddress.FulfillmentMinterStoragePath,
+        beFailed: false
+    )
+
+    // Move the bridged NFT to EVM and back - should end with the updated custom Cadence NFT since the  Cadence
+    // association has been updated
+    let migrateRes = executeTransaction(
+        "../transactions/bridge/nft/batch_migrate_bridged_cadence_nft.cdc",
+        [bridgedNFTIdentifier, [bridgedNFTID]],
+        user
+    )
+    Test.expect(migrateRes, Test.beSucceeded())
+
+    let evts = Test.eventsOfType(Type<IFlowEVMNFTBridge.BridgedNFTFromEVM>())
+    Test.assertEqual(2, evts.length)
+    let bridgedEvt = evts[evts.length - 1] as! IFlowEVMNFTBridge.BridgedNFTFromEVM
+    Test.assertEqual(UInt64(erc721ID), bridgedEvt.id)
+    Test.assertEqual(erc721ID, bridgedEvt.evmID)
+    Test.assertEqual(userCOAHex, bridgedEvt.caller)
+    Test.assertEqual("0x\(proxyAddressHex)", "0x\(bridgedEvt.evmContractAddress)")
+
+    // assert ERC721 is in escrow under bridge COA
+    let erc721IsEscrowed = isOwner(of: erc721ID, ownerEVMAddrHex: getBridgeCOAAddressHex(), erc721AddressHex: proxyAddressHex)
+    Test.assert(erc721IsEscrowed, message: "ERC721 \(erc721ID) was bridged from EVM but the token was not found in escrow")
+
+    // ensure user has Cadence NFT
+    ids = getIDs(ownerAddr: user.address, storagePathIdentifier: "ExampleEVMNativeNFTCollection")
+    Test.assertEqual(1, ids.length)
+    Test.assertEqual(UInt64(erc721ID), ids[0])
+}
 
 /* --- Case-Specific Helpers --- */
 
@@ -282,4 +477,35 @@ fun setupAccount(_ user: Test.TestAccount, flowAmount: UFix64, coaAmount: UFix64
     transferFlow(signer: serviceAccount, recipient: user.address, amount: flowAmount)
     // create COA in account
     createCOA(signer: user, fundingAmount: coaAmount)
+}
+
+access(all)
+fun upgradeERC721() {
+    // Update the ERC721 implementation with a cross-VM compatible EVM deployment
+    let v2DeploymentResult = executeTransaction(
+        "../transactions/evm/deploy.cdc",
+        [getEVMNativeERC721UpgradableV2Bytecode(), UInt64(15_000_000), 0.0],
+        erc721Account
+    )
+    Test.expect(v2DeploymentResult, Test.beSucceeded())
+    // Assign the v2 implementation address
+    var evts = Test.eventsOfType(Type<EVM.TransactionExecuted>())
+    erc721AddressHex = getEVMAddressHexFromEvents(evts, idx: evts.length - 1)
+
+    // Construct the upgradeToAndCall calldata
+    let initializeBytes = EVM.EVMBytes(value: EVM.encodeABIWithSignature(
+            "initializeV2(string,string)",
+            [erc721Account.address.toString(), customNFTIdentifier]
+        ))
+    let calldata = EVM.encodeABIWithSignature(
+            "upgradeToAndCall(address,bytes)",
+            [EVM.addressFromString(erc721AddressHex), initializeBytes]
+        )
+    // deploy the ERC1967Proxy contract
+    let upgradeResult = executeTransaction(
+        "../transactions/evm/call.cdc",
+        [proxyAddressHex, String.encodeHex(calldata), UInt64(15_000_000), UInt(0)],
+        erc721Account
+    )
+    Test.expect(upgradeResult, Test.beSucceeded())
 }

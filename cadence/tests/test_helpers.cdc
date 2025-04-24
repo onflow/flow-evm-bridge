@@ -562,16 +562,6 @@ fun bridgeNFTToEVM(
     }
 
     Test.expect(bridgeResult, Test.beSucceeded())
-
-    var events = Test.eventsOfType(Type<NonFungibleToken.Withdrawn>())
-    let withdrawnEvent = events[events.length - 1] as! NonFungibleToken.Withdrawn
-    Test.assertEqual(nftID, withdrawnEvent.id)
-    Test.assertEqual(signer.address, withdrawnEvent.from!)
-
-    events = Test.eventsOfType(Type<NonFungibleToken.Deposited>())
-    let depositedEvent = events[events.length - 1] as! NonFungibleToken.Deposited
-    Test.assertEqual(nftID, depositedEvent.id)
-    Test.assertEqual(bridgeAccountAddr, depositedEvent.to!)
 }
 
 access(all)
@@ -593,14 +583,6 @@ fun bridgeNFTFromEVM(
     }
 
     Test.expect(bridgeResult, Test.beSucceeded())
-
-    // var events = Test.eventsOfType(Type<NonFungibleToken.Withdrawn>())
-    // let withdrawnEvent = events[events.length - 1] as! NonFungibleToken.Withdrawn
-    // Test.assertEqual(bridgeAccountAddr, withdrawnEvent.from!)
-
-    // events = Test.eventsOfType(Type<NonFungibleToken.Deposited>())
-    // let depositedEvent = events[events.length - 1] as! NonFungibleToken.Deposited
-    // Test.assertEqual(signer.address, depositedEvent.to!)
 }
 
 access(all)

@@ -18,7 +18,7 @@ import "FlowEVMBridgeUtils"
 ///     than bridging an asset that has already been onboarded.
 ///
 /// @param nftIdentifier: The Cadence type identifier of the NFT to bridge - e.g. nft.getType().identifier
-/// @param id: The Cadence NFT.id of the NFT to bridge to EVM
+/// @param ids: The Cadence NFT.id of the NFTs to bridge to EVM
 ///
 transaction(nftIdentifier: String, ids: [UInt64]) {
 
