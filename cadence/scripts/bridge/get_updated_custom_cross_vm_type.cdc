@@ -6,11 +6,15 @@ import "FlowEVMBridgeConfig"
 /// FLIP-318 mechanisms. If there is not a related custom cross-VM Type registered with the bridge, `nil` is
 /// returned.
 ///
-/// @param type: The bridge-defined Cadence Type for which the caller is seeking the updated cross-VM asset Type
+/// @param typeIdentifier: The bridge-defined Cadence Type (as its type identifier) for which the caller is seeking  the
+///     updated cross-VM asset Type
 ///
 /// @return The externally-defined asset Type that now replaces the bridged type if one exists
 ///
 access(all)
-fun main(type: Type): Type? {
-    return FlowEVMBridgeConfig.getUpdatedCustomCrossVMType(type)
+fun main(typeIdentifier: String): Type? {
+    if let type = CompositeType(typeIdentifier) {
+        return FlowEVMBridgeConfig.getUpdatedCustomCrossVMTypeForLegacyType(type)
+    }
+    return nil
 }

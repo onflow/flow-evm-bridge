@@ -153,7 +153,7 @@ contract FlowEVMBridgeConfig {
     /// returned.
     ///
     access(all)
-    view fun getUpdatedCustomCrossVMType(_ type: Type): Type? {
+    view fun getUpdatedCustomCrossVMTypeForLegacyType(_ type: Type): Type? {
         if !type.isSubtype(of: Type<@{NonFungibleToken.NFT}>()) || type.address! != self.account.address {
             // only bridge-defined NFT Types can have an updated custom cross-VM implementation
             return nil
@@ -178,7 +178,7 @@ contract FlowEVMBridgeConfig {
         }
         if let customEVMAssoc = FlowEVMBridgeCustomAssociations.getEVMAddressAssociated(with: type ){
             // return the original bridged NFT Type associated with the custom cross-VM EVM contract address
-            return self.getTypeAssociated(with: customEVMAssoc)
+            return self.evmAddressHexToType[customEVMAssoc.toString()]
         }
         return nil
     }
