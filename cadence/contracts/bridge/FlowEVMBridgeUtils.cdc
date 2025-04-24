@@ -171,6 +171,22 @@ contract FlowEVMBridgeUtils {
         return definingAddress != self.account.address
     }
 
+    /// Identifies if an asset is a type that is defined by a bridge-owned Cadence contract. For NFTs, this would
+    /// indicate that the NFT is a bridged representation of a corresponding ERC721. For a Vault, this would
+    /// indicate that the Vault is a bridged representation of a corresponding ERC20.
+    ///
+    /// @param type: The Type of the asset to check
+    ///
+    /// @return True if the asset is bridge-defined, false if another Cadence contract defines the type. Reverts if the
+    ///     type is a primitive type that is not defined by a Cadence contract.
+    ///
+    access(all)
+    view fun isBridgeDefined(type: Type): Bool {
+        let definingAddress = self.getContractAddress(fromType: type)
+            ?? panic("Could not construct address from type identifier: ".concat(type.identifier))
+        return definingAddress == self.account.address
+    }
+
     /// Identifies if an asset is Cadence- or EVM-native, defined by whether a bridge-owned contract defines it or not.
     /// Reverts on EVM call failure.
     ///
