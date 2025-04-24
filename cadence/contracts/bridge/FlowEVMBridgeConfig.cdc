@@ -1,4 +1,5 @@
 import "EVM"
+import "NonFungibleToken"
 
 import "FlowEVMBridgeHandlerInterfaces"
 import "FlowEVMBridgeCustomAssociations"
@@ -143,6 +144,43 @@ contract FlowEVMBridgeConfig {
     access(all)
     view fun isCadenceTypeBlocked(_ type: Type): Bool {
         return self.borrowCadenceBlocklist().isBlocked(type)
+    }
+
+    /// Returns the bridge-defined Type that was originally associated with the related EVM contract given some
+    /// externally defined contract. This would arise in the event an EVM-native project onboarded to the bridge via
+    /// permissionless onboarding & later registered their own Cadence NFT contract as associated with their ERV721 per
+    /// FLIP-318 mechanisms. If there is not a related custom cross-VM Type registered with the bridge, `nil` is
+    /// returned.
+    ///
+    access(all)
+    view fun getUpdatedCustomCrossVMType(_ type: Type): Type? {
+        if !type.isSubtype(of: Type<@{NonFungibleToken.NFT}>()) || type.address! != self.account.address {
+            // only bridge-defined NFT Types can have an updated custom cross-VM implementation
+            return nil
+        }
+        if let legacyEVMAssoc = self.getLegacyEVMAddressAssociated(with: type) {
+            // return the new Type associated with the originally associated EVM contract address
+            return FlowEVMBridgeCustomAssociations.getTypeAssociated(with: legacyEVMAssoc)
+        }
+        return nil
+    }
+
+    /// Returns the bridge-defined Type that was originally associated with the related EVM contract given some
+    /// externally defined contract. This would arise in the event an EVM-native project onboarded to the bridge via
+    /// permissionless onboarding & later registered their own Cadence NFT contract as associated with their ERV721 per
+    /// FLIP-318 mechanisms. If there is not a related bridge-defined Type registered with the bridge, `nil` is returned.
+    ///
+    access(all)
+    view fun getLegacyTypeForCustomCrossVMType(_ type: Type): Type? {
+        if !type.isSubtype(of: Type<@{NonFungibleToken.NFT}>()) || type.address! == self.account.address {
+            // only externally-defined NFT Types can have an updated custom cross-VM implementation
+            return nil
+        }
+        if let customEVMAssoc = FlowEVMBridgeCustomAssociations.getEVMAddressAssociated(with: type ){
+            // return the original bridged NFT Type associated with the custom cross-VM EVM contract address
+            return self.getTypeAssociated(with: customEVMAssoc)
+        }
+        return nil
     }
 
     /****************************
