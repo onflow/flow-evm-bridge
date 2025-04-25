@@ -48,10 +48,10 @@ transaction(nftIdentifier: String, ids: [UInt64]) {
         self.bridgedNFTType = CompositeType(nftIdentifier)
             ?? panic("Could not construct NFT type from identifier: ".concat(nftIdentifier))
         // Get the registered cross-VM NFT Type that has been registered to replace the bridged NFT Type
-        let maybeCrossVMNFTType = FlowEVMBridgeConfig.getUpdatedCustomCrossVMType(self.bridgedNFTType)
+        let maybeCrossVMNFTType = FlowEVMBridgeConfig.getUpdatedCustomCrossVMTypeForLegacyType(self.bridgedNFTType)
         if maybeCrossVMNFTType == nil {
             panic("The NFT Type \(nftIdentifier) has not been updated with a custom cross-VM NFT or it has not been "
-                .concat("registered with the VM bridge."))
+                .concat("registered with the VM bridge - no need to migrate this NFT Type."))
         }
         self.crossVMNFTType = maybeCrossVMNFTType!
         // Parse the NFT identifier into its components

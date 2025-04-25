@@ -140,6 +140,12 @@ fun testOnboardAndUpdateERC721Succeeds() {
 
     Test.assertEqual("0x\(getAssociatedEVMAddressHex(with: customNFTIdentifier))", "0x\(proxyAddressHex.toLower())")
     Test.assertEqual(customNFTIdentifier, getTypeAssociated(with: proxyAddressHex))
+
+    // ensure legacy & updated types are available via Config contract
+    let legacyType = getLegacyTypeForCustomCrossVMType(typeIdentifier: customNFTIdentifier)!
+    let customType = getUpdatedCustomCrossVMTypeForLegacyType(typeIdentifier: bridgedNFTIdentifier)!
+    Test.assertEqual(bridgedNFTIdentifier, legacyType.identifier)
+    Test.assertEqual(customNFTIdentifier, customType.identifier)
 }
 
 access(all)

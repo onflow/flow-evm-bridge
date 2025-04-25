@@ -123,7 +123,6 @@ fun testOnboardAndUpdateExampleNFTSucceeds() {
     Test.assertEqual(UInt8(0), associationEvt.nativeVMRawValue)
     Test.assertEqual(true, associationEvt.updatedFromBridged)
     Test.assertEqual(nil, associationEvt.fulfillmentMinterType)
-
     Test.assertEqual("0x\(getAssociatedEVMAddressHex(with: exampleNFTIdentifier))", customERC721AddressHex.toLower())
 }
 

@@ -273,6 +273,26 @@ fun getAssociatedEVMAddressHex(with typeIdentifier: String): String {
 }
 
 access(all)
+fun getLegacyTypeForCustomCrossVMType(typeIdentifier: String): Type? {
+    var legacyResult = _executeScript(
+        "../scripts/bridge/get_legacy_type_for_custom_cross_vm_type.cdc",
+        [typeIdentifier]
+    )
+    Test.expect(legacyResult, Test.beSucceeded())
+    return legacyResult.returnValue as! Type? ?? panic("Problem getting legacy type from type \(typeIdentifier)")
+}
+
+access(all)
+fun getUpdatedCustomCrossVMTypeForLegacyType(typeIdentifier: String): Type? {
+    var customResult = _executeScript(
+        "../scripts/bridge/get_updated_custom_cross_vm_type.cdc",
+        [typeIdentifier]
+    )
+    Test.expect(customResult, Test.beSucceeded())
+    return customResult.returnValue as! Type? ?? panic("Problem getting custom type from type \(typeIdentifier)")
+}
+
+access(all)
 fun getDeployedAddressFromDeployer(name: String): String {
     let erc721AddressResult = _executeScript(
         "./scripts/get_deployed_address_string_from_deployer.cdc",
