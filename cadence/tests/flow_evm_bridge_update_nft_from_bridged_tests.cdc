@@ -124,6 +124,12 @@ fun testOnboardAndUpdateExampleNFTSucceeds() {
     Test.assertEqual(true, associationEvt.updatedFromBridged)
     Test.assertEqual(nil, associationEvt.fulfillmentMinterType)
     Test.assertEqual("0x\(getAssociatedEVMAddressHex(with: exampleNFTIdentifier))", customERC721AddressHex.toLower())
+
+    // ensure legacy & updated EVM addresses are available via Config contract
+    let legacyEVMAddress = getLegacyEVMAddressForCustomCrossVMAddress(evmAddress: customERC721AddressHex)!
+    let customEVMAddress = getUpdatedCustomCrossVMEVMAddressForLegacyEVMAddress(evmAddress: bridgedERC721AddressHex)!
+    Test.assertEqual(bridgedERC721AddressHex, legacyEVMAddress.toString())
+    Test.assertEqual(customERC721AddressHex, "0x\(customEVMAddress.toString())")
 }
 
 access(all)

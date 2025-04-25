@@ -293,6 +293,26 @@ fun getUpdatedCustomCrossVMTypeForLegacyType(typeIdentifier: String): Type? {
 }
 
 access(all)
+fun getLegacyEVMAddressForCustomCrossVMAddress(evmAddress: String): EVM.EVMAddress? {
+    var legacyResult = _executeScript(
+        "../scripts/bridge/get_legacy_evm_address_for_custom_cross_vm_evm_address.cdc",
+        [evmAddress]
+    )
+    Test.expect(legacyResult, Test.beSucceeded())
+    return legacyResult.returnValue as! EVM.EVMAddress? ?? panic("Problem getting legacy EVM contract from \(evmAddress)")
+}
+
+access(all)
+fun getUpdatedCustomCrossVMEVMAddressForLegacyEVMAddress(evmAddress: String): EVM.EVMAddress? {
+    var customResult = _executeScript(
+        "../scripts/bridge/get_updated_custom_cross_vm_evm_address.cdc",
+        [evmAddress]
+    )
+    Test.expect(customResult, Test.beSucceeded())
+    return customResult.returnValue as! EVM.EVMAddress? ?? panic("Problem getting custom type from type \(evmAddress)")
+}
+
+access(all)
 fun getDeployedAddressFromDeployer(name: String): String {
     let erc721AddressResult = _executeScript(
         "./scripts/get_deployed_address_string_from_deployer.cdc",
