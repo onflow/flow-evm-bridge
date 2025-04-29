@@ -292,8 +292,8 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         /* Native VM consistency check */
         //
         // Assess if the NFT has been previously onboarded to the bridge
-        let legacyEVMAssoc = FlowEVMBridgeConfig.getEVMAddressAssociated(with: type)
-        let legacyCadenceAssoc = FlowEVMBridgeConfig.getTypeAssociated(with: evmPointer.evmContractAddress)
+        let legacyEVMAssoc = FlowEVMBridgeConfig.getLegacyEVMAddressAssociated(with: type)
+        let legacyCadenceAssoc = FlowEVMBridgeConfig.getLegacyTypeAssociated(with: evmPointer.evmContractAddress)
         assert(legacyEVMAssoc == nil || legacyCadenceAssoc == nil,
             message: "Both the EVM contract \(evmPointer.evmContractAddress.toString()) and the Cadence Type \(type.identifier) "
                 .concat("have already been onboarded to the VM bridge - one side of this association will have to be redeployed ")
