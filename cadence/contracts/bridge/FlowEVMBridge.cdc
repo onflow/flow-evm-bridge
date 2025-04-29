@@ -57,7 +57,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
     /// Emitted whenever a bridged NFT is burned as a part of the bridging process. In the context of this contract,
     /// this only occurs when an EVM-native ERC721 updates from a bridged NFT to their own custom Cadence NFT.
     access(all)
-    event BridgedNFTBurned(type: String, id: UInt64, evmID: UInt256, erc721Address: String)
+    event BridgedNFTBurned(type: String, id: UInt64, evmID: UInt256, uuid: UInt64, erc721Address: String)
 
     /**************************
         Public Onboarding
@@ -979,6 +979,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
             type: bridgedToken.getType().identifier,
             id: bridgedToken.id,
             evmID: bridgedToken.evmID,
+            uuid: bridgedToken.uuid,
             erc721Address: bridgedAssociation.toString()
         )
         Burner.burn(<-bridgedToken)
@@ -1110,6 +1111,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
                     type: bridgedToken.getType().identifier,
                     id: bridgedToken.id,
                     evmID: bridgedToken.evmID,
+                    uuid: bridgedToken.uuid,
                     erc721Address: erc721Address.toString()
                 )
                 Burner.burn(<-bridgedToken)
@@ -1159,6 +1161,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
                 type: bridgedToken.getType().identifier,
                 id: bridgedToken.id,
                 evmID: bridgedToken.evmID,
+                uuid: bridgedToken.uuid,
                 erc721Address: bridgedAssoc.toString()
             )
             Burner.burn(<-bridgedToken)
