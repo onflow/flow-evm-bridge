@@ -292,22 +292,25 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         /* Native VM consistency check */
         //
         // Assess if the NFT has been previously onboarded to the bridge
-        let legacyEVMAssoc = FlowEVMBridgeConfig.getEVMAddressAssociated(with: type)
-        let legacyCadenceAssoc = FlowEVMBridgeConfig.getTypeAssociated(with: evmPointer.evmContractAddress)
+        let legacyEVMAssoc = FlowEVMBridgeConfig.getLegacyEVMAddressAssociated(with: type)
+        let legacyCadenceAssoc = FlowEVMBridgeConfig.getLegacyTypeAssociated(with: evmPointer.evmContractAddress)
+        assert(legacyEVMAssoc == nil || legacyCadenceAssoc == nil,
+            message: "Both the EVM contract \(evmPointer.evmContractAddress.toString()) and the Cadence Type \(type.identifier) "
+                .concat("have already been onboarded to the VM bridge - one side of this association will have to be redeployed ")
+                .concat("and the declared association updated to a non-onboarded target in order to register as a custom cross-VM asset."))
         // Ensure the native VM is consistent if the NFT has been previously onboarded via the permissionless path
-        if legacyEVMAssoc != nil && legacyCadenceAssoc == nil {
+        if legacyEVMAssoc != nil {
             assert(evmPointer.nativeVM == CrossVMMetadataViews.VM.Cadence,
                 message: "Attempting to register NFT \(type.identifier) as EVM-native after it has already been "
                     .concat("onboarded as Cadence-native. This NFT must be configured as Cadence-native with an ERC721 ")
                     .concat("implementing CrossVMBridgeERC721Fulfillment base contract allowing the bridge to fulfill ")
                     .concat("NFTs moving into EVM"))
-        } else if legacyEVMAssoc == nil && legacyCadenceAssoc != nil  {
+        } else if legacyCadenceAssoc != nil {
             assert(evmPointer.nativeVM == CrossVMMetadataViews.VM.EVM,
                 message: "Attempting to register NFT \(type.identifier) as Cadence-native after it has already been "
                     .concat("onboarded as EVM-native. This NFT must be configured as EVM-native and provide an NFTFulfillmentMinter ")
                     .concat("Capability so the bridge may fulfill NFTs moving into Cadence."))
         }
-        // Notably, the edge case where legacyEVMAssoc != nil && legacyCadenceAssoc != nil it omitted - default to project-declared native VM in this case
 
         FlowEVMBridgeCustomAssociations.saveCustomAssociation(
             type: type,
