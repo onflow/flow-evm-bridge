@@ -1,7 +1,6 @@
 pragma solidity 0.8.24;
 
 import {Test} from "forge-std/Test.sol";
-import {console} from "forge-std/console.sol";
 
 import {IERC721Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
@@ -12,7 +11,7 @@ import {ICrossVM} from "../src/interfaces/ICrossVM.sol";
 import {ICrossVMBridgeCallable} from "../src/interfaces/ICrossVMBridgeCallable.sol";
 import {ICrossVMBridgeERC721Fulfillment} from "../src/interfaces/ICrossVMBridgeERC721Fulfillment.sol";
 import {ICrossVMBridgeERC721Fulfillment} from "../src/interfaces/ICrossVMBridgeERC721Fulfillment.sol";
-import {CadenceNativeERC721WithWrapper} from "../src/example-assets/cross-vm-nfts/CadenceNativeERC721WithWrapper.sol";
+import {CadenceNativeERC721WithWrapper} from "../src/test/CadenceNativeERC721WithWrapper.sol";
 
 contract CrossVMBridgeERC721FulfillmentTest is Test {
     FlowEVMBridgedERC721 internal underlyingERC721Impl; // the bridged ERC721 token being wrapped
@@ -93,7 +92,8 @@ contract CrossVMBridgeERC721FulfillmentTest is Test {
         vm.prank(recipient);
         underlyingERC721Impl.approve(address(erc721Impl), fulfilledId);
         vm.prank(recipient);
-        bool wrapped = erc721Impl.depositFor(recipient, ids);
+        bool wrappedReceived = erc721Impl.depositFor(recipient, ids);
+        assertTrue(wrappedReceived);
 
         // Unwrap the token
         vm.prank(recipient);

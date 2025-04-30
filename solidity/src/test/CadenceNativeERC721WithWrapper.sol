@@ -4,8 +4,8 @@ import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {ERC721Wrapper} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721Wrapper.sol";
 import {ERC721URIStorage} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
-import {CrossVMBridgeERC721Fulfillment} from "../../interfaces/CrossVMBridgeERC721Fulfillment.sol";
-import {ICrossVM} from "../../interfaces/ICrossVM.sol";
+import {CrossVMBridgeERC721Fulfillment} from "../interfaces/CrossVMBridgeERC721Fulfillment.sol";
+import {ICrossVM} from "../interfaces/ICrossVM.sol";
 
 /**
  * @title CadenceNativeERC721WithWrapper

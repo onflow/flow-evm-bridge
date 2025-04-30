@@ -54,6 +54,10 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         isERC721: Bool,
         evmContractAddress: String
     )
+    /// Emitted whenever a bridged NFT is burned as a part of the bridging process. In the context of this contract,
+    /// this only occurs when an EVM-native ERC721 updates from a bridged NFT to their own custom Cadence NFT.
+    access(all)
+    event BridgedNFTBurned(type: String, id: UInt64, evmID: UInt256, uuid: UInt64, erc721Address: String)
 
     /**************************
         Public Onboarding
@@ -918,7 +922,15 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
                 .concat(" ERC721 contracts that have registered as a custom cross-VM NFT collection."))
         let tokenRef = (&token as &{NonFungibleToken.NFT}) as! &{CrossVMNFT.EVMNFT}
         let evmID = tokenRef.evmID
-        Burner.burn(<-token)
+        let bridgedToken <- token as! @{CrossVMNFT.EVMNFT}
+        emit BridgedNFTBurned(
+            type: bridgedToken.getType().identifier,
+            id: bridgedToken.id,
+            evmID: bridgedToken.evmID,
+            uuid: bridgedToken.uuid,
+            erc721Address: bridgedAssociation.toString()
+        )
+        Burner.burn(<-bridgedToken)
         // Transfer the ERC721 from escrow to the named recipient
         FlowEVMBridgeUtils.mustSafeTransferERC721(erc721Address: bridgedAssociation, to: to, id: evmID)
     }
@@ -1104,7 +1116,15 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
 
             // Burn the bridged NFT token if it's locked
             if let cadenceID = FlowEVMBridgeNFTEscrow.getLockedCadenceID(type: type, evmID: id) {
-                Burner.burn(<-FlowEVMBridgeNFTEscrow.unlockNFT(type: type, id: cadenceID))
+                let bridgedToken <- FlowEVMBridgeNFTEscrow.unlockNFT(type: type, id: cadenceID) as! @{CrossVMNFT.EVMNFT}
+                emit BridgedNFTBurned(
+                    type: bridgedToken.getType().identifier,
+                    id: bridgedToken.id,
+                    evmID: bridgedToken.evmID,
+                    uuid: bridgedToken.uuid,
+                    erc721Address: erc721Address.toString()
+                )
+                Burner.burn(<-bridgedToken)
             }
         }
 
@@ -1146,7 +1166,15 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
 
         // Check if originally associated bridged token is in escrow, burning if so
         if let lockedCadenceID = FlowEVMBridgeNFTEscrow.getLockedCadenceID(type: type, evmID: id) {
-            Burner.burn(<-FlowEVMBridgeNFTEscrow.unlockNFT(type: type, id: lockedCadenceID))
+            let bridgedToken <- FlowEVMBridgeNFTEscrow.unlockNFT(type: type, id: lockedCadenceID) as! @{CrossVMNFT.EVMNFT}
+            emit BridgedNFTBurned(
+                type: bridgedToken.getType().identifier,
+                id: bridgedToken.id,
+                evmID: bridgedToken.evmID,
+                uuid: bridgedToken.uuid,
+                erc721Address: bridgedAssoc.toString()
+            )
+            Burner.burn(<-bridgedToken)
         }
         // Either unlock if locked or fulfill via configured NFTFulfillmentMinter
         if FlowEVMBridgeNFTEscrow.isLocked(type: updatedTypeAssoc, id: UInt64(id)) {
