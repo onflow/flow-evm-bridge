@@ -1554,6 +1554,21 @@ contract FlowEVMBridgeUtils {
         return decodedResult[0] as! EVM.EVMAddress
     }
 
+    /// Calls `setSymbol(string)` on the EVM contract as exposed on FlowEVMBridgedERC721 contracts, enabling Cadence
+    /// NFTs to update their EVM symbol via EVMBridgedMetadata.symbol. The call's status is returned so conditional 
+    /// execution can be handled on the caller's end.
+    ///
+    access(account)
+    fun tryUpdateSymbol(_ evmContractAddress: EVM.EVMAddress, symbol: String): Bool {
+        return self.call(
+            signature: "setSymbol(string)",
+            targetEVMAddress: evmContractAddress,
+            args: [symbol],
+            gasLimit: FlowEVMBridgeConfig.gasLimit,
+            value: 0.0
+        ).status == EVM.Status.successful
+    }
+
     init(bridgeFactoryAddressHex: String) {
         self.delimiter = "_"
         self.contractNamePrefixes = {
