@@ -433,6 +433,11 @@
 		}
 	},
 	"deployments": {
+		"emulator": {
+			"emulator-account": [
+				"CrossVMMetadataViews"
+			]
+		},
 		"mainnet": {
 			"mainnet-flow-evm-bridge": [
 				"FlowEVMBridgeHandlerInterfaces",

@@ -346,6 +346,16 @@ fun getBalance(ownerAddr: Address, storagePathIdentifier: String): UFix64? {
 }
 
 access(all)
+fun getFullBalance(ownerAddr: Address, contractAddress: Address, contractName: String): UInt256? {
+    let balanceResult = _executeScript(
+        "../scripts/tokens/get_full_cadence_evm_balance.cdc",
+        [ownerAddr, contractAddress, contractName]
+    )
+    Test.expect(balanceResult, Test.beSucceeded())
+    return balanceResult.returnValue as! UInt256?
+}
+
+access(all)
 fun balanceOf(evmAddressHex: String, erc20AddressHex: String): UInt256 {
     let balanceOfResult = _executeScript(
         "../scripts/utils/balance_of.cdc",
