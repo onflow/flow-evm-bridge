@@ -1028,10 +1028,12 @@ fun testBridgeCadenceNativeTokenToEVMSucceeds() {
     Test.assertEqual(40, associatedEVMAddressHex.length)
 
     let decimals = getTokenDecimals(erc20AddressHex: associatedEVMAddressHex)
-    let expectedEVMBalance = ufix64ToUInt256(exampleTokenMintAmount, decimals: decimals)
+    let expectedTotalBalance = ufix64ToUInt256(exampleTokenMintAmount, decimals: decimals)
 
-    var completeBalance = getFullBalance(ownerAddr: alice.address, contractAddress: 0x0000000000000010, contractName: "ExampleToken")
-    Test.assert(completeBalance == expectedEVMBalance)
+    var completeBalances = getFullBalance(ownerAddr: alice.address, contractAddress: 0x0000000000000010, contractName: "ExampleToken", erc20AddressHex: nil)
+    Test.assert(completeBalances[0] == expectedTotalBalance)
+    Test.assert(completeBalances[1] == 0)
+    Test.assert(completeBalances[2] == expectedTotalBalance)
 
     var aliceCOAAddressHex = getCOAAddressHex(atFlowAddress: alice.address)
 
@@ -1050,7 +1052,7 @@ fun testBridgeCadenceNativeTokenToEVMSucceeds() {
 
     // Confirm balance on EVM side has been updated
     let evmBalance = balanceOf(evmAddressHex: aliceCOAAddressHex, erc20AddressHex: associatedEVMAddressHex)
-    Test.assertEqual(expectedEVMBalance, evmBalance)
+    Test.assertEqual(expectedTotalBalance, evmBalance)
 
     // Confirm the token is locked
     let lockedBalance = getLockedTokenBalance(vaultTypeIdentifier: exampleTokenIdentifier) ?? panic("Problem getting locked balance")
@@ -1059,9 +1061,18 @@ fun testBridgeCadenceNativeTokenToEVMSucceeds() {
     let metadata = resolveLockedTokenView(bridgeAddress: bridgeAccount.address, vaultTypeIdentifier: exampleTokenIdentifier, viewIdentifier: Type<FungibleTokenMetadataViews.FTDisplay>().identifier)
     Test.assert(metadata != nil, message: "Expected Vault metadata to be resolved from escrow but none was returned")
 
-    // Confirm complete balance is still the same
-    completeBalance = getFullBalance(ownerAddr: alice.address, contractAddress: 0x0000000000000010, contractName: "ExampleToken")
-    Test.assert(completeBalance == expectedEVMBalance)
+    // Confirm complete balance is still the same,
+    // this time querying with the erc20 address
+    completeBalances = getFullBalance(ownerAddr: alice.address, contractAddress: nil, contractName: nil, erc20AddressHex: associatedEVMAddressHex)
+    Test.assert(completeBalances[0] == 0)
+    Test.assert(completeBalances[1] == expectedTotalBalance)
+    Test.assert(completeBalances[2] == expectedTotalBalance)
+
+    // Query an account without the token to make sure balances are zero
+    completeBalances = getFullBalance(ownerAddr: bob.address, contractAddress: nil, contractName: nil, erc20AddressHex: associatedEVMAddressHex)
+    Test.assert(completeBalances[0] == 0)
+    Test.assert(completeBalances[1] == 0)
+    Test.assert(completeBalances[2] == 0)
 }
 
 access(all)
