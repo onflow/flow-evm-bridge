@@ -350,13 +350,13 @@ fun getFullBalance(
     ownerAddr: Address,
     vaultIdentifier: String?,
     erc20AddressHex: String?
-): [UInt256] {
+): [AnyStruct] {
     let balanceResult = _executeScript(
         "../scripts/tokens/get_full_cadence_evm_balance.cdc",
         [ownerAddr, vaultIdentifier, erc20AddressHex]
     )
     Test.expect(balanceResult, Test.beSucceeded())
-    return balanceResult.returnValue as! [UInt256]
+    return balanceResult.returnValue as! [AnyStruct]
 }
 
 access(all)

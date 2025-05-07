@@ -15,15 +15,15 @@ import "FungibleTokenMetadataViews"
 /// @param erc20AddressHex: The optional ERC20 address of the FT to query
 ///
 /// @return An array that contains the balance information for the user's accounts
-///         as UInt256 in this order:
-///         cadence Balance, EVM Balance, Total Balance
+///         in this order:
+///         decimals (UInt256), cadence Balance (UFix64), EVM Balance (UInt256), Total Balance (UInt256)
 ///
 
 access(all) fun main(
         owner: Address,
         vaultIdentifier: String?,
         erc20AddressHexArg: String?
-): [UInt256] {
+): [AnyStruct] {
     pre {
         vaultIdentifier == nil ? erc20AddressHexArg != nil : true:
             "If the Cadence contract information is not provided, the ERC20 contract address must be provided."
@@ -37,6 +37,7 @@ access(all) fun main(
     var cadenceBalance: UFix64 = 0.0
     var cadenceBalanceUInt256: UInt256 = 0
     var coaBalance: UInt256 = 0
+    var decimals: UInt8 = 0
     
     // If the caller provided the Cadence information,
     // Construct the composite type
@@ -99,17 +100,22 @@ access(all) fun main(
                 evmContractAddress: EVM.addressFromString(erc20Address)
             )
 
+            if cadenceBalance != 0.0 {
+                // Convert the Cadence balance to UInt256
+                cadenceBalanceUInt256 = FlowEVMBridgeUtils.convertCadenceAmountToERC20Amount(
+                    cadenceBalance,
+                    erc20Address: EVM.addressFromString(erc20Address)
+                )
+            }
+
             // Get the token decimals of the ERC20 contract
-            let decimals = FlowEVMBridgeUtils.getTokenDecimals(
+            decimals = FlowEVMBridgeUtils.getTokenDecimals(
                 evmContractAddress: EVM.addressFromString(erc20Address)
             )
-
-            // Convert the Cadence balance to UInt256
-            cadenceBalanceUInt256 = FlowEVMBridgeUtils.ufix64ToUInt256(value: cadenceBalance, decimals: decimals)
         }
     }
 
-    let balances = [cadenceBalanceUInt256, coaBalance, cadenceBalanceUInt256+coaBalance]
+    let balances = [decimals, cadenceBalance, coaBalance, cadenceBalanceUInt256+coaBalance]
     
     return balances
 }
