@@ -334,7 +334,7 @@
 		},
 		"FungibleToken": {
 			"source": "mainnet://f233dcee88fe0abe.FungibleToken",
-			"hash": "050328d01c6cde307fbe14960632666848d9b7ea4fef03ca8c0bbfb0f2884068",
+			"hash": "23c1159cf99b2b039b6b868d782d57ae39b8d784045d81597f100a4782f0285b",
 			"aliases": {
 				"emulator": "ee82856bf20e2aa6",
 				"mainnet": "f233dcee88fe0abe",
@@ -433,6 +433,11 @@
 		}
 	},
 	"deployments": {
+		"emulator": {
+			"emulator-account": [
+				"CrossVMMetadataViews"
+			]
+		},
 		"mainnet": {
 			"mainnet-flow-evm-bridge": [
 				"FlowEVMBridgeHandlerInterfaces",

@@ -1024,6 +1024,17 @@ fun testBridgeCadenceNativeTokenToEVMSucceeds() {
         ?? panic("Problem getting ExampleToken balance")
     Test.assert(cadenceBalance == exampleTokenMintAmount)
 
+    let associatedEVMAddressHex = getAssociatedEVMAddressHex(with: exampleTokenIdentifier)
+    Test.assertEqual(40, associatedEVMAddressHex.length)
+
+    let decimals = getTokenDecimals(erc20AddressHex: associatedEVMAddressHex)
+    let expectedTotalBalance = ufix64ToUInt256(exampleTokenMintAmount, decimals: decimals)
+
+    var completeBalances = getFullBalance(ownerAddr: alice.address, vaultIdentifier: exampleTokenIdentifier, erc20AddressHex: nil)
+    Test.assert(completeBalances[1] as! UFix64 == exampleTokenMintAmount)
+    Test.assert(completeBalances[2] as! UInt256 == 0)
+    Test.assert(completeBalances[3] as! UInt256 == expectedTotalBalance)
+
     var aliceCOAAddressHex = getCOAAddressHex(atFlowAddress: alice.address)
 
     // Execute bridge to EVM
@@ -1034,19 +1045,14 @@ fun testBridgeCadenceNativeTokenToEVMSucceeds() {
         beFailed: false
     )
 
-    let associatedEVMAddressHex = getAssociatedEVMAddressHex(with: exampleTokenIdentifier)
-    Test.assertEqual(40, associatedEVMAddressHex.length)
-
     // Confirm Alice's token balance is now 0.0
     cadenceBalance = getBalance(ownerAddr: alice.address, storagePathIdentifier: "exampleTokenVault")
         ?? panic("Problem getting ExampleToken balance")
     Test.assertEqual(0.0, cadenceBalance)
 
     // Confirm balance on EVM side has been updated
-    let decimals = getTokenDecimals(erc20AddressHex: associatedEVMAddressHex)
-    let expectedEVMBalance = ufix64ToUInt256(exampleTokenMintAmount, decimals: decimals)
     let evmBalance = balanceOf(evmAddressHex: aliceCOAAddressHex, erc20AddressHex: associatedEVMAddressHex)
-    Test.assertEqual(expectedEVMBalance, evmBalance)
+    Test.assertEqual(expectedTotalBalance, evmBalance)
 
     // Confirm the token is locked
     let lockedBalance = getLockedTokenBalance(vaultTypeIdentifier: exampleTokenIdentifier) ?? panic("Problem getting locked balance")
@@ -1054,6 +1060,19 @@ fun testBridgeCadenceNativeTokenToEVMSucceeds() {
 
     let metadata = resolveLockedTokenView(bridgeAddress: bridgeAccount.address, vaultTypeIdentifier: exampleTokenIdentifier, viewIdentifier: Type<FungibleTokenMetadataViews.FTDisplay>().identifier)
     Test.assert(metadata != nil, message: "Expected Vault metadata to be resolved from escrow but none was returned")
+
+    // Confirm complete balance is still the same,
+    // this time querying with the erc20 address
+    completeBalances = getFullBalance(ownerAddr: alice.address, vaultIdentifier: nil, erc20AddressHex: associatedEVMAddressHex)
+    Test.assert(completeBalances[1] as! UFix64 == 0.0)
+    Test.assert(completeBalances[2] as! UInt256 == expectedTotalBalance)
+    Test.assert(completeBalances[3] as! UInt256 == expectedTotalBalance)
+
+    // Query an account without the token to make sure balances are zero
+    completeBalances = getFullBalance(ownerAddr: bob.address, vaultIdentifier: nil, erc20AddressHex: associatedEVMAddressHex)
+    Test.assert(completeBalances[1] as! UFix64 == 0.0)
+    Test.assert(completeBalances[2] as! UInt256 == 0)
+    Test.assert(completeBalances[3] as! UInt256 == 0)
 }
 
 access(all)
