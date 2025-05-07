@@ -21,19 +21,15 @@ import "FungibleTokenMetadataViews"
 
 access(all) fun main(
         owner: Address,
-        contractAddressArg: Address?,
-        contractNameArg: String?,
+        vaultIdentifier: String?,
         erc20AddressHexArg: String?
 ): [UInt256] {
     pre {
-        (contractAddressArg == nil && contractNameArg == nil) ||
-        (contractAddressArg != nil && contractNameArg != nil):
-            "The caller must either provide both the contract address and contract name or neither."
-        contractAddressArg == nil ? erc20AddressHexArg != nil : true:
+        vaultIdentifier == nil ? erc20AddressHexArg != nil : true:
             "If the Cadence contract information is not provided, the ERC20 contract address must be provided."
     }
 
-    var typeIdentifier: String? = nil
+    var typeIdentifier: String = ""
     var compType: Type? = nil
     var contractAddress: Address? = nil
     var contractName: String? = nil
@@ -44,19 +40,14 @@ access(all) fun main(
     
     // If the caller provided the Cadence information,
     // Construct the composite type
-    if contractAddressArg != nil {
-        contractAddress = contractAddressArg!
-        contractName = contractNameArg!
-        let contractAddressWithoutHexPrefix = contractAddress!.toString().slice(from: 2, upTo: 18)
-        typeIdentifier = "A.\(contractAddressWithoutHexPrefix).\(contractName!).Vault"
-        compType = CompositeType(typeIdentifier!)
+    if vaultIdentifier != nil {
+        typeIdentifier = vaultIdentifier!
+        compType = CompositeType(typeIdentifier)
+            ?? panic("Could not construct Cadence type with \(typeIdentifier)")
+        
         // Get the EVM address of the bridged version of the Cadence FT contract
-        if let type = compType {
-            if let address = FlowEVMBridgeConfig.getEVMAddressAssociated(with: type) {
-                tokenEVMAddress = address.toString()
-            }
-        } else {
-            panic("Could not construct Cadence type with \(typeIdentifier!)")
+        if let evmAddress = FlowEVMBridgeConfig.getEVMAddressAssociated(with: compType!) {
+            tokenEVMAddress = evmAddress.toString()
         }
     } else {
         // If the caller provided the EVM information,
@@ -65,12 +56,12 @@ access(all) fun main(
         tokenEVMAddress = erc20AddressHexArg!
         let address = EVM.addressFromString(tokenEVMAddress!)
         compType = FlowEVMBridgeConfig.getTypeAssociated(with: address)
-        typeIdentifier = compType?.identifier
-        if typeIdentifier != nil {
-            let splitIdentifier = typeIdentifier!.split(separator: ".")
-            contractAddress = Address.fromString(splitIdentifier[1])
-            contractName = splitIdentifier[2]
-        }
+    }
+
+    // Parse the FT identifier into its components if necessary
+    if compType != nil {
+        contractAddress = FlowEVMBridgeUtils.getContractAddress(fromType: compType!)
+        contractName = FlowEVMBridgeUtils.getContractName(fromType: compType!)
     }
 
     if let address = contractAddress {

@@ -1030,7 +1030,7 @@ fun testBridgeCadenceNativeTokenToEVMSucceeds() {
     let decimals = getTokenDecimals(erc20AddressHex: associatedEVMAddressHex)
     let expectedTotalBalance = ufix64ToUInt256(exampleTokenMintAmount, decimals: decimals)
 
-    var completeBalances = getFullBalance(ownerAddr: alice.address, contractAddress: 0x0000000000000010, contractName: "ExampleToken", erc20AddressHex: nil)
+    var completeBalances = getFullBalance(ownerAddr: alice.address, vaultIdentifier: exampleTokenIdentifier, erc20AddressHex: nil)
     Test.assert(completeBalances[0] == expectedTotalBalance)
     Test.assert(completeBalances[1] == 0)
     Test.assert(completeBalances[2] == expectedTotalBalance)
@@ -1063,13 +1063,13 @@ fun testBridgeCadenceNativeTokenToEVMSucceeds() {
 
     // Confirm complete balance is still the same,
     // this time querying with the erc20 address
-    completeBalances = getFullBalance(ownerAddr: alice.address, contractAddress: nil, contractName: nil, erc20AddressHex: associatedEVMAddressHex)
+    completeBalances = getFullBalance(ownerAddr: alice.address, vaultIdentifier: nil, erc20AddressHex: associatedEVMAddressHex)
     Test.assert(completeBalances[0] == 0)
     Test.assert(completeBalances[1] == expectedTotalBalance)
     Test.assert(completeBalances[2] == expectedTotalBalance)
 
     // Query an account without the token to make sure balances are zero
-    completeBalances = getFullBalance(ownerAddr: bob.address, contractAddress: nil, contractName: nil, erc20AddressHex: associatedEVMAddressHex)
+    completeBalances = getFullBalance(ownerAddr: bob.address, vaultIdentifier: nil, erc20AddressHex: associatedEVMAddressHex)
     Test.assert(completeBalances[0] == 0)
     Test.assert(completeBalances[1] == 0)
     Test.assert(completeBalances[2] == 0)

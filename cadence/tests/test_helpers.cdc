@@ -348,13 +348,12 @@ fun getBalance(ownerAddr: Address, storagePathIdentifier: String): UFix64? {
 access(all)
 fun getFullBalance(
     ownerAddr: Address,
-    contractAddress: Address?,
-    contractName: String?,
+    vaultIdentifier: String?,
     erc20AddressHex: String?
 ): [UInt256] {
     let balanceResult = _executeScript(
         "../scripts/tokens/get_full_cadence_evm_balance.cdc",
-        [ownerAddr, contractAddress, contractName, erc20AddressHex]
+        [ownerAddr, vaultIdentifier, erc20AddressHex]
     )
     Test.expect(balanceResult, Test.beSucceeded())
     return balanceResult.returnValue as! [UInt256]
