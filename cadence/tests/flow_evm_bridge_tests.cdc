@@ -762,7 +762,7 @@ fun testBatchBridgeCadenceNativeNFTToEVMSucceeds() {
     // Execute bridge to EVM
     let bridgeResult = executeTransaction(
         "../transactions/bridge/nft/batch_bridge_nft_to_evm.cdc",
-        [ exampleNFTIdentifier, aliceOwnedIDs ],
+        [ exampleNFTIdentifier, aliceOwnedIDs, [], [], [], [] ],
         alice
     )
     Test.expect(bridgeResult, Test.beSucceeded())
