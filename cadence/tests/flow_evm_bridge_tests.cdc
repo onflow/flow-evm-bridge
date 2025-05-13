@@ -490,6 +490,23 @@ fun testOnboardAndBridgeTokensToEVMSucceeds() {
 }
 
 access(all)
+fun testBridgeTokensToEVMandTxsSucceeds() {
+    // Revert to state before ExampleNFT was onboarded
+    Test.reset(to: snapshot)
+
+    var cadenceBalance = getBalance(ownerAddr: alice.address, storagePathIdentifier: "exampleTokenVault")
+        ?? panic("Could not get ExampleToken balance")
+
+    // Execute bridge to EVM - should also onboard the token type
+    let bridgeResult = executeTransaction(
+        "../transactions/bridge/tokens/bridge_tokens_to_evm_and_txs.cdc",
+        [ exampleTokenIdentifier, cadenceBalance, [], [], [], []],
+        alice
+    )
+    Test.expect(bridgeResult, Test.beSucceeded())
+}
+
+access(all)
 fun testOnboardAndCrossVMTransferTokensToEVMSucceeds() {
     // Revert to state before ExampleNFT was onboarded
     Test.reset(to: snapshot)
@@ -762,7 +779,7 @@ fun testBatchBridgeCadenceNativeNFTToEVMSucceeds() {
     // Execute bridge to EVM
     let bridgeResult = executeTransaction(
         "../transactions/bridge/nft/batch_bridge_nft_to_evm.cdc",
-        [ exampleNFTIdentifier, aliceOwnedIDs, [], [], [], [] ],
+        [ exampleNFTIdentifier, aliceOwnedIDs ],
         alice
     )
     Test.expect(bridgeResult, Test.beSucceeded())
@@ -789,6 +806,26 @@ fun testBatchBridgeCadenceNativeNFTToEVMSucceeds() {
     let metadata2 = resolveLockedNFTView(bridgeAddress: bridgeAccount.address, nftTypeIdentifier: exampleNFTIdentifier, id: UInt256(mintedNFTID2), viewIdentifier: Type<MetadataViews.Display>().identifier)
     Test.assert(metadata1 != nil, message: "Expected NFT metadata to be resolved from escrow but none was returned")
     Test.assert(metadata2 != nil, message: "Expected NFT metadata to be resolved from escrow but none was returned")
+}
+
+access(all)
+fun testBatchBridgeCadenceNativeNFTToEVMAndTxsSucceeds() {
+    let tmp = snapshot
+    Test.reset(to: snapshot)
+    snapshot = tmp
+
+    var aliceOwnedIDs = getIDs(ownerAddr: alice.address, storagePathIdentifier: "cadenceExampleNFTCollection")
+    Test.assertEqual(2, aliceOwnedIDs.length)
+
+    var aliceCOAAddressHex = getCOAAddressHex(atFlowAddress: alice.address)
+
+    // Execute bridge to EVM
+    let bridgeResult = executeTransaction(
+        "../transactions/bridge/nft/batch_bridge_nft_to_evm_and_txs.cdc",
+        [ exampleNFTIdentifier, aliceOwnedIDs, [], [], [], []],
+        alice
+    )
+    Test.expect(bridgeResult, Test.beSucceeded())
 }
 
 access(all)
