@@ -38,209 +38,7 @@ access(all) var snapshot: UInt64 = 0
 
 access(all)
 fun setup() {
-    // Deploy supporting util contracts
-    var err = Test.deployContract(
-        name: "ArrayUtils",
-        path: "../contracts/utils/ArrayUtils.cdc",
-        arguments: []
-    )
-    Test.expect(err, Test.beNil())
-    err = Test.deployContract(
-        name: "StringUtils",
-        path: "../contracts/utils/StringUtils.cdc",
-        arguments: []
-    )
-    Test.expect(err, Test.beNil())
-    err = Test.deployContract(
-        name: "ScopedFTProviders",
-        path: "../contracts/utils/ScopedFTProviders.cdc",
-        arguments: []
-    )
-    Test.expect(err, Test.beNil())
-    err = Test.deployContract(
-        name: "Serialize",
-        path: "../contracts/utils/Serialize.cdc",
-        arguments: []
-    )
-    Test.expect(err, Test.beNil())
-    err = Test.deployContract(
-        name: "SerializeMetadata",
-        path: "../contracts/utils/SerializeMetadata.cdc",
-        arguments: []
-    )
-    Test.expect(err, Test.beNil())
-
-    // Transfer bridge account some $FLOW
-    transferFlow(signer: serviceAccount, recipient: bridgeAccount.address, amount: 10_000.0)
-    // Configure bridge account with a COA
-    createCOA(signer: bridgeAccount, fundingAmount: 1_000.0)
-
-    err = Test.deployContract(
-        name: "IBridgePermissions",
-        path: "../contracts/bridge/interfaces/IBridgePermissions.cdc",
-        arguments: []
-    )
-    Test.expect(err, Test.beNil())
-    err = Test.deployContract(
-        name: "ICrossVM",
-        path: "../contracts/bridge/interfaces/ICrossVM.cdc",
-        arguments: []
-    )
-    Test.expect(err, Test.beNil())
-    err = Test.deployContract(
-        name: "ICrossVMAsset",
-        path: "../contracts/bridge/interfaces/ICrossVMAsset.cdc",
-        arguments: []
-    )
-    Test.expect(err, Test.beNil())
-    err = Test.deployContract(
-        name: "CrossVMNFT",
-        path: "../contracts/bridge/interfaces/CrossVMNFT.cdc",
-        arguments: []
-    )
-    Test.expect(err, Test.beNil())
-    err = Test.deployContract(
-        name: "CrossVMToken",
-        path: "../contracts/bridge/interfaces/CrossVMToken.cdc",
-        arguments: []
-    )
-    Test.expect(err, Test.beNil())
-    err = Test.deployContract(
-        name: "FlowEVMBridgeHandlerInterfaces",
-        path: "../contracts/bridge/interfaces/FlowEVMBridgeHandlerInterfaces.cdc",
-        arguments: []
-    )
-    Test.expect(err, Test.beNil())
-    err = Test.deployContract(
-        name: "FlowEVMBridgeConfig",
-        path: "../contracts/bridge/FlowEVMBridgeConfig.cdc",
-        arguments: []
-    )
-    Test.expect(err, Test.beNil())
-
-    // Deploy FlowBridgeFactory.sol
-    let deploymentResult = executeTransaction(
-        "../transactions/evm/deploy.cdc",
-        [getCompiledFactoryBytecode(), 15_000_000, 0.0],
-        bridgeAccount
-    )
-    // Get the deployed contract address from the latest EVM event
-    let evts = Test.eventsOfType(Type<EVM.TransactionExecuted>())
-    Test.assertEqual(2, evts.length)
-    let factoryAddressHex = getEVMAddressHexFromEvents(evts, idx: 0)
-
-    err = Test.deployContract(
-        name: "FlowEVMBridgeUtils",
-        path: "../contracts/bridge/FlowEVMBridgeUtils.cdc",
-        arguments: [factoryAddressHex]
-    )
-    Test.expect(err, Test.beNil())
-    err = Test.deployContract(
-        name: "FlowEVMBridgeResolver",
-        path: "../contracts/bridge/FlowEVMBridgeResolver.cdc",
-        arguments: []
-    )
-    Test.expect(err, Test.beNil())
-    err = Test.deployContract(
-        name: "FlowEVMBridgeNFTEscrow",
-        path: "../contracts/bridge/FlowEVMBridgeNFTEscrow.cdc",
-        arguments: []
-    )
-    Test.expect(err, Test.beNil())
-    err = Test.deployContract(
-        name: "FlowEVMBridgeTokenEscrow",
-        path: "../contracts/bridge/FlowEVMBridgeTokenEscrow.cdc",
-        arguments: []
-    )
-    Test.expect(err, Test.beNil())
-    err = Test.deployContract(
-        name: "FlowEVMBridgeTemplates",
-        path: "../contracts/bridge/FlowEVMBridgeTemplates.cdc",
-        arguments: []
-    )
-    Test.expect(err, Test.beNil())
-    // Commit bridged NFT code
-    let bridgedNFTChunkResult = executeTransaction(
-        "../transactions/bridge/admin/templates/upsert_contract_code_chunks.cdc",
-        ["bridgedNFT", getBridgedNFTCodeChunks()],
-        bridgeAccount
-    )
-    Test.expect(bridgedNFTChunkResult, Test.beSucceeded())
-    // Commit bridged Token code
-    let bridgedTokenChunkResult = executeTransaction(
-        "../transactions/bridge/admin/templates/upsert_contract_code_chunks.cdc",
-        ["bridgedToken", getBridgedTokenCodeChunks()],
-        bridgeAccount
-    )
-    Test.expect(bridgedNFTChunkResult, Test.beSucceeded())
-
-    err = Test.deployContract(
-        name: "IEVMBridgeNFTMinter",
-        path: "../contracts/bridge/interfaces/IEVMBridgeNFTMinter.cdc",
-        arguments: []
-    )
-    Test.expect(err, Test.beNil())
-    err = Test.deployContract(
-        name: "IEVMBridgeTokenMinter",
-        path: "../contracts/bridge/interfaces/IEVMBridgeTokenMinter.cdc",
-        arguments: []
-    )
-    Test.expect(err, Test.beNil())
-    err = Test.deployContract(
-        name: "IFlowEVMNFTBridge",
-        path: "../contracts/bridge/interfaces/IFlowEVMNFTBridge.cdc",
-        arguments: []
-    )
-    Test.expect(err, Test.beNil())
-    err = Test.deployContract(
-        name: "IFlowEVMTokenBridge",
-        path: "../contracts/bridge/interfaces/IFlowEVMTokenBridge.cdc",
-        arguments: []
-    )
-    Test.expect(err, Test.beNil())
-    err = Test.deployContract(
-        name: "FlowEVMBridge",
-        path: "../contracts/bridge/FlowEVMBridge.cdc",
-        arguments: []
-    )
-    Test.expect(err, Test.beNil())
-    err = Test.deployContract(
-        name: "FlowEVMBridgeAccessor",
-        path: "../contracts/bridge/FlowEVMBridgeAccessor.cdc",
-        arguments: [serviceAccount.address]
-    )
-    Test.expect(err, Test.beNil())
-
-    let claimAccessorResult = executeTransaction(
-        "../transactions/bridge/admin/evm-integration/claim_accessor_capability_and_save_router.cdc",
-        ["FlowEVMBridgeAccessor", bridgeAccount.address],
-        serviceAccount
-    )
-    Test.expect(claimAccessorResult, Test.beSucceeded())
-
-    err = Test.deployContract(
-        name: "FlowEVMBridgeHandlers",
-        path: "../contracts/bridge/FlowEVMBridgeHandlers.cdc",
-        arguments: []
-    )
-    Test.expect(err, Test.beNil())
-
-    // Set bridge fees
-    let updateOnboardFeeResult = executeTransaction(
-        "../transactions/bridge/admin/fee/update_onboard_fee.cdc",
-        [expectedOnboardFee],
-        bridgeAccount
-    )
-    Test.expect(updateOnboardFeeResult, Test.beSucceeded())
-    let updateBaseFeeResult = executeTransaction(
-        "../transactions/bridge/admin/fee/update_base_fee.cdc",
-        [expectedBaseFee],
-        bridgeAccount
-    )
-    Test.expect(updateBaseFeeResult, Test.beSucceeded())
-
-    // Unpause Bridge
-    updateBridgePauseStatus(signer: bridgeAccount, pause: false)
+    setupBridge(bridgeAccount: bridgeAccount, serviceAccount: serviceAccount, unpause: true)
 }
 
 /* --- ASSET & ACCOUNT SETUP - Configure test accounts with assets to bridge --- */
@@ -268,9 +66,8 @@ fun testDeployWFLOWSucceeds() {
     Test.expect(wflowDeployResult, Test.beSucceeded())
 
     let evts = Test.eventsOfType(Type<EVM.TransactionExecuted>())
-    Test.assertEqual(5, evts.length)
-    wflowAddressHex = getEVMAddressHexFromEvents(evts, idx: 4)
-    log("WFLOW Address: ".concat(wflowAddressHex))
+    Test.assertEqual(21, evts.length)
+    wflowAddressHex = getEVMAddressHexFromEvents(evts, idx: evts.length - 1)
 }
 
 access(all)
@@ -319,12 +116,7 @@ fun testOnboardFlowTokenByTypeFails() {
     Test.assertEqual(false, requiresOnboarding)
 
     // Should fail since request routes to TokenHandler and it's not enabled
-    let onboardingResult = executeTransaction(
-        "../transactions/bridge/onboarding/onboard_by_type_identifier.cdc",
-        [flowTokenIdentifier],
-        alice
-    )
-    Test.expect(onboardingResult, Test.beFailed())
+    onboardByTypeIdentifier(signer: alice, typeIdentifier: flowTokenIdentifier, beFailed: true)
 }
 
 // Since the WFLOW Address has a TokenHandler, onboarding should fail
@@ -340,12 +132,7 @@ fun testOnboardWFLOWByEVMAddressFails() {
     Test.assertEqual(false, requiresOnboarding)
 
     // Should fails since request routes to TokenHandler and it's not enabled
-    var onboardingResult = executeTransaction(
-        "../transactions/bridge/onboarding/onboard_by_evm_address.cdc",
-        [wflowAddressHex],
-        alice
-    )
-    Test.expect(onboardingResult, Test.beFailed())
+    onboardByEVMAddress(signer: alice, evmAddressHex: wflowAddressHex, beFailed: true)
 }
 
 /* --- BRIDGING FLOW to EVM as WFLOW and WFLOW from EVM as FLOW --- */

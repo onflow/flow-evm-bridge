@@ -1,6 +1,8 @@
 import "EVM"
+import "NonFungibleToken"
 
 import "FlowEVMBridgeHandlerInterfaces"
+import "FlowEVMBridgeCustomAssociations"
 
 /// This contract is used to store configuration information shared by FlowEVMBridge contracts
 ///
@@ -104,22 +106,21 @@ contract FlowEVMBridgeConfig {
     ///
     access(all)
     view fun isTypePaused(_ type: Type): Bool? {
-        if !self.typeHasTokenHandler(type) {
-            // Most all assets will fall into this block - check if the asset is onboarded and paused
-            return self.registeredTypes[type]?.isPaused ?? nil
-        }
-        // If the asset has a TokenHandler, return true if either the Handler is paused or the type is paused
-        return self.borrowTokenHandler(type)!.isEnabled() == false || self.registeredTypes[type]?.isPaused == true
+        // Paused if the type has a token handler & it's disabled, a custom config has been paused or the bridge config has been paused
+        return !(self.borrowTokenHandler(type)?.isEnabled() ?? true)
+            || FlowEVMBridgeCustomAssociations.isCustomConfigPaused(forType: type) ?? false
+            || self.registeredTypes[type]?.isPaused == true
     }
 
     /// Retrieves the EVMAddress associated with a given Type if it has been onboarded to the bridge
     ///
     access(all)
     view fun getEVMAddressAssociated(with type: Type): EVM.EVMAddress? {
-        if !self.typeHasTokenHandler(type) {
-            return self.registeredTypes[type]?.evmAddress
+        if self.typeHasTokenHandler(type) {
+            return self.borrowTokenHandler(type)!.getTargetEVMAddress()
         }
-        return self.borrowTokenHandler(type)!.getTargetEVMAddress()
+        let customAssociation = FlowEVMBridgeCustomAssociations.getEVMAddressAssociated(with: type)
+        return customAssociation ?? self.registeredTypes[type]?.evmAddress
     }
 
     /// Retrieves the type associated with a given EVMAddress if it has been onboarded to the bridge
@@ -127,7 +128,8 @@ contract FlowEVMBridgeConfig {
     access(all)
     view fun getTypeAssociated(with evmAddress: EVM.EVMAddress): Type? {
         let evmAddressHex = evmAddress.toString()
-        return self.evmAddressHexToType[evmAddressHex]
+        let customAssociation = FlowEVMBridgeCustomAssociations.getTypeAssociated(with: evmAddress)
+        return customAssociation ?? self.evmAddressHexToType[evmAddressHex]
     }
 
     /// Returns whether the given EVMAddress is currently blocked from onboarding to the bridge
@@ -144,9 +146,109 @@ contract FlowEVMBridgeConfig {
         return self.borrowCadenceBlocklist().isBlocked(type)
     }
 
+    /// Returns the project-defined Type has been registered as a replacement for the originally bridge-defined asset
+    /// type. This would arise in the event an EVM-native project onboarded to the bridge via permissionless onboarding
+    /// & later registered their own Cadence NFT contract as associated with their ERC721 per FLIP-318 mechanisms.
+    /// If there is not a related custom cross-VM Type registered with the bridge, `nil` is returned.
+    ///
+    access(all)
+    view fun getUpdatedCustomCrossVMTypeForLegacyType(_ type: Type): Type? {
+        if !type.isSubtype(of: Type<@{NonFungibleToken.NFT}>()) || type.address! != self.account.address {
+            // only bridge-defined NFT Types can have an updated custom cross-VM implementation
+            return nil
+        }
+        if let legacyEVMAssoc = self.getLegacyEVMAddressAssociated(with: type) {
+            // return the new Type associated with the originally associated EVM contract address
+            return FlowEVMBridgeCustomAssociations.getTypeAssociated(with: legacyEVMAssoc)
+        }
+        return nil
+    }
+
+    /// Returns the bridge-defined Type that was originally associated with the related EVM contract given some
+    /// externally defined contract. This would arise in the event an EVM-native project onboarded to the bridge via
+    /// permissionless onboarding & later registered their own Cadence NFT contract as associated with their ERC721 per
+    /// FLIP-318 mechanisms. If there is not a related bridge-defined Type registered with the bridge, `nil` is returned.
+    ///
+    access(all)
+    view fun getLegacyTypeForCustomCrossVMType(_ type: Type): Type? {
+        if !type.isSubtype(of: Type<@{NonFungibleToken.NFT}>()) || type.address! == self.account.address {
+            // only externally-defined NFT Types can have an updated custom cross-VM implementation
+            return nil
+        }
+        if let customEVMAssoc = FlowEVMBridgeCustomAssociations.getEVMAddressAssociated(with: type ) {
+            // return the original bridged NFT Type associated with the custom cross-VM EVM contract address
+            return self.evmAddressHexToType[customEVMAssoc.toString()]
+        }
+        return nil
+    }
+
+    /// Returns the project-defined EVM contract address has been registered as a replacement for the originally bridge-
+    /// defined asset EVM contract. This would arise in the event an Cadence-native project onboarded to the bridge via
+    /// permissionless onboarding & later registered their own EVM contract as associated with their Cadence NFT per
+    /// FLIP-318 mechanisms. If there is not a related custom cross-VM EVM contract registered with the bridge, `nil` is
+    /// returned.
+    ///
+    access(all)
+    view fun getUpdatedCustomCrossVMEVMAddressForLegacyEVMAddress(_ evmAddress: EVM.EVMAddress): EVM.EVMAddress? {
+        if let legacyType = self.getLegacyTypeAssociated(with: evmAddress) {
+            // return the new EVM address associated with the originally associated Type
+            return FlowEVMBridgeCustomAssociations.getEVMAddressAssociated(with: legacyType)
+        }
+        return nil
+    }
+
+    /// Returns the bridge-defined EVM contract address that was originally associated with the related Cadence NFT
+    /// given some externally defined contract. This would arise in the event a Cadence-native project onboarded to the
+    /// bridge via permissionless onboarding & later registered their own EVM contract as associated with their
+    /// Cadence NFT per FLIP-318 mechanisms. If there is not a related bridge-defined EVM contract registered with the
+    /// bridge, `nil` is returned.
+    ///
+    access(all)
+    view fun getLegacyEVMAddressForCustomCrossVMAddress(_ evmAddress: EVM.EVMAddress): EVM.EVMAddress? {
+        if let customType = FlowEVMBridgeCustomAssociations.getTypeAssociated(with: evmAddress) {
+            // return the original bridged NFT Type associated with the custom cross-VM EVM contract address
+            return self.registeredTypes[customType]?.evmAddress
+        }
+        return nil
+    }
+
     /****************************
         Bridge Account Methods
      ****************************/
+
+    /// Returns whether the given Type has a TokenHandler configured
+    ///
+    access(account)
+    view fun typeHasTokenHandler(_ type: Type): Bool {
+        return self.typeToTokenHandlers[type] != nil
+    }
+
+    /// Returns whether the given EVMAddress has a TokenHandler configured
+    ///
+    access(account)
+    view fun evmAddressHasTokenHandler(_ evmAddress: EVM.EVMAddress): Bool {
+        let associatedType = self.getTypeAssociated(with: evmAddress)
+        return associatedType != nil ? self.typeHasTokenHandler(associatedType!) : false
+    }
+
+    /// Returns the Type associated with the provided EVM contract address if the association was established via
+    /// the permissionless onboarding path
+    ///
+    access(account)
+    view fun getLegacyTypeAssociated(with evmAddress: EVM.EVMAddress): Type? {
+        return self.evmAddressHexToType[evmAddress.toString()] ?? nil
+    }
+
+    /// Returns the EVM contract address associated with the provided Type if the association was established via
+    /// the permissionless onboarding path
+    ///
+    access(account)
+    view fun getLegacyEVMAddressAssociated(with type: Type): EVM.EVMAddress? {
+        if self.typeHasTokenHandler(type) {
+            return self.borrowTokenHandler(type)!.getTargetEVMAddress()
+        }
+        return self.registeredTypes[type]?.evmAddress ?? nil
+    }
 
     /// Enables bridge contracts to add new associations between types and EVM addresses
     ///
@@ -165,21 +267,6 @@ contract FlowEVMBridgeConfig {
         self.evmAddressHexToType[evmAddressHex] = type
 
         emit AssociationUpdated(type: type.identifier, evmAddress: evmAddressHex)
-    }
-
-    /// Returns whether the given Type has a TokenHandler configured
-    ///
-    access(account)
-    view fun typeHasTokenHandler(_ type: Type): Bool {
-        return self.typeToTokenHandlers[type] != nil
-    }
-
-    /// Returns whether the given EVMAddress has a TokenHandler configured
-    ///
-    access(account)
-    view fun evmAddressHasTokenHandler(_ evmAddress: EVM.EVMAddress): Bool {
-        let associatedType = self.getTypeAssociated(with: evmAddress)
-        return associatedType != nil ? self.typeHasTokenHandler(associatedType!) : false
     }
 
     /// Adds a TokenHandler to the bridge configuration
@@ -247,6 +334,37 @@ contract FlowEVMBridgeConfig {
     view fun borrowCadenceBlocklist(): auth(Blocklist) &CadenceBlocklist {
         return self.account.storage.borrow<auth(Blocklist) &CadenceBlocklist>(from: /storage/cadenceBlocklist)
             ?? panic("Missing or mis-typed CadenceBlocklist in storage")
+    }
+
+    /// Sets the pause status of a given type, reverting if the type has no associated EVM address as either bridge-
+    /// defined or registered as a custom cross-VM association
+    ///
+    access(self)
+    fun updatePauseStatus(_ type: Type, pause: Bool) {
+        var evmAddress = ""
+        var updated = false
+        if let customAssoc = FlowEVMBridgeCustomAssociations.getEVMAddressAssociated(with: type) {
+            updated = FlowEVMBridgeCustomAssociations.isCustomConfigPaused(forType: type)! != pause
+            // Called methods no-op internally, so check for status update is skipped here
+            pause ? FlowEVMBridgeCustomAssociations.pauseCustomConfig(forType: type)
+                : FlowEVMBridgeCustomAssociations.unpauseCustomConfig(forType: type)
+            // Assign the EVM address based on the CustomConfig value
+            evmAddress = customAssoc.toString()
+        }
+        if let bridgedAssoc = &FlowEVMBridgeConfig.registeredTypes[type] as &TypeEVMAssociation? {
+            if evmAddress.length == 0 {
+                // Assign as bridge association only if custom association does not exist
+                evmAddress = bridgedAssoc.evmAddress.toString()
+            }
+            // No-op if already meets pause status, otherwise update as specified
+            if (pause && !bridgedAssoc.isPaused) || (!pause && bridgedAssoc.isPaused) {
+                updated = true
+                pause ? bridgedAssoc.pause() : bridgedAssoc.unpause()
+            }
+        }
+        assert(evmAddress.length > 0,
+            message: "There was no association found for type \(type.identifier). To block the type from onboarding, use the CadenceBlocklist.")
+        if updated { emit AssetPauseStatusUpdated(paused: pause, type: type.identifier, evmAddress: evmAddress) }
     }
 
     /*****************
@@ -405,6 +523,8 @@ contract FlowEVMBridgeConfig {
 
         /// Pauses the bridge, preventing all bridge operations
         ///
+        /// @emits BridgePauseStatusUpdated with true
+        ///
         access(Pause)
         fun pauseBridge() {
             if FlowEVMBridgeConfig.isPaused() {
@@ -415,6 +535,8 @@ contract FlowEVMBridgeConfig {
         }
 
         /// Unpauses the bridge, allowing bridge operations to resume
+        ///
+        /// @emits BridgePauseStatusUpdated with true
         ///
         access(Pause)
         fun unpauseBridge() {
@@ -427,35 +549,32 @@ contract FlowEVMBridgeConfig {
 
         /// Pauses all operations for a given asset type
         ///
+        /// @param type: The Type for which to pause bridge operations
+        ///
+        /// @emits AssetPauseStatusUpdated with the pause status and serialized type & associated EVM address
+        ///
         access(Pause)
         fun pauseType(_ type: Type) {
-            let association = &FlowEVMBridgeConfig.registeredTypes[type] as &TypeEVMAssociation?
-                ?? panic("Type not associated with an EVM Address")
-
-            if association.isPaused {
-                return
+            pre {
+                FlowEVMBridgeConfig.getEVMAddressAssociated(with: type) != nil || FlowEVMBridgeCustomAssociations.getEVMAddressAssociated(with: type) != nil:
+                "Could not find a bridged or custom association for type \(type.identifier) - cannot pause a type without an association"
             }
-
-            association.pause()
-
-            let evmAddress = association.evmAddress.toString()
-            emit AssetPauseStatusUpdated(paused: true, type: type.identifier, evmAddress: evmAddress)
+            FlowEVMBridgeConfig.updatePauseStatus(type, pause: true)
         }
 
         /// Unpauses all operations for a given asset type
         ///
+        /// @param type: The Type for which to unpause bridge operations
+        ///
+        /// @emits AssetPauseStatusUpdated with the pause status and serialized type & associated EVM address
+        ///
         access(Pause)
         fun unpauseType(_ type: Type) {
-            let association = &FlowEVMBridgeConfig.registeredTypes[type] as &TypeEVMAssociation?
-                ?? panic("Type not associated with an EVM Address")
-
-            if !association.isPaused {
-                return
+            pre {
+                FlowEVMBridgeConfig.getEVMAddressAssociated(with: type) != nil || FlowEVMBridgeCustomAssociations.getEVMAddressAssociated(with: type) != nil:
+                "Could not find a bridged or custom association for type \(type.identifier) - cannot unpause a type without an association"
             }
-
-            association.unpause()
-            let evmAddress = association.evmAddress.toString()
-            emit AssetPauseStatusUpdated(paused: false, type: type.identifier, evmAddress: evmAddress)
+            FlowEVMBridgeConfig.updatePauseStatus(type, pause: false)
         }
 
         /// Sets the target EVM contract address on the handler for a given Type, associating the Cadence type with the

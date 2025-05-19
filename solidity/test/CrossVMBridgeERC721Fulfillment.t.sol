@@ -1,38 +1,45 @@
 pragma solidity 0.8.24;
 
 import {Test} from "forge-std/Test.sol";
+import {console} from "forge-std/console.sol";
 
-import {IERC721Errors} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import {IERC721Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import {ICrossVM} from "../src/interfaces/ICrossVM.sol";
 import {ICrossVMBridgeCallable} from "../src/interfaces/ICrossVMBridgeCallable.sol";
 import {ICrossVMBridgeERC721Fulfillment} from "../src/interfaces/ICrossVMBridgeERC721Fulfillment.sol";
 import {ICrossVMBridgeERC721Fulfillment} from "../src/interfaces/ICrossVMBridgeERC721Fulfillment.sol";
-import {CadenceNativeERC721} from "../src/example-assets/CadenceNativeERC721.sol";
+import {CadenceNativeERC721} from "../src/example-assets/cross-vm-nfts/CadenceNativeERC721.sol";
 
 contract CrossVMBridgeERC721FulfillmentTest is Test {
     CadenceNativeERC721 internal erc721Impl;
 
     string name;
     string symbol;
+    string cadenceAddress;
+    string cadenceIdentifier;
     address vmBridge;
 
     address recipient;
 
     uint256 fulfilledId;
-    bytes emptyBytes;
+    string expectedTokenURI = 'data:application/json;utf8,{"name": "name", "symbol": "symbol"}';
+    bytes bridgedBytes;
 
     function setUp() public {
         name = "name";
         symbol = "symbol";
+        cadenceAddress = "0xf8d6e0586b0a20c7"; // example Cadence contract address
+        cadenceIdentifier = "A.f8d6e0586b0a20c7.ExampleCadenceNativeNFT.NFT"; // example Cadence NFT Type identifier
 
         vmBridge = address(100);
         recipient = address(101);
 
         fulfilledId = 42;
-        emptyBytes = new bytes(0);
+        bridgedBytes = abi.encode(expectedTokenURI);
 
-        erc721Impl = new CadenceNativeERC721(name, symbol, vmBridge);
+        erc721Impl = new CadenceNativeERC721(name, symbol, cadenceAddress, cadenceIdentifier, vmBridge);
     }
 
     function test_VMBridgeAddressMatches() public view {
@@ -40,12 +47,19 @@ contract CrossVMBridgeERC721FulfillmentTest is Test {
         assertEq(vmBridge, actualVMBridge);
     }
 
+    function test_ICrossVMValuesMatch() public view {
+        string memory actualCadenceAddress = ICrossVM(erc721Impl).getCadenceAddress();
+        string memory actualCadenceIdentifier = ICrossVM(erc721Impl).getCadenceIdentifier();
+        assertEq(cadenceAddress, actualCadenceAddress);
+        assertEq(cadenceIdentifier, actualCadenceIdentifier);
+    }
+
     function test_FulfillToEVMAsUnauthorizedFails() public {
         vm.prank(recipient);
         vm.expectRevert(
             abi.encodeWithSelector(ICrossVMBridgeCallable.CrossVMBridgeCallableUnauthorizedAccount.selector, recipient)
         );
-        ICrossVMBridgeERC721Fulfillment(erc721Impl).fulfillToEVM(recipient, fulfilledId, emptyBytes);
+        ICrossVMBridgeERC721Fulfillment(erc721Impl).fulfillToEVM(recipient, fulfilledId, bridgedBytes);
     }
 
     function test_FulfillToEVMMintSucceeds() public {
@@ -60,14 +74,13 @@ contract CrossVMBridgeERC721FulfillmentTest is Test {
 
         // Check current counter values
         uint256 beforeCounter = erc721Impl.beforeCounter();
-        uint256 afterCounter = erc721Impl.afterCounter();
 
         // Call fulfillToEVM minting fulfilledId & incrementing before and after counters
         vm.expectEmit();
         emit ICrossVMBridgeERC721Fulfillment.FulfilledToEVM(recipient, fulfilledId);
 
         vm.prank(vmBridge);
-        ICrossVMBridgeERC721Fulfillment(erc721Impl).fulfillToEVM(recipient, fulfilledId, emptyBytes);
+        ICrossVMBridgeERC721Fulfillment(erc721Impl).fulfillToEVM(recipient, fulfilledId, bridgedBytes);
 
         // Confirm id was fulfilled to recipient
         address ownerOf = erc721Impl.ownerOf(fulfilledId);
@@ -77,9 +90,11 @@ contract CrossVMBridgeERC721FulfillmentTest is Test {
 
         // Confirm overridden before & after hooks executed
         uint256 postFulfillmentBeforeCounter = erc721Impl.beforeCounter();
-        uint256 postFulfillmentAfterCounter = erc721Impl.afterCounter();
         assertEq(postFulfillmentBeforeCounter, beforeCounter + 1);
-        assertEq(postFulfillmentAfterCounter, afterCounter + 1);
+
+        // Check tokenURI assignment from provided data
+        string memory actualTokenURI = erc721Impl.tokenURI(fulfilledId);
+        assertEq(expectedTokenURI, actualTokenURI);
     }
 
     function test_FulfillToEVMUnescrowedFails() public {
@@ -91,14 +106,13 @@ contract CrossVMBridgeERC721FulfillmentTest is Test {
 
         // Check current counter values
         uint256 beforeCounter = erc721Impl.beforeCounter();
-        uint256 afterCounter = erc721Impl.afterCounter();
 
         // Call fulfillToEVM minting fulfilledId & incrementing before and after counters
         vm.expectEmit();
         emit ICrossVMBridgeERC721Fulfillment.FulfilledToEVM(recipient, fulfilledId);
 
         vm.prank(vmBridge);
-        ICrossVMBridgeERC721Fulfillment(erc721Impl).fulfillToEVM(recipient, fulfilledId, emptyBytes);
+        ICrossVMBridgeERC721Fulfillment(erc721Impl).fulfillToEVM(recipient, fulfilledId, bridgedBytes);
 
         // Confirm id was fulfilled to recipient
         address ownerOf = erc721Impl.ownerOf(fulfilledId);
@@ -106,16 +120,14 @@ contract CrossVMBridgeERC721FulfillmentTest is Test {
 
         // Confirm overridden before & after hooks executed
         uint256 postFulfillmentBeforeCounter = erc721Impl.beforeCounter();
-        uint256 postFulfillmentAfterCounter = erc721Impl.afterCounter();
         assertEq(postFulfillmentBeforeCounter, beforeCounter + 1);
-        assertEq(postFulfillmentAfterCounter, afterCounter + 1);
 
         // Ensure call fails without token in escrow
         vm.prank(vmBridge);
         vm.expectRevert(
             abi.encodeWithSelector(ICrossVMBridgeERC721Fulfillment.FulfillmentFailedTokenNotEscrowed.selector, fulfilledId, vmBridge)
         );
-        ICrossVMBridgeERC721Fulfillment(erc721Impl).fulfillToEVM(recipient, fulfilledId, emptyBytes);
+        ICrossVMBridgeERC721Fulfillment(erc721Impl).fulfillToEVM(recipient, fulfilledId, bridgedBytes);
     }
 
     function test_FulfillToEVMFromEscrowSucceeds() public {
@@ -127,14 +139,13 @@ contract CrossVMBridgeERC721FulfillmentTest is Test {
 
         // Check current counter values
         uint256 beforeCounter = erc721Impl.beforeCounter();
-        uint256 afterCounter = erc721Impl.afterCounter();
 
         // Call fulfillToEVM minting fulfilledId & incrementing before and after counters
         vm.expectEmit();
         emit ICrossVMBridgeERC721Fulfillment.FulfilledToEVM(recipient, fulfilledId);
 
         vm.prank(vmBridge);
-        ICrossVMBridgeERC721Fulfillment(erc721Impl).fulfillToEVM(recipient, fulfilledId, emptyBytes);
+        ICrossVMBridgeERC721Fulfillment(erc721Impl).fulfillToEVM(recipient, fulfilledId, bridgedBytes);
 
         // Confirm id was fulfilled to recipient
         address ownerOf = erc721Impl.ownerOf(fulfilledId);
@@ -142,9 +153,7 @@ contract CrossVMBridgeERC721FulfillmentTest is Test {
 
         // Confirm overridden before & after hooks executed
         uint256 postFulfillmentBeforeCounter = erc721Impl.beforeCounter();
-        uint256 postFulfillmentAfterCounter = erc721Impl.afterCounter();
         assertEq(postFulfillmentBeforeCounter, beforeCounter + 1);
-        assertEq(postFulfillmentAfterCounter, afterCounter + 1);
 
         // Confirm escrow status
         bool isEscrowed = ICrossVMBridgeERC721Fulfillment(erc721Impl).isEscrowed(fulfilledId);
@@ -164,7 +173,7 @@ contract CrossVMBridgeERC721FulfillmentTest is Test {
         emit ICrossVMBridgeERC721Fulfillment.FulfilledToEVM(recipient, fulfilledId);
 
         vm.prank(vmBridge);
-        ICrossVMBridgeERC721Fulfillment(erc721Impl).fulfillToEVM(recipient, fulfilledId, emptyBytes);
+        ICrossVMBridgeERC721Fulfillment(erc721Impl).fulfillToEVM(recipient, fulfilledId, bridgedBytes);
 
         // Confirm id was fulfilled to recipient
         ownerOf = erc721Impl.ownerOf(fulfilledId);
@@ -172,9 +181,7 @@ contract CrossVMBridgeERC721FulfillmentTest is Test {
 
         // Confirm overridden before & after hooks executed
         postFulfillmentBeforeCounter = erc721Impl.beforeCounter();
-        postFulfillmentAfterCounter = erc721Impl.afterCounter();
         assertEq(postFulfillmentBeforeCounter, beforeCounter + 2);
-        assertEq(postFulfillmentAfterCounter, afterCounter + 2);
     }
 
     function test_SupportsAllExpectedInterfacesSucceeds() public view {

@@ -5,7 +5,7 @@ go 1.23
 toolchain go1.23.1
 
 require (
-	github.com/onflow/flow-core-contracts/lib/go/templates v1.6.0
+	github.com/onflow/flow-core-contracts/lib/go/templates v1.6.1
 	github.com/stretchr/testify v1.9.0
 )
 

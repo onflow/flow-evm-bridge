@@ -101,7 +101,7 @@ access(all) contract interface IFlowEVMNFTBridge {
         type: Type,
         id: UInt256,
         feeProvider: auth(FungibleToken.Withdraw) &{FungibleToken.Provider},
-        protectedTransferCall: fun (): EVM.Result
+        protectedTransferCall: fun (EVM.EVMAddress): EVM.Result
     ): @{NonFungibleToken.NFT} {
         post {
             emit BridgedNFTFromEVM(
