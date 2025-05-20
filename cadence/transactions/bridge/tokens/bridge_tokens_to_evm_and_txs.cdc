@@ -31,7 +31,7 @@ transaction(
     evmContractAddressHexes: [String],
     calldatas: [String],
     gasLimits: [UInt64],
-    values: [UFix64]
+    values: [UInt]
 ) {
 
     let sentVault: @{FungibleToken.Vault}
@@ -140,8 +140,7 @@ transaction(
         for index, evmAddressHex in evmContractAddressHexes { 
             let evmAddress = EVM.addressFromString(evmAddressHex)
 
-            let valueBalance = EVM.Balance(attoflow: 0)
-            valueBalance.setFLOW(flow: values[index])
+            let valueBalance = EVM.Balance(attoflow: values[index])
             let callResult = self.coa.call(
                 to: evmAddress,
                 data: calldatas[index].decodeHex(),
