@@ -13,26 +13,45 @@ import "FlowEVMBridgeConfig"
 import "FlowEVMBridgeUtils"
 
 /// Bridges NFTs (from the same collection) from the signer's collection in Cadence to the signer's COA in FlowEVM
+/// and then performs an arbitrary number of calls afterwards to potentially do things
+/// with the bridged NFTs
 ///
 /// NOTE: This transaction also onboards the NFT to the bridge if necessary which may incur additional fees
 ///     than bridging an asset that has already been onboarded.
 ///
 /// @param nftIdentifier: The Cadence type identifier of the NFT to bridge - e.g. nft.getType().identifier
 /// @param ids: The Cadence NFT.id of the NFTs to bridge to EVM
+/// @params evmContractAddressHexes, calldatas, gasLimits, values: Arrays of calldata
+///         to be included in transaction calls to Flow EVM from the signer's COA.
+///         The arrays are all expected to be of the same length
 ///
-transaction(nftIdentifier: String, ids: [UInt64]) {
+transaction(
+    nftIdentifier: String,
+    ids: [UInt64],
+    evmContractAddressHexes: [String],
+    calldatas: [String],
+    gasLimits: [UInt64],
+    values: [UInt]
+) {
 
     let nftType: Type
     let collection: auth(NonFungibleToken.Withdraw) &{NonFungibleToken.Collection}
-    let coa: auth(EVM.Bridge) &EVM.CadenceOwnedAccount
+    let coa: auth(EVM.Bridge, EVM.Call) &EVM.CadenceOwnedAccount
     let requiresOnboarding: Bool
     let scopedProvider: @ScopedFTProviders.ScopedFTProvider
     
     prepare(signer: auth(CopyValue, BorrowValue, IssueStorageCapabilityController, PublishCapability, SaveValue) &Account) {
+        pre {
+            (evmContractAddressHexes.length == calldatas.length)
+            && (calldatas.length == gasLimits.length)
+            && (gasLimits.length == values.length):
+                "Calldata array lengths must all be the same!"
+        }
+
         /* --- Reference the signer's CadenceOwnedAccount --- */
         //
         // Borrow a reference to the signer's COA
-        self.coa = signer.storage.borrow<auth(EVM.Bridge) &EVM.CadenceOwnedAccount>(from: /storage/evm)
+        self.coa = signer.storage.borrow<auth(EVM.Bridge, EVM.Call) &EVM.CadenceOwnedAccount>(from: /storage/evm)
             ?? panic("Could not borrow COA signer's account at path /storage/evm")
         
         /* --- Construct the NFT type --- */
@@ -98,6 +117,7 @@ transaction(nftIdentifier: String, ids: [UInt64]) {
     }
 
     execute {
+
         if self.requiresOnboarding {
             // Onboard the NFT to the bridge
             FlowEVMBridge.onboardByType(
@@ -124,5 +144,22 @@ transaction(nftIdentifier: String, ids: [UInt64]) {
 
         // Destroy the ScopedFTProvider
         destroy self.scopedProvider
+
+        // Perform all the calls
+        for index, evmAddressHex in evmContractAddressHexes { 
+            let evmAddress = EVM.addressFromString(evmAddressHex)
+
+            let valueBalance = EVM.Balance(attoflow: values[index])
+            let callResult = self.coa.call(
+                to: evmAddress,
+                data: calldatas[index].decodeHex(),
+                gasLimit: gasLimits[index],
+                value: valueBalance
+            )
+            assert(
+                callResult.status == EVM.Status.successful,
+                message: "Call failed with address \(evmAddressHex) and calldata \(calldatas[index]) with error \(callResult.errorMessage)"
+            )
+        }
     }
 }
