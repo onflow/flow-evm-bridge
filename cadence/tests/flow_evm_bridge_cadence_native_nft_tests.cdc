@@ -117,6 +117,25 @@ fun testRegisterAgainFails() {
 }
 
 access(all)
+fun testPauseByTypeSucceeds() {
+    Test.reset(to: snapshot)
+
+    registerCrossVMNFT(
+        signer: exampleCadenceNativeNFTAccount,
+        nftTypeIdentifier: exampleCadenceNativeNFTIdentifier,
+        fulfillmentMinterPath: nil,
+        beFailed: false
+    )
+
+    var isPaused = isTypePaused(typeIdentifier: exampleCadenceNativeNFTIdentifier)!
+    Test.assertEqual(false, isPaused)
+    updateTypePauseStatus(signer: bridgeAccount, typeIdentifier: exampleCadenceNativeNFTIdentifier, pause: true)
+
+    isPaused = isTypePaused(typeIdentifier: exampleCadenceNativeNFTIdentifier)!
+    Test.assertEqual(true, isPaused)
+}
+
+access(all)
 fun testOnboardCadenceNativeNFTByIdentifierSucceeds() {
     Test.reset(to: snapshot)
 

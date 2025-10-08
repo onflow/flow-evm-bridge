@@ -181,7 +181,7 @@ access(all) contract FlowEVMBridgeCustomAssociations {
     access(account) fun pauseCustomConfig(forType: Type) {
         let config = self.borrowNFTCustomConfig(forType: forType)
             ?? panic("No CustomConfig found for type \(forType.identifier) - cannot pause config that does not exist")
-        if config.isPaused() {
+        if !config.isPaused() {
             config.setPauseStatus(true)
         }
     }
