@@ -2,9 +2,6 @@ name: test
 
 on: pull_request
 
-env:
-  FOUNDRY_PROFILE: ci
-
 jobs:
   check:
     strategy:
@@ -20,7 +17,7 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
-          version: nightly
+          version: stable
 
       - name: Run Forge build
         run: |
