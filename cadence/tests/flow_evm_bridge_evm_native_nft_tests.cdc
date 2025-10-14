@@ -117,6 +117,25 @@ fun testRegisterAgainFails() {
 }
 
 access(all)
+fun testPauseByTypeSucceeds() {
+    Test.reset(to: snapshot)
+
+    registerCrossVMNFT(
+        signer: exampleEVMNativeNFTAccount,
+        nftTypeIdentifier: exampleEVMNativeNFTIdentifier,
+        fulfillmentMinterPath: ExampleEVMNativeNFT.FulfillmentMinterStoragePath,
+        beFailed: false
+    )
+
+    var isPaused = isTypePaused(typeIdentifier: exampleEVMNativeNFTIdentifier)!
+    Test.assertEqual(false, isPaused)
+    updateTypePauseStatus(signer: bridgeAccount, typeIdentifier: exampleEVMNativeNFTIdentifier, pause: true)
+
+    isPaused = isTypePaused(typeIdentifier: exampleEVMNativeNFTIdentifier)!
+    Test.assertEqual(true, isPaused)
+}
+
+access(all)
 fun testRegisterEVMNativeNFTWithoutMinterFails() {
     Test.reset(to: snapshot)
 

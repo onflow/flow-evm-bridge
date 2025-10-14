@@ -945,18 +945,9 @@ fun testBridgeEVMNativeNFTFromEVMSucceeds() {
 access(all)
 fun testPauseByTypeSucceeds() {
     // Pause the bridge
-    let pauseResult = executeTransaction(
-        "../transactions/bridge/admin/pause/update_type_pause_status.cdc",
-        [exampleNFTIdentifier, true],
-        bridgeAccount
-    )
-    Test.expect(pauseResult, Test.beSucceeded())
-    var isPausedResult = executeScript(
-        "../scripts/bridge/is_type_paused.cdc",
-        [exampleNFTIdentifier]
-    )
-    Test.expect(isPausedResult, Test.beSucceeded())
-    Test.assertEqual(true, isPausedResult.returnValue as! Bool? ?? panic("Problem getting pause status"))
+    updateTypePauseStatus(signer: bridgeAccount, typeIdentifier: exampleNFTIdentifier, pause: true)
+    var isPaused = isTypePaused(typeIdentifier: exampleNFTIdentifier)!
+    Test.assertEqual(true, isPaused)
 
     var aliceOwnedIDs = getIDs(ownerAddr: alice.address, storagePathIdentifier: "cadenceExampleNFTCollection")
     Test.assertEqual(1, aliceOwnedIDs.length)
@@ -973,19 +964,10 @@ fun testPauseByTypeSucceeds() {
     )
 
     // Unpause bridging
-    let unpauseResult = executeTransaction(
-        "../transactions/bridge/admin/pause/update_type_pause_status.cdc",
-        [exampleNFTIdentifier, false],
-        bridgeAccount
-    )
-    Test.expect(unpauseResult, Test.beSucceeded())
+    updateTypePauseStatus(signer: bridgeAccount, typeIdentifier: exampleNFTIdentifier, pause: false)
 
-    isPausedResult = executeScript(
-        "../scripts/bridge/is_type_paused.cdc",
-        [exampleNFTIdentifier]
-    )
-    Test.expect(isPausedResult, Test.beSucceeded())
-    Test.assertEqual(false, isPausedResult.returnValue as! Bool? ?? panic("Problem getting pause status"))
+    isPaused = isTypePaused(typeIdentifier: exampleNFTIdentifier)!
+    Test.assertEqual(false, isPaused)
 }
 
 access(all)

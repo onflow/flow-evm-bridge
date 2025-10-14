@@ -263,6 +263,16 @@ fun getTypeAssociated(with evmAddress: String): String {
 }
 
 access(all)
+fun isTypePaused(typeIdentifier: String): Bool? {
+    var isPausedResult = _executeScript(
+        "../scripts/bridge/is_type_paused.cdc",
+        [typeIdentifier]
+    )
+    Test.expect(isPausedResult, Test.beSucceeded())
+    return isPausedResult.returnValue as! Bool? ?? panic("Problem getting pause status for type \(typeIdentifier)")
+}
+
+access(all)
 fun getAssociatedEVMAddressHex(with typeIdentifier: String): String {
     var associatedEVMAddressResult = _executeScript(
         "../scripts/bridge/get_associated_evm_address.cdc",
@@ -562,6 +572,16 @@ fun updateBridgePauseStatus(signer: Test.TestAccount, pause: Bool) {
     let pauseResult = _executeTransaction(
         "../transactions/bridge/admin/pause/update_bridge_pause_status.cdc",
         [pause],
+        signer
+    )
+    Test.expect(pauseResult, Test.beSucceeded())
+}
+
+access(all)
+fun updateTypePauseStatus(signer: Test.TestAccount, typeIdentifier: String, pause: Bool) {
+    let pauseResult = _executeTransaction(
+        "../transactions/bridge/admin/pause/update_type_pause_status.cdc",
+        [typeIdentifier, pause],
         signer
     )
     Test.expect(pauseResult, Test.beSucceeded())

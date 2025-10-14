@@ -1,7 +1,7 @@
 .PHONY: test
 test:
-	sh local/run_cadence_tests.sh
-	go test
+	make cdc-test
+	make go-test
 
 .PHONY: check-tidy
 check-tidy:
@@ -10,3 +10,11 @@ check-tidy:
 
 .PHONY: ci
 ci: check-tidy test
+
+.PHONY: cdc-test
+cdc-test:
+	flow test --cover --covercode="contracts" --coverprofile="coverage.lcov" cadence/tests/*_tests.cdc
+
+.PHONY: go-test
+go-test:
+	go test
