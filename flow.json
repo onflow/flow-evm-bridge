@@ -98,14 +98,18 @@
 			"source": "./cadence/contracts/bridge/FlowEVMBridgeCustomAssociationTypes.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
-				"testing": "0000000000000007"
+				"mainnet": "1e4aa0b87d10b141",
+				"testing": "0000000000000007",
+				"testnet": "dfc20aee650fcbdf"
 			}
 		},
 		"FlowEVMBridgeCustomAssociations": {
 			"source": "./cadence/contracts/bridge/FlowEVMBridgeCustomAssociations.cdc",
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
-				"testing": "0000000000000007"
+				"mainnet": "1e4aa0b87d10b141",
+				"testing": "0000000000000007",
+				"testnet": "dfc20aee650fcbdf"
 			}
 		},
 		"FlowEVMBridgeHandlerInterfaces": {
@@ -462,7 +466,9 @@
 				"IEVMBridgeTokenMinter",
 				"IFlowEVMNFTBridge",
 				"IFlowEVMTokenBridge",
-				"FlowEVMBridge"
+				"FlowEVMBridge",
+				"FlowEVMBridgeCustomAssociationTypes",
+				"FlowEVMBridgeCustomAssociations"
 			]
 		},
 		"testnet": {
@@ -489,7 +495,9 @@
 				"IEVMBridgeTokenMinter",
 				"IFlowEVMNFTBridge",
 				"IFlowEVMTokenBridge",
-				"FlowEVMBridge"
+				"FlowEVMBridge",
+				"FlowEVMBridgeCustomAssociationTypes",
+				"FlowEVMBridgeCustomAssociations"
 			]
 		}
 	}
