@@ -15,7 +15,54 @@ import "CrossVMNFT"
 import "IBridgePermissions"
 
 /// This contract serves as a source of utility methods leveraged by FlowEVMBridge contracts
-//
+
+/***************************************************************************************
+ Clarification of Flow EVM Bridge Security Model
+
+ The bridge operates under a "trust-but-verify" model for EVM contracts:
+
+ Trust Assumptions
+ - ERC20/ERC721 contracts correctly implement their respective standards.
+ - `balanceOf()`, `ownerOf()`, and similar view functions return accurate state.
+ - `transfer()`, `transferFrom()`, and similar mutating functions perform real state changes.
+ - Emitted events correspond to actual state transitions.
+
+ Security Boundaries
+ The bridge provides the following security guarantees:
+
+ 1. Type Isolation: Each bridged ERC20/ERC721 maps to a unique Cadence type
+    (e.g., `EVMVMBridgedToken_0x{ADDRESS}.Vault`). Cadence's type system ensures
+    complete isolation between different token types.
+
+ 2. Cross-Asset Protection: A vulnerability or malicious behavior in one bridged
+    asset CANNOT affect any other bridged asset. Each type has independent accounting.
+
+ 3. Protocol Asset Protection: Core protocol assets (FlowToken, etc.) are not
+    exposed to risks from user-deployed EVM contracts.
+
+ Flow EVM Bridge design - Security Consideration
+
+ The bridge CANNOT protect against:
+
+ - Malicious ERC20/ERC721 contracts that return fabricated data from view functions
+   or fail to perform real state changes. Such contracts can cause accounting desync
+   for their own token type, but cannot affect other assets.
+
+ - Token developer malfeasance ("rug pulls"). A developer who controls a token
+   contract can harm holders of that specific token through various means, with or
+   without the bridge.
+
+ 
+ The bridge's role is to faithfully execute cross-VM transfers for well-behaved
+ contracts, not to enforce correct behavior of arbitrary EVM code.
+
+ User Responsibility
+
+ Users interacting with bridged assets should:
+ - Verify the legitimacy of ERC20/ERC721 contracts before bridging.
+ - Understand that the bridge cannot guarantee the behavior of arbitrary EVM contracts.
+***************************************************************************************/
+
 access(all)
 contract FlowEVMBridgeUtils {
 
