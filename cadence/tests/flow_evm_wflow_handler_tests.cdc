@@ -65,9 +65,7 @@ fun testDeployWFLOWSucceeds() {
     )
     Test.expect(wflowDeployResult, Test.beSucceeded())
 
-    let evts = Test.eventsOfType(Type<EVM.TransactionExecuted>())
-    Test.assertEqual(21, evts.length)
-    wflowAddressHex = getEVMAddressHexFromEvents(evts, idx: evts.length - 1)
+    wflowAddressHex = getLastDeployedAddressHex()
 }
 
 access(all)

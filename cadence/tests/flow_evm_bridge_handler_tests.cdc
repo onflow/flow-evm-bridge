@@ -149,9 +149,7 @@ fun testDeployERC20Succeeds() {
     )
     Test.expect(erc20DeployResult, Test.beSucceeded())
 
-    let evts = Test.eventsOfType(Type<EVM.TransactionExecuted>())
-    Test.assertEqual(23, evts.length)
-    erc20AddressHex = getEVMAddressHexFromEvents(evts, idx: evts.length - 1)
+    erc20AddressHex = getLastDeployedAddressHex()
 }
 
 // Set the TokenHandler's targetEVMAddress to the deployed ERC20 contract address

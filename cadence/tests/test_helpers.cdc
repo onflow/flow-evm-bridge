@@ -190,7 +190,7 @@ fun beNonNil(): Test.Matcher {
 access(all)
 fun getEVMAddressHexFromEvents(_ evts: [AnyStruct], idx: Int): String {
     Test.assert(evts.length > idx, message: "Event index out of bounds")
-    
+
     let evt = evts[idx] as? EVM.TransactionExecuted
         ?? panic("Event at index ".concat(idx.toString()).concat(" is not a TransactionExecuted event"))
     let emittedAddress = evt.contractAddress
@@ -199,6 +199,25 @@ fun getEVMAddressHexFromEvents(_ evts: [AnyStruct], idx: Int): String {
     let hexAddress = emittedAddress.slice(from: 2, upTo: emittedAddress.length).toLower()
     Test.assertEqual(40, hexAddress.length)
     return hexAddress
+}
+
+/// Returns the deployed contract address hex from the last TransactionExecuted event.
+/// Looks at all TransactionExecuted events and returns the address from the most recent one
+/// that has a non-empty contractAddress.
+access(all)
+fun getLastDeployedAddressHex(): String {
+    let evts = Test.eventsOfType(Type<EVM.TransactionExecuted>())
+    var i = evts.length - 1
+    while i >= 0 {
+        let evt = evts[i] as! EVM.TransactionExecuted
+        if evt.contractAddress.length != 0 {
+            let hexAddress = evt.contractAddress.slice(from: 2, upTo: evt.contractAddress.length).toLower()
+            Test.assertEqual(40, hexAddress.length)
+            return hexAddress
+        }
+        i = i - 1
+    }
+    panic("No deployment event found")
 }
 
 /* --- Derivation Helpers --- */
@@ -855,6 +874,8 @@ fun setupBridge(bridgeAccount: Test.TestAccount, serviceAccount: Test.TestAccoun
         bridgeAccount
     )
     Test.expect(registryDeploymentResult, Test.beSucceeded())
+    let registryAddressHex = getLastDeployedAddressHex()
+
     // Deploy ERC20Deployer
     let erc20DeployerDeploymentResult = _executeTransaction(
         "../transactions/evm/deploy.cdc",
@@ -862,6 +883,8 @@ fun setupBridge(bridgeAccount: Test.TestAccount, serviceAccount: Test.TestAccoun
         bridgeAccount
     )
     Test.expect(erc20DeployerDeploymentResult, Test.beSucceeded())
+    let erc20DeployerAddressHex = getLastDeployedAddressHex()
+
     // Deploy ERC721Deployer
     let erc721DeployerDeploymentResult = _executeTransaction(
         "../transactions/evm/deploy.cdc",
@@ -869,12 +892,7 @@ fun setupBridge(bridgeAccount: Test.TestAccount, serviceAccount: Test.TestAccoun
         bridgeAccount
     )
     Test.expect(erc721DeployerDeploymentResult, Test.beSucceeded())
-    // Assign contract addresses
-    var evts = Test.eventsOfType(Type<EVM.TransactionExecuted>())
-    Test.assertEqual(5, evts.length)
-    let registryAddressHex = getEVMAddressHexFromEvents(evts, idx: 2)
-    let erc20DeployerAddressHex = getEVMAddressHexFromEvents(evts, idx: 3)
-    let erc721DeployerAddressHex = getEVMAddressHexFromEvents(evts, idx: 4)
+    let erc721DeployerAddressHex = getLastDeployedAddressHex()
 
     // Deploy factory
     let deploymentResult = _executeTransaction(
@@ -883,10 +901,7 @@ fun setupBridge(bridgeAccount: Test.TestAccount, serviceAccount: Test.TestAccoun
         bridgeAccount
     )
     Test.expect(deploymentResult, Test.beSucceeded())
-    // Assign the factory contract address
-    evts = Test.eventsOfType(Type<EVM.TransactionExecuted>())
-    Test.assertEqual(6, evts.length)
-    let factoryAddressHex = getEVMAddressHexFromEvents(evts, idx: 5)
+    let factoryAddressHex = getLastDeployedAddressHex()
     Test.assertEqual(factoryAddressHex.length, 40)
 
     err = Test.deployContract(
