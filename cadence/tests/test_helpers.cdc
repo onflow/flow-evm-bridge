@@ -207,15 +207,13 @@ fun getEVMAddressHexFromEvents(_ evts: [AnyStruct], idx: Int): String {
 access(all)
 fun getLastDeployedAddressHex(): String {
     let evts = Test.eventsOfType(Type<EVM.TransactionExecuted>())
-    var i = evts.length - 1
-    while i >= 0 {
+    for i in InclusiveRange(evts.length - 1, 0, step: -1) {
         let evt = evts[i] as! EVM.TransactionExecuted
         if evt.contractAddress.length != 0 {
             let hexAddress = evt.contractAddress.slice(from: 2, upTo: evt.contractAddress.length).toLower()
             Test.assertEqual(40, hexAddress.length)
             return hexAddress
         }
-        i = i - 1
     }
     panic("No deployment event found")
 }
