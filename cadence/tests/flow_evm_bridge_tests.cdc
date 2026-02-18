@@ -126,10 +126,8 @@ fun testDeployERC721Succeeds() {
     )
     Test.expect(erc721DeployResult, Test.beSucceeded())
 
-    // Get ERC721 & ERC20 deployed contract addresses
-    let evts = Test.eventsOfType(Type<EVM.TransactionExecuted>())
-    Test.assertEqual(21, evts.length)
-    erc721AddressHex = getEVMAddressHexFromEvents(evts, idx: 20)
+    // Get ERC721 deployed contract address from the last deployment event
+    erc721AddressHex = getLastDeployedAddressHex()
 }
 
 access(all)
@@ -141,10 +139,8 @@ fun testDeployERC20Succeeds() {
     )
     Test.expect(erc20DeployResult, Test.beSucceeded())
 
-    // Get ERC721 & ERC20 deployed contract addresses
-    let evts = Test.eventsOfType(Type<EVM.TransactionExecuted>())
-    Test.assertEqual(22, evts.length)
-    erc20AddressHex = getEVMAddressHexFromEvents(evts, idx: 21)
+    // Get ERC20 deployed contract address from the last deployment event
+    erc20AddressHex = getLastDeployedAddressHex()
 
 }
 
