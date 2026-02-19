@@ -820,6 +820,23 @@ contract FlowEVMBridgeUtils {
         return self.ufix64ToUInt256(value: amount, decimals: self.getTokenDecimals(evmContractAddress: erc20Address))
     }
 
+    /// Converts the given ERC20 amount to the corresponding ERC20 amount after rounding down to the maximum precision
+    /// representable by UFix64 (8 decimal places). This ensures that the amount escrowed on the EVM side matches
+    /// exactly the amount that will be minted or unlocked on the Cadence side, preventing sub-UFix64-precision
+    /// "dust" from being permanently locked in escrow without a corresponding Cadence representation.
+    ///
+    /// @param amount: The UInt256 ERC20 amount to cast to Cadence precision
+    /// @param erc20Address: The EVM contract address of the ERC20 token
+    ///
+    /// @return The ERC20 UInt256 amount corresponding to the truncated Cadence UFix64 amount
+    ///
+    access(all)
+    fun castERC20AmountToCadencePrecision(_ amount: UInt256, erc20Address: EVM.EVMAddress): UInt256 {
+        let decimals = self.getTokenDecimals(evmContractAddress: erc20Address)
+        let ufixAmount = self.uint256ToUFix64(value: amount, decimals: decimals)
+        return self.ufix64ToUInt256(value: ufixAmount, decimals: decimals)
+    }
+
     /// Gets the declared Cadence contract address declared by an EVM contract in conformance to the ICrossVM.sol
     /// contract interface. Reverts if the EVM call is unsuccessful.
     /// NOTE: Just because an EVM contract declares an association does not mean it it is valid!

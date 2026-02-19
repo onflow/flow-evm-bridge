@@ -6,6 +6,7 @@ import "EVM"
 
 import "FlowEVMBridgeConfig"
 import "FlowEVMBridge"
+import "FlowEVMBridgeUtils"
 
 /// This contract defines a mechanism for routing bridge requests from the EVM contract to the Flow-EVM bridge contract
 ///
@@ -119,6 +120,13 @@ contract FlowEVMBridgeAccessor {
             amount: UInt256,
             feeProvider: auth(FungibleToken.Withdraw) &{FungibleToken.Provider}
         ): @{FungibleToken.Vault} {
+            // Resolve the EVM address associated with the token type
+            let associatedEVMAddress = FlowEVMBridge.getAssociatedEVMAddress(with: type)
+                ?? panic("No EVM address associated with type")
+            // Round the requested ERC20 amount down to the maximum precision representable by UFix64 to ensure the
+            // amount escrowed on the EVM side matches exactly what will be minted or unlocked on the Cadence side,
+            // preventing sub-UFix64-precision "dust" from being permanently locked in escrow.
+            let roundedAmount = FlowEVMBridgeUtils.castERC20AmountToCadencePrecision(amount, erc20Address: associatedEVMAddress)
             // Define a callback function, enabling the bridge to act on the ephemeral COA reference in scope
             var executed = false
             fun callback(): EVM.Result {
@@ -130,11 +138,10 @@ contract FlowEVMBridgeAccessor {
                 }
                 executed = true
                 return caller.call(
-                    to: FlowEVMBridge.getAssociatedEVMAddress(with: type)
-                        ?? panic("No EVM address associated with type"),
+                    to: associatedEVMAddress,
                     data: EVM.encodeABIWithSignature(
                         "transfer(address,uint256)",
-                        [FlowEVMBridge.getBridgeCOAEVMAddress(), amount]
+                        [FlowEVMBridge.getBridgeCOAEVMAddress(), roundedAmount]
                     ),
                     gasLimit: FlowEVMBridgeConfig.gasLimit,
                     value: EVM.Balance(attoflow: 0)
@@ -144,7 +151,7 @@ contract FlowEVMBridgeAccessor {
             return <- FlowEVMBridge.bridgeTokensFromEVM(
                 owner: caller.address(),
                 type: type,
-                amount: amount,
+                amount: roundedAmount,
                 feeProvider: feeProvider,
                 protectedTransferCall: callback
             )
