@@ -27,15 +27,15 @@ And below are the bridge escrow's EVM addresses. These addresses are [`CadenceOw
 ## Bridge Security Model
 
   The Flow EVM Bridge is a **permissionless, trust-minimized bridge**. It does
-  not vouch for, verify, or endorse the legitimacy of any ERC20 or ERC721 token
+  not vouch for, verify, or endorse the legitimacy of any EVM ERC20/ERC721 of Flow FT/NFT (token)
   it bridges. Its security guarantee is:
 
-  > "If a token's ERC20/ERC721 contract behaves correctly according to its
+  > "If a token's contract behaves correctly according to its
   > standard, the bridge will faithfully represent its state in Cadence."
 
   **The "As-Is" Principle**
-  Because the bridge is a neutral relayer, the security of a bridged asset is only as good as its source code - the bridge makes no guarantees about tokens whose underlying EVM contracts do not behave correctly.
-  Tokens backed by malicious or buggy ERC20/ERC721 contracts are considered correctly represented at the same level of (un)trustworthiness as their underlying contracts.
+  Because the bridge is a neutral relayer, the security of a bridged asset is only as good as its source code - the bridge makes no guarantees about tokens whose underlying EVM or Cadence contracts do not behave correctly.
+  Tokens backed by malicious or buggy token contracts are considered correctly represented at the same level of (un)trustworthiness as their underlying contracts.
 
   **Type isolation:** Each ERC20 bridged to Cadence produces a distinct, unique
   Cadence resource type (`EVMVMBridgedToken_0x{EVM_ADDRESS}.Vault`). Cadence's
