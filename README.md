@@ -50,6 +50,16 @@ And below are the bridge escrow's EVM addresses. These addresses are [`CadenceOw
   - A developer checking whether to trust a bridged token should evaluate the
     underlying EVM contract, not assume bridge deployment equals endorsement.
 
+  > [!IMPORTANT]
+  > **Note for Cadence developers:** Tokens deployed by the bridge share the
+  > bridge's account address in their Cadence type identifier
+  > (`A.{BRIDGE_ADDRESS}.EVMVMBridgedToken_0x{EVM_ADDRESS}.Vault`). This is a
+  > **routing identifier**, not an endorsement. The bridge address in a type
+  > identifier means "this is the Cadence representation of that EVM contract" —
+  > it does not mean "this EVM contract has been verified or audited." Developers
+  > building on top of bridged tokens should verify the underlying EVM contract
+  > independently.
+
 ## Interacting with the bridge
 
 > :information_source: All bridging activity in either direction is orchestrated via Cadence on `CadenceOwnedAccount`
