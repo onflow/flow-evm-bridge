@@ -1157,6 +1157,11 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         let bridgedAssoc = FlowEVMBridgeConfig.getLegacyEVMAddressAssociated(with: type)!
         let updatedTypeAssoc = FlowEVMBridgeConfig.getTypeAssociated(with: bridgedAssoc)!
 
+        // Ensure the updated/custom type is not paused - the top-level pause check only covers the
+        // caller-supplied legacy type, so we must re-check here after resolving the migration target
+        assert(FlowEVMBridgeConfig.isTypePaused(updatedTypeAssoc) == false,
+            message: "Bridging is currently paused for type \(updatedTypeAssoc.identifier)")
+
         // Confirm custom association is EVM-native
         let configInfo = FlowEVMBridgeCustomAssociations.getCustomConfigInfo(forType: updatedTypeAssoc)!
         assert(configInfo.evmPointer.nativeVM == CrossVMMetadataViews.VM.EVM,
