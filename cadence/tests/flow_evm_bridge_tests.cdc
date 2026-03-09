@@ -1234,3 +1234,68 @@ fun testBridgeEVMNativeTokenToEVMSucceeds() {
     bridgeCOAEscrowBalance = balanceOf(evmAddressHex: bridgeCOAAddressHex, erc20AddressHex: erc20AddressHex)
     Test.assertEqual(UInt256(0), bridgeCOAEscrowBalance)
 }
+
+// Verifies that when bridging an EVM-native ERC20 whose amount has sub-UFix64-precision "dust", only the
+// rounded-down amount is escrowed and minted on the Cadence side, with the dust left in the caller's EVM wallet.
+access(all)
+fun testBridgeEVMNativeTokenFromEVMWithDustSucceeds() {
+    let derivedERC20ContractName = deriveBridgedTokenContractName(evmAddressHex: erc20AddressHex)
+    let bridgedVaultPathIdentifier = derivedERC20ContractName.concat("Vault")
+    let aliceCOAAddressHex = getCOAAddressHex(atFlowAddress: alice.address)
+    let bridgeCOAAddressHex = getCOAAddressHex(atFlowAddress: bridgeAccount.address)
+
+    // Confirm Alice's EVM COA has erc20MintAmount from the prior test
+    var evmBalance = balanceOf(evmAddressHex: aliceCOAAddressHex, erc20AddressHex: erc20AddressHex)
+    Test.assertEqual(erc20MintAmount, evmBalance)
+
+    // Mint 1 extra wei to Alice's COA to create a sub-UFix64-precision "dust" amount.
+    // erc20MintAmount (100e18) is exactly representable in UFix64, but adding 1 wei pushes it
+    // beyond the 8-decimal precision of UFix64, creating unrepresentable dust.
+    let dustAmount: UInt256 = 1
+    let mintResult = executeTransaction(
+        "../transactions/example-assets/evm-assets/mint_erc20.cdc",
+        [aliceCOAAddressHex, dustAmount, erc20AddressHex, UInt64(200_000)],
+        exampleERCAccount
+    )
+    Test.expect(mintResult, Test.beSucceeded())
+
+    let dustyEvmBalance = erc20MintAmount + dustAmount
+    evmBalance = balanceOf(evmAddressHex: aliceCOAAddressHex, erc20AddressHex: erc20AddressHex)
+    Test.assertEqual(dustyEvmBalance, evmBalance)
+
+    // Confirm the dusty amount rounds down to erc20MintAmount in UFix64 precision
+    let decimals = getTokenDecimals(erc20AddressHex: erc20AddressHex)
+    let roundedDownAmount = ufix64ToUInt256(uint256ToUFix64(dustyEvmBalance, decimals: decimals), decimals: decimals)
+    Test.assertEqual(erc20MintAmount, roundedDownAmount)
+
+    // Confirm Alice's Cadence vault balance before bridging
+    var cadenceBalance = getBalance(ownerAddr: alice.address, storagePathIdentifier: bridgedVaultPathIdentifier)
+        ?? panic("Bridged token Vault was not found in Alice's account")
+    Test.assertEqual(0.0, cadenceBalance)
+
+    // Bridge from EVM with the dusty amount - the bridge should only transfer the rounded-down amount
+    bridgeTokensFromEVM(
+        signer: alice,
+        vaultIdentifier: buildTypeIdentifier(
+            address: bridgeAccount.address,
+            contractName: derivedERC20ContractName,
+            resourceName: "Vault"
+        ),
+        amount: dustyEvmBalance,
+        beFailed: false
+    )
+
+    // Confirm Alice's EVM COA retains only the dust (1 wei) - not charged for unrepresentable precision
+    evmBalance = balanceOf(evmAddressHex: aliceCOAAddressHex, erc20AddressHex: erc20AddressHex)
+    Test.assertEqual(dustAmount, evmBalance)
+
+    // Confirm Alice's Cadence vault received the rounded-down amount (100.0, no dust)
+    cadenceBalance = getBalance(ownerAddr: alice.address, storagePathIdentifier: bridgedVaultPathIdentifier)
+        ?? panic("Bridged token Vault was not found in Alice's account after bridging")
+    let expectedCadenceBalance = uint256ToUFix64(erc20MintAmount, decimals: decimals)
+    Test.assertEqual(expectedCadenceBalance, cadenceBalance)
+
+    // Confirm the bridge COA escrowed only the rounded amount, not the full dusty amount
+    let bridgeCOAEscrowBalance = balanceOf(evmAddressHex: bridgeCOAAddressHex, erc20AddressHex: erc20AddressHex)
+    Test.assertEqual(erc20MintAmount, bridgeCOAEscrowBalance)
+}
