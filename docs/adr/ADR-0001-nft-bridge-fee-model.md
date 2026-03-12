@@ -100,7 +100,7 @@ Correct README to accurately describe the storage-based fee model; leave code un
 
 ## More Information
 
-- **Origin:** Feedback received via the bug bounty program.
+- **Origin:** Feedback received via the bug bounty program. Slack conversation thread link: https://flow-foundation.slack.com/archives/C0A35EQRQ1H/p1772556254859179
 - **Original design:** [FLIP #237](https://github.com/onflow/flips/blob/main/application/20231222-evm-vm-bridge.md) — the original bridge design document, superseded by FLIP #318. Describes `baseFee` as a flat-rate charge on every bridge request.
 - **Updated design:** FLIP #318 — supersedes FLIP #237 and should be considered the authoritative spec alongside this ADR.
 - **GitHub issue #200:** https://github.com/onflow/flow-evm-bridge/issues/200 — public discussion thread where a project contributor acknowledged the inconsistency and confirmed it is not a security concern since the affected handlers do not consume bridge account storage.
