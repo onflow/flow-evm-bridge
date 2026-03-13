@@ -76,8 +76,10 @@ standard contract interfaces.
 
 Like all operations on Flow, there are native fees associated with both computation and storage. To prevent spam and
 sustain the bridge account's storage consumption, fees are charged for both onboarding assets and bridging assets. In
-the case where storage consumption is expected, fees are charges based on the storage consumed at the current network
-rates. In all cases, there is a flat-rate fee in addition to any storage fees.
+the case where storage consumption is expected, fees are charged based on the storage consumed at the current network
+rates. Fees are only charged when the bridge operation causes the bridge account to store an asset long-term (e.g.
+escrowing a Cadence NFT). Operations that burn assets or release them from existing escrow do not incur a bridge fee,
+as they do not add to the bridge account's storage.
 
 ### Onboarding
 
