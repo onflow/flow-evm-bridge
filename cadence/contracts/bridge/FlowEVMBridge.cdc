@@ -931,6 +931,8 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
             erc721Address: bridgedAssociation.toString()
         )
         Burner.burn(<-bridgedToken)
+        // No bridge fee is charged here. The bridge burns the legacy Cadence NFT and releases the ERC721 from
+        // EVM-side escrow — no new assets are added to bridge storage, so no storage cost is incurred.
         // Transfer the ERC721 from escrow to the named recipient
         FlowEVMBridgeUtils.mustSafeTransferERC721(erc721Address: bridgedAssociation, to: to, id: evmID)
     }
@@ -1085,6 +1087,9 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
                 protectedTransferCall: protectedTransferCall
             )
         }
+        // No bridge fee is charged here. The bridge is releasing a Cadence-native NFT from existing escrow — the
+        // storage cost was already accounted for when the NFT was escrowed on the ToEVM path. Unlocking reduces
+        // bridge storage rather than increasing it, so no new fee is warranted.
         // Cadence-native NFTs must be in escrow, so unlock & return
         return <-FlowEVMBridgeNFTEscrow.unlockNFT(
             type: type,
@@ -1130,6 +1135,9 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
 
         FlowEVMBridgeUtils.mustEscrowERC721(owner: owner, id: id, erc721Address: erc721Address, protectedTransferCall: protectedTransferCall)
 
+        // No bridge fee is charged here. EVM-native NFTs are fulfilled either by unlocking from existing Cadence
+        // escrow (reducing bridge storage) or by minting via the project-provided NFTFulfillmentMinter (no bridge
+        // storage involved). In neither case does the bridge account incur a new storage cost.
         if FlowEVMBridgeNFTEscrow.isLocked(type: type, id: UInt64(id)) {
             // Unlock the NFT from escrow
             return <-FlowEVMBridgeNFTEscrow.unlockNFT(type: _type, id: UInt64(id))
@@ -1181,6 +1189,10 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
             )
             Burner.burn(<-bridgedToken)
         }
+        // No bridge fee is charged here. The legacy bridge-defined NFT (if present in escrow) is burned, and the
+        // custom type NFT is either unlocked from existing escrow or minted via the project's NFTFulfillmentMinter.
+        // In all cases the bridge is releasing or burning assets rather than storing new ones, so no storage cost
+        // is incurred and no fee is warranted.
         // Either unlock if locked or fulfill via configured NFTFulfillmentMinter
         if FlowEVMBridgeNFTEscrow.isLocked(type: updatedTypeAssoc, id: UInt64(id)) {
             return <- FlowEVMBridgeNFTEscrow.unlockNFT(type: updatedTypeAssoc, id: UInt64(id))
