@@ -429,6 +429,10 @@ contract FlowEVMBridgeUtils {
                     let serializedDisplay = SerializeMetadata.serializeFTDisplay(ftDisplay!)
                     contractURI = "data:application/json;utf8,{".concat(serializedDisplay).concat("}")
                 }
+                // Derive a symbol from the name if no metadata view provided one
+                if symbol == nil {
+                    symbol = SerializeMetadata.deriveSymbol(fromString: name)
+                }
             }
         }
 
