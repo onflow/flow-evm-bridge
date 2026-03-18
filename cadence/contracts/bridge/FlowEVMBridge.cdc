@@ -1097,10 +1097,9 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         // storage cost was already accounted for when the NFT was escrowed on the ToEVM path. Unlocking reduces
         // bridge storage rather than increasing it, so no new fee is warranted.
         // Cadence-native NFTs must be in escrow, so unlock & return
-        return <-FlowEVMBridgeNFTEscrow.unlockNFT(
-            type: type,
-            id: FlowEVMBridgeNFTEscrow.getLockedCadenceID(type: type, evmID: id)!
-        )
+        let lockedCadenceID = FlowEVMBridgeNFTEscrow.getLockedCadenceID(type: type, evmID: id)
+            ?? panic("NFT of type \(type.identifier) with EVM ID \(id) is not in escrow — cannot bridge from EVM")
+        return <-FlowEVMBridgeNFTEscrow.unlockNFT(type: type, id: lockedCadenceID)
     }
 
     /// Handler to move registered cross-VM EVM-native NFTs from EVM
