@@ -394,7 +394,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         type: Type,
         id: UInt256,
         feeProvider: auth(FungibleToken.Withdraw) &{FungibleToken.Provider},
-        protectedTransferCall: fun (EVM.EVMAddress): EVM.Result
+        protectedTransferCall: fun (EVM.EVMAddress): EVM.ResultDecoded
     ): @{NonFungibleToken.NFT} {
         pre {
             !FlowEVMBridgeConfig.isPaused(): "Bridge operations are currently paused"
@@ -406,7 +406,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         let customAssocByType = FlowEVMBridgeCustomAssociations.getEVMAddressAssociated(with: type)
         let customAssocByEVMAddr =  bridgedAssoc != nil ? FlowEVMBridgeCustomAssociations.getTypeAssociated(with: bridgedAssoc!) : nil
         // Initialize the internal handler method that will be used to move the NFT from EVM
-        var handler: (fun (EVM.EVMAddress, Type, UInt256, auth(FungibleToken.Withdraw) &{FungibleToken.Provider}, fun (EVM.EVMAddress): EVM.Result): @{NonFungibleToken.NFT})? = nil
+        var handler: (fun (EVM.EVMAddress, Type, UInt256, auth(FungibleToken.Withdraw) &{FungibleToken.Provider}, fun (EVM.EVMAddress): EVM.ResultDecoded): @{NonFungibleToken.NFT})? = nil
         if bridgedAssoc != nil && customAssocByType == nil && customAssocByEVMAddr == nil {
             // Common case - bridge-defined counterpart in non-native VM
             handler = self.handleDefaultNFTFromEVM
@@ -532,7 +532,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         type: Type,
         amount: UInt256,
         feeProvider: auth(FungibleToken.Withdraw) &{FungibleToken.Provider},
-        protectedTransferCall: fun (): EVM.Result
+        protectedTransferCall: fun (): EVM.ResultDecoded
     ): @{FungibleToken.Vault} {
         pre {
             !FlowEVMBridgeConfig.isPaused(): "Bridge operations are currently paused"
@@ -598,12 +598,13 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
             message: "Unexpected error bridging FT from EVM"
         )
         // Burn the EVM tokens that have now been transferred to the bridge in EVM
-        let burnResult: EVM.Result = FlowEVMBridgeUtils.call(
+        let burnResult = FlowEVMBridgeUtils.callWithSigAndArgs(
             signature: "burn(uint256)",
             targetEVMAddress: associatedAddress,
             args: [amount],
             gasLimit: FlowEVMBridgeConfig.gasLimit,
-            value: 0.0
+            value: 0.0,
+            resultTypes: nil
         )
         assert(burnResult.status == EVM.Status.successful, message: "Burn of EVM tokens failed")
 
@@ -951,7 +952,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         type: Type,
         id: UInt256,
         feeProvider: auth(FungibleToken.Withdraw) &{FungibleToken.Provider},
-        protectedTransferCall: fun (EVM.EVMAddress): EVM.Result
+        protectedTransferCall: fun (EVM.EVMAddress): EVM.ResultDecoded
     ): @{NonFungibleToken.NFT} {
         /* Provision fee */
         //
@@ -1013,7 +1014,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         type: Type,
         id: UInt256,
         feeProvider: auth(FungibleToken.Withdraw) &{FungibleToken.Provider},
-        protectedTransferCall: fun (EVM.EVMAddress): EVM.Result
+        protectedTransferCall: fun (EVM.EVMAddress): EVM.ResultDecoded
     ): @{NonFungibleToken.NFT} {
         let evmPointer = FlowEVMBridgeCustomAssociations.getEVMPointerAsRegistered(forType: type)
             ?? panic("Could not find custom association for cross-VM NFT \(type.identifier) with id \(id). "
@@ -1045,7 +1046,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         type: Type,
         id: UInt256,
         feeProvider: auth(FungibleToken.Withdraw) &{FungibleToken.Provider},
-        protectedTransferCall: fun (EVM.EVMAddress): EVM.Result
+        protectedTransferCall: fun (EVM.EVMAddress): EVM.ResultDecoded
     ): @{NonFungibleToken.NFT} {
         pre {
             FlowEVMBridgeUtils.isCadenceNative(type: type):
@@ -1110,7 +1111,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         type: Type,
         id: UInt256,
         feeProvider: auth(FungibleToken.Withdraw) &{FungibleToken.Provider},
-        protectedTransferCall: fun (EVM.EVMAddress): EVM.Result
+        protectedTransferCall: fun (EVM.EVMAddress): EVM.ResultDecoded
     ): @{NonFungibleToken.NFT} {
         pre {
             id <= UInt256(UInt64.max):
@@ -1158,7 +1159,7 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         type: Type,
         id: UInt256,
         feeProvider: auth(FungibleToken.Withdraw) &{FungibleToken.Provider},
-        protectedTransferCall: fun (EVM.EVMAddress): EVM.Result
+        protectedTransferCall: fun (EVM.EVMAddress): EVM.ResultDecoded
     ): @{NonFungibleToken.NFT} {
         pre {
             !FlowEVMBridgeUtils.isCadenceNative(type: type): // expect this type to be bridge-defined

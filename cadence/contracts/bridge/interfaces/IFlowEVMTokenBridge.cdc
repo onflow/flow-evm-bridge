@@ -95,7 +95,7 @@ access(all) contract interface IFlowEVMTokenBridge {
         type: Type,
         amount: UInt256,
         feeProvider: auth(FungibleToken.Withdraw) &{FungibleToken.Provider},
-        protectedTransferCall: fun (): EVM.Result
+        protectedTransferCall: fun (): EVM.ResultDecoded
     ): @{FungibleToken.Vault} {
         post {
             emit BridgedTokensFromEVM(

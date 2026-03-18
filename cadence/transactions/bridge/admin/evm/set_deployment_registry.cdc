@@ -26,35 +26,32 @@ transaction(registryEVMAddressHex: String) {
 
     execute {
         // Execute call
-        let callResult = self.coa.call(
+        let callResult = self.coa.callWithSigAndArgs(
             to: FlowEVMBridgeUtils.getBridgeFactoryEVMAddress(),
-            data: EVM.encodeABIWithSignature(
-                "setDeploymentRegistry(address)",
-                [self.targetRegistryEVMAddress]
-            ),
+            signature: "setDeploymentRegistry(address)",
+            args: [self.targetRegistryEVMAddress],
             gasLimit: 15_000_000,
-            value: EVM.Balance(attoflow: 0)
+            value: 0,
+            resultTypes: nil
         )
         assert(callResult.status == EVM.Status.successful, message: "Failed to set registry in FlowBridgeFactory contract")
 
         // Confirm the registry address was set
-        let postRegistryResult = self.coa.call(
+        let postRegistryResult = self.coa.callWithSigAndArgs(
             to: FlowEVMBridgeUtils.getBridgeFactoryEVMAddress(),
-            data: EVM.encodeABIWithSignature("getRegistry()", []),
+            signature: "getRegistry()",
+            args: [],
             gasLimit: 15_000_000,
-            value: EVM.Balance(attoflow: 0)
+            value: 0,
+            resultTypes: [Type<EVM.EVMAddress>()]
         )
         assert(
             postRegistryResult.status == EVM.Status.successful,
             message: "Failed to get registry address from FlowBridgeFactory contract"
         )
 
-        let decodedResult = EVM.decodeABI(
-                types: [Type<EVM.EVMAddress>()],
-                data: postRegistryResult.data
-            )
-        assert(decodedResult.length == 1, message: "Invalid response from getRegistry() call to FlowBridgeFactory contract")
-        self.postRegistry = decodedResult[0] as! EVM.EVMAddress
+        assert(postRegistryResult.results.length == 1, message: "Invalid response from getRegistry() call to FlowBridgeFactory contract")
+        self.postRegistry = postRegistryResult.results[0] as! EVM.EVMAddress
     }
 
     post {

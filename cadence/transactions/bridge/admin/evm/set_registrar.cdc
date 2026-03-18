@@ -21,32 +21,29 @@ transaction(registryEVMAddressHex: String) {
     }
 
     execute {
-        let callResult = self.coa.call(
+        let callResult = self.coa.callWithSigAndArgs(
             to: self.targetRegistryEVMAddress,
-            data: EVM.encodeABIWithSignature(
-                "setRegistrar(address)",
-                [FlowEVMBridgeUtils.getBridgeFactoryEVMAddress()]
-            ),
+            signature: "setRegistrar(address)",
+            args: [FlowEVMBridgeUtils.getBridgeFactoryEVMAddress()],
             gasLimit: 15_000_000,
-            value: EVM.Balance(attoflow: 0)
+            value: 0,
+            resultTypes: nil
         )
         assert(callResult.status == EVM.Status.successful, message: "Failed to set registrar")
 
         // Confirm the registrar was set
-        let postRegistrarResult = self.coa.call(
+        let postRegistrarResult = self.coa.callWithSigAndArgs(
             to: self.targetRegistryEVMAddress,
-            data: EVM.encodeABIWithSignature("registrar()", []),
+            signature: "registrar()",
+            args: [],
             gasLimit: 15_000_000,
-            value: EVM.Balance(attoflow: 0)
+            value: 0,
+            resultTypes: [Type<EVM.EVMAddress>()]
         )
         assert(postRegistrarResult.status == EVM.Status.successful, message: "Failed to get registrar")
 
-        let decodedResult = EVM.decodeABI(
-                types: [Type<EVM.EVMAddress>()],
-                data: postRegistrarResult.data
-            )
-        assert(decodedResult.length == 1, message: "Invalid response from registrar() call to registry contract")
-        self.postRegistrar = decodedResult[0] as! EVM.EVMAddress
+        assert(postRegistrarResult.results.length == 1, message: "Invalid response from registrar() call to registry contract")
+        self.postRegistrar = postRegistrarResult.results[0] as! EVM.EVMAddress
     }
 
     post {

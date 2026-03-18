@@ -188,7 +188,7 @@ access(all) contract FlowEVMBridgeHandlerInterfaces {
             owner: EVM.EVMAddress,
             type: Type,
             amount: UInt256,
-            protectedTransferCall: fun (): EVM.Result
+            protectedTransferCall: fun (): EVM.ResultDecoded
         ): @{FungibleToken.Vault} {
             pre {
                 self.isEnabled():
