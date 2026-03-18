@@ -22,32 +22,29 @@ transaction(deployerEVMAddressHex: String) {
 
     execute {
         // Execute the call
-        let callResult = self.coa.call(
+        let callResult = self.coa.callWithSigAndArgs(
             to: self.targetDeployerEVMAddress,
-            data: EVM.encodeABIWithSignature(
-                "setDelegatedDeployer(address)",
-                [FlowEVMBridgeUtils.getBridgeFactoryEVMAddress()]
-            ),
+            signature: "setDelegatedDeployer(address)",
+            args: [FlowEVMBridgeUtils.getBridgeFactoryEVMAddress()],
             gasLimit: 15_000_000,
-            value: EVM.Balance(attoflow: 0)
+            value: EVM.Balance(attoflow: 0),
+            resultTypes: nil
         )
         assert(callResult.status == EVM.Status.successful, message: "Failed to set delegated deployer")
 
         // Confirm the delegated deployer was set
-        let postDelegatedDeployerResult = self.coa.call(
+        let postDelegatedDeployerResult = self.coa.callWithSigAndArgs(
             to: self.targetDeployerEVMAddress,
-            data: EVM.encodeABIWithSignature("delegatedDeployer()", []),
+            signature: "delegatedDeployer()",
+            args: [],
             gasLimit: 15_000_000,
-            value: EVM.Balance(attoflow: 0)
+            value: EVM.Balance(attoflow: 0),
+            resultTypes: [Type<EVM.EVMAddress>()]
         )
         assert(postDelegatedDeployerResult.status == EVM.Status.successful, message: "Failed to get delegated deployer")
 
-        let decodedResult = EVM.decodeABI(
-                types: [Type<EVM.EVMAddress>()],
-                data: postDelegatedDeployerResult.data
-            ) as! [AnyStruct]
-        assert(decodedResult.length == 1, message: "Invalid response from delegatedDeployer() call")
-        self.postDelegatedDeployer = decodedResult[0] as! EVM.EVMAddress
+        assert(postDelegatedDeployerResult.results.length == 1, message: "Invalid response from delegatedDeployer() call")
+        self.postDelegatedDeployer = postDelegatedDeployerResult.results[0] as! EVM.EVMAddress
     }
 
     post {

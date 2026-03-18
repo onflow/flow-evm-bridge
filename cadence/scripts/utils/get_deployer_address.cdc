@@ -9,11 +9,13 @@ fun main(coaHost: Address, deployerTag: String): String {
         .storage
         .borrow<auth(EVM.Call) &EVM.CadenceOwnedAccount>(from: /storage/evm)
         ?? panic("Could not borrow CadenceOwnedAccount from host=".concat(coaHost.toString()))
-    let res = coa.call(
+    let res = coa.callWithSigAndArgs(
         to: FlowEVMBridgeUtils.getBridgeFactoryEVMAddress(),
-        data: EVM.encodeABIWithSignature("getDeployer(string)", [deployerTag]),
+        signature: "getDeployer(string)",
+        args: [deployerTag],
         gasLimit: FlowEVMBridgeConfig.gasLimit,
-        value: EVM.Balance(attoflow: UInt(0))
+        value: EVM.Balance(attoflow: UInt(0)),
+        resultTypes: [Type<EVM.EVMAddress>()]
     )
 
     assert(
@@ -21,9 +23,7 @@ fun main(coaHost: Address, deployerTag: String): String {
         message: "getRegistry call to FlowEVMBridgeFactory failed"
     )
 
-    let decodedRes = EVM.decodeABI(types: [Type<EVM.EVMAddress>()], data: res.data) 
+    assert(res.results.length == 1, message: "Invalid response length")
 
-    assert(decodedRes.length == 1, message: "Invalid response length")
-
-    return (decodedRes[0] as! EVM.EVMAddress).toString()
+    return (res.results[0] as! EVM.EVMAddress).toString()
 }

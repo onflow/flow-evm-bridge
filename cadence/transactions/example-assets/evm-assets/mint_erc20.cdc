@@ -17,15 +17,13 @@ transaction(
     execute {
         let recipientAddress = EVM.addressFromString(recipientHexAddress)
         let erc20Address = EVM.addressFromString(erc20HexAddress)
-        let calldata = EVM.encodeABIWithSignature(
-            "mint(address,uint256)",
-            [recipientAddress, amount]
-        )
-        let callResult = self.coa.call(
+        let callResult = self.coa.callWithSigAndArgs(
             to: erc20Address,
-            data: calldata,
+            signature: "mint(address,uint256)",
+            args: [recipientAddress, amount],
             gasLimit: gasLimit,
-            value: EVM.Balance(attoflow: 0)
+            value: EVM.Balance(attoflow: 0),
+            resultTypes: nil
         )
         assert(callResult.status == EVM.Status.successful, message: "ERC20 mint failed with code: ".concat(callResult.errorCode.toString()))
     }
