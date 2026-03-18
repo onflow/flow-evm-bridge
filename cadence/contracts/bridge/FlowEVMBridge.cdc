@@ -920,6 +920,12 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
             ?? panic("Could not find a custom cross-VM association for NFT \(token.getType().identifier) #\(token.id). "
                 .concat("The handleUpdatedBridgedNFTToEVM route is intended for bridged Cadence NFTs associated with ")
                 .concat(" ERC721 contracts that have registered as a custom cross-VM NFT collection."))
+
+        // Ensure the updated/custom type is not paused - the top-level pause check only covers the
+        // caller-supplied bridge-defined type, so we must re-check here after resolving the migration target
+        assert(FlowEVMBridgeConfig.isTypePaused(updatedCadenceAssociation) == false,
+            message: "Bridging is currently paused for type \(updatedCadenceAssociation.identifier)")
+
         let tokenRef = (&token as &{NonFungibleToken.NFT}) as! &{CrossVMNFT.EVMNFT}
         let evmID = tokenRef.evmID
         let bridgedToken <- token as! @{CrossVMNFT.EVMNFT}

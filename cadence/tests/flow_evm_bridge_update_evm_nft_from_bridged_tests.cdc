@@ -475,6 +475,72 @@ fun testMigrateBridgedNFTAfterUpdatingSucceeds() {
     Test.assertEqual(UInt64(erc721ID), ids[0])
 }
 
+// Verifies that pausing the custom type blocks ToEVM bridging via the custom type identifier (bridge-defined NFT path).
+access(all)
+fun testPauseCustomTypeBlocksBridgeToEVMViaBridgeDefinedType() {
+    Test.reset(to: snapshot)
+
+    let user = Test.createAccount()
+    setupAccount(user, flowAmount: 10.0, coaAmount: 1.0)
+    let userCOAHex = getCOAAddressHex(atFlowAddress: user.address)
+
+    onboardByEVMAddress(signer: user, evmAddressHex: proxyAddressHex, beFailed: false)
+    bridgedNFTIdentifier = getTypeAssociated(with: proxyAddressHex)
+
+    // Mint ERC721 and bridge it from EVM as bridge-defined NFT (before custom association is registered)
+    let mintCalldata = EVM.encodeABIWithSignature("safeMint(address,uint256)", [EVM.addressFromString(userCOAHex), erc721ID])
+    let mintRes = executeTransaction(
+        "../transactions/evm/call.cdc",
+        [proxyAddressHex, String.encodeHex(mintCalldata), UInt64(15_000_000), UInt(0)],
+        erc721Account
+    )
+    Test.expect(mintRes, Test.beSucceeded())
+
+    bridgeNFTFromEVM(
+        signer: user,
+        nftIdentifier: bridgedNFTIdentifier,
+        erc721ID: erc721ID,
+        bridgeAccountAddr: bridgeAccount.address,
+        beFailed: false
+    )
+
+    let derivedERC721ContractName = deriveBridgedNFTContractName(evmAddressHex: proxyAddressHex)
+    let bridgedCollectionPathIdentifier = derivedERC721ContractName.concat("Collection")
+    let ids = getIDs(ownerAddr: user.address, storagePathIdentifier: bridgedCollectionPathIdentifier)
+    Test.assertEqual(1, ids.length)
+    let bridgedNFTID = ids[0]
+
+    let err = Test.deployContract(
+        name: "ExampleEVMNativeNFTGivenEVMAddress",
+        path: "../contracts/example-assets/cross-vm-nfts/ExampleEVMNativeNFTGivenEVMAddress.cdc",
+        arguments: [proxyAddressHex]
+    )
+    Test.expect(err, Test.beNil())
+    customNFTIdentifier = Type<@ExampleEVMNativeNFTGivenEVMAddress.NFT>().identifier
+    upgradeERC721()
+
+    registerCrossVMNFT(
+        signer: erc721Account,
+        nftTypeIdentifier: customNFTIdentifier,
+        fulfillmentMinterPath: ExampleEVMNativeNFTGivenEVMAddress.FulfillmentMinterStoragePath,
+        beFailed: false
+    )
+
+    // Pause only the custom type
+    updateTypePauseStatus(signer: bridgeAccount, typeIdentifier: customNFTIdentifier, pause: true)
+    Test.assertEqual(true, isTypePaused(typeIdentifier: customNFTIdentifier)!)
+
+    // Bridging the bridge-defined NFT to EVM should be blocked now that the fix is in place.
+    // Before the fix, this would succeed and release the ERC721 to the user despite the custom type being paused.
+    bridgeNFTToEVM(
+        signer: user,
+        nftIdentifier: bridgedNFTIdentifier,
+        nftID: bridgedNFTID,
+        bridgeAccountAddr: bridgeAccount.address,
+        beFailed: true
+    )
+}
+
 // Verifies that pausing the custom type blocks bridging via the custom type identifier.
 access(all)
 fun testPauseCustomTypeBlocksBridgeViaCustomType() {
