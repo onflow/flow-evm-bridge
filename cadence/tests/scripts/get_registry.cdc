@@ -10,21 +10,19 @@ fun main(): String {
             from: /storage/evm
         ) ?? panic("Problem borrowing COA")
     // Confirm the registry address was set
-    let postRegistryResult = coa.call(
+    let postRegistryResult = coa.callWithSigAndArgs(
         to: FlowEVMBridgeUtils.getBridgeFactoryEVMAddress(),
-        data: EVM.encodeABIWithSignature("owner()", []),
+        signature: "owner()",
+        args: [],
         gasLimit: 15_000_000,
-        value: EVM.Balance(attoflow: 0)
+        value: EVM.Balance(attoflow: 0),
+        resultTypes: [Type<EVM.EVMAddress>()]
     )
     assert(
         postRegistryResult.status == EVM.Status.successful,
         message: "Failed to get registry address from FlowBridgeFactory contract"
     )
 
-    let decodedResult = EVM.decodeABI(
-            types: [Type<EVM.EVMAddress>()],
-            data: postRegistryResult.data
-        )
-    assert(decodedResult.length == 1, message: "Invalid response from getRegistry() call to FlowBridgeFactory contract")
-    return (decodedResult[0] as! EVM.EVMAddress).toString()
+    assert(postRegistryResult.results.length == 1, message: "Invalid response from getRegistry() call to FlowBridgeFactory contract")
+    return (postRegistryResult.results[0] as! EVM.EVMAddress).toString()
 }

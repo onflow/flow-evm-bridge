@@ -127,7 +127,7 @@ access(all) contract FlowEVMBridgeHandlers {
             owner: EVM.EVMAddress,
             type: Type,
             amount: UInt256,
-            protectedTransferCall: fun (): EVM.Result
+            protectedTransferCall: fun (): EVM.ResultDecoded
         ): @{FungibleToken.Vault} {
             let evmAddress = self.getTargetEVMAddress()!
 
@@ -262,12 +262,13 @@ access(all) contract FlowEVMBridgeHandlers {
             let preBalance = FlowEVMBridgeUtils.balanceOf(owner: coa.address(), evmContractAddress: wflowAddress)
 
             // Wrap the deposited FLOW as WFLOW, giving the bridge COA the necessary WFLOW to transfer
-            let wrapResult = FlowEVMBridgeUtils.call(
+            let wrapResult = FlowEVMBridgeUtils.callWithSigAndArgs(
                 signature: "deposit()",
                 targetEVMAddress: wflowAddress,
                 args: [],
                 gasLimit: FlowEVMBridgeConfig.gasLimit,
-                value: balance
+                value: balance,
+                resultTypes: nil
             )
             assert(wrapResult.status == EVM.Status.successful, message: "Failed to wrap FLOW as WFLOW")
             
@@ -307,7 +308,7 @@ access(all) contract FlowEVMBridgeHandlers {
             owner: EVM.EVMAddress,
             type: Type,
             amount: UInt256,
-            protectedTransferCall: fun (): EVM.Result
+            protectedTransferCall: fun (): EVM.ResultDecoded
         ): @{FungibleToken.Vault} {
             let wflowAddress = self.getTargetEVMAddress()!
 
@@ -335,12 +336,13 @@ access(all) contract FlowEVMBridgeHandlers {
             let preBalance = coa.balance().attoflow
 
             // Unwrap the transferred WFLOW to FLOW, giving the bridge COA the necessary FLOW to withdraw from EVM
-            let unwrapResult = FlowEVMBridgeUtils.call(
+            let unwrapResult = FlowEVMBridgeUtils.callWithSigAndArgs(
                 signature: "withdraw(uint256)",
                 targetEVMAddress: wflowAddress,
                 args: [amount],
                 gasLimit: FlowEVMBridgeConfig.gasLimit,
-                value: 0.0
+                value: 0.0,
+                resultTypes: nil
             )
             assert(unwrapResult.status == EVM.Status.successful, message: "Failed to unwrap WFLOW as FLOW")
 
