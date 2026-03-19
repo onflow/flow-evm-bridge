@@ -1097,6 +1097,13 @@ contract FlowEVMBridgeUtils {
     }
 
     /// Converts a UFix64 to a UInt256
+    ///
+    /// Note on overflow safety: `integer * integerMultiplier` where `integerMultiplier = 10^decimals` could
+    /// theoretically overflow UInt256 for very large `decimals` values (e.g. decimals > ~58 with a non-zero
+    /// integer part). In practice this is not a concern: ERC20 tokens with more than 18 decimals are outside
+    /// the ERC20 standard convention, and UFix64.max (~1.84e19) * 10^18 ≈ 1.84e37, well within UInt256 range.
+    /// The bridge sources `decimals` from on-chain ERC20 `decimals()` calls; a malicious token reporting
+    /// extreme decimals would only affect its own bridged representation, not other assets.
     //
     access(all)
     view fun ufix64ToUInt256(value: UFix64, decimals: UInt8): UInt256 {
@@ -1592,7 +1599,11 @@ contract FlowEVMBridgeUtils {
                 evmContractAddress: erc20Address
             )
 
-        // Confirm the transfer of the expected was successful in both sending owner and recipient escrow
+        // Confirm the expected amount moved from owner to bridge escrow. These post-state assertions are the
+        // primary security guarantee for ERC20 escrow — they catch any accounting discrepancy regardless of
+        // cause (reentrant callbacks, fee-on-transfer tokens, etc.). The pre-balance snapshot above is not a
+        // TOCTOU risk because all EVM calls within a single Cadence transaction execute within the same EVM
+        // block, so no interleaving can occur between the snapshot and the transfer.
         assert(ownerPostBalance == ownerPreBalance - amount, message: "Transfer to owner failed")
         assert(bridgePostBalance == bridgePreBalance + amount, message: "Transfer to bridge escrow failed")
     }

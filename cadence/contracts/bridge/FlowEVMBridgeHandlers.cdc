@@ -361,7 +361,12 @@ access(all) contract FlowEVMBridgeHandlers {
                     .concat((postBalance - preBalance).toString())
             )
 
-            // Withdraw escrowed FLOW from bridge COA
+            // Withdraw escrowed FLOW from bridge COA.
+            // EVM.Balance takes a UInt (64-bit on all supported platforms). `UInt(amount)` truncates silently if
+            // `amount > UInt.max`. The assert immediately below catches any truncation: if truncation occurred,
+            // `UInt256(withdrawBalance.attoflow) != amount` and the transaction reverts. In practice this cannot
+            // trigger: total FLOW supply is ~1.25B × 10^18 attoflow ≈ 1.25e27, far below UInt.max (~1.8e19 × 1e9
+            // = 1.8e28 for 64-bit). No valid WFLOW bridge request can produce an amount large enough to truncate.
             let withdrawBalance = EVM.Balance(attoflow: UInt(amount))
             assert(
                 UInt256(withdrawBalance.attoflow) == amount,
