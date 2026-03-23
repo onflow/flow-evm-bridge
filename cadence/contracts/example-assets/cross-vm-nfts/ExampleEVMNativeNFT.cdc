@@ -53,63 +53,65 @@ access(all) contract ExampleEVMNativeNFT: NonFungibleToken, ICrossVM, ICrossVMAs
 
     /// Returns the token URI for the provided ERC721 id, treating the corresponding ERC721 as the source of truth
     access(all) fun tokenURI(id: UInt256): String {
-        let tokenURIRes = self.call(
-                signature: "tokenURI(uint256)",
-                targetEVMAddress: self.getEVMContractAddress(),
-                args: [id],
-                gasLimit: 100_000,
-                value: 0.0
-            )
+        let tokenURIRes = self.callWithSigAndArgs(
+            signature: "tokenURI(uint256)",
+            targetEVMAddress: self.getEVMContractAddress(),
+            args: [id],
+            gasLimit: 100_000,
+            value: 0.0,
+            resultTypes: [Type<String>()]
+        )
         assert(
             tokenURIRes.status == EVM.Status.successful,
             message: "Error calling ERC721.tokenURI(uint256) with message: ".concat(tokenURIRes.errorMessage)
         )
-        let decodedURIData = EVM.decodeABI(types: [Type<String>()], data: tokenURIRes.data)
         assert(
-            decodedURIData.length == 1,
-            message: "Unexpected tokenURI(uint256) return length of ".concat(decodedURIData.length.toString())
+            tokenURIRes.results.length == 1,
+            message: "Unexpected tokenURI(uint256) return length of ".concat(tokenURIRes.results.length.toString())
         )
-        return decodedURIData[0] as! String
+        return tokenURIRes.results[0] as! String
     }
 
     /// Returns the token URI for the provided ERC721 id, treating the corresponding ERC721 as the source of truth
     access(all) fun contractURI(): String {
-        let contractURIRes = self.call(
-                signature: "contractURI()",
-                targetEVMAddress: self.getEVMContractAddress(),
-                args: [],
-                gasLimit: 100_000,
-                value: 0.0
-            )
+        let contractURIRes = self.callWithSigAndArgs(
+            signature: "contractURI()",
+            targetEVMAddress: self.getEVMContractAddress(),
+            args: [],
+            gasLimit: 100_000,
+            value: 0.0,
+            resultTypes: [Type<String>()]
+        )
         assert(
             contractURIRes.status == EVM.Status.successful,
             message: "Error calling ERC721.contractURI(uint256) with message: ".concat(contractURIRes.errorMessage)
         )
-        let decodedURIData = EVM.decodeABI(types: [Type<String>()], data: contractURIRes.data)
         assert(
-            decodedURIData.length == 1,
-            message: "Unexpected contractURI(uint256) return length of ".concat(decodedURIData.length.toString())
+            contractURIRes.results.length == 1,
+            message: "Unexpected contractURI(uint256) return length of ".concat(contractURIRes.results.length.toString())
         )
-        return decodedURIData[0] as! String
+        return contractURIRes.results[0] as! String
     }
 
     /* --- Internal Helpers --- */
 
-    access(self) fun call(
+    access(self) fun callWithSigAndArgs(
         signature: String,
         targetEVMAddress: EVM.EVMAddress,
         args: [AnyStruct],
         gasLimit: UInt64,
-        value: UFix64
-    ): EVM.Result {
-        let calldata = EVM.encodeABIWithSignature(signature, args)
+        value: UFix64,
+        resultTypes: [Type]?
+    ): EVM.ResultDecoded {
         let valueBalance = EVM.Balance(attoflow: 0)
         valueBalance.setFLOW(flow: value)
-        return self.borrowCOA().call(
+        return self.borrowCOA().callWithSigAndArgs(
             to: targetEVMAddress,
-            data: calldata,
+            signature: signature,
+            args: args,
             gasLimit: gasLimit,
-            value: valueBalance
+            value: valueBalance.attoflow,
+            resultTypes: resultTypes
         )
     }
 
@@ -431,17 +433,21 @@ access(all) contract ExampleEVMNativeNFT: NonFungibleToken, ICrossVM, ICrossVMAs
         self.evmContractAddress = deployResult.deployedContract!
 
         // Assign name & symbol based on ERC721 contract
-        let nameRes = coa.call(
+        let nameRes = coa.callWithSigAndArgs(
             to: self.evmContractAddress,
-            data: EVM.encodeABIWithSignature("name()", []),
+            signature: "name()",
+            args: [],
             gasLimit: 100_000,
-            value: EVM.Balance(attoflow: 0)
+            value: 0,
+            resultTypes: [Type<String>()]
         )
-        let symbolRes = coa.call(
+        let symbolRes = coa.callWithSigAndArgs(
             to: self.evmContractAddress,
-            data: EVM.encodeABIWithSignature("symbol()", []),
+            signature: "symbol()",
+            args: [],
             gasLimit: 100_000,
-            value: EVM.Balance(attoflow: 0)
+            value: 0,
+            resultTypes: [Type<String>()]
         )
         assert(
             nameRes.status == EVM.Status.successful,
@@ -452,13 +458,10 @@ access(all) contract ExampleEVMNativeNFT: NonFungibleToken, ICrossVM, ICrossVMAs
             message: "Error on ERC721.symbol() call with message: ".concat(symbolRes.errorMessage)
         )
 
-        let decodedNameData = EVM.decodeABI(types: [Type<String>()], data: nameRes.data)
-        let decodedSymbolData = EVM.decodeABI(types: [Type<String>()], data: symbolRes.data)
-        assert(decodedNameData.length == 1, message: "Unexpected name() return length of ".concat(decodedNameData.length.toString()))
-        assert(decodedSymbolData.length == 1, message: "Unexpected symbol() return length of ".concat(decodedSymbolData.length.toString()))
+        assert(nameRes.results.length == 1, message: "Unexpected name() return length of ".concat(nameRes.results.length.toString()))
+        assert(symbolRes.results.length == 1, message: "Unexpected symbol() return length of ".concat(symbolRes.results.length.toString()))
 
-        self.name = decodedNameData[0] as! String
-        self.symbol = decodedSymbolData[0] as! String
+        self.name = nameRes.results[0] as! String
+        self.symbol = symbolRes.results[0] as! String
     }
 }
- 

@@ -189,20 +189,20 @@ contract FlowEVMBridgeUtils {
     ///
     access(all)
     fun evmAddressAllowsBridging(_ address: EVM.EVMAddress): Bool {
-        let callResult = self.dryCall(
+        let callResult = self.dryCallWithSigAndArgs(
             signature: "allowsBridging()",
             targetEVMAddress: address,
             args: [],
             gasLimit: FlowEVMBridgeConfig.gasLimit,
-            value: 0.0
+            value: 0.0,
+            resultTypes: [Type<Bool>()]
         )
         // Contract doesn't support the method - proceed permissionlessly
         if callResult.status != EVM.Status.successful {
             return true
         }
         // Contract is IBridgePermissions - return the result
-        let decodedResult = EVM.decodeABI(types: [Type<Bool>()], data: callResult.data) as! [AnyStruct]
-        return (decodedResult.length == 1 && decodedResult[0] as! Bool) == true ? true : false
+        return (callResult.results.length == 1 && callResult.results[0] as! Bool) == true ? true : false
     }
 
     /// Identifies if an asset is Cadence- or EVM-native, defined by whether a bridge contract defines it or not
@@ -256,19 +256,19 @@ contract FlowEVMBridgeUtils {
     access(all)
     fun isEVMContractBridgeOwned(evmContractAddress: EVM.EVMAddress): Bool {
         // Ask the bridge factory if the given contract address was deployed by the bridge
-        let callResult = self.dryCall(
-                signature: "isBridgeDeployed(address)",
-                targetEVMAddress: self.bridgeFactoryEVMAddress,
-                args: [evmContractAddress],
-                gasLimit: FlowEVMBridgeConfig.gasLimit,
-                value: 0.0
-            )
+        let callResult = self.dryCallWithSigAndArgs(
+            signature: "isBridgeDeployed(address)",
+            targetEVMAddress: self.bridgeFactoryEVMAddress,
+            args: [evmContractAddress],
+            gasLimit: FlowEVMBridgeConfig.gasLimit,
+            value: 0.0,
+            resultTypes: [Type<Bool>()]
+        )
 
         assert(callResult.status == EVM.Status.successful, message: "Call to bridge factory failed")
-        let decodedResult = EVM.decodeABI(types: [Type<Bool>()], data: callResult.data)
-        assert(decodedResult.length == 1, message: "Invalid response length")
+        assert(callResult.results.length == 1, message: "Invalid response length")
 
-        return decodedResult[0] as! Bool
+        return callResult.results[0] as! Bool
     }
 
     /// Identifies if an asset is ERC721. Reverts on EVM call failure.
@@ -279,19 +279,19 @@ contract FlowEVMBridgeUtils {
     ///
     access(all)
     fun isERC721(evmContractAddress: EVM.EVMAddress): Bool {
-        let callResult = self.dryCall(
+        let callResult = self.dryCallWithSigAndArgs(
             signature: "isERC721(address)",
             targetEVMAddress: self.bridgeFactoryEVMAddress,
             args: [evmContractAddress],
             gasLimit: FlowEVMBridgeConfig.gasLimit,
-            value: 0.0
+            value: 0.0,
+            resultTypes: [Type<Bool>()]
         )
 
         assert(callResult.status == EVM.Status.successful, message: "Call to bridge factory failed")
-        let decodedResult = EVM.decodeABI(types: [Type<Bool>()], data: callResult.data)
-        assert(decodedResult.length == 1, message: "Invalid response length")
+        assert(callResult.results.length == 1, message: "Invalid response length")
 
-        return decodedResult[0] as! Bool
+        return callResult.results[0] as! Bool
     }
 
     /// Identifies if an asset is ERC20 as far as is possible without true EVM type introspection. Reverts on EVM call
@@ -303,19 +303,19 @@ contract FlowEVMBridgeUtils {
     ///
     access(all)
     fun isERC20(evmContractAddress: EVM.EVMAddress): Bool {
-        let callResult = self.dryCall(
+        let callResult = self.dryCallWithSigAndArgs(
             signature: "isERC20(address)",
             targetEVMAddress: self.bridgeFactoryEVMAddress,
             args: [evmContractAddress],
             gasLimit: FlowEVMBridgeConfig.gasLimit,
-            value: 0.0
+            value: 0.0,
+            resultTypes: [Type<Bool>()]
         )
 
         assert(callResult.status == EVM.Status.successful, message: "Call to bridge factory failed")
-        let decodedResult = EVM.decodeABI(types: [Type<Bool>()], data: callResult.data)
-        assert(decodedResult.length == 1, message: "Invalid response length")
+        assert(callResult.results.length == 1, message: "Invalid response length")
 
-        return decodedResult[0] as! Bool
+        return callResult.results[0] as! Bool
     }
 
     /// Returns whether the contract address is either an ERC721 or ERC20 exclusively. Reverts on EVM call failure.
@@ -326,16 +326,16 @@ contract FlowEVMBridgeUtils {
     ///
     access(all)
     fun isValidEVMAsset(evmContractAddress: EVM.EVMAddress): Bool {
-        let callResult = self.dryCall(
+        let callResult = self.dryCallWithSigAndArgs(
             signature: "isValidAsset(address)",
             targetEVMAddress: self.bridgeFactoryEVMAddress,
             args: [evmContractAddress],
             gasLimit: FlowEVMBridgeConfig.gasLimit,
-            value: 0.0
+            value: 0.0,
+            resultTypes: [Type<Bool>()]
         )
-        let decodedResult = EVM.decodeABI(types: [Type<Bool>()], data: callResult.data)
-        assert(decodedResult.length == 1, message: "Invalid response length")
-        return decodedResult[0] as! Bool
+        assert(callResult.results.length == 1, message: "Invalid response length")
+        return callResult.results[0] as! Bool
     }
 
     /// Returns whether the given type is either an NFT or FT exclusively
@@ -526,19 +526,19 @@ contract FlowEVMBridgeUtils {
     ///
     access(all)
     fun getName(evmContractAddress: EVM.EVMAddress): String {
-        let callResult = self.dryCall(
+        let callResult = self.dryCallWithSigAndArgs(
             signature: "name()",
             targetEVMAddress: evmContractAddress,
             args: [],
             gasLimit: FlowEVMBridgeConfig.gasLimit,
-            value: 0.0
+            value: 0.0,
+            resultTypes: [Type<String>()]
         )
 
         assert(callResult.status == EVM.Status.successful, message: "Call for EVM asset name failed")
-        let decodedResult = EVM.decodeABI(types: [Type<String>()], data: callResult.data) as! [AnyStruct]
-        assert(decodedResult.length == 1, message: "Invalid response length")
+        assert(callResult.results.length == 1, message: "Invalid response length")
 
-        return decodedResult[0] as! String
+        return callResult.results[0] as! String
     }
 
     /// Retrieves the NFT/FT symbol from the given EVM contract address - applies for both ERC20 & ERC721
@@ -550,17 +550,17 @@ contract FlowEVMBridgeUtils {
     ///
     access(all)
     fun getSymbol(evmContractAddress: EVM.EVMAddress): String {
-        let callResult = self.dryCall(
+        let callResult = self.dryCallWithSigAndArgs(
             signature: "symbol()",
             targetEVMAddress: evmContractAddress,
             args: [],
             gasLimit: FlowEVMBridgeConfig.gasLimit,
-            value: 0.0
+            value: 0.0,
+            resultTypes: [Type<String>()]
         )
         assert(callResult.status == EVM.Status.successful, message: "Call for EVM asset symbol failed")
-        let decodedResult = EVM.decodeABI(types: [Type<String>()], data: callResult.data) as! [AnyStruct]
-        assert(decodedResult.length == 1, message: "Invalid response length")
-        return decodedResult[0] as! String
+        assert(callResult.results.length == 1, message: "Invalid response length")
+        return callResult.results[0] as! String
     }
 
     /// Retrieves the tokenURI for the given NFT ID from the given EVM contract address. Reverts on EVM call failure.
@@ -573,19 +573,19 @@ contract FlowEVMBridgeUtils {
     ///
     access(all)
     fun getTokenURI(evmContractAddress: EVM.EVMAddress, id: UInt256): String {
-        let callResult = self.dryCall(
+        let callResult = self.dryCallWithSigAndArgs(
             signature: "tokenURI(uint256)",
             targetEVMAddress: evmContractAddress,
             args: [id],
             gasLimit: FlowEVMBridgeConfig.gasLimit,
-            value: 0.0
+            value: 0.0,
+            resultTypes: [Type<String>()]
         )
 
         assert(callResult.status == EVM.Status.successful, message: "Call to EVM for tokenURI failed")
-        let decodedResult = EVM.decodeABI(types: [Type<String>()], data: callResult.data) as! [AnyStruct]
-        assert(decodedResult.length == 1, message: "Invalid response length")
+        assert(callResult.results.length == 1, message: "Invalid response length")
 
-        return decodedResult[0] as! String
+        return callResult.results[0] as! String
     }
 
     /// Retrieves the contract URI from the given EVM contract address. Returns nil on EVM call failure.
@@ -596,18 +596,18 @@ contract FlowEVMBridgeUtils {
     ///
     access(all)
     fun getContractURI(evmContractAddress: EVM.EVMAddress): String? {
-        let callResult = self.dryCall(
+        let callResult = self.dryCallWithSigAndArgs(
             signature: "contractURI()",
             targetEVMAddress: evmContractAddress,
             args: [],
             gasLimit: FlowEVMBridgeConfig.gasLimit,
-            value: 0.0
+            value: 0.0,
+            resultTypes: [Type<String>()]
         )
         if callResult.status != EVM.Status.successful {
             return nil
         }
-        let decodedResult = EVM.decodeABI(types: [Type<String>()], data: callResult.data) as! [AnyStruct]
-        return decodedResult.length == 1 ? decodedResult[0] as! String : nil
+        return callResult.results.length == 1 ? callResult.results[0] as! String : nil
     }
 
     /// Retrieves the number of decimals for a given ERC20 contract address. Reverts on EVM call failure.
@@ -618,19 +618,19 @@ contract FlowEVMBridgeUtils {
     ///
     access(all)
     fun getTokenDecimals(evmContractAddress: EVM.EVMAddress): UInt8 {
-        let callResult = self.dryCall(
-                signature: "decimals()",
-                targetEVMAddress: evmContractAddress,
-                args: [],
-                gasLimit: FlowEVMBridgeConfig.gasLimit,
-                value: 0.0
-            )
+        let callResult = self.dryCallWithSigAndArgs(
+            signature: "decimals()",
+            targetEVMAddress: evmContractAddress,
+            args: [],
+            gasLimit: FlowEVMBridgeConfig.gasLimit,
+            value: 0.0,
+            resultTypes: [Type<UInt8>()]
+        )
 
         assert(callResult.status == EVM.Status.successful, message: "Call for EVM asset decimals failed")
-        let decodedResult = EVM.decodeABI(types: [Type<UInt8>()], data: callResult.data) as! [AnyStruct]
-        assert(decodedResult.length == 1, message: "Invalid response length")
+        assert(callResult.results.length == 1, message: "Invalid response length")
 
-        return decodedResult[0] as! UInt8
+        return callResult.results[0] as! UInt8
     }
 
     /// Determines if the provided owner address is either the owner or approved for the NFT in the ERC721 contract
@@ -670,18 +670,18 @@ contract FlowEVMBridgeUtils {
     /// 
     access(all)
     fun ownerOf(id: UInt256, evmContractAddress: EVM.EVMAddress): EVM.EVMAddress? {
-        let callResult = self.dryCall(
-                signature: "ownerOf(uint256)",
-                targetEVMAddress: evmContractAddress,
-                args: [id],
-                gasLimit: FlowEVMBridgeConfig.gasLimit,
-                value: 0.0
-            )
+        let callResult = self.dryCallWithSigAndArgs(
+            signature: "ownerOf(uint256)",
+            targetEVMAddress: evmContractAddress,
+            args: [id],
+            gasLimit: FlowEVMBridgeConfig.gasLimit,
+            value: 0.0,
+            resultTypes: [Type<EVM.EVMAddress>()]
+        )
         if callResult.status == EVM.Status.failed {
             return nil
         }
-        let decodedCallResult = EVM.decodeABI(types: [Type<EVM.EVMAddress>()], data: callResult.data)
-        return decodedCallResult.length == 1 ? decodedCallResult[0] as! EVM.EVMAddress : nil
+        return callResult.results.length == 1 ? callResult.results[0] as! EVM.EVMAddress : nil
     }
 
     /// Returns whether the given owner is approved for the given NFT. Reverts on EVM call failure.
@@ -694,17 +694,17 @@ contract FlowEVMBridgeUtils {
     ///
     access(all)
     fun isApproved(ofNFT: UInt256, owner: EVM.EVMAddress, evmContractAddress: EVM.EVMAddress): Bool {
-        let callResult = self.dryCall(
+        let callResult = self.dryCallWithSigAndArgs(
             signature: "getApproved(uint256)",
             targetEVMAddress: evmContractAddress,
             args: [ofNFT],
             gasLimit: FlowEVMBridgeConfig.gasLimit,
-            value: 0.0
+            value: 0.0,
+            resultTypes: [Type<EVM.EVMAddress>()]
         )
         assert(callResult.status == EVM.Status.successful, message: "Call to ERC721.getApproved(uint256) failed")
-        let decodedCallResult = EVM.decodeABI(types: [Type<EVM.EVMAddress>()], data: callResult.data)
-        if decodedCallResult.length == 1 {
-            let actualApproved = decodedCallResult[0] as! EVM.EVMAddress
+        if callResult.results.length == 1 {
+            let actualApproved = callResult.results[0] as! EVM.EVMAddress
             return actualApproved.equals(owner)
         }
         return false
@@ -721,18 +721,16 @@ contract FlowEVMBridgeUtils {
     ///
     access(all)
     fun erc721Exists(erc721Address: EVM.EVMAddress, id: UInt256): Bool {
-        let existsResponse = EVM.decodeABI(
-                types: [Type<Bool>()],
-                data: self.dryCall(
-                    signature: "exists(uint256)",
-                    targetEVMAddress: erc721Address,
-                    args: [id],
-                    gasLimit: FlowEVMBridgeConfig.gasLimit,
-                    value: 0.0
-                ).data,
-            )
-        assert(existsResponse.length == 1, message: "Invalid response length")
-        return existsResponse[0] as! Bool
+        let callResult = self.dryCallWithSigAndArgs(
+            signature: "exists(uint256)",
+            targetEVMAddress: erc721Address,
+            args: [id],
+            gasLimit: FlowEVMBridgeConfig.gasLimit,
+            value: 0.0,
+            resultTypes: [Type<Bool>()]
+        )
+        assert(callResult.results.length == 1, message: "Invalid response length")
+        return callResult.results[0] as! Bool
     }
 
     /// Returns the ERC20 balance of the owner at the given ERC20 contract address. Reverts on EVM call failure.
@@ -745,17 +743,17 @@ contract FlowEVMBridgeUtils {
     ///
     access(all)
     fun balanceOf(owner: EVM.EVMAddress, evmContractAddress: EVM.EVMAddress): UInt256 {
-        let callResult = self.dryCall(
+        let callResult = self.dryCallWithSigAndArgs(
             signature: "balanceOf(address)",
             targetEVMAddress: evmContractAddress,
             args: [owner],
             gasLimit: FlowEVMBridgeConfig.gasLimit,
-            value: 0.0
+            value: 0.0,
+            resultTypes: [Type<UInt256>()]
         )
         assert(callResult.status == EVM.Status.successful, message: "Call to ERC20.balanceOf(address) failed")
-        let decodedResult = EVM.decodeABI(types: [Type<UInt256>()], data: callResult.data) as! [AnyStruct]
-        assert(decodedResult.length == 1, message: "Invalid response length")
-        return decodedResult[0] as! UInt256
+        assert(callResult.results.length == 1, message: "Invalid response length")
+        return callResult.results[0] as! UInt256
     }
 
     /// Determines if the owner has sufficient funds to bridge the given amount at the ERC20 contract address
@@ -780,17 +778,17 @@ contract FlowEVMBridgeUtils {
     ///
     access(all)
     fun totalSupply(evmContractAddress: EVM.EVMAddress): UInt256 {
-        let callResult = self.dryCall(
+        let callResult = self.dryCallWithSigAndArgs(
             signature: "totalSupply()",
             targetEVMAddress: evmContractAddress,
             args: [],
             gasLimit: FlowEVMBridgeConfig.gasLimit,
-            value: 0.0
+            value: 0.0,
+            resultTypes: [Type<UInt256>()]
         )
         assert(callResult.status == EVM.Status.successful, message: "Call to ERC20.totalSupply() failed")
-        let decodedResult = EVM.decodeABI(types: [Type<UInt256>()], data: callResult.data) as! [AnyStruct]
-        assert(decodedResult.length == 1, message: "Invalid response length")
-        return decodedResult[0] as! UInt256
+        assert(callResult.results.length == 1, message: "Invalid response length")
+        return callResult.results[0] as! UInt256
     }
 
     /// Converts the given amount of ERC20 tokens to the equivalent amount in FLOW tokens based on the ERC20s decimals
@@ -852,21 +850,21 @@ contract FlowEVMBridgeUtils {
     ///
     access(all)
     fun getDeclaredCadenceAddressFromCrossVM(evmContract: EVM.EVMAddress): Address? {
-        let cadenceAddrRes = self.dryCall(
+        let cadenceAddrRes = self.dryCallWithSigAndArgs(
             signature: "getCadenceAddress()",
             targetEVMAddress: evmContract,
             args: [],
             gasLimit: FlowEVMBridgeConfig.gasLimit,
-            value: 0.0
+            value: 0.0,
+            resultTypes: [Type<String>()]
         )
         if cadenceAddrRes.status != EVM.Status.successful {
             return nil
         }
-        let decodedCadenceAddr = EVM.decodeABI(types: [Type<String>()], data: cadenceAddrRes.data)
-        assert(decodedCadenceAddr.length == 1)
-        var cadenceAddrStr = decodedCadenceAddr[0] as! String
+        assert(cadenceAddrRes.results.length == 1, message: "Invalid response length")
+        var cadenceAddrStr = cadenceAddrRes.results[0] as! String
         if cadenceAddrStr[1] != "x" {
-            cadenceAddrStr = "0x".concat(cadenceAddrStr)
+            cadenceAddrStr = "0x\(cadenceAddrStr)"
         }
         return Address.fromString(cadenceAddrStr) ?? nil
     }
@@ -883,19 +881,19 @@ contract FlowEVMBridgeUtils {
     ///
     access(all)
     fun getDeclaredCadenceTypeFromCrossVM(evmContract: EVM.EVMAddress): Type? {
-        let cadenceIdentifierRes = self.dryCall(
+        let cadenceIdentifierRes = self.dryCallWithSigAndArgs(
             signature: "getCadenceIdentifier()",
             targetEVMAddress: evmContract,
             args: [],
             gasLimit: FlowEVMBridgeConfig.gasLimit,
-            value: 0.0
+            value: 0.0,
+            resultTypes: [Type<String>()]
         )
         if cadenceIdentifierRes.status != EVM.Status.successful {
             return nil
         }
-        let decodedCadenceIdentifier = EVM.decodeABI(types: [Type<String>()], data: cadenceIdentifierRes.data)
-        assert(decodedCadenceIdentifier.length == 1)
-        let cadenceIdentifier = decodedCadenceIdentifier[0] as! String
+        assert(cadenceIdentifierRes.results.length == 1, message: "Invalid response length")
+        let cadenceIdentifier = cadenceIdentifierRes.results[0] as! String
         return CompositeType(cadenceIdentifier) ?? nil
     }
 
@@ -910,21 +908,21 @@ contract FlowEVMBridgeUtils {
     access(all)
     fun supportsICrossVMBridgeERC721Fulfillment(evmContract: EVM.EVMAddress): Bool {
         let interfaceID = EVM.EVMBytes4(value: "2e608d70".decodeHex().toConstantSized<[UInt8; 4]>()!)
-        let supportsRes = self.dryCall(
+        let supportsRes = self.dryCallWithSigAndArgs(
             signature: "supportsInterface(bytes4)",
             targetEVMAddress: evmContract,
             args: [interfaceID],
             gasLimit: FlowEVMBridgeConfig.gasLimit,
-            value: 0.0
+            value: 0.0,
+            resultTypes: [Type<Bool>()]
         )
         if supportsRes.status != EVM.Status.successful {
             return false
         }
-        let decodedSupports = EVM.decodeABI(types: [Type<Bool>()], data: supportsRes.data)
-        if decodedSupports.length != 1 {
+        if supportsRes.results.length != 1 {
             return false
         }
-        return decodedSupports[0] as! Bool
+        return supportsRes.results[0] as! Bool
     }
 
     /// Returns whether the provided EVM contract conforms to ICrossVMBridgeCallable.sol contract interface.
@@ -938,21 +936,21 @@ contract FlowEVMBridgeUtils {
     access(all)
     fun supportsICrossVMBridgeCallable(evmContract: EVM.EVMAddress): Bool {
         let interfaceID = EVM.EVMBytes4(value: "b7f9a9ec".decodeHex().toConstantSized<[UInt8; 4]>()!)
-        let supportsRes = self.dryCall(
+        let supportsRes = self.dryCallWithSigAndArgs(
             signature: "supportsInterface(bytes4)",
             targetEVMAddress: evmContract,
             args: [interfaceID],
             gasLimit: FlowEVMBridgeConfig.gasLimit,
-            value: 0.0
+            value: 0.0,
+            resultTypes: [Type<Bool>()]
         )
         if supportsRes.status != EVM.Status.successful {
             return false
         }
-        let decodedSupports = EVM.decodeABI(types: [Type<Bool>()], data: supportsRes.data)
-        if decodedSupports.length != 1 {
+        if supportsRes.results.length != 1 {
             return false
         }
-        return decodedSupports[0] as! Bool
+        return supportsRes.results[0] as! Bool
     }
 
     /// Returns whether the provided EVM contract conforms to both ICrossVMBridgeERC721Fulfillment and
@@ -977,18 +975,18 @@ contract FlowEVMBridgeUtils {
     ///
     access(all)
     fun getVMBridgeAddressFromICrossVMBridgeCallable(evmContract: EVM.EVMAddress): EVM.EVMAddress? {
-        let cadenceIdentifierRes = self.dryCall(
+        let cadenceIdentifierRes = self.dryCallWithSigAndArgs(
             signature: "vmBridgeAddress()",
             targetEVMAddress: evmContract,
             args: [],
             gasLimit: FlowEVMBridgeConfig.gasLimit,
-            value: 0.0
+            value: 0.0,
+            resultTypes: [Type<EVM.EVMAddress>()]
         )
         if cadenceIdentifierRes.status != EVM.Status.successful {
             return nil
         }
-        let decodedCadenceIdentifier = EVM.decodeABI(types: [Type<EVM.EVMAddress>()], data: cadenceIdentifierRes.data)
-        return decodedCadenceIdentifier.length == 1 ? decodedCadenceIdentifier[0] as! EVM.EVMAddress : nil
+        return cadenceIdentifierRes.results.length == 1 ? cadenceIdentifierRes.results[0] as! EVM.EVMAddress : nil
     }
 
     /************************
@@ -1306,21 +1304,23 @@ contract FlowEVMBridgeUtils {
     /// Shared helper simplifying calls using the bridge account's COA
     ///
     access(account)
-    fun call(
+    fun callWithSigAndArgs(
         signature: String,
         targetEVMAddress: EVM.EVMAddress,
         args: [AnyStruct],
         gasLimit: UInt64,
-        value: UFix64
-    ): EVM.Result {
-        let calldata = EVM.encodeABIWithSignature(signature, args)
+        value: UFix64,
+        resultTypes: [Type]?
+    ): EVM.ResultDecoded {
         let valueBalance = EVM.Balance(attoflow: 0)
         valueBalance.setFLOW(flow: value)
-        return self.borrowCOA().call(
+        return self.borrowCOA().callWithSigAndArgs(
             to: targetEVMAddress,
-            data: calldata,
+            signature: signature,
+            args: args,
             gasLimit: gasLimit,
-            value: valueBalance
+            value: valueBalance.attoflow,
+            resultTypes: resultTypes
         )
     }
 
@@ -1328,21 +1328,23 @@ contract FlowEVMBridgeUtils {
     /// call within EVM, serving solely as a mechanism for retrieving data from Flow-EVM environment.
     ///
     access(account)
-    fun dryCall(
+    fun dryCallWithSigAndArgs(
         signature: String,
         targetEVMAddress: EVM.EVMAddress,
         args: [AnyStruct],
         gasLimit: UInt64,
-        value: UFix64
-    ): EVM.Result {
-        let calldata = EVM.encodeABIWithSignature(signature, args)
+        value: UFix64,
+        resultTypes: [Type]?
+    ): EVM.ResultDecoded {
         let valueBalance = EVM.Balance(attoflow: 0)
         valueBalance.setFLOW(flow: value)
-        return self.borrowCOA().dryCall(
+        return self.borrowCOA().dryCallWithSigAndArgs(
             to: targetEVMAddress,
-            data: calldata,
+            signature: signature,
+            args: args,
             gasLimit: gasLimit,
-            value: valueBalance
+            value: valueBalance.attoflow,
+            resultTypes: resultTypes
         )
     }
 
@@ -1358,12 +1360,13 @@ contract FlowEVMBridgeUtils {
         assert(bridgePreStatus, message: "Bridge COA does not own ERC721 requesting to be transferred")
         assert(!toPreStatus, message: "Recipient already owns ERC721 attempting to be transferred")
 
-        let transferResult: EVM.Result = self.call(
+        let transferResult = self.callWithSigAndArgs(
             signature: "safeTransferFrom(address,address,uint256)",
             targetEVMAddress: erc721Address,
             args: [bridgeCOAAddress, to, id],
             gasLimit: FlowEVMBridgeConfig.gasLimit,
-            value: 0.0
+            value: 0.0,
+            resultTypes: nil
         )
         assert(
             transferResult.status == EVM.Status.successful,
@@ -1383,12 +1386,13 @@ contract FlowEVMBridgeUtils {
     fun mustSafeMintERC721(erc721Address: EVM.EVMAddress, to: EVM.EVMAddress, id: UInt256, uri: String) {
         let bridgeCOAAddress = self.getBridgeCOAEVMAddress()
 
-        let mintResult: EVM.Result = self.call(
+        let mintResult = self.callWithSigAndArgs(
             signature: "safeMint(address,uint256,string)",
             targetEVMAddress: erc721Address,
             args: [to, id, uri],
             gasLimit: FlowEVMBridgeConfig.gasLimit,
-            value: 0.0
+            value: 0.0,
+            resultTypes: nil
         )
         assert(mintResult.status == EVM.Status.successful, message: "Mint to bridge recipient failed")
 
@@ -1401,12 +1405,13 @@ contract FlowEVMBridgeUtils {
     ///
     access(account)
     fun mustFulfillNFTToEVM(erc721Address: EVM.EVMAddress, to: EVM.EVMAddress, id: UInt256, maybeBytes: EVM.EVMBytes?) {
-        let fulfillResult = self.call(
+        let fulfillResult = self.callWithSigAndArgs(
             signature: "fulfillToEVM(address,uint256,bytes)",
             targetEVMAddress: erc721Address,
             args: [to, id, maybeBytes ?? EVM.EVMBytes(value: [])],
             gasLimit: FlowEVMBridgeConfig.gasLimit,
-            value: 0.0
+            value: 0.0,
+            resultTypes: nil
         )
         assert(
             fulfillResult.status == EVM.Status.successful,
@@ -1425,12 +1430,13 @@ contract FlowEVMBridgeUtils {
     fun mustUpdateTokenURI(erc721Address: EVM.EVMAddress, id: UInt256, uri: String) {
         let bridgeCOAAddress = self.getBridgeCOAEVMAddress()
 
-        let updateResult: EVM.Result = self.call(
+        let updateResult = self.callWithSigAndArgs(
             signature: "updateTokenURI(uint256,string)",
             targetEVMAddress: erc721Address,
             args: [id, uri],
             gasLimit: FlowEVMBridgeConfig.gasLimit,
-            value: 0.0
+            value: 0.0,
+            resultTypes: nil
         )
         assert(updateResult.status == EVM.Status.successful, message: "URI update failed")
     }
@@ -1444,7 +1450,7 @@ contract FlowEVMBridgeUtils {
         owner: EVM.EVMAddress,
         id: UInt256,
         erc721Address: EVM.EVMAddress,
-        protectedTransferCall: fun (EVM.EVMAddress): EVM.Result
+        protectedTransferCall: fun (EVM.EVMAddress): EVM.ResultDecoded
     ) {
         // Ensure the named owner is authorized to act on the NFT
         let isAuthorized = self.isOwnerOrApproved(ofNFT: id, owner: owner, evmContractAddress: erc721Address)
@@ -1476,12 +1482,13 @@ contract FlowEVMBridgeUtils {
         )
         let bridgeCOA = self.getBridgeCOAEVMAddress()
 
-        let unwrapResult: EVM.Result = self.call(
+        let unwrapResult = self.callWithSigAndArgs(
             signature: "withdrawTo(address,uint256[])",
             targetEVMAddress: erc721WrapperAddress,
             args: [bridgeCOA, [id]],
             gasLimit: FlowEVMBridgeConfig.gasLimit,
-            value: 0.0
+            value: 0.0,
+            resultTypes: nil
         )
         assert(
             unwrapResult.status == EVM.Status.successful,
@@ -1500,12 +1507,13 @@ contract FlowEVMBridgeUtils {
     fun mustMintERC20(to: EVM.EVMAddress, amount: UInt256, erc20Address: EVM.EVMAddress) {
         let toPreBalance = self.balanceOf(owner: to, evmContractAddress: erc20Address)
         // Mint tokens to the recipient
-        let mintResult: EVM.Result = self.call(
+        let mintResult = self.callWithSigAndArgs(
             signature: "mint(address,uint256)",
             targetEVMAddress: erc20Address,
             args: [to, amount],
             gasLimit: FlowEVMBridgeConfig.gasLimit,
-            value: 0.0
+            value: 0.0,
+            resultTypes: nil
         )
         assert(mintResult.status == EVM.Status.successful, message: "Mint to bridge ERC20 contract failed")
         // Ensure bridge to recipient was succcessful
@@ -1530,12 +1538,13 @@ contract FlowEVMBridgeUtils {
         )
 
         // Transfer tokens to the recipient
-        let transferResult: EVM.Result = self.call(
+        let transferResult = self.callWithSigAndArgs(
             signature: "transfer(address,uint256)",
             targetEVMAddress: erc20Address,
             args: [to, amount],
             gasLimit: FlowEVMBridgeConfig.gasLimit,
-            value: 0.0
+            value: 0.0,
+            resultTypes: nil
         )
         assert(transferResult.status == EVM.Status.successful, message: "transfer call to ERC20 contract failed")
 
@@ -1564,7 +1573,7 @@ contract FlowEVMBridgeUtils {
         owner: EVM.EVMAddress,
         amount: UInt256,
         erc20Address: EVM.EVMAddress,
-        protectedTransferCall: fun (): EVM.Result
+        protectedTransferCall: fun (): EVM.ResultDecoded
     ) {
         // Ensure the caller is has sufficient balance to bridge the requested amount
         let hasSufficientBalance = self.hasSufficientBalance(
@@ -1602,12 +1611,13 @@ contract FlowEVMBridgeUtils {
     ///
     access(account)
     fun mustBurnERC721(erc721Address: EVM.EVMAddress, id: UInt256) {
-        let burnResult = FlowEVMBridgeUtils.call(
+        let burnResult = FlowEVMBridgeUtils.callWithSigAndArgs(
             signature: "burn(uint256)",
             targetEVMAddress: erc721Address,
             args: [id],
             gasLimit: FlowEVMBridgeConfig.gasLimit,
-            value: 0.0
+            value: 0.0,
+            resultTypes: nil
         )
         assert(burnResult.status == EVM.Status.successful,
             message: "0x\(erc721Address.toString()).burn(\(id)) failed with error code \(burnResult.errorCode) and message: \(burnResult.errorMessage)")
@@ -1625,17 +1635,17 @@ contract FlowEVMBridgeUtils {
         isERC721: Bool
     ): EVM.EVMAddress {
         let deployerTag = isERC721 ? "ERC721" : "ERC20"
-        let deployResult: EVM.Result = self.call(
+        let deployResult = self.callWithSigAndArgs(
             signature: "deploy(string,string,string,string,string,string)",
             targetEVMAddress: self.bridgeFactoryEVMAddress,
             args: [deployerTag, name, symbol, cadenceAddress.toString(), flowIdentifier, contractURI],
             gasLimit: FlowEVMBridgeConfig.gasLimit,
-            value: 0.0
+            value: 0.0,
+            resultTypes: [Type<EVM.EVMAddress>()]
         )
         assert(deployResult.status == EVM.Status.successful, message: "EVM Token contract deployment failed")
-        let decodedResult: [AnyStruct] = EVM.decodeABI(types: [Type<EVM.EVMAddress>()], data: deployResult.data)
-        assert(decodedResult.length == 1, message: "Invalid response length")
-        return decodedResult[0] as! EVM.EVMAddress
+        assert(deployResult.results.length == 1, message: "Invalid response length")
+        return deployResult.results[0] as! EVM.EVMAddress
     }
 
     /// Calls `setSymbol(string)` on the EVM contract as exposed on FlowEVMBridgedERC721 contracts, enabling Cadence
@@ -1644,12 +1654,13 @@ contract FlowEVMBridgeUtils {
     ///
     access(account)
     fun tryUpdateSymbol(_ evmContractAddress: EVM.EVMAddress, symbol: String): Bool {
-        return self.call(
+        return self.callWithSigAndArgs(
             signature: "setSymbol(string)",
             targetEVMAddress: evmContractAddress,
             args: [symbol],
             gasLimit: FlowEVMBridgeConfig.gasLimit,
-            value: 0.0
+            value: 0.0,
+            resultTypes: nil
         ).status == EVM.Status.successful
     }
 

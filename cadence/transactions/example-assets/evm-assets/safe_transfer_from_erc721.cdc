@@ -28,22 +28,20 @@ transaction(evmContractAddressHex: String, recipientAddressHex: String, id: UInt
     }
 
     execute {
-        let calldata = EVM.encodeABIWithSignature(
-                "safeTransferFrom(address,address,uint256)",
-                [self.coa.address(), self.recipientAddress, id]
-            )
-        let callResult = self.coa.call(
+        let callResult = self.coa.callWithSigAndArgs(
             to: self.evmContractAddress,
-            data: calldata,
+            signature: "safeTransferFrom(address,address,uint256)",
+            args: [self.coa.address(), self.recipientAddress, id],
             gasLimit: 15_000_000,
-            value: EVM.Balance(attoflow: 0)
+            value: 0,
+            resultTypes: nil
         )
         assert(callResult.status == EVM.Status.successful, message: "Call to ERC721 contract failed")
         self.recipientOwnerCheck = FlowEVMBridgeUtils.isOwnerOrApproved(
-                ofNFT: id,
-                owner: self.recipientAddress,
-                evmContractAddress: self.evmContractAddress
-            )
+            ofNFT: id,
+            owner: self.recipientAddress,
+            evmContractAddress: self.evmContractAddress
+        )
     }
 
     post {
