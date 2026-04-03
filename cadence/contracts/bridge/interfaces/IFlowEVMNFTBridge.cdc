@@ -74,8 +74,7 @@ access(all) contract interface IFlowEVMNFTBridge {
                 to: to.toString(),
                 evmContractAddress: self.getAssociatedEVMAddress(with: token.getType())?.toString()
                     ?? panic(
-                        "Could not find EVM Contract address associated with provided NFT identifier="
-                        .concat(token.getType().identifier)
+                        "Could not find EVM Contract address associated with provided NFT identifier=\(token.getType().identifier)"
                     ),
                 bridgeAddress: self.account.address
             )
@@ -101,7 +100,7 @@ access(all) contract interface IFlowEVMNFTBridge {
         type: Type,
         id: UInt256,
         feeProvider: auth(FungibleToken.Withdraw) &{FungibleToken.Provider},
-        protectedTransferCall: fun (EVM.EVMAddress): EVM.Result
+        protectedTransferCall: fun (EVM.EVMAddress): EVM.ResultDecoded
     ): @{NonFungibleToken.NFT} {
         post {
             emit BridgedNFTFromEVM(

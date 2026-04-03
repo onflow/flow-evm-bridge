@@ -53,71 +53,77 @@ access(all) contract ExampleEVMNativeNFTGivenEVMAddress: NonFungibleToken, ICros
 
     /// Returns the token URI for the provided ERC721 id, treating the corresponding ERC721 as the source of truth
     access(all) fun tokenURI(id: UInt256): String {
-        let tokenURIRes = self.call(
-                signature: "tokenURI(uint256)",
-                targetEVMAddress: self.getEVMContractAddress(),
-                args: [id],
-                gasLimit: 100_000,
-                value: 0.0
-            )
+        let tokenURIRes = self.callWithSigAndArgs(
+            signature: "tokenURI(uint256)",
+            targetEVMAddress: self.getEVMContractAddress(),
+            args: [id],
+            gasLimit: 100_000,
+            value: 0.0,
+            resultTypes: [Type<String>()]
+        )
         assert(
             tokenURIRes.status == EVM.Status.successful,
-            message: "Error calling ERC721.tokenURI(uint256) with message: ".concat(tokenURIRes.errorMessage)
+            message: "Error calling ERC721.tokenURI(uint256) with message: \(tokenURIRes.errorMessage)"
         )
-        let decodedURIData = EVM.decodeABI(types: [Type<String>()], data: tokenURIRes.data)
         assert(
-            decodedURIData.length == 1,
-            message: "Unexpected tokenURI(uint256) return length of ".concat(decodedURIData.length.toString())
+            tokenURIRes.results.length == 1,
+            message: "Unexpected tokenURI(uint256) return length of \(tokenURIRes.results.length.toString())"
         )
-        return decodedURIData[0] as! String
+        return tokenURIRes.results[0] as! String
     }
 
     /// Returns the token URI for the provided ERC721 id, treating the corresponding ERC721 as the source of truth
     access(all) fun contractURI(): String {
-        let contractURIRes = self.call(
-                signature: "contractURI()",
-                targetEVMAddress: self.getEVMContractAddress(),
-                args: [],
-                gasLimit: 100_000,
-                value: 0.0
-            )
+        let contractURIRes = self.callWithSigAndArgs(
+            signature: "contractURI()",
+            targetEVMAddress: self.getEVMContractAddress(),
+            args: [],
+            gasLimit: 100_000,
+            value: 0.0,
+            resultTypes: [Type<String>()]
+        )
         assert(
             contractURIRes.status == EVM.Status.successful,
-            message: "Error calling ERC721.contractURI(uint256) with message: ".concat(contractURIRes.errorMessage)
+            message: "Error calling ERC721.contractURI(uint256) with message: \(contractURIRes.errorMessage)"
         )
-        let decodedURIData = EVM.decodeABI(types: [Type<String>()], data: contractURIRes.data)
         assert(
-            decodedURIData.length == 1,
-            message: "Unexpected contractURI(uint256) return length of ".concat(decodedURIData.length.toString())
+            contractURIRes.results.length == 1,
+            message: "Unexpected contractURI(uint256) return length of \(contractURIRes.results.length.toString())"
         )
-        return decodedURIData[0] as! String
+        return contractURIRes.results[0] as! String
     }
 
     /* --- Internal Helpers --- */
 
-    access(self) fun call(
+    access(self) fun callWithSigAndArgs(
         signature: String,
         targetEVMAddress: EVM.EVMAddress,
         args: [AnyStruct],
         gasLimit: UInt64,
-        value: UFix64
-    ): EVM.Result {
-        let calldata = EVM.encodeABIWithSignature(signature, args)
-        let valueBalance = EVM.Balance(attoflow: 0)
-        valueBalance.setFLOW(flow: value)
-        return self.borrowCOA().call(
+        value: UFix64,
+        resultTypes: [Type]?
+    ): EVM.ResultDecoded {
+        var valueBalance: UInt = 0
+        if value > 0.0 {
+            let balance = EVM.Balance(attoflow: 0)
+            balance.setFLOW(flow: value)
+            valueBalance = balance.inAttoFLOW()
+        }
+
+        return self.borrowCOA().callWithSigAndArgs(
             to: targetEVMAddress,
-            data: calldata,
+            signature: signature,
+            args: args,
             gasLimit: gasLimit,
-            value: valueBalance
+            value: valueBalance,
+            resultTypes: resultTypes
         )
     }
 
     access(self) view fun borrowCOA(): auth(EVM.Owner) &EVM.CadenceOwnedAccount {
         return self.account.storage.borrow<auth(EVM.Owner) &EVM.CadenceOwnedAccount>(
             from: /storage/evm
-        ) ?? panic("Could not borrow CadenceOwnedAccount (COA) from /storage/evm. "
-            .concat("Ensure this account has a COA configured to successfully call into EVM."))
+        ) ?? panic("Could not borrow CadenceOwnedAccount (COA) from /storage/evm. Ensure this account has a COA configured to successfully call into EVM.")
     }
 
     /// We choose the name NFT here, but this type can have any name now
@@ -131,8 +137,7 @@ access(all) contract ExampleEVMNativeNFTGivenEVMAddress: NonFungibleToken, ICros
         ) {
             pre {
                 erc721ID <= UInt256(UInt64.max):
-                "Provided EVM ID ".concat(erc721ID.toString())
-                .concat(" exceeds the assignable Cadence ID of UInt64.max ").concat(UInt64.max.toString())
+                "Provided EVM ID \(erc721ID.toString()) exceeds the assignable Cadence ID of UInt64.max \(UInt64.max.toString())"
             }
             self.id = UInt64(erc721ID)
         }
@@ -161,10 +166,10 @@ access(all) contract ExampleEVMNativeNFTGivenEVMAddress: NonFungibleToken, ICros
                 case Type<MetadataViews.Display>():
                     let collectionDisplay = (ExampleEVMNativeNFTGivenEVMAddress.resolveContractView(resourceType: self.getType(), viewType: Type<MetadataViews.NFTCollectionDisplay>()) as! MetadataViews.NFTCollectionDisplay?)!
                     return MetadataViews.Display(
-                        name: ExampleEVMNativeNFTGivenEVMAddress.getName().concat(" #").concat(self.id.toString()),
+                        name: "\(ExampleEVMNativeNFTGivenEVMAddress.getName()) #\(self.id.toString())",
                         description: collectionDisplay.description,
                         thumbnail: MetadataViews.HTTPFile(
-                            url: "https://example-nft.flow.com/nft/".concat(self.id.toString())
+                            url: "https://example-nft.flow.com/nft/\(self.id.toString())"
                         )
                     )
                 case Type<MetadataViews.Serial>():
@@ -172,7 +177,7 @@ access(all) contract ExampleEVMNativeNFTGivenEVMAddress: NonFungibleToken, ICros
                         self.id
                     )
                 case Type<MetadataViews.ExternalURL>():
-                    return MetadataViews.ExternalURL("https://example-nft.flow.com/".concat(self.id.toString()))
+                    return MetadataViews.ExternalURL("https://example-nft.flow.com/\(self.id.toString())")
                 case Type<MetadataViews.NFTCollectionData>():
                     return ExampleEVMNativeNFTGivenEVMAddress.resolveContractView(resourceType: Type<@ExampleEVMNativeNFTGivenEVMAddress.NFT>(), viewType: Type<MetadataViews.NFTCollectionData>())
                 case Type<MetadataViews.NFTCollectionDisplay>():
@@ -413,34 +418,35 @@ access(all) contract ExampleEVMNativeNFTGivenEVMAddress: NonFungibleToken, ICros
         self.evmContractAddress = EVM.addressFromString(erc721Address)
 
         // Assign name & symbol based on ERC721 contract
-        let nameRes = coa.call(
+        let nameRes = coa.callWithSigAndArgs(
             to: self.evmContractAddress,
-            data: EVM.encodeABIWithSignature("name()", []),
+            signature: "name()",
+            args: [],
             gasLimit: 100_000,
-            value: EVM.Balance(attoflow: 0)
+            value: 0,
+            resultTypes: [Type<String>()]
         )
-        let symbolRes = coa.call(
+        let symbolRes = coa.callWithSigAndArgs(
             to: self.evmContractAddress,
-            data: EVM.encodeABIWithSignature("symbol()", []),
+            signature: "symbol()",
+            args: [],
             gasLimit: 100_000,
-            value: EVM.Balance(attoflow: 0)
+            value: 0,
+            resultTypes: [Type<String>()]
         )
         assert(
             nameRes.status == EVM.Status.successful,
-            message: "Error on ERC721.name() call with message: ".concat(nameRes.errorMessage)
+            message: "Error on ERC721.name() call with message: \(nameRes.errorMessage)"
         )
         assert(
             symbolRes.status == EVM.Status.successful,
-            message: "Error on ERC721.symbol() call with message: ".concat(symbolRes.errorMessage)
+            message: "Error on ERC721.symbol() call with message: \(symbolRes.errorMessage)"
         )
 
-        let decodedNameData = EVM.decodeABI(types: [Type<String>()], data: nameRes.data)
-        let decodedSymbolData = EVM.decodeABI(types: [Type<String>()], data: symbolRes.data)
-        assert(decodedNameData.length == 1, message: "Unexpected name() return length of ".concat(decodedNameData.length.toString()))
-        assert(decodedSymbolData.length == 1, message: "Unexpected symbol() return length of ".concat(decodedSymbolData.length.toString()))
+        assert(nameRes.results.length == 1, message: "Unexpected name() return length of \(nameRes.results.length.toString())")
+        assert(symbolRes.results.length == 1, message: "Unexpected symbol() return length of \(symbolRes.results.length.toString())")
 
-        self.name = decodedNameData[0] as! String
-        self.symbol = decodedSymbolData[0] as! String
+        self.name = nameRes.results[0] as! String
+        self.symbol = symbolRes.results[0] as! String
     }
 }
- 

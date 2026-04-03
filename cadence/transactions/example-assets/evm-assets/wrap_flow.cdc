@@ -30,12 +30,13 @@ transaction(wflowContractHex: String, amount: UFix64) {
         // Define the value to send to the WFLOW contract
         let balance = EVM.Balance(attoflow: 0)
         balance.setFLOW(flow: amount)
-        let calldata = EVM.encodeABIWithSignature("deposit()", [])
-        let result = self.coa.call(
+        let result = self.coa.callWithSigAndArgs(
             to: EVM.addressFromString(wflowContractHex),
-            data: calldata,
+            signature: "deposit()",
+            args: [],
             gasLimit: 15_000_000,
-            value: balance
+            value: balance.attoflow,
+            resultTypes: nil
         )
         assert(result.status == EVM.Status.successful, message: "Failed to wrap FLOW as WFLOW")
     }

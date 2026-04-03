@@ -26,22 +26,22 @@ transaction(wflowContractHex: String, amount: UInt256) {
         self.preBalance = UInt(FlowEVMBridgeUtils.balanceOf(owner: self.coa.address(), evmContractAddress: self.wflowAddress))
         assert(
             self.preBalance >= UInt(amount),
-            message: "Amount exceeds current WFLOW balance of ".concat(self.preBalance.toString())
+            message: "Amount exceeds current WFLOW balance of \(self.preBalance.toString())"
         )
         self.postBalance = 0
     }
 
     execute {
-        // Encode the withdraw function call
-        let calldata = EVM.encodeABIWithSignature("withdraw(uint256)", [UInt(amount)])
         // Define the value to send to the WFLOW contract - 0 to unwrap
         let value = EVM.Balance(attoflow: 0)
         // Call the WFLOW contract which should complete the unwrap
-        let result = self.coa.call(
+        let result = self.coa.callWithSigAndArgs(
             to: self.wflowAddress,
-            data: calldata,
+            signature: "withdraw(uint256)",
+            args: [UInt(amount)],
             gasLimit: 15_000_000,
-            value: value
+            value: value.attoflow,
+            resultTypes: nil
         )
         assert(result.status == EVM.Status.successful, message: "Failed to unwrap FLOW as WFLOW")
         self.postBalance = UInt(FlowEVMBridgeUtils.balanceOf(owner: self.coa.address(), evmContractAddress: self.wflowAddress))
