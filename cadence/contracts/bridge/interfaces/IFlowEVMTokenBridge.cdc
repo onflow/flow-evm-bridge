@@ -68,8 +68,7 @@ access(all) contract interface IFlowEVMTokenBridge {
                 to: to.toString(),
                 evmContractAddress: self.getAssociatedEVMAddress(with: vault.getType())?.toString()
                     ?? panic(
-                        "Could not find EVM Contract address associated with provided Token identifier="
-                        .concat(vault.getType().identifier)
+                        "Could not find EVM Contract address associated with provided Token identifier=\(vault.getType().identifier)"
                     ),
                 bridgeAddress: self.account.address
             )

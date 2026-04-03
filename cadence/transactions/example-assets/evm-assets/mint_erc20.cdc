@@ -25,6 +25,6 @@ transaction(
             value: 0,
             resultTypes: nil
         )
-        assert(callResult.status == EVM.Status.successful, message: "ERC20 mint failed with code: ".concat(callResult.errorCode.toString()))
+        assert(callResult.status == EVM.Status.successful, message: "ERC20 mint failed with code: \(callResult.errorCode.toString())")
     }
 }

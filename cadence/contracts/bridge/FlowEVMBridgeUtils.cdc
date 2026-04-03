@@ -172,9 +172,9 @@ contract FlowEVMBridgeUtils {
     access(all)
     view fun typeAllowsBridging(_ type: Type): Bool {
         let contractAddress = self.getContractAddress(fromType: type)
-            ?? panic("Could not construct contract address from type identifier: ".concat(type.identifier))
+            ?? panic("Could not construct contract address from type identifier: \(type.identifier)")
         let contractName = self.getContractName(fromType: type)
-            ?? panic("Could not construct contract name from type identifier: ".concat(type.identifier))
+            ?? panic("Could not construct contract name from type identifier: \(type.identifier)")
         if let bridgePermissions = getAccount(contractAddress).contracts.borrow<&{IBridgePermissions}>(name: contractName) {
             return bridgePermissions.allowsBridging()
         }
@@ -214,7 +214,7 @@ contract FlowEVMBridgeUtils {
     access(all)
     view fun isCadenceNative(type: Type): Bool {
         let definingAddress = self.getContractAddress(fromType: type)
-            ?? panic("Could not construct address from type identifier: ".concat(type.identifier))
+            ?? panic("Could not construct address from type identifier: \(type.identifier)")
         return definingAddress != self.account.address
     }
 
@@ -230,7 +230,7 @@ contract FlowEVMBridgeUtils {
     access(all)
     view fun isBridgeDefined(type: Type): Bool {
         let definingAddress = self.getContractAddress(fromType: type)
-            ?? panic("Could not construct address from type identifier: ".concat(type.identifier))
+            ?? panic("Could not construct address from type identifier: \(type.identifier)")
         return definingAddress == self.account.address
     }
 
@@ -381,10 +381,10 @@ contract FlowEVMBridgeUtils {
 
         // Retrieve the Cadence type's defining contract name, address, & its identifier
         var name = self.getContractName(fromType: forAssetType)
-            ?? panic("Could not contract name from type: ".concat(forAssetType.identifier))
+            ?? panic("Could not contract name from type: \(forAssetType.identifier)")
         let identifier = forAssetType.identifier
         let cadenceAddress = self.getContractAddress(fromType: forAssetType)
-            ?? panic("Could not derive contract address for token type: ".concat(identifier))
+            ?? panic("Could not derive contract address for token type: \(identifier)")
         // Initialize asset symbol which will be assigned later
         // based on presence of asset-defined metadata
         var symbol: String? = nil
@@ -411,7 +411,7 @@ contract FlowEVMBridgeUtils {
                 ) as! MetadataViews.NFTCollectionDisplay? {
                     name = collectionDisplay.name
                     let serializedDisplay = SerializeMetadata.serializeFromDisplays(nftDisplay: nil, collectionDisplay: collectionDisplay)!
-                    contractURI = "data:application/json;utf8,{".concat(serializedDisplay).concat("}")
+                    contractURI = "data:application/json;utf8,{\(serializedDisplay)}"
                 }
                 if symbol == nil {
                     symbol = SerializeMetadata.deriveSymbol(fromString: name)
@@ -427,7 +427,7 @@ contract FlowEVMBridgeUtils {
                 }
                 if contractURI.length == 0 && ftDisplay != nil {
                     let serializedDisplay = SerializeMetadata.serializeFTDisplay(ftDisplay!)
-                    contractURI = "data:application/json;utf8,{".concat(serializedDisplay).concat("}")
+                    contractURI = "data:application/json;utf8,{\(serializedDisplay)}"
                 }
                 // Derive a symbol from the name if no metadata view provided one
                 if symbol == nil {
@@ -475,7 +475,7 @@ contract FlowEVMBridgeUtils {
             let isERC20 = self.isERC20(evmContractAddress: evmContractAddress)
             assert(
                 isERC20,
-                message: "Contract ".concat(evmContractAddress.toString()).concat("defines an asset that is not currently supported by the bridge")
+                message: "Contract \(evmContractAddress.toString())defines an asset that is not currently supported by the bridge"
             )
             cadenceContractName = self.deriveBridgedTokenContractName(from: evmContractAddress)
             decimals = self.getTokenDecimals(evmContractAddress: evmContractAddress)
@@ -1013,14 +1013,11 @@ contract FlowEVMBridgeUtils {
         }
         assert(prefix.length > 1, message: "Invalid prefix")
         if let splitIdentifier = self.splitObjectIdentifier(identifier: fromType.identifier) {
-            let sourceContractAddress = Address.fromString("0x".concat(splitIdentifier[1]))!
+            let sourceContractAddress = Address.fromString("0x\(splitIdentifier[1])")!
             let sourceContractName = splitIdentifier[2]
             let resourceName = splitIdentifier[3]
             return StoragePath(
-                identifier: prefix.concat(self.delimiter)
-                    .concat(sourceContractAddress.toString()).concat(self.delimiter)
-                    .concat(sourceContractName).concat(self.delimiter)
-                    .concat(resourceName)
+                identifier: "\(prefix)\(self.delimiter)\(sourceContractAddress.toString())\(self.delimiter)\(sourceContractName)\(self.delimiter)\(resourceName)"
             ) ?? nil
         }
         return nil
@@ -1035,9 +1032,7 @@ contract FlowEVMBridgeUtils {
     ///
     access(all)
     view fun deriveBridgedNFTContractName(from evmContract: EVM.EVMAddress): String {
-        return self.contractNamePrefixes[Type<@{NonFungibleToken.NFT}>()]!["bridged"]!
-            .concat(self.delimiter)
-            .concat(evmContract.toString())
+        return "\(self.contractNamePrefixes[Type<@{NonFungibleToken.NFT}>()]!["bridged"]!)\(self.delimiter)\(evmContract.toString())"
     }
 
     /// Derives the Cadence contract name for a given EVM fungible token of the form
@@ -1049,9 +1044,7 @@ contract FlowEVMBridgeUtils {
     ///
     access(all)
     view fun deriveBridgedTokenContractName(from evmContract: EVM.EVMAddress): String {
-        return self.contractNamePrefixes[Type<@{FungibleToken.Vault}>()]!["bridged"]!
-            .concat(self.delimiter)
-            .concat(evmContract.toString())
+        return "\(self.contractNamePrefixes[Type<@{FungibleToken.Vault}>()]!["bridged"]!)\(self.delimiter)\(evmContract.toString())"
     }
 
     /****************
@@ -1131,12 +1124,12 @@ contract FlowEVMBridgeUtils {
         // Ensure the parts do not exceed the max UFix64 value before conversion
         assert(
             scaledValue <= UInt256(UFix64.max),
-            message: "Scaled integer value ".concat(value.toString()).concat(" exceeds max UFix64 value")
+            message: "Scaled integer value \(value.toString()) exceeds max UFix64 value"
         )
         /// Check for the max value that can be converted to a UFix64 without overflowing
         assert(
             scaledValue == UInt256(UFix64.max) ? scaledFractional < 0.09551616 : true,
-            message: "Scaled integer value ".concat(value.toString()).concat(" exceeds max UFix64 value")
+            message: "Scaled integer value \(value.toString()) exceeds max UFix64 value"
         )
 
         return UFix64(scaledValue) + scaledFractional
@@ -1252,7 +1245,7 @@ contract FlowEVMBridgeUtils {
     view fun buildCompositeType(address: Address, contractName: String, resourceName: String): Type? {
         let addressStr = address.toString()
         let subtract0x = addressStr.slice(from: 2, upTo: addressStr.length)
-        let identifier = "A".concat(".").concat(subtract0x).concat(".").concat(contractName).concat(".").concat(resourceName)
+        let identifier = "A.\(subtract0x).\(contractName).\(resourceName)"
         return CompositeType(identifier)
     }
 

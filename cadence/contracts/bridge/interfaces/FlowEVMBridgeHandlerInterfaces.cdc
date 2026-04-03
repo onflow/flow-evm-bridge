@@ -125,7 +125,7 @@ access(all) contract FlowEVMBridgeHandlerInterfaces {
         access(Admin) fun disableBridging() {
             pre {
                 self.isEnabled():
-                "Cannot disable: ".concat(self.getType().identifier).concat(" is already disabled")
+                "Cannot disable: \(self.getType().identifier) is already disabled"
             }
             post {
                 !self.isEnabled():
@@ -173,12 +173,9 @@ access(all) contract FlowEVMBridgeHandlerInterfaces {
         ) {
             pre {
                 self.isEnabled():
-                "TokenHandler ".concat(self.getType().identifier).concat(" with uuid ")
-                    .concat(self.uuid.toString()).concat(" is not yet enabled")
+                "TokenHandler \(self.getType().identifier) with uuid \(self.uuid.toString()) is not yet enabled"
                 tokens.getType() == self.getTargetType():
-                "TokenHandler ".concat(self.getType().identifier).concat(" with uuid ").concat(self.uuid.toString())
-                    .concat(" expects ").concat(self.getTargetType()?.identifier ?? "nil")
-                    .concat(" but received ").concat(tokens.getType().identifier)
+                "TokenHandler \(self.getType().identifier) with uuid \(self.uuid.toString()) expects \(self.getTargetType()?.identifier ?? "nil") but received \(tokens.getType().identifier)"
                 tokens.balance > 0.0:
                 "Attempting to bridge 0.0 tokens - zero amounts are unsupported"
             }
@@ -192,9 +189,8 @@ access(all) contract FlowEVMBridgeHandlerInterfaces {
         ): @{FungibleToken.Vault} {
             pre {
                 self.isEnabled():
-                "TokenHandler ".concat(self.getType().identifier).concat(" with uuid ")
-                    .concat(self.uuid.toString()).concat(" is not yet enabled")
-                amount > UInt256(0): "Attempting to bridge 0 tokens from EVM - zero amounts are unsupported"
+                "TokenHandler \(self.getType().identifier) with uuid \(self.uuid.toString()) is not yet enabled"
+                amount > 0: "Attempting to bridge 0 tokens from EVM - zero amounts are unsupported"
             }
             post {
                 result.getType() == self.getTargetType():

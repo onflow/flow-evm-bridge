@@ -8,7 +8,7 @@ fun main(coaHost: Address, deployerTag: String): String {
     let coa = getAuthAccount<auth(BorrowValue) &Account>(coaHost)
         .storage
         .borrow<auth(EVM.Call) &EVM.CadenceOwnedAccount>(from: /storage/evm)
-        ?? panic("Could not borrow CadenceOwnedAccount from host=".concat(coaHost.toString()))
+        ?? panic("Could not borrow CadenceOwnedAccount from host=\(coaHost.toString())")
     let res = coa.callWithSigAndArgs(
         to: FlowEVMBridgeUtils.getBridgeFactoryEVMAddress(),
         signature: "getDeployer(string)",

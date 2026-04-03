@@ -74,8 +74,7 @@ access(all) contract interface IFlowEVMNFTBridge {
                 to: to.toString(),
                 evmContractAddress: self.getAssociatedEVMAddress(with: token.getType())?.toString()
                     ?? panic(
-                        "Could not find EVM Contract address associated with provided NFT identifier="
-                        .concat(token.getType().identifier)
+                        "Could not find EVM Contract address associated with provided NFT identifier=\(token.getType().identifier)"
                     ),
                 bridgeAddress: self.account.address
             )

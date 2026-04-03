@@ -26,7 +26,7 @@ transaction(wflowContractHex: String, amount: UInt256) {
         self.preBalance = UInt(FlowEVMBridgeUtils.balanceOf(owner: self.coa.address(), evmContractAddress: self.wflowAddress))
         assert(
             self.preBalance >= UInt(amount),
-            message: "Amount exceeds current WFLOW balance of ".concat(self.preBalance.toString())
+            message: "Amount exceeds current WFLOW balance of \(self.preBalance.toString())"
         )
         self.postBalance = 0
     }

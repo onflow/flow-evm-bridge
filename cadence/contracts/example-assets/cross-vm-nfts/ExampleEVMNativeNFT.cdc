@@ -63,11 +63,11 @@ access(all) contract ExampleEVMNativeNFT: NonFungibleToken, ICrossVM, ICrossVMAs
         )
         assert(
             tokenURIRes.status == EVM.Status.successful,
-            message: "Error calling ERC721.tokenURI(uint256) with message: ".concat(tokenURIRes.errorMessage)
+            message: "Error calling ERC721.tokenURI(uint256) with message: \(tokenURIRes.errorMessage)"
         )
         assert(
             tokenURIRes.results.length == 1,
-            message: "Unexpected tokenURI(uint256) return length of ".concat(tokenURIRes.results.length.toString())
+            message: "Unexpected tokenURI(uint256) return length of \(tokenURIRes.results.length.toString())"
         )
         return tokenURIRes.results[0] as! String
     }
@@ -84,11 +84,11 @@ access(all) contract ExampleEVMNativeNFT: NonFungibleToken, ICrossVM, ICrossVMAs
         )
         assert(
             contractURIRes.status == EVM.Status.successful,
-            message: "Error calling ERC721.contractURI(uint256) with message: ".concat(contractURIRes.errorMessage)
+            message: "Error calling ERC721.contractURI(uint256) with message: \(contractURIRes.errorMessage)"
         )
         assert(
             contractURIRes.results.length == 1,
-            message: "Unexpected contractURI(uint256) return length of ".concat(contractURIRes.results.length.toString())
+            message: "Unexpected contractURI(uint256) return length of \(contractURIRes.results.length.toString())"
         )
         return contractURIRes.results[0] as! String
     }
@@ -123,8 +123,7 @@ access(all) contract ExampleEVMNativeNFT: NonFungibleToken, ICrossVM, ICrossVMAs
     access(self) view fun borrowCOA(): auth(EVM.Owner) &EVM.CadenceOwnedAccount {
         return self.account.storage.borrow<auth(EVM.Owner) &EVM.CadenceOwnedAccount>(
             from: /storage/evm
-        ) ?? panic("Could not borrow CadenceOwnedAccount (COA) from /storage/evm. "
-            .concat("Ensure this account has a COA configured to successfully call into EVM."))
+        ) ?? panic("Could not borrow CadenceOwnedAccount (COA) from /storage/evm. Ensure this account has a COA configured to successfully call into EVM.")
     }
 
     /// We choose the name NFT here, but this type can have any name now
@@ -138,8 +137,7 @@ access(all) contract ExampleEVMNativeNFT: NonFungibleToken, ICrossVM, ICrossVMAs
         ) {
             pre {
                 erc721ID <= UInt256(UInt64.max):
-                "Provided EVM ID ".concat(erc721ID.toString())
-                .concat(" exceeds the assignable Cadence ID of UInt64.max ").concat(UInt64.max.toString())
+                "Provided EVM ID \(erc721ID.toString()) exceeds the assignable Cadence ID of UInt64.max \(UInt64.max.toString())"
             }
             self.id = UInt64(erc721ID)
         }
@@ -168,10 +166,10 @@ access(all) contract ExampleEVMNativeNFT: NonFungibleToken, ICrossVM, ICrossVMAs
                 case Type<MetadataViews.Display>():
                     let collectionDisplay = (ExampleEVMNativeNFT.resolveContractView(resourceType: self.getType(), viewType: Type<MetadataViews.NFTCollectionDisplay>()) as! MetadataViews.NFTCollectionDisplay?)!
                     return MetadataViews.Display(
-                        name: ExampleEVMNativeNFT.getName().concat(" #").concat(self.id.toString()),
+                        name: "\(ExampleEVMNativeNFT.getName()) #\(self.id.toString())",
                         description: collectionDisplay.description,
                         thumbnail: MetadataViews.HTTPFile(
-                            url: "https://example-nft.flow.com/nft/".concat(self.id.toString())
+                            url: "https://example-nft.flow.com/nft/\(self.id.toString())"
                         )
                     )
                 case Type<MetadataViews.Serial>():
@@ -179,7 +177,7 @@ access(all) contract ExampleEVMNativeNFT: NonFungibleToken, ICrossVM, ICrossVMAs
                         self.id
                     )
                 case Type<MetadataViews.ExternalURL>():
-                    return MetadataViews.ExternalURL("https://example-nft.flow.com/".concat(self.id.toString()))
+                    return MetadataViews.ExternalURL("https://example-nft.flow.com/\(self.id.toString())")
                 case Type<MetadataViews.NFTCollectionData>():
                     return ExampleEVMNativeNFT.resolveContractView(resourceType: Type<@ExampleEVMNativeNFT.NFT>(), viewType: Type<MetadataViews.NFTCollectionData>())
                 case Type<MetadataViews.NFTCollectionDisplay>():
@@ -432,7 +430,7 @@ access(all) contract ExampleEVMNativeNFT: NonFungibleToken, ICrossVM, ICrossVMAs
         )
         assert(
             deployResult.status == EVM.Status.successful,
-            message: "ERC721 deployment failed with message: ".concat(deployResult.errorMessage)
+            message: "ERC721 deployment failed with message: \(deployResult.errorMessage)"
         )
 
         self.evmContractAddress = deployResult.deployedContract!
@@ -456,15 +454,15 @@ access(all) contract ExampleEVMNativeNFT: NonFungibleToken, ICrossVM, ICrossVMAs
         )
         assert(
             nameRes.status == EVM.Status.successful,
-            message: "Error on ERC721.name() call with message: ".concat(nameRes.errorMessage)
+            message: "Error on ERC721.name() call with message: \(nameRes.errorMessage)"
         )
         assert(
             symbolRes.status == EVM.Status.successful,
-            message: "Error on ERC721.symbol() call with message: ".concat(symbolRes.errorMessage)
+            message: "Error on ERC721.symbol() call with message: \(symbolRes.errorMessage)"
         )
 
-        assert(nameRes.results.length == 1, message: "Unexpected name() return length of ".concat(nameRes.results.length.toString()))
-        assert(symbolRes.results.length == 1, message: "Unexpected symbol() return length of ".concat(symbolRes.results.length.toString()))
+        assert(nameRes.results.length == 1, message: "Unexpected name() return length of \(nameRes.results.length.toString())")
+        assert(symbolRes.results.length == 1, message: "Unexpected symbol() return length of \(symbolRes.results.length.toString())")
 
         self.name = nameRes.results[0] as! String
         self.symbol = symbolRes.results[0] as! String
