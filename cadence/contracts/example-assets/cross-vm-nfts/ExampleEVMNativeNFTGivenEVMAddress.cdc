@@ -103,14 +103,19 @@ access(all) contract ExampleEVMNativeNFTGivenEVMAddress: NonFungibleToken, ICros
         value: UFix64,
         resultTypes: [Type]?
     ): EVM.ResultDecoded {
-        let valueBalance = EVM.Balance(attoflow: 0)
-        valueBalance.setFLOW(flow: value)
+        var valueBalance: UInt = 0
+        if value > 0.0 {
+            let balance = EVM.Balance(attoflow: 0)
+            balance.setFLOW(flow: value)
+            valueBalance = balance.inAttoFLOW()
+        }
+
         return self.borrowCOA().callWithSigAndArgs(
             to: targetEVMAddress,
             signature: signature,
             args: args,
             gasLimit: gasLimit,
-            value: valueBalance.attoflow,
+            value: valueBalance,
             resultTypes: resultTypes
         )
     }
