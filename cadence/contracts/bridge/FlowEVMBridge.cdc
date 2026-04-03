@@ -926,6 +926,10 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
         assert(FlowEVMBridgeConfig.isTypePaused(updatedCadenceAssociation) == false,
             message: "Bridging is currently paused for type \(updatedCadenceAssociation.identifier)")
 
+        // The force-casts to CrossVMNFT.EVMNFT below are safe: this handler is only reached when the token is a
+        // bridge-defined NFT (pre-condition enforces !isCadenceNative). All bridge-defined NFTs are deployed from
+        // the bridge's template contract, which unconditionally implements CrossVMNFT.EVMNFT. No user-controlled
+        // contract can produce a bridge-defined type, so these casts cannot fail in practice.
         let tokenRef = (&token as &{NonFungibleToken.NFT}) as! &{CrossVMNFT.EVMNFT}
         let evmID = tokenRef.evmID
         let bridgedToken <- token as! @{CrossVMNFT.EVMNFT}
@@ -1103,6 +1107,12 @@ contract FlowEVMBridge : IFlowEVMNFTBridge, IFlowEVMTokenBridge {
     }
 
     /// Handler to move registered cross-VM EVM-native NFTs from EVM
+    ///
+    /// Note on `_type` vs `type`: this handler is only reached via `handleCrossVMNFTFromEVM`, which is dispatched
+    /// when `customAssocByType != nil` — meaning the caller-supplied `type` is always the custom cross-VM type,
+    /// not a legacy bridge-defined type. Therefore `isCadenceNative(type)` is always true for this handler, the
+    /// `if !isCadenceNative` branch below is never entered, and `_type` is never reassigned away from `type`.
+    /// The `isLocked` check and the `unlockNFT`/`fulfillNFTFromEVM` calls therefore always use the same type.
     ///
     access(self)
     fun handleEVMNativeCrossVMNFTFromEVM(
