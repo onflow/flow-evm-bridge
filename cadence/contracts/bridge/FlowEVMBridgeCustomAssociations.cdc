@@ -128,7 +128,7 @@ access(all) contract FlowEVMBridgeCustomAssociations {
             type.isSubtype(of: Type<@{NonFungibleToken.NFT}>()):
             "Only NFT cross-VM associations are currently supported but \(type.identifier) is not an NFT implementation"
             self.associationsByEVMAddress[evmContractAddress.toString()] == nil:
-            "EVM Address \(evmContractAddress.toString()) already has a custom association with \(self.associationsByEVMAddress[evmContractAddress.toString()]?.identifier ?? \"unknown type\")"
+            "EVM Address \(evmContractAddress.toString()) already has a custom association"
             fulfillmentMinter?.check() ?? true:
             "The NFTFulfillmentMinter Capability issued from \(fulfillmentMinter!.address.toString()) is invalid. Ensure the Capability is properly issued and active."
         }
