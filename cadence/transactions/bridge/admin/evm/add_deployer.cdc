@@ -23,35 +23,29 @@ transaction(deployerTag: String, deployerEVMAddressHex: String) {
 
     execute {
         // Execute the call
-        let callResult = self.coa.call(
+        let callResult = self.coa.callWithSigAndArgs(
             to: FlowEVMBridgeUtils.getBridgeFactoryEVMAddress(),
-            data: EVM.encodeABIWithSignature(
-                "addDeployer(string,address)",
-                [deployerTag, self.targetDeployerEVMAddress]
-            ),
+            signature: "addDeployer(string,address)",
+            args: [deployerTag, self.targetDeployerEVMAddress],
             gasLimit: 15_000_000,
-            value: EVM.Balance(attoflow: 0)
+            value: 0,
+            resultTypes: nil
         )
         assert(callResult.status == EVM.Status.successful, message: "Failed to add deployer")
 
         // Confirm the deployer was added under the tag
-        let postDeployerResult = self.coa.call(
+        let postDeployerResult = self.coa.callWithSigAndArgs(
             to: FlowEVMBridgeUtils.getBridgeFactoryEVMAddress(),
-            data: EVM.encodeABIWithSignature(
-                "getDeployer(string)",
-                [deployerTag]
-            ),
+            signature: "getDeployer(string)",
+            args: [deployerTag],
             gasLimit: 15_000_000,
-            value: EVM.Balance(attoflow: 0)
+            value: 0,
+            resultTypes: [Type<EVM.EVMAddress>()]
         )
         assert(postDeployerResult.status == EVM.Status.successful, message: "Failed to get deployer")
 
-        let decodedResult = EVM.decodeABI(
-                types: [Type<EVM.EVMAddress>()],
-                data: postDeployerResult.data
-            )
-        assert(decodedResult.length == 1, message: "Invalid response from getDeployer call")
-        self.postDeployer = decodedResult[0] as! EVM.EVMAddress
+        assert(postDeployerResult.results.length == 1, message: "Invalid response from getDeployer call")
+        self.postDeployer = postDeployerResult.results[0] as! EVM.EVMAddress
     }
 
     post {

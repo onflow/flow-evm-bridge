@@ -18,16 +18,14 @@ transaction(
     execute {
         let recipientAddress = EVM.addressFromString(recipientHexAddress)
         let erc721Address = EVM.addressFromString(erc721HexAddress)
-        let calldata = EVM.encodeABIWithSignature(
-            "safeMint(address,uint256,string)",
-            [recipientAddress, tokenId, uri]
-        )
-        let callResult = self.coa.call(
+        let callResult = self.coa.callWithSigAndArgs(
             to: erc721Address,
-            data: calldata,
+            signature: "safeMint(address,uint256,string)",
+            args: [recipientAddress, tokenId, uri],
             gasLimit: gasLimit,
-            value: EVM.Balance(attoflow: 0)
+            value: 0,
+            resultTypes: nil
         )
-        assert(callResult.status == EVM.Status.successful, message: "ERC721 mint failed with code: ".concat(callResult.errorCode.toString()))
+        assert(callResult.status == EVM.Status.successful, message: "ERC721 mint failed with code: \(callResult.errorCode.toString())")
     }
 }

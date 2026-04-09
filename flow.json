@@ -312,9 +312,9 @@
 			}
 		},
 		"EVM": {
-			"source": "mainnet://e467b9dd11fa00df.EVM",
-			"hash": "960b0c7df7ee536956af196fba8c8d5dd4f7a89a4ecc61467e31287c4617b0dd",
-			"block_height": 142536527,
+			"source": "testnet://8c5303eaa26202d6.EVM",
+			"hash": "02fdf06350d1aa9eaff70bb355968e46160a226ded80daf229330e7a1d8d8c2c",
+			"block_height": 315529260,
 			"aliases": {
 				"emulator": "f8d6e0586b0a20c7",
 				"mainnet": "e467b9dd11fa00df",
