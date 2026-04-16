@@ -10,18 +10,18 @@
 *   
 */
 
-import NonFungibleToken from 0x0000000000000001
-import ViewResolver from 0x0000000000000001
-import MetadataViews from 0x0000000000000001
-import CrossVMMetadataViews from 0x0000000000000001
+import "NonFungibleToken"
+import "ViewResolver"
+import "MetadataViews"
+import "CrossVMMetadataViews"
 
-import EVM from 0x0000000000000001
+import "EVM"
 
-import ICrossVM from 0x0000000000000007
-import ICrossVMAsset from 0x0000000000000007
-import SerializeMetadata from 0x0000000000000007
-import FlowEVMBridgeCustomAssociationTypes from 0x0000000000000007
-import FlowEVMBridgeUtils from 0x0000000000000007
+import "ICrossVM"
+import "ICrossVMAsset"
+import "SerializeMetadata"
+import "FlowEVMBridgeCustomAssociationTypes"
+import "FlowEVMBridgeUtils"
 
 /// THIS CONTRACT IS USED FOR TESTING PURPOSES ONLY
 access(all) contract ExampleNFT: NonFungibleToken {
