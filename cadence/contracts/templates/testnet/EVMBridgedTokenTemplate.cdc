@@ -1,21 +1,21 @@
-import "NonFungibleToken"
-import "MetadataViews"
-import "FungibleTokenMetadataViews"
-import "ViewResolver"
-import "FungibleToken"
-import "FlowToken"
+import NonFungibleToken from 0x631e88ae7f1d7c20
+import MetadataViews from 0x631e88ae7f1d7c20
+import FungibleTokenMetadataViews from 0x9a0766d93b6608b7
+import ViewResolver from 0x631e88ae7f1d7c20
+import FungibleToken from 0x9a0766d93b6608b7
+import FlowToken from 0x7e60df042a9c0868
 
-import "EVM"
+import EVM from 0x8c5303eaa26202d6
 
-import "ICrossVM"
-import "ICrossVMAsset"
-import "IEVMBridgeTokenMinter"
-import "FlowEVMBridgeTokenEscrow"
-import "FlowEVMBridgeConfig"
-import "FlowEVMBridgeUtils"
-import "FlowEVMBridge"
-import "CrossVMToken"
-import "FlowEVMBridgeResolver"
+import ICrossVM from 0xdfc20aee650fcbdf
+import ICrossVMAsset from 0xdfc20aee650fcbdf
+import IEVMBridgeTokenMinter from 0xdfc20aee650fcbdf
+import FlowEVMBridgeTokenEscrow from 0xdfc20aee650fcbdf
+import FlowEVMBridgeConfig from 0xdfc20aee650fcbdf
+import FlowEVMBridgeUtils from 0xdfc20aee650fcbdf
+import FlowEVMBridge from 0xdfc20aee650fcbdf
+import CrossVMToken from 0xdfc20aee650fcbdf
+import FlowEVMBridgeResolver from 0xdfc20aee650fcbdf
 
 /// This contract is a template used by FlowEVMBridge to define EVM-native fungible tokens bridged from Flow EVM to 
 /// Cadence. Upon deployment of this contract, the contract name is derived as a function of the asset type (here an 
