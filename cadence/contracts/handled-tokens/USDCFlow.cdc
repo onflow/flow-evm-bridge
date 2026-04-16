@@ -1,9 +1,9 @@
-import FungibleToken from 0xf233dcee88fe0abe
-import FungibleTokenMetadataViews from 0xf233dcee88fe0abe
-import MetadataViews from 0x1d7e57aa55817448
-import Burner from 0xf233dcee88fe0abe
-import ViewResolver from 0x1d7e57aa55817448
-import FlowEVMBridgeHandlerInterfaces from 0x1e4aa0b87d10b141
+import "FungibleToken"
+import "FungibleTokenMetadataViews"
+import "MetadataViews"
+import "Burner"
+import "ViewResolver"
+import "FlowEVMBridgeHandlerInterfaces"
 
 /// The `USDCFlow` smart contract is integrated directly
 /// with the Flow VM bridge as the bridged version of Flow EVM USDC

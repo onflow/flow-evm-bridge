@@ -1,4 +1,4 @@
-import FungibleToken from 0xf233dcee88fe0abe
+import "FungibleToken"
 
 /// Contract interface enabling FlowEVMBridge to mint fungible tokens from implementing bridge contracts.
 ///

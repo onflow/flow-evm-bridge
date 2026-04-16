@@ -1,7 +1,7 @@
-import FungibleToken from 0xf233dcee88fe0abe
-import NonFungibleToken from 0x1d7e57aa55817448
+import "FungibleToken"
+import "NonFungibleToken"
 
-import EVM from 0xe467b9dd11fa00df
+import "EVM"
 
 access(all) contract interface IFlowEVMTokenBridge {
     

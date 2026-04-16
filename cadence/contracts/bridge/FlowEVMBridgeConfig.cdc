@@ -1,8 +1,8 @@
-import EVM from 0xe467b9dd11fa00df
-import NonFungibleToken from 0x1d7e57aa55817448
+import "EVM"
+import "NonFungibleToken"
 
-import FlowEVMBridgeHandlerInterfaces from 0x1e4aa0b87d10b141
-import FlowEVMBridgeCustomAssociations from 0x1e4aa0b87d10b141
+import "FlowEVMBridgeHandlerInterfaces"
+import "FlowEVMBridgeCustomAssociations"
 
 /// This contract is used to store configuration information shared by FlowEVMBridge contracts
 ///

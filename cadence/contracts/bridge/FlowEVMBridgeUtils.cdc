@@ -1,18 +1,18 @@
-import NonFungibleToken from 0x1d7e57aa55817448
-import FungibleToken from 0xf233dcee88fe0abe
-import MetadataViews from 0x1d7e57aa55817448
-import CrossVMMetadataViews from 0x1d7e57aa55817448
-import FungibleTokenMetadataViews from 0xf233dcee88fe0abe
-import ViewResolver from 0x1d7e57aa55817448
-import FlowToken from 0x1654653399040a61
-import FlowStorageFees from 0xe467b9dd11fa00df
+import "NonFungibleToken"
+import "FungibleToken"
+import "MetadataViews"
+import "CrossVMMetadataViews"
+import "FungibleTokenMetadataViews"
+import "ViewResolver"
+import "FlowToken"
+import "FlowStorageFees"
 
-import EVM from 0xe467b9dd11fa00df
+import "EVM"
 
-import SerializeMetadata from 0x1e4aa0b87d10b141
-import FlowEVMBridgeConfig from 0x1e4aa0b87d10b141
-import CrossVMNFT from 0x1e4aa0b87d10b141
-import IBridgePermissions from 0x1e4aa0b87d10b141
+import "SerializeMetadata"
+import "FlowEVMBridgeConfig"
+import "CrossVMNFT"
+import "IBridgePermissions"
 
 /// This contract serves as a source of utility methods leveraged by FlowEVMBridge contracts
 //

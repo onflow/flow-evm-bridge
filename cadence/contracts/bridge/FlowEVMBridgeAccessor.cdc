@@ -1,11 +1,11 @@
-import NonFungibleToken from 0x1d7e57aa55817448
-import FungibleToken from 0xf233dcee88fe0abe
-import FlowToken from 0x1654653399040a61
+import "NonFungibleToken"
+import "FungibleToken"
+import "FlowToken"
 
-import EVM from 0xe467b9dd11fa00df
+import "EVM"
 
-import FlowEVMBridgeConfig from 0x1e4aa0b87d10b141
-import FlowEVMBridge from 0x1e4aa0b87d10b141
+import "FlowEVMBridgeConfig"
+import "FlowEVMBridge"
 
 /// This contract defines a mechanism for routing bridge requests from the EVM contract to the Flow-EVM bridge contract
 ///

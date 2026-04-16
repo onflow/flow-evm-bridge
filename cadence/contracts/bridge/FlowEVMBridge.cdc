@@ -1,30 +1,30 @@
-import Burner from 0xf233dcee88fe0abe
-import FungibleToken from 0xf233dcee88fe0abe
-import FungibleTokenMetadataViews from 0xf233dcee88fe0abe
-import NonFungibleToken from 0x1d7e57aa55817448
-import MetadataViews from 0x1d7e57aa55817448
-import CrossVMMetadataViews from 0x1d7e57aa55817448
-import ViewResolver from 0x1d7e57aa55817448
+import "Burner"
+import "FungibleToken"
+import "FungibleTokenMetadataViews"
+import "NonFungibleToken"
+import "MetadataViews"
+import "CrossVMMetadataViews"
+import "ViewResolver"
 
-import EVM from 0xe467b9dd11fa00df
+import "EVM"
 
-import IBridgePermissions from 0x1e4aa0b87d10b141
-import ICrossVM from 0x1e4aa0b87d10b141
-import IEVMBridgeNFTMinter from 0x1e4aa0b87d10b141
-import IEVMBridgeTokenMinter from 0x1e4aa0b87d10b141
-import IFlowEVMNFTBridge from 0x1e4aa0b87d10b141
-import IFlowEVMTokenBridge from 0x1e4aa0b87d10b141
-import CrossVMNFT from 0x1e4aa0b87d10b141
-import CrossVMToken from 0x1e4aa0b87d10b141
-import FlowEVMBridgeCustomAssociationTypes from 0x1e4aa0b87d10b141
-import FlowEVMBridgeCustomAssociations from 0x1e4aa0b87d10b141
-import FlowEVMBridgeConfig from 0x1e4aa0b87d10b141
-import FlowEVMBridgeHandlerInterfaces from 0x1e4aa0b87d10b141
-import FlowEVMBridgeUtils from 0x1e4aa0b87d10b141
-import FlowEVMBridgeNFTEscrow from 0x1e4aa0b87d10b141
-import FlowEVMBridgeTokenEscrow from 0x1e4aa0b87d10b141
-import FlowEVMBridgeTemplates from 0x1e4aa0b87d10b141
-import SerializeMetadata from 0x1e4aa0b87d10b141
+import "IBridgePermissions"
+import "ICrossVM"
+import "IEVMBridgeNFTMinter"
+import "IEVMBridgeTokenMinter"
+import "IFlowEVMNFTBridge"
+import "IFlowEVMTokenBridge"
+import "CrossVMNFT"
+import "CrossVMToken"
+import "FlowEVMBridgeCustomAssociationTypes"
+import "FlowEVMBridgeCustomAssociations"
+import "FlowEVMBridgeConfig"
+import "FlowEVMBridgeHandlerInterfaces"
+import "FlowEVMBridgeUtils"
+import "FlowEVMBridgeNFTEscrow"
+import "FlowEVMBridgeTokenEscrow"
+import "FlowEVMBridgeTemplates"
+import "SerializeMetadata"
 
 /// The FlowEVMBridge contract is the main entrypoint for bridging NFT & FT assets between Flow & FlowEVM.
 ///

@@ -1,9 +1,9 @@
-import FungibleToken from 0xf233dcee88fe0abe
-import NonFungibleToken from 0x1d7e57aa55817448
+import "FungibleToken"
+import "NonFungibleToken"
 
-import EVM from 0xe467b9dd11fa00df
+import "EVM"
 
-import FlowEVMBridgeUtils from 0x1e4aa0b87d10b141
+import "FlowEVMBridgeUtils"
 
 /// This contract serves Cadence code from chunked templates, replacing the contract name with the name derived from
 /// given arguments - either Cadence Type or EVM contract address.

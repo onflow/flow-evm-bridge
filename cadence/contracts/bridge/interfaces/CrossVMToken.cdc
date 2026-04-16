@@ -1,6 +1,6 @@
-import FungibleToken from 0xf233dcee88fe0abe
+import "FungibleToken"
 
-import EVM from 0xe467b9dd11fa00df
+import "EVM"
 
 /// Contract defining cross-VM Fungible Token Vault interface
 ///
