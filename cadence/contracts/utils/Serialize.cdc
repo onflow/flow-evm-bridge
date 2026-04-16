@@ -1,6 +1,6 @@
-import "ViewResolver"
-import "MetadataViews"
-import "NonFungibleToken"
+import ViewResolver from 0x1d7e57aa55817448
+import MetadataViews from 0x1d7e57aa55817448
+import NonFungibleToken from 0x1d7e57aa55817448
 
 /// This contract is a utility for serializing primitive types, arrays, and common metadata mapping formats to JSON
 /// compatible strings. Also included are interfaces enabling custom serialization for structs and resources.

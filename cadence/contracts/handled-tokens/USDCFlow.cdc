@@ -1,27 +1,18 @@
-import "FungibleToken"
-import "FungibleTokenMetadataViews"
-import "MetadataViews"
-import "Burner"
+import FungibleToken from 0xf233dcee88fe0abe
+import FungibleTokenMetadataViews from 0xf233dcee88fe0abe
+import MetadataViews from 0x1d7e57aa55817448
+import Burner from 0xf233dcee88fe0abe
+import ViewResolver from 0x1d7e57aa55817448
+import FlowEVMBridgeHandlerInterfaces from 0x1e4aa0b87d10b141
 
-import "FlowEVMBridgeHandlerInterfaces"
-import "FlowEVMBridgeConfig"
-
-/// USDCFlow
-///
-/// Defines the Cadence version of bridged Flow USDC. 
-/// Before the Sept 4th, 2024 Crescendo migration, users can send
-/// `FiatToken` vaults to the `USDCFlow.wrapFiatToken()` function
-/// and receive `USDCFlow` vaults back with the exact same balance.
-
-/// After the Crescendo migration, the `USDCFlow` smart contract
-/// will integrate directly with the Flow VM bridge to become
-/// the bridged version of Flow EVM USDC. These tokens will be backed
-/// by real USDC via Flow EVM.
+/// The `USDCFlow` smart contract is integrated directly
+/// with the Flow VM bridge as the bridged version of Flow EVM USDC
+/// which is itself the bridged version of official USDC from Ethereum Mainnet.
 
 /// This is not the official Circle USDC, only a bridged version
 /// that is still backed by official USDC on the other side of the bridge
 
-access(all) contract USDCFlow: FungibleToken {
+access(all) contract USDCFlow: FungibleToken, ViewResolver {
 
     /// Total supply of USDCFlows in existence
     access(all) var totalSupply: UFix64
@@ -54,20 +45,18 @@ access(all) contract USDCFlow: FungibleToken {
             case Type<FungibleTokenMetadataViews.FTDisplay>():
                 let media = MetadataViews.Media(
                         file: MetadataViews.HTTPFile(
-                        url: "https://assets.website-files.com/5f6294c0c7a8cdd643b1c820/5f6294c0c7a8cda55cb1c936_Flow_Wordmark.svg"
+                        url: "https://uploads-ssl.webflow.com/5f734f4dbd95382f4fdfa0ea/66bfae00953c3d7bd09e7ac4_USDC-and-FLOW.svg"
                     ),
                     mediaType: "image/svg+xml"
                 )
                 let medias = MetadataViews.Medias([media])
                 return FungibleTokenMetadataViews.FTDisplay(
-                    name: "USDC (Flow)",
-                    symbol: "USDCf",
-                    description: "This fungible token representation of USDC is bridged from Flow EVM.",
-                    externalURL: MetadataViews.ExternalURL("https://www.circle.com/en/usdc"),
+                    name: "USDC.e (Flow)",
+                    symbol: "USDC.e",
+                    description: "This fungible token representation of Standard Bridged USDC is bridged from Flow EVM.",
+                    externalURL: MetadataViews.ExternalURL("https://github.com/circlefin/stablecoin-evm/blob/master/doc/bridged_USDC_standard.md"),
                     logos: medias,
-                    socials: {
-                        "x": MetadataViews.ExternalURL("https://x.com/circle")
-                    }
+                    socials: {},
                 )
             case Type<FungibleTokenMetadataViews.FTVaultData>():
                 return FungibleTokenMetadataViews.FTVaultData(
@@ -194,22 +183,6 @@ access(all) contract USDCFlow: FungibleToken {
             // This function updates USDCFlow.totalSupply
             Burner.burn(<-toBurn)
         }
-    }
-
-    /// Sends the USDCFlow Minter to the Flow/EVM bridge
-    /// without giving any account access to the minter
-    /// before it is safely in the decentralized bridge
-    access(all) fun sendMinterToBridge(_ bridgeAddress: Address) {
-        let minter <- create Minter()
-        // borrow a reference to the bridge's configuration admin resource from public Capability
-        let bridgeAdmin = getAccount(bridgeAddress).capabilities.borrow<&FlowEVMBridgeConfig.Admin>(
-                FlowEVMBridgeConfig.adminPublicPath
-            ) ?? panic("FlowEVMBridgeConfig.Admin could not be referenced from ".concat(bridgeAddress.toString()))
-            
-        // sets the USDCFlow as the minter resource for all USDCFlow bridge requests
-        // prior to transferring the Minter, a TokenHandler will be set for USDCFlow during the bridge's initial
-        // configuration, setting the stage for this minter to be sent.
-        bridgeAdmin.setTokenHandlerMinter(targetType: Type<@USDCFlow.Vault>(), minter: <-minter)
     }
 
     /// createEmptyVault

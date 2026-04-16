@@ -1,4 +1,4 @@
-import "ArrayUtils"
+import ArrayUtils from 0x1e4aa0b87d10b141
 
 // Copied from https://github.com/green-goo-dao/flow-utils/blob/crescendo/contracts/StringUtils.cdc
 // Special thanks to the Green Goo Dao contributors for creating this contract

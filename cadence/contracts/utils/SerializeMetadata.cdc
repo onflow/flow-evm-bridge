@@ -1,9 +1,9 @@
-import "ViewResolver"
-import "MetadataViews"
-import "NonFungibleToken"
-import "FungibleTokenMetadataViews"
+import ViewResolver from 0x1d7e57aa55817448
+import MetadataViews from 0x1d7e57aa55817448
+import NonFungibleToken from 0x1d7e57aa55817448
+import FungibleTokenMetadataViews from 0xf233dcee88fe0abe
 
-import "Serialize"
+import Serialize from 0x1e4aa0b87d10b141
 
 /// This contract defines methods for serializing NFT metadata as a JSON compatible string, according to the common
 /// OpenSea metadata format. NFTs and metadata views can be serialized by reference via contract methods.

@@ -1,10 +1,10 @@
-import "NonFungibleToken"
-import "FungibleToken"
-import "MetadataViews"
+import NonFungibleToken from 0x1d7e57aa55817448
+import FungibleToken from 0xf233dcee88fe0abe
+import MetadataViews from 0x1d7e57aa55817448
 
-import "EVM"
+import EVM from 0xe467b9dd11fa00df
 
-import "ICrossVMAsset"
+import ICrossVMAsset from 0x1e4aa0b87d10b141
 
 /// Contract defining cross-VM NFT-related interfaces
 ///

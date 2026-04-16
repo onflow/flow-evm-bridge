@@ -1,6 +1,6 @@
-import "EVM"
+import EVM from 0xe467b9dd11fa00df
 
-import "ICrossVM"
+import ICrossVM from 0x1e4aa0b87d10b141
 
 /// A simple contract interface for a Cadence contract that represents an asset bridged from Flow EVM such as an ERC20
 /// or ERC721 token.

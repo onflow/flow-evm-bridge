@@ -1,6 +1,6 @@
-import "FungibleToken"
-import "MetadataViews"
-import "FungibleTokenMetadataViews"
+import FungibleToken from 0xf233dcee88fe0abe
+import MetadataViews from 0x1d7e57aa55817448
+import FungibleTokenMetadataViews from 0xf233dcee88fe0abe
 
 access(all) contract ExampleToken: FungibleToken {
 

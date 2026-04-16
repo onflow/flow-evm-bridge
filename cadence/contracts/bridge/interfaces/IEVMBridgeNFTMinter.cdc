@@ -1,4 +1,4 @@
-import "NonFungibleToken"
+import NonFungibleToken from 0x1d7e57aa55817448
 
 /// Contract interface enabling FlowEVMBridge to mint NFTs from implementing bridge contracts.
 ///

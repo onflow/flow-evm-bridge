@@ -1,12 +1,12 @@
-import "MetadataViews"
-import "FungibleTokenMetadataViews"
-import "FungibleToken"
-import "NonFungibleToken"
+import MetadataViews from 0x1d7e57aa55817448
+import FungibleTokenMetadataViews from 0xf233dcee88fe0abe
+import FungibleToken from 0xf233dcee88fe0abe
+import NonFungibleToken from 0x1d7e57aa55817448
 
-import "ICrossVMAsset"
-import "CrossVMToken"
-import "CrossVMNFT"
-import "FlowEVMBridgeUtils"
+import ICrossVMAsset from 0x1e4aa0b87d10b141
+import CrossVMToken from 0x1e4aa0b87d10b141
+import CrossVMNFT from 0x1e4aa0b87d10b141
+import FlowEVMBridgeUtils from 0x1e4aa0b87d10b141
 
 /// This contract serves as a metadata resolver for shared views on NFTs and FungibleTokens bridged from EVM to Cadence.
 /// Upon bridging to Cadence, these tokens must have certain basic metadata views that cannot be retrieved at the time
