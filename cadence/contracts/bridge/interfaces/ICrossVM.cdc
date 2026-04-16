@@ -1,4 +1,4 @@
-import EVM from 0xe467b9dd11fa00df
+import "EVM"
 
 /// Contract interface denoting a cross-VM implementation, exposing methods to query EVM-associated addresses
 ///
