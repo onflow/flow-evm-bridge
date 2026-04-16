@@ -6,7 +6,6 @@ import "EVM"
 
 import "FlowEVMBridgeConfig"
 import "FlowEVMBridge"
-import "FlowEVMBridgeUtils"
 
 /// This contract defines a mechanism for routing bridge requests from the EVM contract to the Flow-EVM bridge contract
 ///
@@ -53,7 +52,7 @@ contract FlowEVMBridgeAccessor {
         ): @{NonFungibleToken.NFT} {
             // Define a callback function, enabling the bridge to act on the ephemeral COA reference in scope
             var executed = false
-            fun callback(target: EVM.EVMAddress): EVM.ResultDecoded {
+            fun callback(target: EVM.EVMAddress): EVM.Result {
                 pre {
                     !executed: "Callback can only be executed once"
                     FlowEVMBridge.getAssociatedEVMAddress(with: type) ?? FlowEVMBridgeConfig.getLegacyEVMAddressAssociated(with: type) != nil:
@@ -69,13 +68,14 @@ contract FlowEVMBridgeAccessor {
                     message: "Target EVM contract \(target.toString()) is not association with NFT Type \(type.identifier) - COA `safeTransferFrom` callback rejected")
 
                 executed = true
-                return caller.callWithSigAndArgs(
+                return caller.call(
                     to: target,
-                    signature: "safeTransferFrom(address,address,uint256)",
-                    args: [caller.address(), FlowEVMBridge.getBridgeCOAEVMAddress(), id],
+                    data: EVM.encodeABIWithSignature(
+                        "safeTransferFrom(address,address,uint256)",
+                        [caller.address(), FlowEVMBridge.getBridgeCOAEVMAddress(), id]
+                    ),
                     gasLimit: FlowEVMBridgeConfig.gasLimit,
-                    value: 0,
-                    resultTypes: nil
+                    value: EVM.Balance(attoflow: 0)
                 )
             }
             // Execute the bridge request
@@ -119,16 +119,9 @@ contract FlowEVMBridgeAccessor {
             amount: UInt256,
             feeProvider: auth(FungibleToken.Withdraw) &{FungibleToken.Provider}
         ): @{FungibleToken.Vault} {
-            // Resolve the EVM address associated with the token type
-            let associatedEVMAddress = FlowEVMBridge.getAssociatedEVMAddress(with: type)
-                ?? panic("No EVM address associated with type")
-            // Round the requested ERC20 amount down to the maximum precision representable by UFix64 to ensure the
-            // amount escrowed on the EVM side matches exactly what will be minted or unlocked on the Cadence side,
-            // preventing sub-UFix64-precision "dust" from being permanently locked in escrow.
-            let roundedAmount = FlowEVMBridgeUtils.castERC20AmountToCadencePrecision(amount, erc20Address: associatedEVMAddress)
             // Define a callback function, enabling the bridge to act on the ephemeral COA reference in scope
             var executed = false
-            fun callback(): EVM.ResultDecoded {
+            fun callback(): EVM.Result {
                 pre {
                     !executed: "Callback can only be executed once"
                 }
@@ -136,20 +129,22 @@ contract FlowEVMBridgeAccessor {
                     executed: "Callback must be executed"
                 }
                 executed = true
-                return caller.callWithSigAndArgs(
-                    to: associatedEVMAddress,
-                    signature: "transfer(address,uint256)",
-                    args: [FlowEVMBridge.getBridgeCOAEVMAddress(), roundedAmount],
+                return caller.call(
+                    to: FlowEVMBridge.getAssociatedEVMAddress(with: type)
+                        ?? panic("No EVM address associated with type"),
+                    data: EVM.encodeABIWithSignature(
+                        "transfer(address,uint256)",
+                        [FlowEVMBridge.getBridgeCOAEVMAddress(), amount]
+                    ),
                     gasLimit: FlowEVMBridgeConfig.gasLimit,
-                    value: 0,
-                    resultTypes: nil
+                    value: EVM.Balance(attoflow: 0)
                 )
             }
             // Execute the bridge request
             return <- FlowEVMBridge.bridgeTokensFromEVM(
                 owner: caller.address(),
                 type: type,
-                amount: roundedAmount,
+                amount: amount,
                 feeProvider: feeProvider,
                 protectedTransferCall: callback
             )
