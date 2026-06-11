@@ -27,11 +27,11 @@ contract Serialize {
             case Type<Never?>():
                 return "\"nil\""
             case Type<String>():
-                return String.join(["\"", value as! String, "\"" ], separator: "")
+                return String.join(["\"", self.escapeJSONString(value as! String), "\"" ], separator: "")
             case Type<String?>():
-                return String.join(["\"", value as? String ?? "nil", "\"" ], separator: "")
+                return String.join(["\"", self.escapeJSONString(value as? String ?? "nil"), "\"" ], separator: "")
             case Type<Character>():
-                return String.join(["\"", (value as! Character).toString(), "\"" ], separator: "")
+                return String.join(["\"", self.escapeJSONString((value as! Character).toString()), "\"" ], separator: "")
             case Type<Bool>():
                 return String.join(["\"", value as! Bool ? "true" : "false", "\"" ], separator: "")
             case Type<Address>():
@@ -83,6 +83,59 @@ contract Serialize {
             default:
                 return nil
         }
+    }
+
+    /// Escapes a string for inclusion in a JSON string literal per RFC 8259 Section 7, escaping backslash,
+    /// double quote, and control characters U+0000 through U+001F. All other characters, including multi-byte
+    /// UTF-8 sequences, pass through unchanged.
+    ///
+    access(all)
+    fun escapeJSONString(_ str: String): String {
+        let bytes = str.utf8
+        // Fast path: return unchanged if nothing needs escaping (the common case)
+        var needsEscaping = false
+        for b in bytes {
+            if b == 0x22 || b == 0x5C || b < 0x20 {
+                needsEscaping = true
+                break
+            }
+        }
+        if !needsEscaping {
+            return str
+        }
+
+        let out: [UInt8] = []
+        for b in bytes {
+            switch b {
+                case 0x22:
+                    out.appendAll([0x5C, 0x22]) // \"
+                case 0x5C:
+                    out.appendAll([0x5C, 0x5C]) // \\
+                case 0x08:
+                    out.appendAll([0x5C, 0x62]) // \b
+                case 0x09:
+                    out.appendAll([0x5C, 0x74]) // \t
+                case 0x0A:
+                    out.appendAll([0x5C, 0x6E]) // \n
+                case 0x0C:
+                    out.appendAll([0x5C, 0x66]) // \f
+                case 0x0D:
+                    out.appendAll([0x5C, 0x72]) // \r
+                default:
+                    if b < 0x20 {
+                        // Escape remaining control characters as \u00XX with lowercase hex digits
+                        let low = b % 16
+                        out.appendAll([0x5C, 0x75, 0x30, 0x30]) // \u00
+                        out.append(b < 0x10 ? 0x30 : 0x31) // '0' or '1'
+                        out.append(low < 10 ? 0x30 + low : 0x57 + low) // '0'-'9' or 'a'-'f'
+                    } else {
+                        // All other bytes pass through, including multi-byte UTF-8 sequences (>= 0x80)
+                        out.append(b)
+                    }
+            }
+        }
+        return String.fromUTF8(out)
+            ?? panic("Serialize.escapeJSONString: failed to re-encode escaped UTF-8 bytes")
     }
 
     /// Returns a serialized representation of the given array or nil if the value is not serializable

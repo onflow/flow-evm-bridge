@@ -78,6 +78,74 @@ fun testSerializeNFTSucceeds() {
     Test.assertEqual(true, serializedMetadata == expectedPrefix.concat(altSuffix1) || serializedMetadata == expectedPrefix.concat(altSuffix2))
 }
 
+// Regression test for https://github.com/onflow/flow-evm-bridge/issues/213 - JSON special characters in
+// NFT metadata must be escaped so the serialized data URI remains parseable JSON
+access(all)
+fun testSerializeNFTWithSpecialCharsSucceeds() {
+    // setup_collection is idempotent, so re-running for alice is safe
+    let setupResult = executeTransaction(
+        "../transactions/example-assets/example-nft/setup_collection.cdc",
+        [],
+        alice
+    )
+    Test.expect(setupResult, Test.beSucceeded())
+
+    // capture pre-existing ids so the newly minted id can be identified
+    let idsBeforeResult = executeScript(
+        "../scripts/nft/get_ids.cdc",
+        [alice.address, "cadenceExampleNFTCollection"]
+    )
+    Test.expect(idsBeforeResult, Test.beSucceeded())
+    let idsBefore = idsBeforeResult.returnValue! as! [UInt64]
+
+    // name & multi-line description contain quotes, a newline & a tab
+    let mintResult = executeTransaction(
+        "../transactions/example-assets/example-nft/mint_nft.cdc",
+        [
+            alice.address,
+            "Example \"Special\" NFT",
+            "First line\nSecond line with a\ttab and \"quotes\"",
+            "https://flow.com/examplenft.jpg",
+            [], [], []
+        ],
+        admin
+    )
+    Test.expect(mintResult, Test.beSucceeded())
+
+    let heightResult = executeScript(
+        "./scripts/get_block_height.cdc",
+        []
+    )
+    let heightString = (heightResult.returnValue! as! UInt64).toString()
+
+    let idsAfterResult = executeScript(
+        "../scripts/nft/get_ids.cdc",
+        [alice.address, "cadenceExampleNFTCollection"]
+    )
+    Test.expect(idsAfterResult, Test.beSucceeded())
+    let idsAfter = idsAfterResult.returnValue! as! [UInt64]
+    var newID: UInt64 = 0
+    for id in idsAfter {
+        if !idsBefore.contains(id) {
+            newID = id
+        }
+    }
+
+    // Cadence dictionaries are not ordered by insertion order, so we need to check for both possible orderings
+    let expectedPrefix = "data:application/json;utf8,{\"name\": \"Example \\\"Special\\\" NFT\", \"description\": \"First line\\nSecond line with a\\ttab and \\\"quotes\\\"\", \"image\": \"https://flow.com/examplenft.jpg\", \"external_url\": \"https://example-nft.onflow.org\", "
+    let altSuffix1 = "\"attributes\": [{\"trait_type\": \"mintedBlock\", \"value\": \"\(heightString)\"}, {\"trait_type\": \"foo\", \"value\": \"bar\"}]}"
+    let altSuffix2 = "\"attributes\": [{\"trait_type\": \"foo\", \"value\": \"bar\"}, {\"trait_type\": \"mintedBlock\", \"value\": \"\(heightString)\"}]}"
+
+    let serializeMetadataResult = executeScript(
+        "../scripts/serialize/serialize_nft.cdc",
+        [alice.address, "cadenceExampleNFTCollection", newID]
+    )
+    Test.expect(serializeMetadataResult, Test.beSucceeded())
+
+    let serializedMetadata = serializeMetadataResult.returnValue! as! String
+    Test.assertEqual(true, serializedMetadata == "\(expectedPrefix)\(altSuffix1)" || serializedMetadata == "\(expectedPrefix)\(altSuffix2)")
+}
+
 // Returns nil when no displays are provided
 access(all)
 fun testSerializeNilDisplaysReturnsNil() {
