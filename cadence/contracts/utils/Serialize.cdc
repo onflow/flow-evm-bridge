@@ -195,7 +195,7 @@ contract Serialize {
             }
         }
         let parts: [String] = []
-        for key in dict.keys {
+        for key in dict {
             let serializedValue = self.tryToJSONString(dict[key]!)
             if serializedValue == nil {
                 continue
