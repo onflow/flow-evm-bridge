@@ -100,8 +100,14 @@ contract Serialize {
                 self.appendQuoted(prefix, (value as! Word128).toString(), to: builder)
             case Type<Word256>():
                 self.appendQuoted(prefix, (value as! Word256).toString(), to: builder)
+            case Type<Fix64>():
+                self.appendQuoted(prefix, (value as! Fix64).toString(), to: builder)
             case Type<UFix64>():
                 self.appendQuoted(prefix, (value as! UFix64).toString(), to: builder)
+            case Type<Fix128>():
+                self.appendQuoted(prefix, (value as! Fix128).toString(), to: builder)
+            case Type<UFix128>():
+                self.appendQuoted(prefix, (value as! UFix128).toString(), to: builder)
             default:
                 return false
         }

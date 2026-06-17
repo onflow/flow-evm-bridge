@@ -309,6 +309,36 @@ fun testUFix64TryToJSONStringSucceeds() {
 }
 
 access(all)
+fun testFix64TryToJSONStringSucceeds() {
+    let fix64: Fix64 = -92233720368.54775808
+
+    let expected = "\"-92233720368.54775808\""
+
+    var actual = Serialize.tryToJSONString(fix64)
+    Test.assertEqual(expected, actual!)
+}
+
+access(all)
+fun testUFix128TryToJSONStringSucceeds() {
+    let uf128: UFix128 = UFix128.max
+
+    let expected = "\"340282366920938.463463374607431768211455\""
+
+    var actual = Serialize.tryToJSONString(uf128)
+    Test.assertEqual(expected, actual!)
+}
+
+access(all)
+fun testFix128TryToJSONStringSucceeds() {
+    let fix128: Fix128 = Fix128.min
+
+    let expected = "\"-170141183460469.231731687303715884105728\""
+
+    var actual = Serialize.tryToJSONString(fix128)
+    Test.assertEqual(expected, actual!)
+}
+
+access(all)
 fun testBoolTryToJSONStringSucceeds() {
     let t: Bool = true
     let f: Bool = false
