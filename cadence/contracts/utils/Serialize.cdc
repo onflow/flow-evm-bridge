@@ -189,8 +189,8 @@ contract Serialize {
     ///
     access(all)
     fun dictToJSONString(dict: {String: AnyStruct}, excludedNames: [String]?): String? {
-        if excludedNames != nil {
-            for k in excludedNames! {
+        if let excludedNames = excludedNames {
+            for k in excludedNames {
                 dict.remove(key: k)
             }
         }
