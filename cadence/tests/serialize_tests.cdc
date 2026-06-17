@@ -233,6 +233,29 @@ fun testStringWithUnicodeTryToJSONStringSucceeds() {
 }
 
 access(all)
+fun testStringWithHTMLCharsTryToJSONStringSucceeds() {
+    // <, >, & are escaped defensively to prevent XSS when the metadata is rendered in a browser
+    let str = "<script>alert('x')</script> a&b"
+
+    let expected = "\"\\u003cscript\\u003ealert('x')\\u003c/script\\u003e a\\u0026b\""
+
+    var actual = Serialize.tryToJSONString(str)
+    Test.assertEqual(expected, actual!)
+}
+
+access(all)
+fun testStringWithLineParagraphSeparatorsTryToJSONStringSucceeds() {
+    // U+2028 LINE SEPARATOR & U+2029 PARAGRAPH SEPARATOR are valid JSON but invalid in JS string
+    // literals, so they are escaped to \u2028 / \u2029
+    let str = "a\u{2028}b\u{2029}c"
+
+    let expected = "\"a\\u2028b\\u2029c\""
+
+    var actual = Serialize.tryToJSONString(str)
+    Test.assertEqual(expected, actual!)
+}
+
+access(all)
 fun testOptionalStringWithSpecialCharsTryToJSONStringSucceeds() {
     let strOpt: String? = "opt\n\"quoted\""
 

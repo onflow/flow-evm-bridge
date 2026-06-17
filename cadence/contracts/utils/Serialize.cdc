@@ -85,57 +85,87 @@ contract Serialize {
         }
     }
 
-    /// Escapes a string for inclusion in a JSON string literal per RFC 8259 Section 7, escaping backslash,
-    /// double quote, and control characters U+0000 through U+001F. All other characters, including multi-byte
-    /// UTF-8 sequences, pass through unchanged.
+    /// Escapes a string for inclusion in a JSON string literal.
+    /// Backslash, double quote, and control characters U+0000 through U+001F are escaped per
+    /// RFC 8259 Section 7. Additionally, the HTML-significant characters `<`, `>`, `&` and the
+    /// U+2028 / U+2029 line/paragraph separators are escaped defensively: the metadata is often
+    /// rendered in browsers, where `<`, `>`, `&` enable XSS and U+2028 / U+2029 are invalid in
+    /// JavaScript string literals. All escapes are valid JSON, so parsers recover the original text.
+    /// All other characters, including multi-byte UTF-8 sequences, pass through unchanged.
     ///
     access(all)
     fun escapeJSONString(_ str: String): String {
         let bytes = str.utf8
         // Fast path: return unchanged if nothing needs escaping (the common case)
         var needsEscaping = false
-        for b in bytes {
-            if b == 0x22 || b == 0x5C || b < 0x20 {
+        var i = 0
+        while i < bytes.length {
+            let b = bytes[i]
+            if b == 0x22 || b == 0x5C || b == 0x3C || b == 0x3E || b == 0x26 || b < 0x20 {
                 needsEscaping = true
                 break
             }
+            // U+2028 / U+2029 are encoded as E2 80 A8 / E2 80 A9 in UTF-8
+            if b == 0xE2 && i + 2 < bytes.length && bytes[i + 1] == 0x80
+                && (bytes[i + 2] == 0xA8 || bytes[i + 2] == 0xA9) {
+                needsEscaping = true
+                break
+            }
+            i = i + 1
         }
         if !needsEscaping {
             return str
         }
 
-        let out: [UInt8] = []
-        for b in bytes {
-            switch b {
-                case 0x22:
-                    out.appendAll([0x5C, 0x22]) // \"
-                case 0x5C:
-                    out.appendAll([0x5C, 0x5C]) // \\
-                case 0x08:
-                    out.appendAll([0x5C, 0x62]) // \b
-                case 0x09:
-                    out.appendAll([0x5C, 0x74]) // \t
-                case 0x0A:
-                    out.appendAll([0x5C, 0x6E]) // \n
-                case 0x0C:
-                    out.appendAll([0x5C, 0x66]) // \f
-                case 0x0D:
-                    out.appendAll([0x5C, 0x72]) // \r
-                default:
-                    if b < 0x20 {
-                        // Escape remaining control characters as \u00XX with lowercase hex digits
-                        let low = b % 16
-                        out.appendAll([0x5C, 0x75, 0x30, 0x30]) // \u00
-                        out.append(b < 0x10 ? 0x30 : 0x31) // '0' or '1'
-                        out.append(low < 10 ? 0x30 + low : 0x57 + low) // '0'-'9' or 'a'-'f'
-                    } else {
-                        // All other bytes pass through, including multi-byte UTF-8 sequences (>= 0x80)
-                        out.append(b)
-                    }
+        let hexDigits = "0123456789abcdef"
+        let builder = StringBuilder()
+        for char in str {
+            // A character that needs escaping is either a single-byte ASCII character or one of the
+            // multi-byte separators handled below; everything else is appended verbatim.
+            let cb = char.toString().utf8
+            if cb.length == 1 {
+                let b = cb[0]
+                switch b {
+                    case 0x22:
+                        builder.append("\\\"") // \"
+                    case 0x5C:
+                        builder.append("\\\\") // \\
+                    case 0x08:
+                        builder.append("\\b")
+                    case 0x09:
+                        builder.append("\\t")
+                    case 0x0A:
+                        builder.append("\\n")
+                    case 0x0C:
+                        builder.append("\\f")
+                    case 0x0D:
+                        builder.append("\\r")
+                    case 0x3C:
+                        builder.append("\\u003c") // <
+                    case 0x3E:
+                        builder.append("\\u003e") // >
+                    case 0x26:
+                        builder.append("\\u0026") // &
+                    default:
+                        if b < 0x20 {
+                            // Escape remaining control characters as \u00XX with lowercase hex digits
+                            let high = b < 0x10 ? "0" : "1"
+                            let low = hexDigits[Int(b % 16)].toString()
+                            builder.append("\\u00\(high)\(low)")
+                        } else {
+                            builder.appendCharacter(char)
+                        }
+                }
+            } else if cb.length == 3 && cb[0] == 0xE2 && cb[1] == 0x80 && cb[2] == 0xA8 {
+                builder.append("\\u2028") // U+2028 LINE SEPARATOR
+            } else if cb.length == 3 && cb[0] == 0xE2 && cb[1] == 0x80 && cb[2] == 0xA9 {
+                builder.append("\\u2029") // U+2029 PARAGRAPH SEPARATOR
+            } else {
+                // All other characters pass through, including multi-byte UTF-8 sequences
+                builder.appendCharacter(char)
             }
         }
-        return String.fromUTF8(out)
-            ?? panic("Serialize.escapeJSONString: failed to re-encode escaped UTF-8 bytes")
+        return builder.toString()
     }
 
     /// Returns a serialized representation of the given array or nil if the value is not serializable
