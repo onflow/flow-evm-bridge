@@ -167,6 +167,111 @@ fun testCharacterTryToJSONStringSucceeds() {
 }
 
 access(all)
+fun testStringWithQuotesTryToJSONStringSucceeds() {
+    // input chars: say "hello" -> output chars: "say \"hello\""
+    let str = "say \"hello\""
+
+    let expected = "\"say \\\"hello\\\"\""
+
+    var actual = Serialize.tryToJSONString(str)
+    Test.assertEqual(expected, actual!)
+}
+
+access(all)
+fun testStringWithBackslashTryToJSONStringSucceeds() {
+    // input chars: back\slash -> output chars: "back\\slash"
+    let str = "back\\slash"
+
+    let expected = "\"back\\\\slash\""
+
+    var actual = Serialize.tryToJSONString(str)
+    Test.assertEqual(expected, actual!)
+}
+
+access(all)
+fun testStringWithWhitespaceControlsTryToJSONStringSucceeds() {
+    // newline, carriage return & tab -> \n \r \t escape sequences
+    let str = "line1\nline2\rline3\tend"
+
+    let expected = "\"line1\\nline2\\rline3\\tend\""
+
+    var actual = Serialize.tryToJSONString(str)
+    Test.assertEqual(expected, actual!)
+}
+
+access(all)
+fun testStringWithBackspaceAndFormFeedTryToJSONStringSucceeds() {
+    // backspace (U+0008) & form feed (U+000C) -> \b \f escape sequences
+    let str = "a\u{8}b\u{c}c"
+
+    let expected = "\"a\\bb\\fc\""
+
+    var actual = Serialize.tryToJSONString(str)
+    Test.assertEqual(expected, actual!)
+}
+
+access(all)
+fun testStringWithControlCharsTryToJSONStringSucceeds() {
+    // U+0001 & U+001F have no shorthand escapes -> \u00XX with lowercase hex
+    let str = "a\u{1}b\u{1f}c"
+
+    let expected = "\"a\\u0001b\\u001fc\""
+
+    var actual = Serialize.tryToJSONString(str)
+    Test.assertEqual(expected, actual!)
+}
+
+access(all)
+fun testStringWithUnicodeTryToJSONStringSucceeds() {
+    // multi-byte UTF-8 characters must pass through unmodified: é (U+00E9), ☕ (U+2615), 😀 (U+1F600)
+    let str = "Caf\u{e9} \u{2615} \u{1f600}"
+
+    let expected = "\"Caf\u{e9} \u{2615} \u{1f600}\""
+
+    var actual = Serialize.tryToJSONString(str)
+    Test.assertEqual(expected, actual!)
+}
+
+access(all)
+fun testOptionalStringWithSpecialCharsTryToJSONStringSucceeds() {
+    let strOpt: String? = "opt\n\"quoted\""
+
+    let expected = "\"opt\\n\\\"quoted\\\"\""
+
+    var actual = Serialize.tryToJSONString(strOpt)
+    Test.assertEqual(expected, actual!)
+}
+
+access(all)
+fun testCharacterWithSpecialCharTryToJSONStringSucceeds() {
+    let newline: Character = "\n"
+    let quote: Character = "\""
+
+    var actual = Serialize.tryToJSONString(newline)
+    Test.assertEqual("\"\\n\"", actual!)
+
+    actual = Serialize.tryToJSONString(quote)
+    Test.assertEqual("\"\\\"\"", actual!)
+}
+
+access(all)
+fun testDictWithSpecialCharKeyToJSONStringSucceeds() {
+    // single-entry dict avoids key-ordering nondeterminism
+    let dict: {String: AnyStruct} = {"key\nwith \"specials\"": "value\twith tab"}
+
+    let expected = "{\"key\\nwith \\\"specials\\\"\": \"value\\twith tab\"}"
+
+    var actual = Serialize.dictToJSONString(dict: dict, excludedNames: nil)
+    Test.assertEqual(expected, actual!)
+}
+
+access(all)
+fun testEscapeJSONStringWithoutSpecialCharsReturnsUnchanged() {
+    Test.assertEqual("Hello, World!", Serialize.escapeJSONString("Hello, World!"))
+    Test.assertEqual("", Serialize.escapeJSONString(""))
+}
+
+access(all)
 fun testUFix64TryToJSONStringSucceeds() {
     let uf64: UFix64 = UFix64.max
 
