@@ -125,15 +125,19 @@ access(all)
 fun testAddressTryToJSONStringSucceeds() {
     let address: Address = 0x0000000000000007
     let addressOpt: Address? = nil
+    let addressOptWithValue: Address? = 0x0000000000000007
 
     let expected = "\"0x0000000000000007\""
     let expectedOpt = "\"nil\""
-    
+
     var actual = Serialize.tryToJSONString(address)
     Test.assertEqual(expected, actual!)
-    
+
     var actualOpt = Serialize.tryToJSONString(addressOpt)
     Test.assertEqual(expectedOpt, actualOpt!)
+
+    actualOpt = Serialize.tryToJSONString(addressOptWithValue)
+    Test.assertEqual(expected, actualOpt!)
 }
 
 access(all)
@@ -233,6 +237,29 @@ fun testStringWithUnicodeTryToJSONStringSucceeds() {
 }
 
 access(all)
+fun testStringWithHTMLCharsTryToJSONStringSucceeds() {
+    // <, >, & are escaped defensively to prevent XSS when the metadata is rendered in a browser
+    let str = "<script>alert('x')</script> a&b"
+
+    let expected = "\"\\u003cscript\\u003ealert('x')\\u003c/script\\u003e a\\u0026b\""
+
+    var actual = Serialize.tryToJSONString(str)
+    Test.assertEqual(expected, actual!)
+}
+
+access(all)
+fun testStringWithLineParagraphSeparatorsTryToJSONStringSucceeds() {
+    // U+2028 LINE SEPARATOR & U+2029 PARAGRAPH SEPARATOR are valid JSON but invalid in JS string
+    // literals, so they are escaped to \u2028 / \u2029
+    let str = "a\u{2028}b\u{2029}c"
+
+    let expected = "\"a\\u2028b\\u2029c\""
+
+    var actual = Serialize.tryToJSONString(str)
+    Test.assertEqual(expected, actual!)
+}
+
+access(all)
 fun testOptionalStringWithSpecialCharsTryToJSONStringSucceeds() {
     let strOpt: String? = "opt\n\"quoted\""
 
@@ -276,8 +303,38 @@ fun testUFix64TryToJSONStringSucceeds() {
     let uf64: UFix64 = UFix64.max
 
     let expected = "\"184467440737.09551615\""
-    
+
     var actual = Serialize.tryToJSONString(uf64)
+    Test.assertEqual(expected, actual!)
+}
+
+access(all)
+fun testFix64TryToJSONStringSucceeds() {
+    let fix64: Fix64 = -92233720368.54775808
+
+    let expected = "\"-92233720368.54775808\""
+
+    var actual = Serialize.tryToJSONString(fix64)
+    Test.assertEqual(expected, actual!)
+}
+
+access(all)
+fun testUFix128TryToJSONStringSucceeds() {
+    let uf128: UFix128 = UFix128.max
+
+    let expected = "\"340282366920938.463463374607431768211455\""
+
+    var actual = Serialize.tryToJSONString(uf128)
+    Test.assertEqual(expected, actual!)
+}
+
+access(all)
+fun testFix128TryToJSONStringSucceeds() {
+    let fix128: Fix128 = Fix128.min
+
+    let expected = "\"-170141183460469.231731687303715884105728\""
+
+    var actual = Serialize.tryToJSONString(fix128)
     Test.assertEqual(expected, actual!)
 }
 
@@ -360,10 +417,83 @@ fun testEmptyDictToJSONStringSucceeds() {
 
     // Mapping values can be indexed in arbitrary order, so we need to check for all possible outputs
     var expected: String = "{}"
-    
+
     var actual: String? = Serialize.dictToJSONString(dict: dict, excludedNames: nil)
     Test.assertEqual(expected, actual!)
-    
+
     actual = Serialize.tryToJSONString(dict)
     Test.assertEqual(expected, actual!)
+}
+
+access(all)
+fun testNonSerializableTryToJSONStringReturnsNil() {
+    // A struct has no serialization, so the value is not serializable
+    Test.expect(Serialize.tryToJSONString(NonSerializable()), Test.beNil())
+}
+
+access(all)
+fun testNullCharTryToJSONStringSucceeds() {
+    // U+0000 (null) has no shorthand escape -> \u0000
+    let str = "a\u{0}b"
+
+    let expected = "\"a\\u0000b\""
+
+    var actual = Serialize.tryToJSONString(str)
+    Test.assertEqual(expected, actual!)
+}
+
+access(all)
+fun testNestedArrayToJSONStringSucceeds() {
+    let arr: [AnyStruct] = [[127, 255] as [AnyStruct], ["a"] as [AnyStruct]]
+
+    let expected = "[[\"127\", \"255\"], [\"a\"]]"
+
+    var actual = Serialize.arrayToJSONString(arr)
+    Test.assertEqual(expected, actual!)
+}
+
+access(all)
+fun testArrayWithOnlyNonSerializableToJSONStringSucceeds() {
+    // Every element is skipped, so no separator must be emitted before the closing bracket
+    let arr: [AnyStruct] = [NonSerializable(), NonSerializable()]
+
+    let expected = "[]"
+
+    var actual = Serialize.arrayToJSONString(arr)
+    Test.assertEqual(expected, actual!)
+}
+
+access(all)
+fun testNestedDictToJSONStringSucceeds() {
+    // single-entry dicts avoid key-ordering nondeterminism
+    let dict: {String: AnyStruct} = {"outer": {"inner": 127} as {String: AnyStruct}}
+
+    let expected = "{\"outer\": {\"inner\": \"127\"}}"
+
+    var actual = Serialize.dictToJSONString(dict: dict, excludedNames: nil)
+    Test.assertEqual(expected, actual!)
+}
+
+access(all)
+fun testDictWithOnlyNonSerializableValuesToJSONStringSucceeds() {
+    // The only entry is skipped, so no separator or key must be emitted before the closing brace
+    let dict: {String: AnyStruct} = {"a": NonSerializable()}
+
+    let expected = "{}"
+
+    var actual = Serialize.dictToJSONString(dict: dict, excludedNames: nil)
+    Test.assertEqual(expected, actual!)
+}
+
+access(all)
+fun testEscapeJSONStringWithSpecialCharsEscapesInPlace() {
+    // escapeJSONString returns the escaped content WITHOUT surrounding quotes
+    Test.assertEqual("a\\\"b", Serialize.escapeJSONString("a\"b"))
+    Test.assertEqual("back\\\\slash", Serialize.escapeJSONString("back\\slash"))
+    Test.assertEqual("x\\ny", Serialize.escapeJSONString("x\ny"))
+    // <, >, & and the U+2028 / U+2029 separators are escaped defensively
+    Test.assertEqual("\\u003c\\u0026\\u003e", Serialize.escapeJSONString("<&>"))
+    Test.assertEqual("\\u2028\\u2029", Serialize.escapeJSONString("\u{2028}\u{2029}"))
+    // multi-byte UTF-8 passes through unchanged
+    Test.assertEqual("Caf\u{e9} \u{1f600}", Serialize.escapeJSONString("Caf\u{e9} \u{1f600}"))
 }
