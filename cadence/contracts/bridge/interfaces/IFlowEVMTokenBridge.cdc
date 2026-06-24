@@ -68,7 +68,8 @@ access(all) contract interface IFlowEVMTokenBridge {
                 to: to.toString(),
                 evmContractAddress: self.getAssociatedEVMAddress(with: vault.getType())?.toString()
                     ?? panic(
-                        "Could not find EVM Contract address associated with provided Token identifier=\(vault.getType().identifier)"
+                        "Could not find EVM Contract address associated with provided Token identifier="
+                        .concat(vault.getType().identifier)
                     ),
                 bridgeAddress: self.account.address
             )
@@ -94,7 +95,7 @@ access(all) contract interface IFlowEVMTokenBridge {
         type: Type,
         amount: UInt256,
         feeProvider: auth(FungibleToken.Withdraw) &{FungibleToken.Provider},
-        protectedTransferCall: fun (): EVM.ResultDecoded
+        protectedTransferCall: fun (): EVM.Result
     ): @{FungibleToken.Vault} {
         post {
             emit BridgedTokensFromEVM(
