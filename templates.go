@@ -49,6 +49,7 @@ import (
 //go:embed cadence/scripts/bridge/get_associated_type.cdc
 //go:embed cadence/scripts/bridge/get_bridge_coa_address.cdc
 //go:embed cadence/scripts/bridge/get_gas_limit.cdc
+//go:embed cadence/scripts/bridge/get_read_gas_limit.cdc
 //go:embed cadence/scripts/bridge/is_cadence_type_blocked.cdc
 //go:embed cadence/scripts/bridge/is_evm_address_blocked.cdc
 //go:embed cadence/scripts/bridge/is_paused.cdc
@@ -111,6 +112,7 @@ import (
 //go:embed cadence/transactions/bridge/admin/fee/update_base_fee.cdc
 //go:embed cadence/transactions/bridge/admin/fee/update_onboard_fee.cdc
 //go:embed cadence/transactions/bridge/admin/gas/set_gas_limit.cdc
+//go:embed cadence/transactions/bridge/admin/gas/set_read_gas_limit.cdc
 //go:embed cadence/transactions/bridge/admin/metadata/set_bridged_ft_display_view.cdc
 //go:embed cadence/transactions/bridge/admin/metadata/set_bridged_nft_collection_display_view.cdc
 //go:embed cadence/transactions/bridge/admin/metadata/set_bridged_nft_display_view.cdc

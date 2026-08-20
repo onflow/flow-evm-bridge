@@ -13,7 +13,7 @@ fun main(coaHost: Address, deployerTag: String): String {
         to: FlowEVMBridgeUtils.getBridgeFactoryEVMAddress(),
         signature: "getDeployer(string)",
         args: [deployerTag],
-        gasLimit: FlowEVMBridgeConfig.gasLimit,
+        gasLimit: FlowEVMBridgeConfig.readGasLimit(),
         value: 0,
         resultTypes: [Type<EVM.EVMAddress>()]
     )
