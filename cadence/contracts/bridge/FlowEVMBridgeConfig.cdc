@@ -101,6 +101,40 @@ contract FlowEVMBridgeConfig {
         return self.paused
     }
 
+    /// StoragePath at which an operator-set read gas limit is stored, if one has been set
+    ///
+    access(all)
+    view fun readGasLimitStoragePath(): StoragePath {
+        return /storage/flowEVMBridgeReadGasLimit
+    }
+
+    /// Returns the read gas limit applied when no operator override has been set
+    ///
+    access(all)
+    view fun defaultReadGasLimit(): UInt64 {
+        return 500_000
+    }
+
+    /// Returns the gas limit the bridge declares for read-only EVM calls whose cost is bounded by the
+    /// ERC20/ERC721 standards, such as decimals(), balanceOf(address) and ownerOf(uint256).
+    ///
+    /// A limit smaller than `gasLimit` matters because the FVM admits an EVM call only if the remaining Cadence
+    /// computation budget covers the *declared* gas limit, not the gas the call actually consumes. At the mainnet
+    /// execution effort weight for EVM gas, a declared limit of 15,000,000 reserves roughly 1,600 of the 9,999
+    /// computation units a transaction may spend, so a single cheap read can be refused with most of the budget
+    /// still unspent. Reads whose cost is not bounded by the standards, notably tokenURI and contractURI, keep
+    /// using `gasLimit` because they may run arbitrary on-chain metadata generation.
+    ///
+    /// This is a function reading from account storage rather than a contract field because Cadence rejects a
+    /// contract update that adds a field to an already deployed contract, and the bridge is live on Mainnet and
+    /// Testnet. Storage holds a value only once an operator sets one; otherwise the default applies.
+    ///
+    access(all)
+    view fun readGasLimit(): UInt64 {
+        return self.account.storage.copy<UInt64>(from: self.readGasLimitStoragePath())
+            ?? self.defaultReadGasLimit()
+    }
+
     /// Returns whether operations for a given Type are paused.
     ///
     /// Note: the return type is `Bool?` for API compatibility, but this function currently always returns a
@@ -501,6 +535,19 @@ contract FlowEVMBridgeConfig {
         access(Gas)
         fun setGasLimit(_ limit: UInt64) {
             FlowEVMBridgeConfig.gasLimit = limit
+        }
+
+        /// Sets the gas limit for read-only EVM calls whose cost is bounded by the ERC20/ERC721 standards.
+        /// The value is kept in account storage rather than a contract field so that this can ship as a
+        /// contract update; see FlowEVMBridgeConfig.readGasLimit().
+        ///
+        /// @param limit the new read gas limit
+        ///
+        access(Gas)
+        fun setReadGasLimit(_ limit: UInt64) {
+            let path = FlowEVMBridgeConfig.readGasLimitStoragePath()
+            let _ = FlowEVMBridgeConfig.account.storage.load<UInt64>(from: path)
+            FlowEVMBridgeConfig.account.storage.save(limit, to: path)
         }
 
         /// Updates the onboarding fee

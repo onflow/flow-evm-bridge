@@ -115,6 +115,36 @@ fun testSetGasLimitSucceeds() {
     Test.reset(to: snapshot)
 }
 
+access(all)
+fun testSetReadGasLimitSucceeds() {
+
+    fun getReadGasLimit(): UInt64 {
+        let readGasLimitResult = executeScript(
+            "../scripts/bridge/get_read_gas_limit.cdc",
+            []
+        )
+        Test.expect(readGasLimitResult, Test.beSucceeded())
+        return readGasLimitResult.returnValue as! UInt64? ?? panic("Problem getting read gas limit")
+    }
+
+    snapshot = getCurrentBlockHeight()
+
+    let preReadGasLimit = getReadGasLimit()
+    let readGasLimit = preReadGasLimit + 1_000
+
+    let setReadGasLimitResult = executeTransaction(
+        "../transactions/bridge/admin/gas/set_read_gas_limit.cdc",
+        [readGasLimit],
+        bridgeAccount
+    )
+    Test.expect(setReadGasLimitResult, Test.beSucceeded())
+
+    let postReadGasLimit = getReadGasLimit()
+    Test.assertEqual(readGasLimit, postReadGasLimit)
+
+    Test.reset(to: snapshot)
+}
+
 /* --- ASSET & ACCOUNT SETUP - Configure test accounts with assets to bridge --- */
 
 access(all)

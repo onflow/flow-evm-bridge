@@ -193,7 +193,7 @@ contract FlowEVMBridgeUtils {
             signature: "allowsBridging()",
             targetEVMAddress: address,
             args: [],
-            gasLimit: FlowEVMBridgeConfig.gasLimit,
+            gasLimit: FlowEVMBridgeConfig.readGasLimit(),
             value: 0.0,
             resultTypes: [Type<Bool>()]
         )
@@ -260,7 +260,7 @@ contract FlowEVMBridgeUtils {
             signature: "isBridgeDeployed(address)",
             targetEVMAddress: self.bridgeFactoryEVMAddress,
             args: [evmContractAddress],
-            gasLimit: FlowEVMBridgeConfig.gasLimit,
+            gasLimit: FlowEVMBridgeConfig.readGasLimit(),
             value: 0.0,
             resultTypes: [Type<Bool>()]
         )
@@ -283,7 +283,7 @@ contract FlowEVMBridgeUtils {
             signature: "isERC721(address)",
             targetEVMAddress: self.bridgeFactoryEVMAddress,
             args: [evmContractAddress],
-            gasLimit: FlowEVMBridgeConfig.gasLimit,
+            gasLimit: FlowEVMBridgeConfig.readGasLimit(),
             value: 0.0,
             resultTypes: [Type<Bool>()]
         )
@@ -307,7 +307,7 @@ contract FlowEVMBridgeUtils {
             signature: "isERC20(address)",
             targetEVMAddress: self.bridgeFactoryEVMAddress,
             args: [evmContractAddress],
-            gasLimit: FlowEVMBridgeConfig.gasLimit,
+            gasLimit: FlowEVMBridgeConfig.readGasLimit(),
             value: 0.0,
             resultTypes: [Type<Bool>()]
         )
@@ -330,7 +330,7 @@ contract FlowEVMBridgeUtils {
             signature: "isValidAsset(address)",
             targetEVMAddress: self.bridgeFactoryEVMAddress,
             args: [evmContractAddress],
-            gasLimit: FlowEVMBridgeConfig.gasLimit,
+            gasLimit: FlowEVMBridgeConfig.readGasLimit(),
             value: 0.0,
             resultTypes: [Type<Bool>()]
         )
@@ -475,7 +475,7 @@ contract FlowEVMBridgeUtils {
             let isERC20 = self.isERC20(evmContractAddress: evmContractAddress)
             assert(
                 isERC20,
-                message: "Contract \(evmContractAddress.toString())defines an asset that is not currently supported by the bridge"
+                message: "Contract \(evmContractAddress.toString()) defines an asset that is not currently supported by the bridge"
             )
             cadenceContractName = self.deriveBridgedTokenContractName(from: evmContractAddress)
             decimals = self.getTokenDecimals(evmContractAddress: evmContractAddress)
@@ -530,7 +530,7 @@ contract FlowEVMBridgeUtils {
             signature: "name()",
             targetEVMAddress: evmContractAddress,
             args: [],
-            gasLimit: FlowEVMBridgeConfig.gasLimit,
+            gasLimit: FlowEVMBridgeConfig.readGasLimit(),
             value: 0.0,
             resultTypes: [Type<String>()]
         )
@@ -554,7 +554,7 @@ contract FlowEVMBridgeUtils {
             signature: "symbol()",
             targetEVMAddress: evmContractAddress,
             args: [],
-            gasLimit: FlowEVMBridgeConfig.gasLimit,
+            gasLimit: FlowEVMBridgeConfig.readGasLimit(),
             value: 0.0,
             resultTypes: [Type<String>()]
         )
@@ -577,6 +577,8 @@ contract FlowEVMBridgeUtils {
             signature: "tokenURI(uint256)",
             targetEVMAddress: evmContractAddress,
             args: [id],
+            // Uses the full gasLimit rather than readGasLimit: tokenURI may generate metadata on-chain,
+            // so its cost is not bounded by the ERC721 standard.
             gasLimit: FlowEVMBridgeConfig.gasLimit,
             value: 0.0,
             resultTypes: [Type<String>()]
@@ -600,6 +602,8 @@ contract FlowEVMBridgeUtils {
             signature: "contractURI()",
             targetEVMAddress: evmContractAddress,
             args: [],
+            // Uses the full gasLimit rather than readGasLimit: contractURI may generate metadata on-chain,
+            // so its cost is not bounded by the ERC721 standard.
             gasLimit: FlowEVMBridgeConfig.gasLimit,
             value: 0.0,
             resultTypes: [Type<String>()]
@@ -622,7 +626,7 @@ contract FlowEVMBridgeUtils {
             signature: "decimals()",
             targetEVMAddress: evmContractAddress,
             args: [],
-            gasLimit: FlowEVMBridgeConfig.gasLimit,
+            gasLimit: FlowEVMBridgeConfig.readGasLimit(),
             value: 0.0,
             resultTypes: [Type<UInt8>()]
         )
@@ -674,7 +678,7 @@ contract FlowEVMBridgeUtils {
             signature: "ownerOf(uint256)",
             targetEVMAddress: evmContractAddress,
             args: [id],
-            gasLimit: FlowEVMBridgeConfig.gasLimit,
+            gasLimit: FlowEVMBridgeConfig.readGasLimit(),
             value: 0.0,
             resultTypes: [Type<EVM.EVMAddress>()]
         )
@@ -698,7 +702,7 @@ contract FlowEVMBridgeUtils {
             signature: "getApproved(uint256)",
             targetEVMAddress: evmContractAddress,
             args: [ofNFT],
-            gasLimit: FlowEVMBridgeConfig.gasLimit,
+            gasLimit: FlowEVMBridgeConfig.readGasLimit(),
             value: 0.0,
             resultTypes: [Type<EVM.EVMAddress>()]
         )
@@ -725,7 +729,7 @@ contract FlowEVMBridgeUtils {
             signature: "exists(uint256)",
             targetEVMAddress: erc721Address,
             args: [id],
-            gasLimit: FlowEVMBridgeConfig.gasLimit,
+            gasLimit: FlowEVMBridgeConfig.readGasLimit(),
             value: 0.0,
             resultTypes: [Type<Bool>()]
         )
@@ -747,7 +751,7 @@ contract FlowEVMBridgeUtils {
             signature: "balanceOf(address)",
             targetEVMAddress: evmContractAddress,
             args: [owner],
-            gasLimit: FlowEVMBridgeConfig.gasLimit,
+            gasLimit: FlowEVMBridgeConfig.readGasLimit(),
             value: 0.0,
             resultTypes: [Type<UInt256>()]
         )
@@ -782,7 +786,7 @@ contract FlowEVMBridgeUtils {
             signature: "totalSupply()",
             targetEVMAddress: evmContractAddress,
             args: [],
-            gasLimit: FlowEVMBridgeConfig.gasLimit,
+            gasLimit: FlowEVMBridgeConfig.readGasLimit(),
             value: 0.0,
             resultTypes: [Type<UInt256>()]
         )
@@ -854,7 +858,7 @@ contract FlowEVMBridgeUtils {
             signature: "getCadenceAddress()",
             targetEVMAddress: evmContract,
             args: [],
-            gasLimit: FlowEVMBridgeConfig.gasLimit,
+            gasLimit: FlowEVMBridgeConfig.readGasLimit(),
             value: 0.0,
             resultTypes: [Type<String>()]
         )
@@ -885,7 +889,7 @@ contract FlowEVMBridgeUtils {
             signature: "getCadenceIdentifier()",
             targetEVMAddress: evmContract,
             args: [],
-            gasLimit: FlowEVMBridgeConfig.gasLimit,
+            gasLimit: FlowEVMBridgeConfig.readGasLimit(),
             value: 0.0,
             resultTypes: [Type<String>()]
         )
@@ -912,7 +916,7 @@ contract FlowEVMBridgeUtils {
             signature: "supportsInterface(bytes4)",
             targetEVMAddress: evmContract,
             args: [interfaceID],
-            gasLimit: FlowEVMBridgeConfig.gasLimit,
+            gasLimit: FlowEVMBridgeConfig.readGasLimit(),
             value: 0.0,
             resultTypes: [Type<Bool>()]
         )
@@ -940,7 +944,7 @@ contract FlowEVMBridgeUtils {
             signature: "supportsInterface(bytes4)",
             targetEVMAddress: evmContract,
             args: [interfaceID],
-            gasLimit: FlowEVMBridgeConfig.gasLimit,
+            gasLimit: FlowEVMBridgeConfig.readGasLimit(),
             value: 0.0,
             resultTypes: [Type<Bool>()]
         )
@@ -979,7 +983,7 @@ contract FlowEVMBridgeUtils {
             signature: "vmBridgeAddress()",
             targetEVMAddress: evmContract,
             args: [],
-            gasLimit: FlowEVMBridgeConfig.gasLimit,
+            gasLimit: FlowEVMBridgeConfig.readGasLimit(),
             value: 0.0,
             resultTypes: [Type<EVM.EVMAddress>()]
         )
@@ -1585,18 +1589,18 @@ contract FlowEVMBridgeUtils {
         erc20Address: EVM.EVMAddress,
         protectedTransferCall: fun (): EVM.ResultDecoded
     ) {
-        // Ensure the caller is has sufficient balance to bridge the requested amount
-        let hasSufficientBalance = self.hasSufficientBalance(
-            amount: amount,
-            owner: owner,
-            evmContractAddress: erc20Address
-        )
-        assert(hasSufficientBalance, message: "Caller does not have sufficient balance to bridge requested tokens")
+        let bridgeCOAAddress = self.getBridgeCOAEVMAddress()
 
         // Get the owner and escrow balances before transfer
         let ownerPreBalance = self.balanceOf(owner: owner, evmContractAddress: erc20Address)
+
+        // Ensure the caller has sufficient balance to bridge the requested amount. The owner's pre-transfer
+        // balance read above answers this, so calling hasSufficientBalance would repeat an identical
+        // balanceOf(address) call for a value already in scope.
+        assert(ownerPreBalance >= amount, message: "Caller does not have sufficient balance to bridge requested tokens")
+
         let bridgePreBalance = self.balanceOf(
-                owner: self.getBridgeCOAEVMAddress(),
+                owner: bridgeCOAAddress,
                 evmContractAddress: erc20Address
             )
 
@@ -1607,7 +1611,7 @@ contract FlowEVMBridgeUtils {
         // Get the resulting balances after transfer
         let ownerPostBalance = self.balanceOf(owner: owner, evmContractAddress: erc20Address)
         let bridgePostBalance = self.balanceOf(
-                owner: self.getBridgeCOAEVMAddress(),
+                owner: bridgeCOAAddress,
                 evmContractAddress: erc20Address
             )
 

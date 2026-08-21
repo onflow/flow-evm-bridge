@@ -282,7 +282,7 @@ access(all) contract FlowEVMBridgeHandlers {
             // Confirm bridge COA's WFLOW balance has incremented by the expected amount
             assert(
                 postBalance - preBalance == uintAmount,
-                message: "Escrowed WFLOW balance after wrapping does not match requested amount - expected: \(preBalance + uintAmount).toString()) | actual: \(postBalance - preBalance).toString())"
+                message: "Escrowed WFLOW balance after wrapping does not match requested amount - expected: \((preBalance + uintAmount).toString()) | actual: \((postBalance - preBalance).toString())"
             )
 
             // Transfer WFLOW to recipient
@@ -315,7 +315,7 @@ access(all) contract FlowEVMBridgeHandlers {
                 )
             assert(
                 ufixAmount > 0.0,
-                message: "Requested UInt256 amount \(amount.toString()) converted to 0.0  - try bridging a larger amount to avoid UFix64 precision loss during conversion"
+                message: "Requested UInt256 amount \(amount.toString()) converted to 0.0 - try bridging a larger amount to avoid UFix64 precision loss during conversion"
             )
 
             // Transfers WFLOW to bridge COA as escrow
@@ -351,7 +351,7 @@ access(all) contract FlowEVMBridgeHandlers {
             // Confirm bridge COA's FLOW balance has incremented by the expected amount
             assert(
                 UInt256(postBalance - preBalance) == amount,
-                message: "Escrowed WFLOW balance after unwrapping does not match requested amount - expected: \(UInt256(preBalance) + amount).toString()) | actual: \(postBalance - preBalance).toString())"
+                message: "Escrowed WFLOW balance after unwrapping does not match requested amount - expected: \((UInt256(preBalance) + amount).toString()) | actual: \((postBalance - preBalance).toString())"
             )
 
             // Withdraw escrowed FLOW from bridge COA.
